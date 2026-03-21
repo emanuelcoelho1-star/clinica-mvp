@@ -5,7 +5,7 @@ const db = require("../database");
 // Listar consultas com nome do paciente
 router.get("/", (req, res) => {
   const sql = `
-    SELECT 
+    SELECT
       consultas.id,
       consultas.data,
       consultas.horario,
@@ -32,9 +32,9 @@ router.post("/", (req, res) => {
   const { paciente_id, data, horario, procedimento, status } = req.body;
 
   if (!paciente_id || !data || !horario) {
-    return res.status(400).json({
-      erro: "paciente_id, data e horario são obrigatórios."
-    });
+    return res
+      .status(400)
+      .json({ erro: "paciente_id, data e horario são obrigatórios." });
   }
 
   const sql = `
@@ -44,13 +44,7 @@ router.post("/", (req, res) => {
 
   db.run(
     sql,
-    [
-      paciente_id,
-      data,
-      horario,
-      procedimento || "",
-      status || "agendado"
-    ],
+    [paciente_id, data, horario, procedimento || "", status || "agendado"],
     function (err) {
       if (err) {
         return res.status(500).json({ erro: err.message });
@@ -61,8 +55,8 @@ router.post("/", (req, res) => {
         paciente_id,
         data,
         horario,
-        procedimento,
-        status: status || "agendado"
+        procedimento: procedimento || "",
+        status: status || "agendado",
       });
     }
   );

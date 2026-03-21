@@ -3,6 +3,7 @@ import Pacientes from "./pages/Pacientes";
 import Consultas from "./pages/Consultas";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
+import Agenda from "./pages/Agenda";
 
 function Layout() {
   const location = useLocation();
@@ -29,6 +30,16 @@ function Layout() {
             }}
           >
             Dashboard
+          </Link>
+
+          <Link
+            to="/agenda"
+            style={{
+              ...styles.navLink,
+              ...(isActive("/agenda") ? styles.navLinkActive : {}),
+            }}
+          >
+            Agenda
           </Link>
 
           <Link
@@ -67,6 +78,7 @@ function Layout() {
         <div style={styles.contentWrapper}>
           <Routes>
             <Route path="/" element={<Dashboard />} />
+            <Route path="/agenda" element={<Agenda />} />
             <Route path="/pacientes" element={<Pacientes />} />
             <Route path="/consultas" element={<Consultas />} />
           </Routes>
@@ -81,13 +93,15 @@ function App() {
 
   return (
     <BrowserRouter>
-      <Routes>
-        {!token ? (
+      {!token ? (
+        <Routes>
           <Route path="*" element={<Login />} />
-        ) : (
+        </Routes>
+      ) : (
+        <Routes>
           <Route path="/*" element={<Layout />} />
-        )}
-      </Routes>
+        </Routes>
+      )}
     </BrowserRouter>
   );
 }
