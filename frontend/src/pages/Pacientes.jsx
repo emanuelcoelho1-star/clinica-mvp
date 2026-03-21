@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 function Pacientes() {
   const navigate = useNavigate();
   const [pacientes, setPacientes] = useState([]);
+  const [busca, setBusca] = useState("");
 
   const carregarPacientes = () => {
     const token = localStorage.getItem("token");
@@ -21,6 +22,24 @@ function Pacientes() {
   useEffect(() => {
     carregarPacientes();
   }, []);
+
+  const pacientesFiltrados = useMemo(() => {
+    const termo = busca.trim().toLowerCase();
+
+    if (!termo) return pacientes;
+
+    return pacientes.filter((paciente) => {
+      const nome = (paciente.nome || "").toLowerCase();
+      const telefone = String(paciente.telefone || "").toLowerCase();
+      const email = (paciente.email || "").toLowerCase();
+
+      return (
+        nome.includes(termo) ||
+        telefone.includes(termo) ||
+        email.includes(termo)
+      );
+    });
+  }, [pacientes, busca]);
 
   const deletarPaciente = async (id) => {
     if (!confirm("Tem certeza que deseja excluir este paciente?")) return;
@@ -52,19 +71,33 @@ function Pacientes() {
           <p style={styles.subtitle}>Gerencie os pacientes cadastrados na clínica.</p>
         </div>
 
-        <button style={styles.primaryButton} onClick={() => navigate("/pacientes/novo")}>
-          Cadastrar paciente
-        </button>
+        <div style={styles.headerActions}>
+          <div style={styles.searchBox}>
+            <input
+              type="text"
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              placeholder="Buscar paciente..."
+              style={styles.searchInput}
+            />
+          </div>
+
+          <button style={styles.primaryButton} onClick={() => navigate("/pacientes/novo")}>
+            Cadastrar paciente
+          </button>
+        </div>
       </div>
 
       <div style={styles.card}>
         <h2 style={styles.cardTitle}>Lista de pacientes</h2>
 
-        {pacientes.length === 0 ? (
-          <p style={styles.empty}>Nenhum paciente cadastrado.</p>
+        {pacientesFiltrados.length === 0 ? (
+          <p style={styles.empty}>
+            {busca ? "Nenhum paciente encontrado." : "Nenhum paciente cadastrado."}
+          </p>
         ) : (
           <ul style={styles.list}>
-            {pacientes.map((paciente) => (
+            {pacientesFiltrados.map((paciente) => (
               <li key={paciente.id} style={styles.listItem}>
                 <div style={styles.patientInfo}>
                   <strong style={styles.name}>{paciente.nome}</strong>
@@ -105,6 +138,12 @@ const styles = {
     marginBottom: "22px",
     flexWrap: "wrap",
   },
+  headerActions: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    flexWrap: "wrap",
+  },
   title: {
     margin: 0,
     color: "#0f172a",
@@ -126,6 +165,20 @@ const styles = {
     marginBottom: "18px",
     color: "#0f172a",
   },
+  searchBox: {
+    minWidth: "260px",
+    flex: 1,
+  },
+  searchInput: {
+    width: "100%",
+    padding: "13px 16px",
+    borderRadius: "14px",
+    border: "1px solid #dbe3ee",
+    backgroundColor: "#f8fafc",
+    fontSize: "15px",
+    boxSizing: "border-box",
+    outline: "none",
+  },
   primaryButton: {
     border: "none",
     borderRadius: "14px",
@@ -135,6 +188,7 @@ const styles = {
     fontWeight: "700",
     cursor: "pointer",
     boxShadow: "0 10px 20px rgba(37, 99, 235, 0.22)",
+    whiteSpace: "nowrap",
   },
   list: {
     listStyle: "none",
