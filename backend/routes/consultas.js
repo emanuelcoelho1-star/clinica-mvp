@@ -2,19 +2,11 @@ const express = require("express");
 const router = express.Router();
 const db = require("../database");
 
-// Listar consultas com nome do paciente
 router.get("/", (req, res) => {
   const sql = `
-    SELECT
-      consultas.id,
-      consultas.data,
-      consultas.horario,
-      consultas.procedimento,
-      consultas.status,
-      consultas.paciente_id,
-      pacientes.nome AS paciente_nome
+    SELECT consultas.*, pacientes.nome AS paciente_nome
     FROM consultas
-    INNER JOIN pacientes ON consultas.paciente_id = pacientes.id
+    LEFT JOIN pacientes ON consultas.paciente_id = pacientes.id
     ORDER BY consultas.data ASC, consultas.horario ASC
   `;
 
@@ -27,14 +19,13 @@ router.get("/", (req, res) => {
   });
 });
 
-// Cadastrar consulta
 router.post("/", (req, res) => {
   const { paciente_id, data, horario, procedimento, status } = req.body;
 
   if (!paciente_id || !data || !horario) {
     return res
       .status(400)
-      .json({ erro: "paciente_id, data e horario são obrigatórios." });
+      .json({ erro: "Paciente, data e horário são obrigatórios." });
   }
 
   const sql = `
@@ -51,15 +42,60 @@ router.post("/", (req, res) => {
       }
 
       res.status(201).json({
+        mensagem: "Consulta cadastrada com sucesso.",
         id: this.lastID,
-        paciente_id,
-        data,
-        horario,
-        procedimento: procedimento || "",
-        status: status || "agendado",
       });
     }
   );
+});
+
+router.put("/:id", (req, res) => {
+  const { id } = req.params;
+  const { paciente_id, data, horario, procedimento, status } = req.body;
+
+  if (!paciente_id || !data || !horario) {
+    return res
+      .status(400)
+      .json({ erro: "Paciente, data e horário são obrigatórios." });
+  }
+
+  const sql = `
+    UPDATE consultas
+    SET paciente_id = ?, data = ?, horario = ?, procedimento = ?, status = ?
+    WHERE id = ?
+  `;
+
+  db.run(
+    sql,
+    [paciente_id, data, horario, procedimento || "", status || "agendado", id],
+    function (err) {
+      if (err) {
+        return res.status(500).json({ erro: err.message });
+      }
+
+      if (this.changes === 0) {
+        return res.status(404).json({ erro: "Consulta não encontrada." });
+      }
+
+      res.json({ mensagem: "Consulta atualizada com sucesso." });
+    }
+  );
+});
+
+router.delete("/:id", (req, res) => {
+  const { id } = req.params;
+
+  db.run("DELETE FROM consultas WHERE id = ?", [id], function (err) {
+    if (err) {
+      return res.status(500).json({ erro: err.message });
+    }
+
+    if (this.changes === 0) {
+      return res.status(404).json({ erro: "Consulta não encontrada." });
+    }
+
+    res.json({ mensagem: "Consulta excluída com sucesso." });
+  });
 });
 
 module.exports = router;

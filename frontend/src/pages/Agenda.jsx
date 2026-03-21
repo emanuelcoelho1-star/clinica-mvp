@@ -1,20 +1,32 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 const horarios = [
   "08:00",
+  "08:30",
   "09:00",
+  "09:30",
   "10:00",
+  "10:30",
   "11:00",
+  "11:30",
   "12:00",
+  "12:30",
   "13:00",
+  "13:30",
   "14:00",
+  "14:30",
   "15:00",
+  "15:30",
   "16:00",
+  "16:30",
   "17:00",
+  "17:30",
   "18:00",
+  "18:30",
 ];
 
 const nomesDias = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+
 const nomesMeses = [
   "Janeiro",
   "Fevereiro",
@@ -36,20 +48,15 @@ function zerarHora(data) {
   return novaData;
 }
 
+function obterInicioAgenda(data) {
+  return zerarHora(data);
+}
+
 function formatarDataISO(data) {
   const ano = data.getFullYear();
   const mes = String(data.getMonth() + 1).padStart(2, "0");
   const dia = String(data.getDate()).padStart(2, "0");
   return `${ano}-${mes}-${dia}`;
-}
-
-function obterInicioDaSemana(data) {
-  const dataBase = zerarHora(data);
-  const diaSemana = dataBase.getDay();
-  const diferenca = diaSemana === 0 ? -6 : 1 - diaSemana;
-  const inicio = new Date(dataBase);
-  inicio.setDate(dataBase.getDate() + diferenca);
-  return inicio;
 }
 
 function adicionarDias(data, dias) {
@@ -58,7 +65,7 @@ function adicionarDias(data, dias) {
   return novaData;
 }
 
-function calcularFim(horario, duracaoMinutos = 60) {
+function calcularFim(horario, duracaoMinutos = 30) {
   if (!horario || !horario.includes(":")) return horario;
 
   const [hora, minuto] = horario.split(":").map(Number);
@@ -66,7 +73,10 @@ function calcularFim(horario, duracaoMinutos = 60) {
   const novaHora = Math.floor(total / 60);
   const novoMinuto = total % 60;
 
-  return `${String(novaHora).padStart(2, "0")}:${String(novoMinuto).padStart(2, "0")}`;
+  return `${String(novaHora).padStart(2, "0")}:${String(novoMinuto).padStart(
+    2,
+    "0"
+  )}`;
 }
 
 function normalizarConsulta(consulta) {
@@ -74,7 +84,7 @@ function normalizarConsulta(consulta) {
     id: consulta.id,
     data: consulta.data,
     inicio: consulta.horario,
-    fim: calcularFim(consulta.horario, 60),
+    fim: calcularFim(consulta.horario, 30),
     paciente:
       consulta.paciente_nome ||
       consulta.paciente ||
@@ -91,20 +101,42 @@ function normalizarConsulta(consulta) {
   };
 }
 
+function obterMinutosDoHorario(horario) {
+  if (!horario || !horario.includes(":")) return 0;
+  const [hora, minuto] = horario.split(":").map(Number);
+  return hora * 60 + minuto;
+}
+
 function Agenda() {
   const [filtroProfissional, setFiltroProfissional] = useState("Todos");
   const [busca, setBusca] = useState("");
-  const [inicioSemana, setInicioSemana] = useState(obterInicioDaSemana(new Date()));
-
+  const [inicioSemana, setInicioSemana] = useState(
+    obterInicioAgenda(new Date())
+  );
   const [consultas, setConsultas] = useState([]);
   const [pacientes, setPacientes] = useState([]);
-
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
-
   const [modalAberto, setModalAberto] = useState(false);
   const [salvando, setSalvando] = useState(false);
+  const [excluindo, setExcluindo] = useState(false);
   const [erroFormulario, setErroFormulario] = useState("");
+  const [agendamentoEditando, setAgendamentoEditando] = useState(null);
+  const [confirmarExclusaoAberto, setConfirmarExclusaoAberto] = useState(false);
+  const [agora, setAgora] = useState(new Date());
+
+  const [buscaPaciente, setBuscaPaciente] = useState("");
+  const [mostrarSugestoesPaciente, setMostrarSugestoesPaciente] =
+    useState(false);
+  const [modalPacienteAberto, setModalPacienteAberto] = useState(false);
+  const [salvandoPaciente, setSalvandoPaciente] = useState(false);
+  const [erroPaciente, setErroPaciente] = useState("");
+
+  const [formPaciente, setFormPaciente] = useState({
+    nome: "",
+    telefone: "",
+    observacoes: "",
+  });
 
   const [formData, setFormData] = useState({
     paciente_id: "",
@@ -114,9 +146,36 @@ function Agenda() {
     status: "agendado",
   });
 
+  const patientSearchRef = useRef(null);
+
+  useEffect(() => {
+    const intervalo = setInterval(() => {
+      setAgora(new Date());
+    }, 30000);
+
+    return () => clearInterval(intervalo);
+  }, []);
+
+  useEffect(() => {
+    function handleClickFora(event) {
+      if (
+        patientSearchRef.current &&
+        !patientSearchRef.current.contains(event.target)
+      ) {
+        setMostrarSugestoesPaciente(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickFora);
+    return () => {
+      document.removeEventListener("mousedown", handleClickFora);
+    };
+  }, []);
+
   const diasSemana = useMemo(() => {
     return Array.from({ length: 6 }).map((_, index) => {
       const data = adicionarDias(inicioSemana, index);
+
       return {
         data,
         label: nomesDias[data.getDay()],
@@ -126,7 +185,7 @@ function Agenda() {
     });
   }, [inicioSemana]);
 
-  const hojeIso = formatarDataISO(new Date());
+  const hojeIso = formatarDataISO(agora);
 
   useEffect(() => {
     carregarDadosIniciais();
@@ -183,7 +242,6 @@ function Agenda() {
       }
 
       const data = await response.json();
-
       let lista = [];
 
       if (Array.isArray(data)) {
@@ -206,12 +264,32 @@ function Agenda() {
     return ["Todos", ...new Set(lista)];
   }, [consultas]);
 
+  const pacientesFiltrados = useMemo(() => {
+    const termo = buscaPaciente.toLowerCase().trim();
+
+    if (!termo) return [];
+
+    return pacientes.filter((paciente) => {
+      const nome = String(
+        paciente.nome ||
+          paciente.nome_paciente ||
+          paciente.paciente_nome ||
+          ""
+      ).toLowerCase();
+
+      const telefone = String(paciente.telefone || "").toLowerCase();
+
+      return nome.includes(termo) || telefone.includes(termo);
+    });
+  }, [pacientes, buscaPaciente]);
+
   const agendamentosFiltrados = useMemo(() => {
     return consultas.filter((item) => {
       const passaProfissional =
         filtroProfissional === "Todos" || item.dentista === filtroProfissional;
 
       const termo = busca.toLowerCase();
+
       const passaBusca =
         item.paciente.toLowerCase().includes(termo) ||
         item.procedimento.toLowerCase().includes(termo) ||
@@ -226,20 +304,30 @@ function Agenda() {
 
   const tituloPeriodo = useMemo(() => {
     const primeiroDia = diasSemana[0]?.data;
-    if (!primeiroDia) return "";
-    return `${nomesMeses[primeiroDia.getMonth()]} ${primeiroDia.getFullYear()}`;
+    const ultimoDia = diasSemana[diasSemana.length - 1]?.data;
+
+    if (!primeiroDia || !ultimoDia) return "";
+
+    const mesmoMes = primeiroDia.getMonth() === ultimoDia.getMonth();
+    const mesmoAno = primeiroDia.getFullYear() === ultimoDia.getFullYear();
+
+    if (mesmoMes && mesmoAno) {
+      return `${nomesMeses[primeiroDia.getMonth()]} ${primeiroDia.getFullYear()}`;
+    }
+
+    return `${nomesMeses[primeiroDia.getMonth()]} ${primeiroDia.getFullYear()} - ${nomesMeses[ultimoDia.getMonth()]} ${ultimoDia.getFullYear()}`;
   }, [diasSemana]);
 
   function voltarSemana() {
-    setInicioSemana((prev) => adicionarDias(prev, -7));
+    setInicioSemana((prev) => adicionarDias(prev, -6));
   }
 
   function avancarSemana() {
-    setInicioSemana((prev) => adicionarDias(prev, 7));
+    setInicioSemana((prev) => adicionarDias(prev, 6));
   }
 
   function irParaHoje() {
-    setInicioSemana(obterInicioDaSemana(new Date()));
+    setInicioSemana(obterInicioAgenda(new Date()));
   }
 
   function obterAgendamento(dataIso, hora) {
@@ -261,26 +349,120 @@ function Agenda() {
     }
   }
 
-  function abrirModal() {
-    setErroFormulario("");
-    setFormData({
-      paciente_id: pacientes.length > 0 ? String(pacientes[0].id) : "",
-      data: diasSemana[0]?.iso || formatarDataISO(new Date()),
-      horario: "08:00",
-      procedimento: "",
-      status: "agendado",
+  function horarioEstaNoPassado(dataIso, horario) {
+    if (!dataIso || !horario) return false;
+
+    const [ano, mes, dia] = dataIso.split("-").map(Number);
+    const [hora, minuto] = horario.split(":").map(Number);
+
+    const inicioBloco = new Date(ano, mes - 1, dia, hora, minuto, 0, 0);
+    const fimBloco = new Date(inicioBloco.getTime() + 30 * 60 * 1000);
+
+    return fimBloco.getTime() <= agora.getTime();
+  }
+
+  function horariosDisponiveisNoFormulario() {
+    if (!formData.data) return horarios;
+
+    return horarios.filter(
+      (hora) => !horarioEstaNoPassado(formData.data, hora)
+    );
+  }
+
+  function ajustarHorarioFormularioSeNecessario(novaData) {
+    const horariosDisponiveis = horarios.filter(
+      (hora) => !horarioEstaNoPassado(novaData, hora)
+    );
+
+    if (horariosDisponiveis.length === 0) {
+      setFormData((prev) => ({
+        ...prev,
+        data: novaData,
+        horario: "",
+      }));
+      return;
+    }
+
+    setFormData((prev) => {
+      const horarioAtualAindaValido = horariosDisponiveis.includes(prev.horario);
+
+      return {
+        ...prev,
+        data: novaData,
+        horario: horarioAtualAindaValido
+          ? prev.horario
+          : horariosDisponiveis[0],
+      };
     });
+  }
+
+  function abrirModal(
+    agendamento = null,
+    dataPadrao = null,
+    horarioPadrao = "08:00"
+  ) {
+    setErroFormulario("");
+    setConfirmarExclusaoAberto(false);
+    setMostrarSugestoesPaciente(false);
+
+    if (agendamento) {
+      setAgendamentoEditando(agendamento);
+      setFormData({
+        paciente_id: String(agendamento.paciente_id || ""),
+        data: agendamento.data || formatarDataISO(new Date()),
+        horario: agendamento.inicio || "08:00",
+        procedimento: agendamento.procedimento || "",
+        status: agendamento.status || "agendado",
+      });
+
+      setBuscaPaciente(agendamento.paciente || "");
+    } else {
+      const dataInicial =
+        dataPadrao || diasSemana[0]?.iso || formatarDataISO(new Date());
+
+      let horarioInicial = horarioPadrao;
+
+      if (horarioEstaNoPassado(dataInicial, horarioInicial)) {
+        const proximoHorarioDisponivel = horarios.find(
+          (hora) => !horarioEstaNoPassado(dataInicial, hora)
+        );
+
+        horarioInicial = proximoHorarioDisponivel || "";
+      }
+
+      setAgendamentoEditando(null);
+      setFormData({
+        paciente_id: "",
+        data: dataInicial,
+        horario: horarioInicial,
+        procedimento: "",
+        status: "agendado",
+      });
+
+      setBuscaPaciente("");
+    }
+
     setModalAberto(true);
   }
 
   function fecharModal() {
-    if (salvando) return;
+    if (salvando || excluindo) return;
     setModalAberto(false);
     setErroFormulario("");
+    setAgendamentoEditando(null);
+    setConfirmarExclusaoAberto(false);
+    setBuscaPaciente("");
+    setMostrarSugestoesPaciente(false);
   }
 
   function handleInputChange(event) {
     const { name, value } = event.target;
+
+    if (name === "data") {
+      ajustarHorarioFormularioSeNecessario(value);
+      return;
+    }
+
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -295,26 +477,40 @@ function Agenda() {
       return;
     }
 
+    if (
+      !agendamentoEditando &&
+      horarioEstaNoPassado(formData.data, formData.horario)
+    ) {
+      setErroFormulario("Não é possível agendar em horários que já passaram.");
+      return;
+    }
+
     try {
       setSalvando(true);
       setErroFormulario("");
 
       const token = localStorage.getItem("token");
+      const editando = Boolean(agendamentoEditando);
 
-      const response = await fetch("http://localhost:3001/consultas", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: token || "",
-        },
-        body: JSON.stringify({
-          paciente_id: Number(formData.paciente_id),
-          data: formData.data,
-          horario: formData.horario,
-          procedimento: formData.procedimento,
-          status: formData.status,
-        }),
-      });
+      const response = await fetch(
+        editando
+          ? `http://localhost:3001/consultas/${agendamentoEditando.id}`
+          : "http://localhost:3001/consultas",
+        {
+          method: editando ? "PUT" : "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: token || "",
+          },
+          body: JSON.stringify({
+            paciente_id: Number(formData.paciente_id),
+            data: formData.data,
+            horario: formData.horario,
+            procedimento: formData.procedimento,
+            status: formData.status,
+          }),
+        }
+      );
 
       if (!response.ok) {
         throw new Error("Erro ao salvar agendamento.");
@@ -324,7 +520,7 @@ function Agenda() {
       fecharModal();
 
       const dataSelecionada = new Date(`${formData.data}T00:00:00`);
-      setInicioSemana(obterInicioDaSemana(dataSelecionada));
+      setInicioSemana(obterInicioAgenda(dataSelecionada));
     } catch (error) {
       console.error("Erro ao salvar agendamento:", error);
       setErroFormulario("Não foi possível salvar o agendamento.");
@@ -333,43 +529,200 @@ function Agenda() {
     }
   }
 
+  async function handleExcluirAgendamento() {
+    if (!agendamentoEditando?.id) return;
+
+    try {
+      setExcluindo(true);
+      setErroFormulario("");
+
+      const token = localStorage.getItem("token");
+
+      const response = await fetch(
+        `http://localhost:3001/consultas/${agendamentoEditando.id}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: token || "",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Erro ao excluir agendamento.");
+      }
+
+      setConfirmarExclusaoAberto(false);
+      await carregarConsultas();
+      fecharModal();
+    } catch (error) {
+      console.error("Erro ao excluir agendamento:", error);
+      setErroFormulario("Não foi possível excluir o agendamento.");
+    } finally {
+      setExcluindo(false);
+    }
+  }
+
+  function abrirModalNovoPaciente() {
+    setErroPaciente("");
+    setFormPaciente({
+      nome: "",
+      telefone: "",
+      observacoes: "",
+    });
+    setModalPacienteAberto(true);
+  }
+
+  function fecharModalNovoPaciente() {
+    if (salvandoPaciente) return;
+    setModalPacienteAberto(false);
+    setErroPaciente("");
+  }
+
+  function handlePacienteInputChange(event) {
+    const { name, value } = event.target;
+
+    setFormPaciente((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  }
+
+  async function handleSalvarPaciente(event) {
+    event.preventDefault();
+
+    if (!formPaciente.nome.trim()) {
+      setErroPaciente("Digite o nome do paciente.");
+      return;
+    }
+
+    try {
+      setSalvandoPaciente(true);
+      setErroPaciente("");
+
+      const token = localStorage.getItem("token");
+
+      const response = await fetch("http://localhost:3001/pacientes", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: token || "",
+        },
+        body: JSON.stringify({
+          nome: formPaciente.nome,
+          telefone: formPaciente.telefone,
+          observacoes: formPaciente.observacoes,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Erro ao cadastrar paciente.");
+      }
+
+      const pacienteCriado = await response.json();
+
+      await carregarPacientes();
+
+      const novoId =
+        pacienteCriado?.id ||
+        pacienteCriado?.paciente?.id ||
+        pacienteCriado?.data?.id;
+
+      if (novoId) {
+        setFormData((prev) => ({
+          ...prev,
+          paciente_id: String(novoId),
+        }));
+      }
+
+      setBuscaPaciente(formPaciente.nome);
+      setMostrarSugestoesPaciente(false);
+      fecharModalNovoPaciente();
+    } catch (error) {
+      console.error("Erro ao cadastrar paciente:", error);
+      setErroPaciente("Não foi possível cadastrar o paciente.");
+    } finally {
+      setSalvandoPaciente(false);
+    }
+  }
+
+  function selecionarPaciente(paciente) {
+    setFormData((prev) => ({
+      ...prev,
+      paciente_id: String(paciente.id),
+    }));
+
+    const nomeSelecionado =
+      paciente.nome ||
+      paciente.nome_paciente ||
+      paciente.paciente_nome ||
+      `Paciente ${paciente.id}`;
+
+    setBuscaPaciente(nomeSelecionado);
+    setMostrarSugestoesPaciente(false);
+  }
+
+  const minutosAgora = agora.getHours() * 60 + agora.getMinutes();
+  const primeiroMinutoAgenda = obterMinutosDoHorario(horarios[0]);
+  const ultimoMinutoAgenda =
+    obterMinutosDoHorario(horarios[horarios.length - 1]) + 30;
+
+  const agoraDentroDaAgenda =
+    minutosAgora >= primeiroMinutoAgenda && minutosAgora <= ultimoMinutoAgenda;
+
+  function obterPosicaoLinhaAtual(horario) {
+    const inicioBloco = obterMinutosDoHorario(horario);
+    const fimBloco = inicioBloco + 30;
+
+    if (minutosAgora < inicioBloco || minutosAgora >= fimBloco) {
+      return null;
+    }
+
+    const minutosPassados = minutosAgora - inicioBloco;
+    return (minutosPassados / 30) * 100;
+  }
+
+  function linhaAtualPassaNesteHorario(horario) {
+    return obterPosicaoLinhaAtual(horario) !== null;
+  }
+
+  const horariosDisponiveisForm = horariosDisponiveisNoFormulario();
+
   return (
-    <div>
+    <div style={styles.page}>
       <div style={styles.header}>
         <div>
-          <p style={styles.eyebrow}>Agenda da clínica</p>
+          <span style={styles.badge}>Agenda da clínica</span>
           <h1 style={styles.title}>Agenda semanal</h1>
           <p style={styles.subtitle}>
             Organize atendimentos e acompanhe os horários da semana.
           </p>
         </div>
 
-        <button style={styles.primaryButton} onClick={abrirModal}>
+        <button style={styles.primaryButton} onClick={() => abrirModal()}>
           + Novo agendamento
         </button>
       </div>
 
       <div style={styles.toolbar}>
-        <div style={styles.toolbarLeft}>
+        <div style={styles.navigation}>
           <button style={styles.navButton} onClick={voltarSemana}>
             ←
           </button>
-
           <button style={styles.todayButton} onClick={irParaHoje}>
             Hoje
           </button>
-
           <button style={styles.navButton} onClick={avancarSemana}>
             →
           </button>
-
-          <div style={styles.periodBox}>
-            <strong>{tituloPeriodo}</strong>
-            <span style={styles.periodSub}>Semana exibida na agenda</span>
-          </div>
         </div>
 
-        <div style={styles.toolbarRight}>
+        <div style={styles.periodBox}>
+          <strong style={styles.periodTitle}>{tituloPeriodo}</strong>
+          <span style={styles.periodSubtitle}>Período exibido na agenda</span>
+        </div>
+
+        <div style={styles.filters}>
           <select
             value={filtroProfissional}
             onChange={(e) => setFiltroProfissional(e.target.value)}
@@ -384,101 +737,148 @@ function Agenda() {
 
           <input
             type="text"
-            placeholder="Buscar paciente ou procedimento"
+            placeholder="Buscar paciente, procedimento..."
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
             style={styles.search}
           />
 
-          <button style={styles.reloadButton} onClick={carregarConsultas}>
+          <button style={styles.refreshButton} onClick={carregarConsultas}>
             Atualizar
           </button>
         </div>
       </div>
 
-      {carregando && <div style={styles.infoBox}>Carregando consultas...</div>}
+      {carregando && <div style={styles.feedback}>Carregando consultas...</div>}
       {erro && <div style={styles.errorBox}>{erro}</div>}
 
       {!carregando && !erro && (
         <div style={styles.calendarWrapper}>
-          <div style={styles.calendarCard}>
-            <div style={styles.calendarHeader}>
-              <div style={styles.hourHeader}></div>
+          <div style={styles.calendarHeader}>
+            <div style={styles.timeColumnHeader}>Horário</div>
 
-              {diasSemana.map((dia) => {
-                const ehHoje = dia.iso === hojeIso;
+            {diasSemana.map((dia) => {
+              const ehHoje = dia.iso === hojeIso;
 
-                return (
-                  <div
-                    key={dia.iso}
-                    style={{
-                      ...styles.dayHeader,
-                      ...(ehHoje ? styles.dayHeaderToday : {}),
-                    }}
-                  >
-                    <span style={styles.dayLabel}>{dia.label}</span>
-                    <strong style={styles.dayNumber}>{dia.numero}</strong>
-                  </div>
-                );
-              })}
-            </div>
+              return (
+                <div
+                  key={dia.iso}
+                  style={{
+                    ...styles.dayHeader,
+                    ...(ehHoje ? styles.dayHeaderToday : {}),
+                  }}
+                >
+                  <span style={styles.dayLabel}>{dia.label}</span>
+                  <span style={styles.dayNumber}>{dia.numero}</span>
+                </div>
+              );
+            })}
+          </div>
 
-            <div style={styles.calendarBody}>
-              <div style={styles.hoursColumn}>
-                {horarios.map((hora) => (
-                  <div key={hora} style={styles.hourCell}>
-                    {hora}
-                  </div>
-                ))}
-              </div>
+          <div style={styles.calendarBody}>
+            {horarios.map((hora) => (
+              <div
+                key={hora}
+                style={{
+                  ...styles.row,
+                  ...(linhaAtualPassaNesteHorario(hora) ? styles.rowCurrent : {}),
+                }}
+              >
+                <div
+                  style={{
+                    ...styles.timeCell,
+                    ...(linhaAtualPassaNesteHorario(hora)
+                      ? styles.timeCellCurrent
+                      : {}),
+                  }}
+                >
+                  {hora}
+                </div>
 
-              {diasSemana.map((dia) => {
-                const ehHoje = dia.iso === hojeIso;
+                {diasSemana.map((dia) => {
+                  const ehHoje = dia.iso === hojeIso;
+                  const agendamento = obterAgendamento(dia.iso, hora);
+                  const slotBloqueado = horarioEstaNoPassado(dia.iso, hora);
+                  const posicaoLinha =
+                    ehHoje && agoraDentroDaAgenda
+                      ? obterPosicaoLinhaAtual(hora)
+                      : null;
 
-                return (
-                  <div
-                    key={dia.iso}
-                    style={{
-                      ...styles.dayColumn,
-                      ...(ehHoje ? styles.dayColumnToday : {}),
-                    }}
-                  >
-                    {horarios.map((hora) => {
-                      const agendamento = obterAgendamento(dia.iso, hora);
+                  return (
+                    <div
+                      key={`${dia.iso}-${hora}`}
+                      style={{
+                        ...styles.dayCell,
+                        ...(ehHoje ? styles.dayCellToday : {}),
+                        ...(linhaAtualPassaNesteHorario(hora) && ehHoje
+                          ? styles.dayCellCurrent
+                          : {}),
+                        ...(slotBloqueado && !agendamento
+                          ? styles.dayCellBlocked
+                          : {}),
+                      }}
+                      onClick={() => {
+                        if (!agendamento && !slotBloqueado) {
+                          abrirModal(null, dia.iso, hora);
+                        }
+                      }}
+                    >
+                      {agendamento ? (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            abrirModal(agendamento);
+                          }}
+                          style={{
+                            ...styles.eventCard,
+                            ...obterEstiloStatus(agendamento.status),
+                            ...(agendamentoEditando?.id === agendamento.id
+                              ? styles.eventCardActive
+                              : {}),
+                          }}
+                        >
+                          <div style={styles.eventHour}>
+                            {agendamento.inicio} - {agendamento.fim}
+                          </div>
 
-                      return (
-                        <div key={hora} style={styles.slot}>
-                          {agendamento && (
-                            <div
-                              style={{
-                                ...styles.eventCard,
-                                ...obterEstiloStatus(agendamento.status),
-                              }}
-                            >
-                              <div style={styles.eventTime}>
-                                {agendamento.inicio} - {agendamento.fim}
-                              </div>
-                              <div style={styles.eventPatient}>
-                                {agendamento.paciente}
-                              </div>
-                              <div style={styles.eventProcedure}>
-                                {agendamento.procedimento}
-                              </div>
-                              <div style={styles.eventDentist}>
-                                {agendamento.dentista}
-                              </div>
-                              <div style={styles.eventStatus}>
-                                {agendamento.status}
-                              </div>
-                            </div>
-                          )}
+                          <div style={styles.eventPatient}>
+                            {agendamento.paciente}
+                          </div>
+
+                          <div style={styles.eventProcedure}>
+                            {agendamento.procedimento}
+                          </div>
+
+                          <div style={styles.eventProfessional}>
+                            {agendamento.dentista}
+                          </div>
+
+                          <div style={styles.eventStatus}>
+                            {agendamento.status}
+                          </div>
+                        </button>
+                      ) : slotBloqueado ? (
+                        <div style={styles.blockedSlot}></div>
+                      ) : (
+                        <div style={styles.emptySlot}>+</div>
+                      )}
+
+                      {posicaoLinha !== null && (
+                        <div
+                          style={{
+                            ...styles.nowLine,
+                            top: `${posicaoLinha}%`,
+                          }}
+                        >
+                          <span style={styles.nowDot}></span>
                         </div>
-                      );
-                    })}
-                  </div>
-                );
-              })}
-            </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -488,44 +888,111 @@ function Agenda() {
           <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
             <div style={styles.modalHeader}>
               <div>
-                <h2 style={styles.modalTitle}>Novo agendamento</h2>
+                <h2 style={styles.modalTitle}>
+                  {agendamentoEditando
+                    ? "Editar agendamento"
+                    : "Novo agendamento"}
+                </h2>
                 <p style={styles.modalSubtitle}>
-                  Preencha os dados para salvar a consulta.
+                  {agendamentoEditando
+                    ? "Altere os dados, salve ou exclua o agendamento."
+                    : "Preencha os dados para salvar a consulta."}
                 </p>
               </div>
 
-              <button style={styles.modalCloseButton} onClick={fecharModal}>
+              <button style={styles.closeButton} onClick={fecharModal}>
                 ✕
               </button>
             </div>
 
             <form onSubmit={handleSalvarAgendamento} style={styles.form}>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Paciente</label>
-                <select
-                  name="paciente_id"
-                  value={formData.paciente_id}
-                  onChange={handleInputChange}
-                  style={styles.input}
-                  required
-                >
-                  {pacientes.length === 0 ? (
-                    <option value="">Nenhum paciente encontrado</option>
-                  ) : (
-                    pacientes.map((paciente) => (
-                      <option key={paciente.id} value={paciente.id}>
-                        {paciente.nome ||
-                          paciente.nome_paciente ||
-                          paciente.paciente_nome ||
-                          `Paciente ${paciente.id}`}
-                      </option>
-                    ))
+              <div style={styles.fieldGroup}>
+                <div style={styles.patientLabelRow}>
+                  <label style={styles.label}>Paciente</label>
+
+                  <button
+                    type="button"
+                    style={styles.newPatientButton}
+                    onClick={abrirModalNovoPaciente}
+                  >
+                    + Novo paciente
+                  </button>
+                </div>
+
+                <div style={styles.patientSearchWrapper} ref={patientSearchRef}>
+                  <input
+                    type="text"
+                    placeholder="Buscar paciente por nome ou telefone..."
+                    value={buscaPaciente}
+                    onChange={(e) => {
+                      const valor = e.target.value;
+                      setBuscaPaciente(valor);
+                      setMostrarSugestoesPaciente(Boolean(valor.trim()));
+
+                      if (!valor.trim()) {
+                        setFormData((prev) => ({
+                          ...prev,
+                          paciente_id: "",
+                        }));
+                      }
+                    }}
+                    onFocus={() => {
+                      if (buscaPaciente.trim()) {
+                        setMostrarSugestoesPaciente(true);
+                      }
+                    }}
+                    style={styles.input}
+                  />
+
+                  {mostrarSugestoesPaciente && (
+                    <div style={styles.patientDropdown}>
+                      {pacientesFiltrados.length === 0 ? (
+                        <div style={styles.patientEmpty}>
+                          Nenhum paciente encontrado
+                        </div>
+                      ) : (
+                        pacientesFiltrados.slice(0, 6).map((paciente) => {
+                          const nome =
+                            paciente.nome ||
+                            paciente.nome_paciente ||
+                            paciente.paciente_nome ||
+                            `Paciente ${paciente.id}`;
+
+                          const selecionado =
+                            String(formData.paciente_id) === String(paciente.id);
+
+                          return (
+                            <button
+                              key={paciente.id}
+                              type="button"
+                              onClick={() => selecionarPaciente(paciente)}
+                              style={{
+                                ...styles.patientOption,
+                                ...(selecionado
+                                  ? styles.patientOptionActive
+                                  : {}),
+                              }}
+                            >
+                              <span style={styles.patientOptionName}>
+                                {nome}
+                              </span>
+
+                              {paciente.telefone ? (
+                                <span style={styles.patientOptionPhone}>
+                                  {paciente.telefone}
+                                </span>
+                              ) : null}
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
                   )}
-                </select>
+                </div>
               </div>
 
-              <div style={styles.formRow}>
-                <div style={styles.formGroup}>
+              <div style={styles.formGrid}>
+                <div style={styles.fieldGroup}>
                   <label style={styles.label}>Data</label>
                   <input
                     type="date"
@@ -533,41 +1000,53 @@ function Agenda() {
                     value={formData.data}
                     onChange={handleInputChange}
                     style={styles.input}
-                    required
                   />
                 </div>
 
-                <div style={styles.formGroup}>
+                <div style={styles.fieldGroup}>
                   <label style={styles.label}>Horário</label>
                   <select
                     name="horario"
                     value={formData.horario}
                     onChange={handleInputChange}
                     style={styles.input}
-                    required
                   >
-                    {horarios.map((hora) => (
-                      <option key={hora} value={hora}>
-                        {hora}
-                      </option>
-                    ))}
+                    {horarios.map((hora) => {
+                      const bloqueado = horarioEstaNoPassado(formData.data, hora);
+
+                      return (
+                        <option
+                          key={hora}
+                          value={hora}
+                          disabled={bloqueado && !agendamentoEditando}
+                        >
+                          {hora}
+                        </option>
+                      );
+                    })}
                   </select>
+
+                  {!agendamentoEditando && horariosDisponiveisForm.length === 0 && (
+                    <div style={styles.formInfo}>
+                      Não há mais horários disponíveis para esta data.
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <div style={styles.formGroup}>
+              <div style={styles.fieldGroup}>
                 <label style={styles.label}>Procedimento</label>
                 <input
                   type="text"
                   name="procedimento"
+                  placeholder="Ex: Avaliação, limpeza, retorno..."
                   value={formData.procedimento}
                   onChange={handleInputChange}
-                  placeholder="Ex: Limpeza, Avaliação, Retorno..."
                   style={styles.input}
                 />
               </div>
 
-              <div style={styles.formGroup}>
+              <div style={styles.fieldGroup}>
                 <label style={styles.label}>Status</label>
                 <select
                   name="status"
@@ -587,23 +1066,158 @@ function Agenda() {
               )}
 
               <div style={styles.formActions}>
+                {agendamentoEditando && (
+                  <button
+                    type="button"
+                    style={styles.deleteButton}
+                    onClick={() => setConfirmarExclusaoAberto(true)}
+                    disabled={salvando || excluindo}
+                  >
+                    Excluir
+                  </button>
+                )}
+
                 <button
                   type="button"
                   style={styles.secondaryButton}
                   onClick={fecharModal}
+                  disabled={salvando || excluindo}
                 >
                   Cancelar
                 </button>
 
                 <button
                   type="submit"
-                  style={styles.submitButton}
-                  disabled={salvando || pacientes.length === 0}
+                  style={styles.primaryButton}
+                  disabled={
+                    salvando ||
+                    excluindo ||
+                    (!agendamentoEditando && !formData.horario)
+                  }
                 >
-                  {salvando ? "Salvando..." : "Salvar agendamento"}
+                  {salvando
+                    ? "Salvando..."
+                    : agendamentoEditando
+                    ? "Salvar alterações"
+                    : "Salvar agendamento"}
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {modalPacienteAberto && (
+        <div style={styles.modalOverlay} onClick={fecharModalNovoPaciente}>
+          <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <div style={styles.modalHeader}>
+              <div>
+                <h2 style={styles.modalTitle}>Novo paciente</h2>
+                <p style={styles.modalSubtitle}>
+                  Cadastre um paciente sem sair da agenda.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                style={styles.closeButton}
+                onClick={fecharModalNovoPaciente}
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSalvarPaciente} style={styles.form}>
+              <div style={styles.fieldGroup}>
+                <label style={styles.label}>Nome</label>
+                <input
+                  type="text"
+                  name="nome"
+                  value={formPaciente.nome}
+                  onChange={handlePacienteInputChange}
+                  placeholder="Nome do paciente"
+                  style={styles.input}
+                />
+              </div>
+
+              <div style={styles.fieldGroup}>
+                <label style={styles.label}>Telefone</label>
+                <input
+                  type="text"
+                  name="telefone"
+                  value={formPaciente.telefone}
+                  onChange={handlePacienteInputChange}
+                  placeholder="Telefone"
+                  style={styles.input}
+                />
+              </div>
+
+              <div style={styles.fieldGroup}>
+                <label style={styles.label}>Observações</label>
+                <input
+                  type="text"
+                  name="observacoes"
+                  value={formPaciente.observacoes}
+                  onChange={handlePacienteInputChange}
+                  placeholder="Observações do paciente"
+                  style={styles.input}
+                />
+              </div>
+
+              {erroPaciente && (
+                <div style={styles.formError}>{erroPaciente}</div>
+              )}
+
+              <div style={styles.formActions}>
+                <button
+                  type="button"
+                  style={styles.secondaryButton}
+                  onClick={fecharModalNovoPaciente}
+                  disabled={salvandoPaciente}
+                >
+                  Cancelar
+                </button>
+
+                <button
+                  type="submit"
+                  style={styles.primaryButton}
+                  disabled={salvandoPaciente}
+                >
+                  {salvandoPaciente ? "Salvando..." : "Cadastrar paciente"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {confirmarExclusaoAberto && (
+        <div style={styles.confirmOverlay}>
+          <div style={styles.confirmBox}>
+            <h3 style={styles.confirmTitle}>Excluir agendamento?</h3>
+            <p style={styles.confirmText}>
+              Essa ação não poderá ser desfeita.
+            </p>
+
+            <div style={styles.confirmActions}>
+              <button
+                type="button"
+                style={styles.secondaryButton}
+                onClick={() => setConfirmarExclusaoAberto(false)}
+                disabled={excluindo}
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="button"
+                style={styles.deleteButton}
+                onClick={handleExcluirAgendamento}
+                disabled={excluindo}
+              >
+                {excluindo ? "Excluindo..." : "Confirmar exclusão"}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -612,262 +1226,347 @@ function Agenda() {
 }
 
 const styles = {
+  page: {
+    minHeight: "100vh",
+    background: "#f8fafc",
+    padding: "24px",
+    fontFamily: "Arial, sans-serif",
+  },
   header: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
     gap: "16px",
-    flexWrap: "wrap",
     marginBottom: "24px",
+    flexWrap: "wrap",
   },
-  eyebrow: {
-    margin: 0,
-    color: "#2563eb",
-    fontWeight: "800",
+  badge: {
+    display: "inline-block",
+    padding: "6px 12px",
+    borderRadius: "999px",
+    background: "#dbeafe",
+    color: "#1d4ed8",
     fontSize: "12px",
-    textTransform: "uppercase",
-    letterSpacing: "0.08em",
+    fontWeight: "700",
+    marginBottom: "12px",
   },
   title: {
-    margin: "8px 0 8px 0",
-    fontSize: "34px",
+    margin: 0,
+    fontSize: "32px",
     color: "#0f172a",
   },
   subtitle: {
-    margin: 0,
-    color: "#64748b",
+    margin: "8px 0 0 0",
+    color: "#475569",
     fontSize: "15px",
   },
-  primaryButton: {
-    border: "none",
-    borderRadius: "14px",
-    padding: "14px 20px",
-    background: "linear-gradient(135deg, #2563eb, #1d4ed8)",
-    color: "#fff",
-    fontWeight: "700",
-    cursor: "pointer",
-    boxShadow: "0 12px 24px rgba(37, 99, 235, 0.22)",
-  },
   toolbar: {
-    background: "#ffffff",
-    borderRadius: "22px",
-    padding: "18px",
-    marginBottom: "20px",
-    border: "1px solid #e8eef6",
-    boxShadow: "0 12px 28px rgba(15, 23, 42, 0.06)",
     display: "flex",
     justifyContent: "space-between",
+    alignItems: "center",
     gap: "16px",
     flexWrap: "wrap",
+    background: "#ffffff",
+    border: "1px solid #e2e8f0",
+    borderRadius: "18px",
+    padding: "16px",
+    marginBottom: "20px",
+    boxShadow: "0 10px 30px rgba(15, 23, 42, 0.06)",
   },
-  toolbarLeft: {
+  navigation: {
     display: "flex",
     alignItems: "center",
-    gap: "10px",
-    flexWrap: "wrap",
-  },
-  toolbarRight: {
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-    flexWrap: "wrap",
+    gap: "8px",
   },
   navButton: {
-    width: "42px",
-    height: "42px",
-    borderRadius: "12px",
-    border: "1px solid #dbe3ee",
+    border: "1px solid #cbd5e1",
     background: "#fff",
+    borderRadius: "12px",
+    padding: "10px 14px",
     cursor: "pointer",
-    fontSize: "18px",
-    fontWeight: "700",
+    fontSize: "16px",
   },
   todayButton: {
-    height: "42px",
-    borderRadius: "12px",
-    border: "1px solid #dbe3ee",
+    border: "1px solid #cbd5e1",
     background: "#f8fafc",
-    padding: "0 16px",
-    fontWeight: "700",
-    cursor: "pointer",
-  },
-  reloadButton: {
-    height: "42px",
     borderRadius: "12px",
-    border: "1px solid #dbe3ee",
-    background: "#fff",
-    padding: "0 16px",
-    fontWeight: "700",
+    padding: "10px 16px",
     cursor: "pointer",
+    fontWeight: "600",
   },
   periodBox: {
     display: "flex",
     flexDirection: "column",
-    justifyContent: "center",
-    padding: "0 8px",
-    minWidth: "140px",
+    gap: "4px",
   },
-  periodSub: {
-    color: "#64748b",
+  periodTitle: {
+    fontSize: "18px",
+    color: "#0f172a",
+  },
+  periodSubtitle: {
     fontSize: "13px",
-    marginTop: "4px",
+    color: "#64748b",
+  },
+  filters: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    flexWrap: "wrap",
   },
   select: {
+    minWidth: "160px",
     height: "42px",
     borderRadius: "12px",
-    border: "1px solid #dbe3ee",
-    padding: "0 14px",
+    border: "1px solid #cbd5e1",
+    padding: "0 12px",
     background: "#fff",
-    fontSize: "14px",
   },
   search: {
+    minWidth: "240px",
     height: "42px",
     borderRadius: "12px",
-    border: "1px solid #dbe3ee",
-    padding: "0 14px",
-    minWidth: "260px",
-    background: "#fff",
-    fontSize: "14px",
+    border: "1px solid #cbd5e1",
+    padding: "0 12px",
     outline: "none",
   },
-  infoBox: {
-    background: "#eff6ff",
-    color: "#1d4ed8",
-    border: "1px solid #bfdbfe",
-    borderRadius: "16px",
-    padding: "14px 16px",
-    marginBottom: "16px",
+  refreshButton: {
+    height: "42px",
+    borderRadius: "12px",
+    border: "1px solid #cbd5e1",
+    background: "#fff",
+    padding: "0 16px",
+    cursor: "pointer",
     fontWeight: "600",
+  },
+  primaryButton: {
+    height: "44px",
+    borderRadius: "12px",
+    border: "none",
+    background: "#2563eb",
+    color: "#fff",
+    padding: "0 18px",
+    cursor: "pointer",
+    fontWeight: "700",
+  },
+  secondaryButton: {
+    height: "44px",
+    borderRadius: "12px",
+    border: "1px solid #cbd5e1",
+    background: "#fff",
+    color: "#0f172a",
+    padding: "0 18px",
+    cursor: "pointer",
+    fontWeight: "700",
+  },
+  deleteButton: {
+    height: "44px",
+    borderRadius: "12px",
+    border: "none",
+    background: "#ef4444",
+    color: "#fff",
+    padding: "0 18px",
+    cursor: "pointer",
+    fontWeight: "700",
+  },
+  feedback: {
+    background: "#fff",
+    border: "1px solid #e2e8f0",
+    borderRadius: "16px",
+    padding: "20px",
+    color: "#475569",
   },
   errorBox: {
     background: "#fef2f2",
-    color: "#b91c1c",
     border: "1px solid #fecaca",
+    color: "#b91c1c",
     borderRadius: "16px",
-    padding: "14px 16px",
-    marginBottom: "16px",
-    fontWeight: "600",
+    padding: "16px",
   },
   calendarWrapper: {
-    width: "100%",
-    overflowX: "auto",
-  },
-  calendarCard: {
     background: "#ffffff",
-    borderRadius: "24px",
-    border: "1px solid #e8eef6",
-    boxShadow: "0 16px 34px rgba(15, 23, 42, 0.06)",
+    border: "1px solid #e2e8f0",
+    borderRadius: "20px",
     overflow: "hidden",
-    minWidth: "1100px",
+    boxShadow: "0 10px 30px rgba(15, 23, 42, 0.06)",
   },
   calendarHeader: {
     display: "grid",
     gridTemplateColumns: "90px repeat(6, 1fr)",
-    borderBottom: "1px solid #edf2f7",
-    background: "#f8fbff",
+    borderBottom: "1px solid #e2e8f0",
+    background: "#f8fafc",
   },
-  hourHeader: {
-    borderRight: "1px solid #edf2f7",
+  timeColumnHeader: {
+    padding: "16px",
+    fontSize: "13px",
+    fontWeight: "700",
+    color: "#64748b",
+    borderRight: "1px solid #e2e8f0",
   },
   dayHeader: {
-    padding: "18px 12px",
-    textAlign: "center",
-    borderRight: "1px solid #edf2f7",
+    padding: "16px",
     display: "flex",
     flexDirection: "column",
     gap: "6px",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRight: "1px solid #e2e8f0",
+    color: "#334155",
   },
   dayHeaderToday: {
-    background: "#eef4ff",
+    background: "#eff6ff",
   },
   dayLabel: {
-    color: "#64748b",
     fontSize: "13px",
     fontWeight: "700",
   },
   dayNumber: {
-    color: "#0f172a",
     fontSize: "20px",
+    fontWeight: "800",
   },
   calendarBody: {
+    display: "flex",
+    flexDirection: "column",
+  },
+  row: {
     display: "grid",
     gridTemplateColumns: "90px repeat(6, 1fr)",
+    minHeight: "78px",
+    borderBottom: "1px solid #e2e8f0",
   },
-  hoursColumn: {
-    borderRight: "1px solid #edf2f7",
-    background: "#fbfdff",
+  rowCurrent: {
+    background: "#fffdfd",
   },
-  hourCell: {
-    height: "86px",
-    padding: "10px 12px",
-    boxSizing: "border-box",
-    borderBottom: "1px solid #edf2f7",
-    color: "#64748b",
+  timeCell: {
+    padding: "12px 10px",
+    borderRight: "1px solid #e2e8f0",
     fontSize: "13px",
     fontWeight: "700",
+    color: "#64748b",
+    background: "#fcfdff",
   },
-  dayColumn: {
-    borderRight: "1px solid #edf2f7",
+  timeCellCurrent: {
+    color: "#dc2626",
+    background: "#fff1f2",
   },
-  dayColumnToday: {
-    background: "rgba(37, 99, 235, 0.03)",
-  },
-  slot: {
-    height: "86px",
-    borderBottom: "1px solid #edf2f7",
+  dayCell: {
     padding: "8px",
-    boxSizing: "border-box",
+    borderRight: "1px solid #e2e8f0",
+    position: "relative",
+    cursor: "pointer",
+    background: "#fff",
+    display: "flex",
+    alignItems: "stretch",
+    justifyContent: "stretch",
+    minHeight: "78px",
+    overflow: "visible",
+  },
+  dayCellToday: {
+    background: "#fafcff",
+  },
+  dayCellCurrent: {
+    background: "#fffdfd",
+  },
+  dayCellBlocked: {
+    background: "#f8fafc",
+    cursor: "not-allowed",
+  },
+  emptySlot: {
+    width: "100%",
+    minHeight: "60px",
+    border: "1px dashed #dbeafe",
+    borderRadius: "14px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    color: "#93c5fd",
+    fontSize: "22px",
+    fontWeight: "300",
+    position: "relative",
+    zIndex: 1,
+  },
+  blockedSlot: {
+    width: "100%",
+    minHeight: "60px",
+    borderRadius: "14px",
+    background: "#f1f5f9",
+    opacity: 0.6,
+    position: "relative",
+    zIndex: 1,
+    userSelect: "none",
+  },
+  nowLine: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    height: "2px",
+    background: "#ef4444",
+    zIndex: 30,
+    pointerEvents: "none",
+  },
+  nowDot: {
+    position: "absolute",
+    left: "-1px",
+    top: "-4px",
+    width: "10px",
+    height: "10px",
+    borderRadius: "999px",
+    background: "#ef4444",
+    zIndex: 31,
   },
   eventCard: {
-    height: "100%",
-    borderRadius: "16px",
-    padding: "10px 12px",
-    overflow: "hidden",
-    border: "1px solid transparent",
+    width: "100%",
+    borderRadius: "14px",
+    border: "1px solid rgba(148, 163, 184, 0.25)",
+    padding: "10px",
+    textAlign: "left",
+    cursor: "pointer",
+    boxShadow: "0 6px 18px rgba(15, 23, 42, 0.06)",
+    position: "relative",
+    zIndex: 10,
+  },
+  eventCardActive: {
+    outline: "2px solid #2563eb",
+    boxShadow: "0 0 0 4px rgba(37, 99, 235, 0.14)",
   },
   eventCardAgendado: {
-    background: "linear-gradient(135deg, #dbeafe, #bfdbfe)",
-    border: "1px solid #93c5fd",
+    background: "#eff6ff",
   },
   eventCardConfirmado: {
-    background: "linear-gradient(135deg, #dcfce7, #bbf7d0)",
-    border: "1px solid #86efac",
+    background: "#ecfdf5",
   },
   eventCardConcluido: {
-    background: "linear-gradient(135deg, #ede9fe, #ddd6fe)",
-    border: "1px solid #c4b5fd",
+    background: "#f5f3ff",
   },
   eventCardCancelado: {
-    background: "linear-gradient(135deg, #fee2e2, #fecaca)",
-    border: "1px solid #fca5a5",
+    background: "#fef2f2",
   },
-  eventTime: {
-    fontSize: "12px",
-    fontWeight: "800",
-    color: "#1d4ed8",
+  eventHour: {
+    fontSize: "11px",
+    fontWeight: "700",
+    color: "#334155",
     marginBottom: "6px",
   },
   eventPatient: {
-    fontSize: "14px",
+    fontSize: "13px",
     fontWeight: "800",
     color: "#0f172a",
     marginBottom: "4px",
   },
   eventProcedure: {
-    fontSize: "13px",
+    fontSize: "12px",
     color: "#334155",
     marginBottom: "4px",
   },
-  eventDentist: {
-    fontSize: "12px",
-    color: "#475569",
-    marginBottom: "4px",
+  eventProfessional: {
+    fontSize: "11px",
+    color: "#64748b",
+    marginBottom: "6px",
   },
   eventStatus: {
     fontSize: "11px",
     fontWeight: "700",
-    textTransform: "uppercase",
-    color: "#334155",
+    textTransform: "capitalize",
+    color: "#1e293b",
   },
   modalOverlay: {
     position: "fixed",
@@ -877,108 +1576,201 @@ const styles = {
     alignItems: "center",
     justifyContent: "center",
     padding: "20px",
-    zIndex: 1000,
+    zIndex: 999,
   },
   modal: {
     width: "100%",
     maxWidth: "560px",
-    background: "#ffffff",
-    borderRadius: "24px",
+    background: "#fff",
+    borderRadius: "22px",
     padding: "24px",
-    boxShadow: "0 30px 60px rgba(15, 23, 42, 0.25)",
-    border: "1px solid #e8eef6",
+    boxShadow: "0 20px 60px rgba(15, 23, 42, 0.25)",
+    overflow: "visible",
   },
   modalHeader: {
     display: "flex",
-    alignItems: "flex-start",
     justifyContent: "space-between",
-    gap: "12px",
+    alignItems: "flex-start",
+    gap: "16px",
     marginBottom: "20px",
   },
   modalTitle: {
     margin: 0,
-    fontSize: "24px",
+    fontSize: "26px",
     color: "#0f172a",
   },
   modalSubtitle: {
-    margin: "6px 0 0 0",
+    margin: "8px 0 0 0",
     color: "#64748b",
     fontSize: "14px",
   },
-  modalCloseButton: {
+  closeButton: {
+    border: "1px solid #cbd5e1",
+    background: "#fff",
     width: "40px",
     height: "40px",
     borderRadius: "12px",
-    border: "1px solid #dbe3ee",
-    background: "#fff",
     cursor: "pointer",
     fontSize: "16px",
-    fontWeight: "700",
   },
   form: {
     display: "flex",
     flexDirection: "column",
     gap: "16px",
+    overflow: "visible",
   },
-  formRow: {
+  formGrid: {
     display: "grid",
     gridTemplateColumns: "1fr 1fr",
-    gap: "16px",
+    gap: "12px",
   },
-  formGroup: {
+  fieldGroup: {
     display: "flex",
     flexDirection: "column",
     gap: "8px",
+    overflow: "visible",
   },
   label: {
-    fontSize: "14px",
+    fontSize: "13px",
     fontWeight: "700",
     color: "#334155",
   },
   input: {
+    width: "100%",
     height: "46px",
-    borderRadius: "14px",
-    border: "1px solid #dbe3ee",
-    padding: "0 14px",
-    fontSize: "14px",
+    borderRadius: "12px",
+    border: "1px solid #cbd5e1",
+    padding: "0 12px",
     outline: "none",
+    fontSize: "14px",
     background: "#fff",
     boxSizing: "border-box",
   },
   formError: {
     background: "#fef2f2",
-    color: "#b91c1c",
     border: "1px solid #fecaca",
-    borderRadius: "14px",
-    padding: "12px 14px",
-    fontWeight: "600",
+    color: "#b91c1c",
+    borderRadius: "12px",
+    padding: "12px",
     fontSize: "14px",
+  },
+  formInfo: {
+    background: "#f8fafc",
+    border: "1px solid #e2e8f0",
+    color: "#475569",
+    borderRadius: "12px",
+    padding: "12px",
+    fontSize: "13px",
   },
   formActions: {
     display: "flex",
     justifyContent: "flex-end",
-    gap: "12px",
+    gap: "10px",
     marginTop: "8px",
+    flexWrap: "wrap",
   },
-  secondaryButton: {
-    height: "46px",
-    borderRadius: "14px",
-    border: "1px solid #dbe3ee",
+  confirmOverlay: {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(15, 23, 42, 0.35)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "20px",
+    zIndex: 1000,
+  },
+  confirmBox: {
+    width: "100%",
+    maxWidth: "420px",
     background: "#fff",
-    padding: "0 18px",
-    fontWeight: "700",
-    cursor: "pointer",
+    borderRadius: "20px",
+    padding: "24px",
+    boxShadow: "0 20px 60px rgba(15, 23, 42, 0.25)",
+    border: "1px solid #e2e8f0",
   },
-  submitButton: {
-    height: "46px",
-    borderRadius: "14px",
-    border: "none",
-    background: "linear-gradient(135deg, #2563eb, #1d4ed8)",
-    color: "#fff",
-    padding: "0 18px",
-    fontWeight: "700",
+  confirmTitle: {
+    margin: 0,
+    fontSize: "22px",
+    color: "#0f172a",
+  },
+  confirmText: {
+    margin: "10px 0 0 0",
+    color: "#64748b",
+    fontSize: "14px",
+    lineHeight: 1.5,
+  },
+  confirmActions: {
+    display: "flex",
+    justifyContent: "flex-end",
+    gap: "10px",
+    marginTop: "24px",
+    flexWrap: "wrap",
+  },
+  patientLabelRow: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: "12px",
+    flexWrap: "wrap",
+  },
+  newPatientButton: {
+    height: "32px",
+    borderRadius: "10px",
+    border: "1px solid #bfdbfe",
+    background: "#eff6ff",
+    color: "#1d4ed8",
+    padding: "0 12px",
     cursor: "pointer",
-    boxShadow: "0 12px 24px rgba(37, 99, 235, 0.22)",
+    fontWeight: "700",
+    fontSize: "12px",
+  },
+  patientSearchWrapper: {
+    position: "relative",
+    width: "100%",
+  },
+  patientDropdown: {
+    position: "absolute",
+    top: "calc(100% + 6px)",
+    left: 0,
+    right: 0,
+    border: "1px solid #cbd5e1",
+    borderRadius: "12px",
+    background: "#fff",
+    maxHeight: "220px",
+    overflowY: "auto",
+    display: "flex",
+    flexDirection: "column",
+    boxShadow: "0 16px 34px rgba(15, 23, 42, 0.12)",
+    zIndex: 2000,
+  },
+  patientOption: {
+    border: "none",
+    borderBottom: "1px solid #e2e8f0",
+    background: "#fff",
+    padding: "12px",
+    textAlign: "left",
+    cursor: "pointer",
+    display: "flex",
+    flexDirection: "column",
+    gap: "4px",
+    width: "100%",
+  },
+  patientOptionActive: {
+    background: "#eff6ff",
+  },
+  patientOptionName: {
+    fontSize: "14px",
+    fontWeight: "700",
+    color: "#0f172a",
+  },
+  patientOptionPhone: {
+    fontSize: "12px",
+    color: "#64748b",
+  },
+  patientEmpty: {
+    padding: "14px",
+    color: "#64748b",
+    fontSize: "14px",
   },
 };
 
