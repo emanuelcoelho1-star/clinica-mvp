@@ -15,44 +15,103 @@ router.get("/", auth, (req, res) => {
 });
 
 // Cadastrar paciente
-router.post("/", (req, res) => {
-  const { nome, telefone, observacoes } = req.body;
+router.post("/", auth, (req, res) => {
+  const {
+    nome,
+    telefone,
+    email,
+    comoConheceu,
+    profissao,
+    genero,
+    dataNascimento,
+    cpf,
+    observacoes,
+  } = req.body;
 
   if (!nome) {
     return res.status(400).json({ erro: "Nome é obrigatório." });
   }
 
   const sql = `
-    INSERT INTO pacientes (nome, telefone, observacoes)
-    VALUES (?, ?, ?)
+    INSERT INTO pacientes
+    (nome, telefone, email, como_conheceu, profissao, genero, data_nascimento, cpf, observacoes)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
-  db.run(sql, [nome, telefone || "", observacoes || ""], function (err) {
-    if (err) {
-      return res.status(500).json({ erro: err.message });
-    }
-
-    res.status(201).json({
-      id: this.lastID,
+  db.run(
+    sql,
+    [
       nome,
-      telefone,
-      observacoes,
-    });
-  });
+      telefone || "",
+      email || "",
+      comoConheceu || "",
+      profissao || "",
+      genero || "",
+      dataNascimento || "",
+      cpf || "",
+      observacoes || "",
+    ],
+    function (err) {
+      if (err) {
+        return res.status(500).json({ erro: err.message });
+      }
+
+      res.status(201).json({
+        id: this.lastID,
+        nome,
+        telefone,
+        email,
+        comoConheceu,
+        profissao,
+        genero,
+        dataNascimento,
+        cpf,
+        observacoes,
+      });
+    }
+  );
 });
 
 // Atualizar paciente
-router.put("/:id", (req, res) => {
+router.put("/:id", auth, (req, res) => {
   const { id } = req.params;
-  const { nome, telefone } = req.body;
+
+  const {
+    nome,
+    telefone,
+    email,
+    comoConheceu,
+    profissao,
+    genero,
+    dataNascimento,
+    cpf,
+    observacoes,
+  } = req.body;
 
   if (!nome) {
     return res.status(400).json({ erro: "Nome é obrigatório." });
   }
 
+  const sql = `
+    UPDATE pacientes
+    SET nome = ?, telefone = ?, email = ?, como_conheceu = ?, profissao = ?, genero = ?, data_nascimento = ?, cpf = ?, observacoes = ?
+    WHERE id = ?
+  `;
+
   db.run(
-    "UPDATE pacientes SET nome = ?, telefone = ? WHERE id = ?",
-    [nome, telefone || "", id],
+    sql,
+    [
+      nome,
+      telefone || "",
+      email || "",
+      comoConheceu || "",
+      profissao || "",
+      genero || "",
+      dataNascimento || "",
+      cpf || "",
+      observacoes || "",
+      id,
+    ],
     function (err) {
       if (err) {
         return res.status(500).json({ erro: err.message });
@@ -64,7 +123,7 @@ router.put("/:id", (req, res) => {
 });
 
 // Deletar paciente
-router.delete("/:id", (req, res) => {
+router.delete("/:id", auth, (req, res) => {
   const { id } = req.params;
 
   db.run("DELETE FROM pacientes WHERE id = ?", [id], function (err) {

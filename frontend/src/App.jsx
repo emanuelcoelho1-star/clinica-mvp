@@ -1,14 +1,24 @@
 import { BrowserRouter, Routes, Route, Link, useLocation } from "react-router-dom";
 import Pacientes from "./pages/Pacientes";
-import Consultas from "./pages/Consultas";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import Agenda from "./pages/Agenda";
+import CadastroPaciente from "./pages/CadastroPaciente";
 
 function Layout() {
   const location = useLocation();
 
-  const isActive = (path) => location.pathname === path;
+  const isActive = (path) => {
+    if (path === "/pacientes") {
+      return (
+        location.pathname === "/pacientes" ||
+        location.pathname === "/pacientes/novo" ||
+        location.pathname.startsWith("/pacientes/editar/")
+      );
+    }
+
+    return location.pathname === path;
+  };
 
   return (
     <div style={styles.app}>
@@ -51,16 +61,6 @@ function Layout() {
           >
             Pacientes
           </Link>
-
-          <Link
-            to="/consultas"
-            style={{
-              ...styles.navLink,
-              ...(isActive("/consultas") ? styles.navLinkActive : {}),
-            }}
-          >
-            Consultas
-          </Link>
         </nav>
 
         <button
@@ -80,7 +80,8 @@ function Layout() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/agenda" element={<Agenda />} />
             <Route path="/pacientes" element={<Pacientes />} />
-            <Route path="/consultas" element={<Consultas />} />
+            <Route path="/pacientes/novo" element={<CadastroPaciente />} />
+            <Route path="/pacientes/editar/:id" element={<CadastroPaciente />} />
           </Routes>
         </div>
       </main>

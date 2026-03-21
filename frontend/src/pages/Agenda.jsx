@@ -42,6 +42,13 @@ const nomesMeses = [
   "Dezembro",
 ];
 
+const statusOptions = [
+  { value: "agendado", label: "Agendado" },
+  { value: "confirmado", label: "Confirmado" },
+  { value: "concluido", label: "Concluído" },
+  { value: "cancelado", label: "Cancelado" },
+];
+
 function zerarHora(data) {
   const novaData = new Date(data);
   novaData.setHours(0, 0, 0, 0);
@@ -105,6 +112,120 @@ function obterMinutosDoHorario(horario) {
   if (!horario || !horario.includes(":")) return 0;
   const [hora, minuto] = horario.split(":").map(Number);
   return hora * 60 + minuto;
+}
+
+function obterLabelStatus(status) {
+  const item = statusOptions.find((opcao) => opcao.value === status);
+  return item ? item.label : "Agendado";
+}
+
+function CustomDropdown({
+  value,
+  options,
+  onChange,
+  placeholder = "Selecione",
+  disabled = false,
+  triggerStyle = {},
+  menuStyle = {},
+  optionStyle = {},
+  maxHeight = "220px",
+}) {
+  const [aberto, setAberto] = useState(false);
+  const wrapperRef = useRef(null);
+
+  const opcaoSelecionada = options.find((item) => item.value === value);
+
+  useEffect(() => {
+    function handleClickFora(event) {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
+        setAberto(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickFora);
+    return () => {
+      document.removeEventListener("mousedown", handleClickFora);
+    };
+  }, []);
+
+  function alternar() {
+    if (disabled) return;
+    setAberto((prev) => !prev);
+  }
+
+  return (
+    <div style={styles.customDropdownWrapper} ref={wrapperRef}>
+      <button
+        type="button"
+        onClick={alternar}
+        disabled={disabled}
+        style={{
+          ...styles.customDropdownTrigger,
+          ...(disabled ? styles.customDropdownTriggerDisabled : {}),
+          ...triggerStyle,
+        }}
+      >
+        <span style={styles.customDropdownText}>
+          {opcaoSelecionada?.label || placeholder}
+        </span>
+
+        <span
+          style={{
+            ...styles.customDropdownArrow,
+            ...(aberto ? styles.customDropdownArrowOpen : {}),
+          }}
+        >
+          ▾
+        </span>
+      </button>
+
+      {aberto && (
+        <div
+          style={{
+            ...styles.customDropdownMenu,
+            maxHeight,
+            ...menuStyle,
+          }}
+        >
+          {options.length === 0 ? (
+            <div style={styles.customDropdownEmpty}>Nenhuma opção</div>
+          ) : (
+            options.map((option, index) => {
+              const selecionado = option.value === value;
+
+              return (
+                <button
+                  key={`${option.value}-${index}`}
+                  type="button"
+                  onClick={() => {
+                    if (option.disabled) return;
+                    onChange(option.value);
+                    setAberto(false);
+                  }}
+                  disabled={option.disabled}
+                  style={{
+                    ...styles.customDropdownOption,
+                    ...(index === options.length - 1
+                      ? styles.customDropdownOptionLast
+                      : {}),
+                    ...(selecionado ? styles.customDropdownOptionActive : {}),
+                    ...(option.disabled
+                      ? styles.customDropdownOptionDisabled
+                      : {}),
+                    ...optionStyle,
+                  }}
+                >
+                  <span style={styles.customDropdownOptionLabel}>
+                    {option.label}
+                  </span>
+                </button>
+              );
+            })
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function Agenda() {
@@ -263,6 +384,13 @@ function Agenda() {
     const lista = consultas.map((item) => item.dentista).filter(Boolean);
     return ["Todos", ...new Set(lista)];
   }, [consultas]);
+
+  const profissionaisOptions = useMemo(() => {
+    return profissionais.map((profissional) => ({
+      value: profissional,
+      label: profissional,
+    }));
+  }, [profissionais]);
 
   const pacientesFiltrados = useMemo(() => {
     const termo = buscaPaciente.toLowerCase().trim();
@@ -688,6 +816,16 @@ function Agenda() {
 
   const horariosDisponiveisForm = horariosDisponiveisNoFormulario();
 
+  const horariosOptions = horarios.map((hora) => {
+    const bloqueado = horarioEstaNoPassado(formData.data, hora);
+
+    return {
+      value: hora,
+      label: hora,
+      disabled: bloqueado && !agendamentoEditando,
+    };
+  });
+
   return (
     <div style={styles.page}>
       <div style={styles.header}>
@@ -723,17 +861,16 @@ function Agenda() {
         </div>
 
         <div style={styles.filters}>
-          <select
-            value={filtroProfissional}
-            onChange={(e) => setFiltroProfissional(e.target.value)}
-            style={styles.select}
-          >
-            {profissionais.map((profissional) => (
-              <option key={profissional} value={profissional}>
-                {profissional}
-              </option>
-            ))}
-          </select>
+          <div style={styles.toolbarDropdown}>
+            <CustomDropdown
+              value={filtroProfissional}
+              options={profissionaisOptions}
+              onChange={setFiltroProfissional}
+              placeholder="Profissional"
+              triggerStyle={styles.selectLike}
+              menuStyle={styles.selectLikeMenu}
+            />
+          </div>
 
           <input
             type="text"
@@ -855,7 +992,7 @@ function Agenda() {
                           </div>
 
                           <div style={styles.eventStatus}>
-                            {agendamento.status}
+                            {obterLabelStatus(agendamento.status)}
                           </div>
                         </button>
                       ) : slotBloqueado ? (
@@ -1005,26 +1142,21 @@ function Agenda() {
 
                 <div style={styles.fieldGroup}>
                   <label style={styles.label}>Horário</label>
-                  <select
-                    name="horario"
-                    value={formData.horario}
-                    onChange={handleInputChange}
-                    style={styles.input}
-                  >
-                    {horarios.map((hora) => {
-                      const bloqueado = horarioEstaNoPassado(formData.data, hora);
 
-                      return (
-                        <option
-                          key={hora}
-                          value={hora}
-                          disabled={bloqueado && !agendamentoEditando}
-                        >
-                          {hora}
-                        </option>
-                      );
-                    })}
-                  </select>
+                  <CustomDropdown
+                    value={formData.horario}
+                    options={horariosOptions}
+                    onChange={(novoHorario) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        horario: novoHorario,
+                      }))
+                    }
+                    placeholder="Selecione o horário"
+                    triggerStyle={styles.inputLikeDropdown}
+                    menuStyle={styles.inputLikeDropdownMenu}
+                    maxHeight="260px"
+                  />
 
                   {!agendamentoEditando && horariosDisponiveisForm.length === 0 && (
                     <div style={styles.formInfo}>
@@ -1048,17 +1180,20 @@ function Agenda() {
 
               <div style={styles.fieldGroup}>
                 <label style={styles.label}>Status</label>
-                <select
-                  name="status"
+
+                <CustomDropdown
                   value={formData.status}
-                  onChange={handleInputChange}
-                  style={styles.input}
-                >
-                  <option value="agendado">Agendado</option>
-                  <option value="confirmado">Confirmado</option>
-                  <option value="concluido">Concluído</option>
-                  <option value="cancelado">Cancelado</option>
-                </select>
+                  options={statusOptions}
+                  onChange={(novoStatus) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      status: novoStatus,
+                    }))
+                  }
+                  placeholder="Selecione o status"
+                  triggerStyle={styles.inputLikeDropdown}
+                  menuStyle={styles.inputLikeDropdownMenu}
+                />
               </div>
 
               {erroFormulario && (
@@ -1272,6 +1407,8 @@ const styles = {
     padding: "16px",
     marginBottom: "20px",
     boxShadow: "0 10px 30px rgba(15, 23, 42, 0.06)",
+    position: "relative",
+    zIndex: 20,
   },
   navigation: {
     display: "flex",
@@ -1313,13 +1450,20 @@ const styles = {
     gap: "10px",
     flexWrap: "wrap",
   },
-  select: {
+  toolbarDropdown: {
+    minWidth: "160px",
+    position: "relative",
+  },
+  selectLike: {
     minWidth: "160px",
     height: "42px",
     borderRadius: "12px",
     border: "1px solid #cbd5e1",
-    padding: "0 12px",
     background: "#fff",
+    padding: "0 12px",
+  },
+  selectLikeMenu: {
+    zIndex: 3000,
   },
   search: {
     minWidth: "240px",
@@ -1646,6 +1790,17 @@ const styles = {
     background: "#fff",
     boxSizing: "border-box",
   },
+  inputLikeDropdown: {
+    width: "100%",
+    height: "46px",
+    borderRadius: "12px",
+    border: "1px solid #cbd5e1",
+    padding: "0 12px",
+    background: "#fff",
+  },
+  inputLikeDropdownMenu: {
+    zIndex: 3000,
+  },
   formError: {
     background: "#fef2f2",
     border: "1px solid #fecaca",
@@ -1768,6 +1923,88 @@ const styles = {
     color: "#64748b",
   },
   patientEmpty: {
+    padding: "14px",
+    color: "#64748b",
+    fontSize: "14px",
+  },
+  customDropdownWrapper: {
+    position: "relative",
+    width: "100%",
+  },
+  customDropdownTrigger: {
+    width: "100%",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: "10px",
+    border: "1px solid #cbd5e1",
+    background: "#fff",
+    borderRadius: "12px",
+    cursor: "pointer",
+    boxSizing: "border-box",
+    fontSize: "14px",
+    color: "#0f172a",
+  },
+  customDropdownTriggerDisabled: {
+    cursor: "not-allowed",
+    opacity: 0.65,
+    background: "#f8fafc",
+  },
+  customDropdownText: {
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+  },
+  customDropdownArrow: {
+    fontSize: "14px",
+    color: "#64748b",
+    transition: "transform 0.2s ease",
+    flexShrink: 0,
+  },
+  customDropdownArrowOpen: {
+    transform: "rotate(180deg)",
+  },
+  customDropdownMenu: {
+    position: "absolute",
+    top: "calc(100% + 6px)",
+    left: 0,
+    right: 0,
+    border: "1px solid #cbd5e1",
+    borderRadius: "12px",
+    background: "#fff",
+    overflowY: "auto",
+    display: "flex",
+    flexDirection: "column",
+    boxShadow: "0 16px 34px rgba(15, 23, 42, 0.12)",
+    zIndex: 2000,
+  },
+  customDropdownOption: {
+    border: "none",
+    borderBottom: "1px solid #e2e8f0",
+    background: "#fff",
+    padding: "12px",
+    textAlign: "left",
+    cursor: "pointer",
+    width: "100%",
+    fontSize: "14px",
+    color: "#0f172a",
+  },
+  customDropdownOptionLast: {
+    borderBottom: "none",
+  },
+  customDropdownOptionActive: {
+    background: "#eff6ff",
+  },
+  customDropdownOptionDisabled: {
+    color: "#94a3b8",
+    background: "#f8fafc",
+    cursor: "not-allowed",
+  },
+  customDropdownOptionLabel: {
+    fontSize: "14px",
+    fontWeight: "600",
+  },
+  customDropdownEmpty: {
     padding: "14px",
     color: "#64748b",
     fontSize: "14px",
