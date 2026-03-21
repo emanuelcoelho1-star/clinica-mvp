@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Link, useLocation } from "react-router-do
 import Pacientes from "./pages/Pacientes";
 import Consultas from "./pages/Consultas";
 import Dashboard from "./pages/Dashboard";
+import Login from "./pages/Login";
 
 function Layout() {
   const location = useLocation();
@@ -50,6 +51,16 @@ function Layout() {
             Consultas
           </Link>
         </nav>
+
+        <button
+          style={styles.logoutButton}
+          onClick={() => {
+            localStorage.removeItem("token");
+            window.location.reload();
+          }}
+        >
+          Sair
+        </button>
       </aside>
 
       <main style={styles.main}>
@@ -64,9 +75,17 @@ function Layout() {
 }
 
 function App() {
+  const token = localStorage.getItem("token");
+
   return (
     <BrowserRouter>
-      <Layout />
+      <Routes>
+        {!token ? (
+          <Route path="*" element={<Login />} />
+        ) : (
+          <Route path="/*" element={<Layout />} />
+        )}
+      </Routes>
     </BrowserRouter>
   );
 }
@@ -86,6 +105,8 @@ const styles = {
     padding: "24px 18px",
     boxSizing: "border-box",
     boxShadow: "4px 0 20px rgba(15, 23, 42, 0.15)",
+    display: "flex",
+    flexDirection: "column",
   },
   brandBox: {
     display: "flex",
@@ -134,6 +155,16 @@ const styles = {
     background: "linear-gradient(135deg, #2563eb, #1d4ed8)",
     color: "#fff",
     boxShadow: "0 10px 20px rgba(37, 99, 235, 0.25)",
+  },
+  logoutButton: {
+    marginTop: "20px",
+    padding: "12px",
+    borderRadius: "12px",
+    border: "none",
+    backgroundColor: "#ef4444",
+    color: "#fff",
+    fontWeight: "600",
+    cursor: "pointer",
   },
   main: {
     flex: 1,

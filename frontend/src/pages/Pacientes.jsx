@@ -7,7 +7,13 @@ function Pacientes() {
   const [pacienteEditando, setPacienteEditando] = useState(null);
 
   const carregarPacientes = () => {
-    fetch("http://localhost:3001/pacientes")
+    const token = localStorage.getItem("token");
+
+    fetch("http://localhost:3001/pacientes", {
+      headers: {
+        Authorization: token,
+      },
+    })
       .then((res) => res.json())
       .then((data) => setPacientes(data))
       .catch((err) => console.error("Erro ao carregar pacientes:", err));
@@ -23,6 +29,8 @@ function Pacientes() {
       return;
     }
 
+    const token = localStorage.getItem("token");
+
     try {
       let resposta;
 
@@ -31,14 +39,20 @@ function Pacientes() {
           `http://localhost:3001/pacientes/${pacienteEditando.id}`,
           {
             method: "PUT",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: token,
+            },
             body: JSON.stringify({ nome, telefone }),
           }
         );
       } else {
         resposta = await fetch("http://localhost:3001/pacientes", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: token,
+          },
           body: JSON.stringify({ nome, telefone }),
         });
       }
@@ -58,9 +72,14 @@ function Pacientes() {
   const deletarPaciente = async (id) => {
     if (!confirm("Tem certeza que deseja excluir?")) return;
 
+    const token = localStorage.getItem("token");
+
     try {
       const resposta = await fetch(`http://localhost:3001/pacientes/${id}`, {
         method: "DELETE",
+        headers: {
+          Authorization: token,
+        },
       });
 
       if (!resposta.ok) throw new Error("Erro ao excluir paciente");

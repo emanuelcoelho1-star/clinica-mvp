@@ -5,12 +5,22 @@ function Dashboard() {
   const [consultas, setConsultas] = useState([]);
 
   useEffect(() => {
-    fetch("http://localhost:3001/pacientes")
+    const token = localStorage.getItem("token");
+
+    fetch("http://localhost:3001/pacientes", {
+      headers: {
+        Authorization: token,
+      },
+    })
       .then((res) => res.json())
       .then((data) => setPacientes(data))
       .catch((err) => console.error("Erro ao buscar pacientes:", err));
 
-    fetch("http://localhost:3001/consultas")
+    fetch("http://localhost:3001/consultas", {
+      headers: {
+        Authorization: token,
+      },
+    })
       .then((res) => res.json())
       .then((data) => setConsultas(data))
       .catch((err) => console.error("Erro ao buscar consultas:", err));

@@ -32,6 +32,14 @@ db.serialize(() => {
       FOREIGN KEY (paciente_id) REFERENCES pacientes (id)
     )
   `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS usuarios (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      email TEXT UNIQUE NOT NULL,
+      senha TEXT NOT NULL
+    )
+  `);
 });
 
 module.exports = db;

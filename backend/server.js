@@ -3,6 +3,7 @@ const cors = require("cors");
 
 const pacientesRoutes = require("./routes/pacientes");
 const consultasRoutes = require("./routes/consultas");
+const authRoutes = require("./routes/auth");
 
 require("./database");
 
@@ -18,6 +19,7 @@ app.get("/", (req, res) => {
 
 app.use("/pacientes", pacientesRoutes);
 app.use("/consultas", consultasRoutes);
+app.use("/auth", authRoutes);
 
 app.listen(PORT, () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);

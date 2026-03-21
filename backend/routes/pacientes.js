@@ -1,9 +1,10 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../database");
+const auth = require("../middleware/auth");
 
 // Listar pacientes
-router.get("/", (req, res) => {
+router.get("/", auth, (req, res) => {
   db.all("SELECT * FROM pacientes ORDER BY id DESC", [], (err, rows) => {
     if (err) {
       return res.status(500).json({ erro: err.message });
