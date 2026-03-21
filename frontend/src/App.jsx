@@ -64,11 +64,13 @@ function Layout() {
       </aside>
 
       <main style={styles.main}>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/pacientes" element={<Pacientes />} />
-          <Route path="/consultas" element={<Consultas />} />
-        </Routes>
+        <div style={styles.contentWrapper}>
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/pacientes" element={<Pacientes />} />
+            <Route path="/consultas" element={<Consultas />} />
+          </Routes>
+        </div>
       </main>
     </div>
   );
@@ -94,46 +96,51 @@ const styles = {
   app: {
     display: "flex",
     minHeight: "100vh",
-    backgroundColor: "#f8fafc",
-    fontFamily:
-      "'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+    background: "linear-gradient(180deg, #f8fafc 0%, #eef4ff 100%)",
+    fontFamily: "'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
   },
   sidebar: {
     width: "260px",
+    minWidth: "260px",
     background: "linear-gradient(180deg, #0f172a 0%, #111827 100%)",
     color: "#fff",
     padding: "24px 18px",
     boxSizing: "border-box",
-    boxShadow: "4px 0 20px rgba(15, 23, 42, 0.15)",
+    boxShadow: "8px 0 30px rgba(15, 23, 42, 0.12)",
     display: "flex",
     flexDirection: "column",
+    position: "sticky",
+    top: 0,
+    height: "100vh",
   },
   brandBox: {
     display: "flex",
     alignItems: "center",
     gap: "14px",
-    marginBottom: "30px",
-    padding: "10px",
-    borderRadius: "16px",
-    backgroundColor: "rgba(255,255,255,0.04)",
+    marginBottom: "28px",
+    padding: "12px",
+    borderRadius: "18px",
+    backgroundColor: "rgba(255,255,255,0.05)",
+    border: "1px solid rgba(255,255,255,0.08)",
   },
   brandIcon: {
-    width: "46px",
-    height: "46px",
-    borderRadius: "14px",
+    width: "48px",
+    height: "48px",
+    borderRadius: "16px",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     fontSize: "22px",
     background: "linear-gradient(135deg, #3b82f6, #2563eb)",
+    boxShadow: "0 10px 20px rgba(37, 99, 235, 0.35)",
   },
   brandTitle: {
     margin: 0,
     fontSize: "20px",
-    fontWeight: "700",
+    fontWeight: "800",
   },
   brandSubtitle: {
-    margin: "2px 0 0 0",
+    margin: "4px 0 0 0",
     fontSize: "13px",
     color: "#cbd5e1",
   },
@@ -147,29 +154,34 @@ const styles = {
     textDecoration: "none",
     padding: "14px 16px",
     borderRadius: "14px",
-    backgroundColor: "transparent",
-    transition: "0.2s",
-    fontWeight: "500",
+    fontWeight: "600",
+    border: "1px solid transparent",
   },
   navLinkActive: {
     background: "linear-gradient(135deg, #2563eb, #1d4ed8)",
     color: "#fff",
-    boxShadow: "0 10px 20px rgba(37, 99, 235, 0.25)",
+    boxShadow: "0 12px 24px rgba(37, 99, 235, 0.25)",
   },
   logoutButton: {
-    marginTop: "20px",
-    padding: "12px",
-    borderRadius: "12px",
+    marginTop: "auto",
+    padding: "14px",
+    borderRadius: "14px",
     border: "none",
-    backgroundColor: "#ef4444",
+    background: "linear-gradient(135deg, #ef4444, #dc2626)",
     color: "#fff",
-    fontWeight: "600",
+    fontWeight: "700",
     cursor: "pointer",
+    boxShadow: "0 12px 22px rgba(239, 68, 68, 0.25)",
   },
   main: {
     flex: 1,
-    padding: "32px",
+    width: "100%",
+    padding: "28px",
     boxSizing: "border-box",
+    minWidth: 0,
+  },
+  contentWrapper: {
+    width: "100%",
   },
 };
 

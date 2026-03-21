@@ -153,22 +153,23 @@ function Dashboard() {
 const styles = {
   hero: {
     background: "linear-gradient(135deg, #eff6ff, #dbeafe)",
-    borderRadius: "24px",
-    padding: "28px",
+    borderRadius: "26px",
+    padding: "30px",
     marginBottom: "24px",
     border: "1px solid #dbeafe",
+    boxShadow: "0 18px 36px rgba(37, 99, 235, 0.08)",
   },
   heroTag: {
     margin: 0,
     color: "#2563eb",
-    fontWeight: "700",
-    fontSize: "13px",
+    fontWeight: "800",
+    fontSize: "12px",
     textTransform: "uppercase",
-    letterSpacing: "0.08em",
+    letterSpacing: "0.1em",
   },
   title: {
-    margin: "8px 0 8px 0",
-    fontSize: "32px",
+    margin: "10px 0 10px 0",
+    fontSize: "34px",
     color: "#0f172a",
   },
   subtitle: {
@@ -178,15 +179,15 @@ const styles = {
   },
   statsGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(4, 1fr)",
+    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
     gap: "18px",
     marginBottom: "24px",
   },
   statCard: {
     backgroundColor: "#ffffff",
-    borderRadius: "20px",
-    padding: "22px",
-    boxShadow: "0 12px 30px rgba(15, 23, 42, 0.06)",
+    borderRadius: "22px",
+    padding: "24px",
+    boxShadow: "0 14px 32px rgba(15, 23, 42, 0.06)",
     border: "1px solid #eef2f7",
   },
   statLabel: {
@@ -196,25 +197,25 @@ const styles = {
     marginBottom: "10px",
   },
   statNumber: {
-    fontSize: "32px",
+    fontSize: "34px",
     color: "#0f172a",
   },
   grid: {
     display: "grid",
-    gridTemplateColumns: "1.2fr 1fr",
+    gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
     gap: "20px",
     marginBottom: "20px",
   },
   gridBottom: {
     display: "grid",
-    gridTemplateColumns: "1fr 1fr",
+    gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
     gap: "20px",
   },
   cardLarge: {
     backgroundColor: "#ffffff",
-    borderRadius: "20px",
+    borderRadius: "22px",
     padding: "24px",
-    boxShadow: "0 12px 30px rgba(15, 23, 42, 0.06)",
+    boxShadow: "0 14px 32px rgba(15, 23, 42, 0.06)",
     border: "1px solid #eef2f7",
   },
   cardTitle: {
@@ -232,6 +233,7 @@ const styles = {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
+    gap: "12px",
     padding: "14px 0",
     borderBottom: "1px solid #f1f5f9",
   },
@@ -257,6 +259,7 @@ const styles = {
     borderRadius: "999px",
     fontSize: "13px",
     fontWeight: "700",
+    whiteSpace: "nowrap",
   },
   status: {
     color: "#475569",
@@ -266,18 +269,18 @@ const styles = {
     color: "#64748b",
   },
   highlight: {
-    borderRadius: "20px",
+    borderRadius: "22px",
     padding: "28px",
     background: "linear-gradient(135deg, #2563eb, #1d4ed8)",
     color: "#ffffff",
-    boxShadow: "0 16px 35px rgba(37, 99, 235, 0.28)",
+    boxShadow: "0 18px 35px rgba(37, 99, 235, 0.28)",
   },
   highlightMini: {
     margin: 0,
-    fontSize: "13px",
+    fontSize: "12px",
     textTransform: "uppercase",
     letterSpacing: "0.08em",
-    opacity: 0.9,
+    opacity: 0.92,
   },
   highlightTitle: {
     marginTop: "10px",
@@ -286,8 +289,8 @@ const styles = {
   },
   highlightText: {
     margin: 0,
-    lineHeight: 1.6,
-    opacity: 0.95,
+    lineHeight: 1.7,
+    opacity: 0.96,
   },
 };
 

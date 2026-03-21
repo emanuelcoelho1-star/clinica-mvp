@@ -155,7 +155,7 @@ function Pacientes() {
           <ul style={styles.list}>
             {pacientes.map((paciente) => (
               <li key={paciente.id} style={styles.listItem}>
-                <div>
+                <div style={styles.patientInfo}>
                   <strong style={styles.name}>{paciente.nome}</strong>
                   <p style={styles.phone}>{paciente.telefone || "Sem telefone"}</p>
                 </div>
@@ -191,7 +191,7 @@ const styles = {
   title: {
     margin: 0,
     color: "#0f172a",
-    fontSize: "30px",
+    fontSize: "32px",
   },
   subtitle: {
     marginTop: "8px",
@@ -199,9 +199,9 @@ const styles = {
   },
   card: {
     backgroundColor: "#ffffff",
-    borderRadius: "20px",
+    borderRadius: "22px",
     padding: "24px",
-    boxShadow: "0 12px 30px rgba(15, 23, 42, 0.06)",
+    boxShadow: "0 14px 32px rgba(15, 23, 42, 0.06)",
     border: "1px solid #eef2f7",
     marginBottom: "20px",
   },
@@ -212,7 +212,7 @@ const styles = {
   },
   formGrid: {
     display: "grid",
-    gridTemplateColumns: "1fr 1fr",
+    gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
     gap: "14px",
     marginBottom: "16px",
   },
@@ -228,6 +228,7 @@ const styles = {
   },
   actionsTop: {
     display: "flex",
+    flexWrap: "wrap",
     gap: "12px",
   },
   primaryButton: {
@@ -236,7 +237,7 @@ const styles = {
     padding: "13px 18px",
     background: "linear-gradient(135deg, #2563eb, #1d4ed8)",
     color: "#fff",
-    fontWeight: "600",
+    fontWeight: "700",
     cursor: "pointer",
     boxShadow: "0 10px 20px rgba(37, 99, 235, 0.22)",
   },
@@ -246,7 +247,7 @@ const styles = {
     padding: "13px 18px",
     backgroundColor: "#e2e8f0",
     color: "#0f172a",
-    fontWeight: "600",
+    fontWeight: "700",
     cursor: "pointer",
   },
   list: {
@@ -258,8 +259,13 @@ const styles = {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
+    gap: "12px",
     padding: "16px 0",
     borderBottom: "1px solid #f1f5f9",
+    flexWrap: "wrap",
+  },
+  patientInfo: {
+    minWidth: "220px",
   },
   name: {
     color: "#0f172a",
@@ -273,6 +279,7 @@ const styles = {
   itemActions: {
     display: "flex",
     gap: "10px",
+    flexWrap: "wrap",
   },
   editButton: {
     backgroundColor: "#f59e0b",
@@ -281,7 +288,7 @@ const styles = {
     padding: "10px 14px",
     borderRadius: "12px",
     cursor: "pointer",
-    fontWeight: "600",
+    fontWeight: "700",
   },
   deleteButton: {
     backgroundColor: "#ef4444",
@@ -290,7 +297,7 @@ const styles = {
     padding: "10px 14px",
     borderRadius: "12px",
     cursor: "pointer",
-    fontWeight: "600",
+    fontWeight: "700",
   },
   empty: {
     color: "#64748b",
