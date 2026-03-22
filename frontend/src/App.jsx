@@ -4,6 +4,7 @@ import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import Agenda from "./pages/Agenda";
 import CadastroPaciente from "./pages/CadastroPaciente";
+import ProntuarioPaciente from "./pages/ProntuarioPaciente";
 
 function Layout() {
   const location = useLocation();
@@ -13,7 +14,8 @@ function Layout() {
       return (
         location.pathname === "/pacientes" ||
         location.pathname === "/pacientes/novo" ||
-        location.pathname.startsWith("/pacientes/editar/")
+        location.pathname.startsWith("/pacientes/editar/") ||
+        location.pathname.startsWith("/pacientes/")
       );
     }
 
@@ -82,6 +84,7 @@ function Layout() {
             <Route path="/pacientes" element={<Pacientes />} />
             <Route path="/pacientes/novo" element={<CadastroPaciente />} />
             <Route path="/pacientes/editar/:id" element={<CadastroPaciente />} />
+            <Route path="/pacientes/:id" element={<ProntuarioPaciente />} />
           </Routes>
         </div>
       </main>
