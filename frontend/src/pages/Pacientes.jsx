@@ -6,6 +6,7 @@ function Pacientes() {
   const [pacientes, setPacientes] = useState([]);
   const [busca, setBusca] = useState("");
   const [carregando, setCarregando] = useState(true);
+  const [hoveredId, setHoveredId] = useState(null);
 
   const carregarPacientes = () => {
     const token = localStorage.getItem("token");
@@ -87,22 +88,21 @@ function Pacientes() {
 
   return (
     <div style={styles.page}>
+
       {/* Hero section */}
       <div style={styles.hero}>
         <div style={styles.heroLeft}>
+          <span style={styles.headerBadge}>Gestão de pacientes</span>
           <h1 style={styles.heroTitle}>Pacientes</h1>
           <p style={styles.heroSub}>
-            Gerencie os pacientes cadastrados na clínica.
+            Você tem{" "}
+            <strong style={{ color: "#2563eb" }}>
+              {pacientes.length} paciente{pacientes.length !== 1 ? "s" : ""}
+            </strong>{" "}
+            cadastrado{pacientes.length !== 1 ? "s" : ""} no sistema.
           </p>
         </div>
-
         <div style={styles.heroRight}>
-          <input
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-            placeholder="Buscar paciente..."
-            style={styles.searchInput}
-          />
           <button
             style={styles.primaryButton}
             onClick={() => navigate("/pacientes/novo")}
@@ -112,25 +112,60 @@ function Pacientes() {
         </div>
       </div>
 
+      {/* Toolbar de busca */}
+      <div style={styles.toolbar}>
+        <input
+          value={busca}
+          onChange={(e) => setBusca(e.target.value)}
+          placeholder="Buscar por nome, CPF ou telefone..."
+          style={styles.searchInput}
+        />
+        <button style={styles.btnRefresh} onClick={carregarPacientes}>
+          ↻ Atualizar
+        </button>
+      </div>
+
       {/* Card principal */}
       <div style={styles.sectionCard}>
         <div style={styles.sectionHeader}>
           <h2 style={styles.sectionTitle}>
-            Lista de pacientes ({pacientesFiltrados.length})
+            Lista de pacientes{" "}
+            <span style={styles.countBadge}>{pacientesFiltrados.length}</span>
           </h2>
         </div>
 
         {pacientesFiltrados.length === 0 ? (
           <div style={styles.emptyState}>
             <span style={styles.emptyIcon}>👥</span>
-            <p style={styles.emptyText}>
-              {busca ? "Nenhum paciente encontrado." : "Nenhum paciente cadastrado."}
+            <p style={styles.emptyTitle}>
+              {busca ? "Nenhum resultado encontrado" : "Nenhum paciente cadastrado"}
             </p>
+            <p style={styles.emptyText}>
+              {busca
+                ? "Tente buscar por outro nome, CPF ou telefone."
+                : "Comece cadastrando o primeiro paciente da clínica."}
+            </p>
+            {!busca && (
+              <button
+                style={{ ...styles.primaryButton, marginTop: "8px" }}
+                onClick={() => navigate("/pacientes/novo")}
+              >
+                + Cadastrar primeiro paciente
+              </button>
+            )}
           </div>
         ) : (
           <ul style={styles.list}>
             {pacientesFiltrados.map((p) => (
-              <li key={p.id} style={styles.pacienteRow}>
+              <li
+                key={p.id}
+                style={{
+                  ...styles.pacienteRow,
+                  backgroundColor: hoveredId === p.id ? "#f8fafc" : "transparent",
+                }}
+                onMouseEnter={() => setHoveredId(p.id)}
+                onMouseLeave={() => setHoveredId(null)}
+              >
                 {/* Avatar */}
                 <div style={styles.avatar}>
                   {(p.nome || "?").charAt(0).toUpperCase()}
@@ -139,23 +174,35 @@ function Pacientes() {
                 {/* Info */}
                 <div style={styles.pacienteInfo}>
                   <button
-                    style={styles.nomeButton}
+                    style={{
+                      ...styles.nomeButton,
+                      color: hoveredId === p.id ? "#2563eb" : "#0f172a",
+                    }}
                     onClick={() => navigate(`/pacientes/${p.id}`)}
                     title="Abrir prontuário"
                   >
                     {p.nome}
                   </button>
-                  
+
                   <div style={styles.pacienteDetalhes}>
                     <span style={styles.detalhe}>
                       <span style={styles.label}>CPF:</span> {p.cpf || "-"}
                     </span>
-                    
+
                     {p.telefone && (
                       <>
                         <span style={styles.separator}>|</span>
                         <span style={styles.detalhe}>
                           <span style={styles.label}>Tel:</span> {p.telefone}
+                        </span>
+                      </>
+                    )}
+
+                    {p.email && (
+                      <>
+                        <span style={styles.separator}>|</span>
+                        <span style={styles.detalhe}>
+                          <span style={styles.label}>Email:</span> {p.email}
                         </span>
                       </>
                     )}
@@ -238,11 +285,12 @@ function Pacientes() {
   );
 }
 
+// ---- Estilos ----
 const styles = {
   page: {
     display: "flex",
     flexDirection: "column",
-    gap: "24px",
+    gap: "20px",
   },
 
   // Loading
@@ -286,6 +334,20 @@ const styles = {
     flexDirection: "column",
     gap: "6px",
   },
+  headerBadge: {
+    display: "inline-block",
+    padding: "5px 12px",
+    borderRadius: "999px",
+    background: "#eff6ff",
+    color: "#1d4ed8",
+    fontSize: "11px",
+    fontWeight: "700",
+    letterSpacing: "0.06em",
+    textTransform: "uppercase",
+    marginBottom: "4px",
+    border: "1px solid #bfdbfe",
+    alignSelf: "flex-start",
+  },
   heroTitle: {
     margin: 0,
     fontSize: "30px",
@@ -304,18 +366,6 @@ const styles = {
     alignItems: "center",
     flexWrap: "wrap",
   },
-  searchInput: {
-    minWidth: "240px",
-    padding: "12px 16px",
-    borderRadius: "12px",
-    border: "1px solid #dbeafe",
-    backgroundColor: "#ffffff",
-    fontSize: "14px",
-    boxSizing: "border-box",
-    outline: "none",
-    color: "#0f172a",
-    transition: "all 0.2s ease",
-  },
   primaryButton: {
     border: "none",
     borderRadius: "12px",
@@ -329,6 +379,44 @@ const styles = {
     whiteSpace: "nowrap",
     height: "44px",
     transition: "all 0.2s ease",
+  },
+
+  // Toolbar
+  toolbar: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    flexWrap: "wrap",
+    background: "#ffffff",
+    border: "1px solid #eef2f7",
+    borderRadius: "20px",
+    padding: "14px 20px",
+    boxShadow: "0 4px 16px rgba(15,23,42,0.05)",
+  },
+  searchInput: {
+    flex: 1,
+    minWidth: "240px",
+    height: "40px",
+    borderRadius: "11px",
+    border: "1px solid #e2e8f0",
+    padding: "0 14px",
+    outline: "none",
+    fontSize: "14px",
+    color: "#0f172a",
+    background: "#fff",
+    boxSizing: "border-box",
+  },
+  btnRefresh: {
+    height: "40px",
+    borderRadius: "11px",
+    border: "1px solid #e2e8f0",
+    background: "#fff",
+    color: "#475569",
+    padding: "0 14px",
+    cursor: "pointer",
+    fontWeight: "600",
+    fontSize: "13px",
+    whiteSpace: "nowrap",
   },
 
   // Section card
@@ -352,6 +440,21 @@ const styles = {
     fontWeight: "800",
     color: "#0f172a",
     letterSpacing: "-0.01em",
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+  },
+  countBadge: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: "#eff6ff",
+    color: "#2563eb",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: "700",
+    padding: "2px 10px",
+    border: "1px solid #bfdbfe",
   },
 
   // Empty state
@@ -359,17 +462,25 @@ const styles = {
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
-    gap: "8px",
-    padding: "48px 0",
+    gap: "10px",
+    padding: "56px 20px",
   },
   emptyIcon: {
     fontSize: "48px",
   },
+  emptyTitle: {
+    margin: 0,
+    fontSize: "17px",
+    fontWeight: "800",
+    color: "#0f172a",
+  },
   emptyText: {
     margin: 0,
     color: "#94a3b8",
-    fontSize: "15px",
+    fontSize: "14px",
     fontWeight: "500",
+    textAlign: "center",
+    maxWidth: "320px",
   },
 
   // List
@@ -385,30 +496,31 @@ const styles = {
   // Paciente row
   pacienteRow: {
     display: "flex",
-    alignItems: "flex-start",
+    alignItems: "center",
     gap: "14px",
-    padding: "16px 0",
+    padding: "14px 10px",
     borderBottom: "1px solid #f1f5f9",
+    borderRadius: "12px",
     transition: "background 0.15s ease",
+    cursor: "default",
   },
   avatar: {
-    width: "42px",
-    height: "42px",
-    borderRadius: "12px",
+    width: "46px",
+    height: "46px",
+    borderRadius: "13px",
     background: "linear-gradient(135deg, #dbeafe, #bfdbfe)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    fontSize: "16px",
+    fontSize: "17px",
     fontWeight: "800",
     color: "#1d4ed8",
     flexShrink: 0,
-    marginTop: "2px",
   },
   pacienteInfo: {
     display: "flex",
     flexDirection: "column",
-    gap: "6px",
+    gap: "5px",
     flex: 1,
     minWidth: 0,
   },
@@ -418,7 +530,6 @@ const styles = {
     padding: 0,
     margin: 0,
     cursor: "pointer",
-    color: "#0f172a",
     fontSize: "14px",
     fontWeight: "700",
     textAlign: "left",
@@ -426,7 +537,7 @@ const styles = {
   },
   pacienteDetalhes: {
     display: "flex",
-    gap: "12px",
+    gap: "10px",
     alignItems: "center",
     flexWrap: "wrap",
   },
@@ -453,8 +564,8 @@ const styles = {
     flexShrink: 0,
   },
   whatsappButton: {
-    width: "40px",
-    height: "40px",
+    width: "44px",
+    height: "44px",
     borderRadius: "12px",
     border: "1px solid #dcfce7",
     background: "linear-gradient(180deg, #f0fdf4 0%, #f8fff9 100%)",
@@ -468,8 +579,8 @@ const styles = {
     transition: "all 0.2s ease",
   },
   editButton: {
-    width: "40px",
-    height: "40px",
+    width: "44px",
+    height: "44px",
     borderRadius: "12px",
     border: "1px solid #fde7b0",
     background: "linear-gradient(180deg, #fffdf7 0%, #fff7e6 100%)",
@@ -482,8 +593,8 @@ const styles = {
     transition: "all 0.2s ease",
   },
   deleteButton: {
-    width: "40px",
-    height: "40px",
+    width: "44px",
+    height: "44px",
     borderRadius: "12px",
     border: "1px solid #fecaca",
     background: "linear-gradient(180deg, #fffafa 0%, #fff1f1 100%)",
