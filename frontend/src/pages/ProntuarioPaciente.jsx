@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import AbaAnamneses from "../components/AbaAnamneses";
 import AbaOrcamentos from "../components/AbaOrcamentos";
+import AbaArquivos from "../components/AbaArquivos";
 
 /* ── Helpers ─────────────────────────────────────────────── */
 const AVATAR_PALETTES = [
@@ -161,7 +162,7 @@ const ABAS = [
   { id: "arquivos", label: "Arquivos", icon: Icons.fileText },
 ];
 
-/* ── InfoCard component ────────────────���─────────────────── */
+/* ── InfoCard component ──────────────────────────────────── */
 function InfoCard({ title, icon, items }) {
   return (
     <div style={s.card}>
@@ -446,18 +447,23 @@ function ProntuarioPaciente() {
         </div>
       )}
 
-      {/* ── Tab: Anamneses ──────────────────────────────── */}
+      {/* ── Tab: Anamneses ─────────────────────────────── */}
       {abaAtiva === "anamneses" && (
         <AbaAnamneses pacienteId={id} />
       )}
 
-      {/* ── Tab: Orçamentos ─────────────────────────────── */}
+      {/* ── Tab: Orçamentos ────────────────────────────── */}
       {abaAtiva === "orcamentos" && (
         <AbaOrcamentos pacienteId={id} />
       )}
 
-      {/* ── Tab: Placeholder (abas ainda não implementadas) ── */}
-      {!["visao-geral", "anamneses", "orcamentos"].includes(abaAtiva) && (
+      {/* ── Tab: Arquivos ──────────────────────────────── */}
+      {abaAtiva === "arquivos" && (
+        <AbaArquivos pacienteId={id} />
+      )}
+
+      {/* ── Tabs ainda não implementadas ───────────────── */}
+      {!["visao-geral", "anamneses", "orcamentos", "arquivos"].includes(abaAtiva) && (
         <div style={s.placeholderCard}>
           {Icons.placeholderSvg}
           <h2 style={s.placeholderTitle}>
