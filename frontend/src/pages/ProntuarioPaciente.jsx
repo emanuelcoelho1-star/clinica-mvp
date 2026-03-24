@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import AbaAnamneses from "../components/AbaAnamneses";
 
 function calcularIdade(dataNascimento) {
   if (!dataNascimento) return "-";
@@ -250,6 +251,7 @@ function ProntuarioPaciente() {
         </div>
       </div>
 
+      {/* ── Aba: Visão geral ─────────────────── */}
       {abaAtiva === "visao-geral" && (
         <div style={styles.grid}>
           <InfoCard
@@ -279,7 +281,13 @@ function ProntuarioPaciente() {
         </div>
       )}
 
-      {abaAtiva !== "visao-geral" && (
+      {/* ── Aba: Anamneses ───────────────────── */}
+      {abaAtiva === "anamneses" && (
+        <AbaAnamneses pacienteId={id} />
+      )}
+
+      {/* ── Abas futuras (placeholder) ───────── */}
+      {abaAtiva !== "visao-geral" && abaAtiva !== "anamneses" && (
         <div style={styles.placeholderCard}>
           <div style={styles.placeholderIcon}>📁</div>
           <h2 style={styles.placeholderTitle}>

@@ -96,6 +96,53 @@ db.serialize(() => {
     )
   `);
 
+  db.run(`
+    CREATE TABLE IF NOT EXISTS anamneses (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      paciente_id INTEGER NOT NULL,
+      data TEXT NOT NULL,
+      queixa_principal TEXT,
+      historia_medica TEXT,
+      medicamentos TEXT,
+      alergias TEXT,
+      cirurgias_anteriores TEXT,
+      doencas_cronicas TEXT,
+      habitos TEXT,
+      historico_familiar TEXT,
+      observacoes TEXT,
+      pressao_arterial TEXT,
+      frequencia_cardiaca TEXT,
+      glicemia TEXT,
+      created_at TEXT DEFAULT (datetime('now','localtime')),
+      FOREIGN KEY (paciente_id) REFERENCES pacientes(id)
+    )
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS orcamentos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      paciente_id INTEGER NOT NULL,
+      data TEXT NOT NULL,
+      status TEXT DEFAULT 'pendente',
+      desconto REAL DEFAULT 0,
+      observacoes TEXT,
+      created_at TEXT DEFAULT (datetime('now','localtime')),
+      FOREIGN KEY (paciente_id) REFERENCES pacientes(id)
+    )
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS orcamento_itens (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      orcamento_id INTEGER NOT NULL,
+      dente TEXT,
+      procedimento TEXT NOT NULL,
+      valor REAL DEFAULT 0,
+      quantidade INTEGER DEFAULT 1,
+      FOREIGN KEY (orcamento_id) REFERENCES orcamentos(id) ON DELETE CASCADE
+    )
+  `);
+
   adicionarColunaSeNaoExistir("pacientes", "telefone", "TEXT");
   adicionarColunaSeNaoExistir("pacientes", "email", "TEXT");
   adicionarColunaSeNaoExistir("pacientes", "como_conheceu", "TEXT");

@@ -3,6 +3,8 @@ const cors = require("cors");
 
 const pacientesRoutes = require("./routes/pacientes");
 const consultasRoutes = require("./routes/consultas");
+const anamnesesRoutes = require("./routes/anamneses");
+const orcamentosRoutes = require("./routes/orcamentos");
 const authRoutes = require("./routes/auth");
 
 require("./database");
@@ -19,6 +21,8 @@ app.get("/", (req, res) => {
 
 app.use("/pacientes", pacientesRoutes);
 app.use("/consultas", consultasRoutes);
+app.use("/anamneses", anamnesesRoutes);
+app.use("/orcamentos", orcamentosRoutes);
 app.use("/auth", authRoutes);
 
 app.listen(PORT, () => {
