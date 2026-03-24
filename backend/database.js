@@ -143,6 +143,22 @@ db.serialize(() => {
     )
   `);
 
+  /* ── NOVA TABELA: arquivos ──────────────────────────── */
+  db.run(`
+    CREATE TABLE IF NOT EXISTS arquivos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      paciente_id INTEGER NOT NULL,
+      nome_original TEXT NOT NULL,
+      nome_salvo TEXT NOT NULL,
+      tamanho INTEGER DEFAULT 0,
+      mimetype TEXT,
+      categoria TEXT DEFAULT 'outro',
+      descricao TEXT,
+      created_at TEXT DEFAULT (datetime('now','localtime')),
+      FOREIGN KEY (paciente_id) REFERENCES pacientes(id)
+    )
+  `);
+
   adicionarColunaSeNaoExistir("pacientes", "telefone", "TEXT");
   adicionarColunaSeNaoExistir("pacientes", "email", "TEXT");
   adicionarColunaSeNaoExistir("pacientes", "como_conheceu", "TEXT");
