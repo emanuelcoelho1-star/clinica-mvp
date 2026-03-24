@@ -5,6 +5,7 @@ import AbaOrcamentos from "../components/AbaOrcamentos";
 import AbaDocumentos from "../components/AbaDocumentos";
 import AbaArquivos from "../components/AbaArquivos";
 import AbaPagamentos from "../components/AbaPagamentos";
+import AbaEvolucoes from "../components/AbaEvolucoes";
 
 /* ── Helpers ─────────────────────────────────────────────── */
 const AVATAR_PALETTES = [
@@ -310,7 +311,7 @@ function ProntuarioPaciente() {
   }
 
   /* ── Abas que já têm componente ─────────────────────────── */
-  const ABAS_COM_COMPONENTE = ["visao-geral", "anamneses", "orcamentos", "documentos", "arquivos", "pagamentos"];
+  const ABAS_COM_COMPONENTE = ["visao-geral", "anamneses", "orcamentos", "evolucoes", "documentos", "arquivos", "pagamentos"];
 
   /* ── Render ─────────────────────────────────────────────── */
   return (
@@ -471,6 +472,11 @@ function ProntuarioPaciente() {
       {/* ── Tab: Pagamentos ──────────────────────────────── */}
       {abaAtiva === "pagamentos" && (
         <AbaPagamentos pacienteId={paciente.id} />
+      )}
+
+      {/* ── Tab: Evoluções ────────────────────────────────── */}
+      {abaAtiva === "evolucoes" && (
+        <AbaEvolucoes pacienteId={paciente.id} />
       )}
 
       {/* ── Tab: Documentos ──────────────────────────────── */}

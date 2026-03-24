@@ -195,6 +195,22 @@ db.serialize(() => {
     )
   `);
 
+  /* ── NOVA TABELA: evolucoes ──────────���──────────────── */
+  db.run(`
+    CREATE TABLE IF NOT EXISTS evolucoes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      paciente_id INTEGER NOT NULL,
+      data TEXT NOT NULL,
+      procedimento TEXT,
+      dente TEXT,
+      descricao TEXT,
+      observacoes TEXT,
+      profissional TEXT,
+      created_at TEXT DEFAULT (datetime('now','localtime')),
+      FOREIGN KEY (paciente_id) REFERENCES pacientes(id)
+    )
+  `);
+
   adicionarColunaSeNaoExistir("pacientes", "telefone", "TEXT");
   adicionarColunaSeNaoExistir("pacientes", "email", "TEXT");
   adicionarColunaSeNaoExistir("pacientes", "como_conheceu", "TEXT");
