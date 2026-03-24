@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import AbaAnamneses from "../components/AbaAnamneses";
 import AbaOrcamentos from "../components/AbaOrcamentos";
+import AbaDocumentos from "../components/AbaDocumentos";
 import AbaArquivos from "../components/AbaArquivos";
 
 /* ── Helpers ─────────────────────────────────────────────── */
@@ -301,6 +302,9 @@ function ProntuarioPaciente() {
     );
   }
 
+  /* ── Abas que já têm componente ─────────────────────────── */
+  const ABAS_COM_COMPONENTE = ["visao-geral", "anamneses", "orcamentos", "documentos", "arquivos"];
+
   /* ── Render ─────────────────────────────────────────────── */
   return (
     <div style={s.page}>
@@ -447,23 +451,28 @@ function ProntuarioPaciente() {
         </div>
       )}
 
-      {/* ── Tab: Anamneses ─────────────────────────────── */}
+      {/* ── Tab: Anamneses ───────────────────────────────── */}
       {abaAtiva === "anamneses" && (
-        <AbaAnamneses pacienteId={id} />
+        <AbaAnamneses pacienteId={paciente.id} />
       )}
 
-      {/* ── Tab: Orçamentos ────────────────────────────── */}
+      {/* ── Tab: Orçamentos ──────────────────────────────── */}
       {abaAtiva === "orcamentos" && (
-        <AbaOrcamentos pacienteId={id} />
+        <AbaOrcamentos pacienteId={paciente.id} />
       )}
 
-      {/* ── Tab: Arquivos ──────────────────────────────── */}
+      {/* ── Tab: Documentos ──────────────────────────────── */}
+      {abaAtiva === "documentos" && (
+        <AbaDocumentos pacienteId={paciente.id} />
+      )}
+
+      {/* ── Tab: Arquivos ────────────────────────────────── */}
       {abaAtiva === "arquivos" && (
-        <AbaArquivos pacienteId={id} />
+        <AbaArquivos pacienteId={paciente.id} />
       )}
 
-      {/* ── Tabs ainda não implementadas ───────────────── */}
-      {!["visao-geral", "anamneses", "orcamentos", "arquivos"].includes(abaAtiva) && (
+      {/* ── Tab: Placeholder (abas ainda não implementadas) ── */}
+      {!ABAS_COM_COMPONENTE.includes(abaAtiva) && (
         <div style={s.placeholderCard}>
           {Icons.placeholderSvg}
           <h2 style={s.placeholderTitle}>
