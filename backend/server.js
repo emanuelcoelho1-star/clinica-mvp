@@ -7,6 +7,7 @@ const anamnesesRoutes = require("./routes/anamneses");
 const orcamentosRoutes = require("./routes/orcamentos");
 const arquivosRoutes = require("./routes/arquivos");
 const documentosRoutes = require("./routes/documentos");
+const pagamentosRoutes = require("./routes/pagamentos");
 const authRoutes = require("./routes/auth");
 
 require("./database");
@@ -27,6 +28,7 @@ app.use("/anamneses", anamnesesRoutes);
 app.use("/orcamentos", orcamentosRoutes);
 app.use("/arquivos", arquivosRoutes);
 app.use("/documentos", documentosRoutes);
+app.use("/pagamentos", pagamentosRoutes);
 app.use("/auth", authRoutes);
 
 app.listen(PORT, () => {

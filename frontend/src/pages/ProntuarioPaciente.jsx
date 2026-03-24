@@ -4,6 +4,7 @@ import AbaAnamneses from "../components/AbaAnamneses";
 import AbaOrcamentos from "../components/AbaOrcamentos";
 import AbaDocumentos from "../components/AbaDocumentos";
 import AbaArquivos from "../components/AbaArquivos";
+import AbaPagamentos from "../components/AbaPagamentos";
 
 /* ── Helpers ─────────────────────────────────────────────── */
 const AVATAR_PALETTES = [
@@ -132,6 +133,12 @@ const Icons = {
       <path d="M7 4h.01" /><path d="M12 4h.01" /><path d="M17 4h.01" />
     </svg>
   ),
+  dollarSign: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="12" x2="12" y1="2" y2="22" />
+      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+    </svg>
+  ),
   placeholderSvg: (
     <svg width="56" height="56" viewBox="0 0 120 120" fill="none">
       <rect x="16" y="28" width="88" height="68" rx="14" fill="#f1f5f9" stroke="#e2e8f0" strokeWidth="2" />
@@ -157,7 +164,7 @@ const ABAS = [
   { id: "anamneses", label: "Anamneses", icon: Icons.fileText },
   { id: "orcamentos", label: "Orçamentos", icon: Icons.id },
   { id: "tratamentos", label: "Tratamentos", icon: Icons.calendar },
-  { id: "pagamentos", label: "Pagamentos", icon: Icons.id },
+  { id: "pagamentos", label: "Pagamentos", icon: Icons.dollarSign },
   { id: "evolucoes", label: "Evoluções", icon: Icons.fileText },
   { id: "documentos", label: "Documentos", icon: Icons.fileText },
   { id: "arquivos", label: "Arquivos", icon: Icons.fileText },
@@ -303,7 +310,7 @@ function ProntuarioPaciente() {
   }
 
   /* ── Abas que já têm componente ─────────────────────────── */
-  const ABAS_COM_COMPONENTE = ["visao-geral", "anamneses", "orcamentos", "documentos", "arquivos"];
+  const ABAS_COM_COMPONENTE = ["visao-geral", "anamneses", "orcamentos", "documentos", "arquivos", "pagamentos"];
 
   /* ── Render ─────────────────────────────────────────────── */
   return (
@@ -459,6 +466,11 @@ function ProntuarioPaciente() {
       {/* ── Tab: Orçamentos ──────────────────────────────── */}
       {abaAtiva === "orcamentos" && (
         <AbaOrcamentos pacienteId={paciente.id} />
+      )}
+
+      {/* ── Tab: Pagamentos ──────────────────────────────── */}
+      {abaAtiva === "pagamentos" && (
+        <AbaPagamentos pacienteId={paciente.id} />
       )}
 
       {/* ── Tab: Documentos ──────────────────────────────── */}

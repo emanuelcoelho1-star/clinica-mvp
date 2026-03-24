@@ -175,6 +175,26 @@ db.serialize(() => {
     )
   `);
 
+  /* ── NOVA TABELA: pagamentos ────────────────────────── */
+  db.run(`
+    CREATE TABLE IF NOT EXISTS pagamentos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      paciente_id INTEGER NOT NULL,
+      orcamento_id INTEGER,
+      data TEXT NOT NULL,
+      valor REAL NOT NULL DEFAULT 0,
+      forma_pagamento TEXT NOT NULL DEFAULT 'dinheiro',
+      status TEXT NOT NULL DEFAULT 'confirmado',
+      parcela_atual INTEGER DEFAULT 1,
+      total_parcelas INTEGER DEFAULT 1,
+      descricao TEXT,
+      observacoes TEXT,
+      created_at TEXT DEFAULT (datetime('now','localtime')),
+      FOREIGN KEY (paciente_id) REFERENCES pacientes(id),
+      FOREIGN KEY (orcamento_id) REFERENCES orcamentos(id)
+    )
+  `);
+
   adicionarColunaSeNaoExistir("pacientes", "telefone", "TEXT");
   adicionarColunaSeNaoExistir("pacientes", "email", "TEXT");
   adicionarColunaSeNaoExistir("pacientes", "como_conheceu", "TEXT");
