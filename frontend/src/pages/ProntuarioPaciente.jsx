@@ -6,6 +6,7 @@ import AbaDocumentos from "../components/AbaDocumentos";
 import AbaArquivos from "../components/AbaArquivos";
 import AbaPagamentos from "../components/AbaPagamentos";
 import AbaEvolucoes from "../components/AbaEvolucoes";
+import Odontograma from "../components/Odontograma";
 
 /* ── Helpers ─────────────────────────────────────────────── */
 const AVATAR_PALETTES = [
@@ -437,26 +438,33 @@ function ProntuarioPaciente() {
 
       {/* ── Tab: Visão geral ─────────────────────────────── */}
       {abaAtiva === "visao-geral" && (
-        <div style={s.grid}>
-          <InfoCard title="Dados principais" icon={Icons.user} items={dadosPrincipais} />
-          <InfoCard title="Endereço" icon={Icons.mapPin} items={dadosEndereco} />
-          <InfoCard title="Responsável" icon={Icons.users} items={dadosResponsavel} />
+        <>
+          <div style={s.grid}>
+            <InfoCard title="Dados principais" icon={Icons.user} items={dadosPrincipais} />
+            <InfoCard title="Endereço" icon={Icons.mapPin} items={dadosEndereco} />
+            <InfoCard title="Responsável" icon={Icons.users} items={dadosResponsavel} />
 
-          {/* Observações */}
-          <div style={s.card}>
-            <div style={s.cardHeader}>
-              <div style={s.cardTitleRow}>
-                <span style={s.cardIcon}>{Icons.fileText}</span>
-                <h2 style={s.cardTitle}>Observações</h2>
+            {/* Observações */}
+            <div style={s.card}>
+              <div style={s.cardHeader}>
+                <div style={s.cardTitleRow}>
+                  <span style={s.cardIcon}>{Icons.fileText}</span>
+                  <h2 style={s.cardTitle}>Observações</h2>
+                </div>
+              </div>
+              <div style={s.obsBox}>
+                {paciente.observacoes || (
+                  <span style={s.obsEmpty}>Nenhuma observação cadastrada.</span>
+                )}
               </div>
             </div>
-            <div style={s.obsBox}>
-              {paciente.observacoes || (
-                <span style={s.obsEmpty}>Nenhuma observação cadastrada.</span>
-              )}
-            </div>
           </div>
-        </div>
+
+          {/* ── ODONTOGRAMA ──────────────────────────────── */}
+          <div style={s.odontogramaCard}>
+            <Odontograma pacienteId={paciente.id} />
+          </div>
+        </>
       )}
 
       {/* ── Tab: Anamneses ───────────────────────────────── */}
@@ -705,6 +713,15 @@ const s = {
     borderLeft: "3px solid #e2e8f0",
   },
   obsEmpty: { color: "#c1c9d4", fontStyle: "italic" },
+
+  /* ── Odontograma Card ──────────────────────────────── */
+  odontogramaCard: {
+    background: "#fff",
+    borderRadius: "16px",
+    border: "1px solid #f1f5f9",
+    padding: "24px",
+    marginTop: "4px",
+  },
 
   /* ── Placeholder ──────────────────────────────────── */
   placeholderCard: {
