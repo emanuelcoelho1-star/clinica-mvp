@@ -1,613 +1,1228 @@
-import { useState, useEffect, useCallback } from "react";
-import {
-  api, formatMoney, formatDate, exportarCSV, hoje,
-  Icons, S, Modal, CardKPI, Badge,
-} from "./FinanceiroHelpers";
+import { useEffect, useState, useMemo } from "react";
 
-export default function ContasPagar({ mes, ano }) {
-  const [contas, setContas] = useState([]);
-  const [resumo, setResumo] = useState({});
-  const [categorias, setCategorias] = useState([]);
-  const [formasPagamento, setFormasPagamento] = useState([]);
-  const [loading, setLoading] = useState(true);
+/* ═══════════════════════════════════════════════════════════
+   CONFIG
+   ═══════════════════════════════════════════════════════════ */
+const API = "http://localhost:3001";
 
-  // Modal
-  const [modalAberto, setModalAberto] = useState(false);
-  const [modalPgto, setModalPgto] = useState(false);
-  const [form, setForm] = useState({});
-  const [formPgto, setFormPgto] = useState({});
-  const [salvando, setSalvando] = useState(false);
+function headers() {
+  return {
+    Authorization: localStorage.getItem("token"),
+    "Content-Type": "application/json",
+  };
+}
 
-  // Filtros
-  const [filtroStatus, setFiltroStatus] = useState("");
-  const [filtroCategoria, setFiltroCategoria] = useState("");
-  const [busca, setBusca] = useState("");
-
-  /* ── Carregar dados ────────────────────────── */
-  const carregar = useCallback(async () => {
-    try {
-      setLoading(true);
-      const params = new URLSearchParams({ mes, ano });
-      if (filtroStatus) params.set("status", filtroStatus);
-      if (filtroCategoria) params.set("categoria_id", filtroCategoria);
-
-      const [data, cats, formas] = await Promise.all([
-        api(`/contas-pagar?${params}`),
-        api("/categorias?tipo=despesa"),
-        api("/formas-pagamento"),
-      ]);
-
-      setContas(data.contas || []);
-      setResumo(data.resumo || {});
-      setCategorias(cats || []);
-      setFormasPagamento(formas || []);
-    } catch (e) {
-      console.error("Erro ao carregar contas a pagar:", e);
-    } finally {
-      setLoading(false);
-    }
-  }, [mes, ano, filtroStatus, filtroCategoria]);
-
-  useEffect(() => {
-    carregar();
-  }, [carregar]);
-
-  /* ── Filtro local por busca ────────────────── */
-  const contasFiltradas = contas.filter((c) => {
-    if (!busca) return true;
-    const termo = busca.toLowerCase();
-    return (
-      (c.descricao || "").toLowerCase().includes(termo) ||
-      (c.fornecedor || "").toLowerCase().includes(termo) ||
-      (c.categoria_nome || "").toLowerCase().includes(termo)
-    );
+function fmt(v) {
+  return Number(v || 0).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
   });
+}
 
-  /* ── Ações ─────────────────────────────────── */
-  async function salvar() {
-    try {
-      setSalvando(true);
-      if (form.id) {
-        await api(`/contas-pagar/${form.id}`, {
-          method: "PUT",
-          body: JSON.stringify(form),
-        });
-      } else {
-        await api("/contas-pagar", {
-          method: "POST",
-          body: JSON.stringify(form),
-        });
-      }
-      setModalAberto(false);
-      setForm({});
-      carregar();
-    } catch (e) {
-      alert(e.message);
-    } finally {
-      setSalvando(false);
-    }
-  }
+function fmtData(d) {
+  if (!d) return "—";
+  const p = d.split("-");
+  if (p.length !== 3) return d;
+  return `${p[2]}/${p[1]}/${p[0]}`;
+}
 
-  async function registrarPagamento() {
-    try {
-      setSalvando(true);
-      await api(`/contas-pagar/${formPgto.id}/pagar`, {
-        method: "PUT",
-        body: JSON.stringify({
-          valor_pago: formPgto.valor_pago,
-          data_pagamento: formPgto.data_pagamento || hoje(),
-          forma_pagamento: formPgto.forma_pagamento,
-        }),
-      });
-      setModalPgto(false);
-      setFormPgto({});
-      carregar();
-    } catch (e) {
-      alert(e.message);
-    } finally {
-      setSalvando(false);
-    }
-  }
+/* ═══════════════════════════════════════════════════════════
+   ICONS — Lucide-style inline SVGs
+   ═══════════════════════════════════════════════════════════ */
+const Icons = {
+  dollarSign: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="12" x2="12" y1="2" y2="22" />
+      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+    </svg>
+  ),
+  trendingDown: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="22 17 13.5 8.5 8.5 13.5 2 7" />
+      <polyline points="16 17 22 17 22 11" />
+    </svg>
+  ),
+  alertTriangle: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+      <path d="M12 9v4" /><path d="M12 17h.01" />
+    </svg>
+  ),
+  clock: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="12 6 12 12 16 14" />
+    </svg>
+  ),
+  checkCircle: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+      <polyline points="22 4 12 14.01 9 11.01" />
+    </svg>
+  ),
+  search: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="8" />
+      <path d="m21 21-4.35-4.35" />
+    </svg>
+  ),
+  plus: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 5v14" /><path d="M5 12h14" />
+    </svg>
+  ),
+  refresh: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+      <path d="M3 3v5h5" />
+      <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+      <path d="M16 16h5v5" />
+    </svg>
+  ),
+  edit: (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+      <path d="m15 5 4 4" />
+    </svg>
+  ),
+  trash: (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 6h18" />
+      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+    </svg>
+  ),
+  check: (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  ),
+  x: (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 6 6 18" /><path d="m6 6 12 12" />
+    </svg>
+  ),
+  emptyState: (
+    <svg width="64" height="64" viewBox="0 0 120 120" fill="none">
+      <rect x="10" y="24" width="100" height="76" rx="16" fill="#f1f5f9" stroke="#e2e8f0" strokeWidth="2" />
+      <rect x="22" y="40" width="76" height="8" rx="4" fill="#e2e8f0" />
+      <rect x="22" y="56" width="52" height="8" rx="4" fill="#e2e8f0" />
+      <rect x="22" y="72" width="64" height="8" rx="4" fill="#e2e8f0" />
+      <circle cx="96" cy="24" r="18" fill="#fef2f2" stroke="#fecaca" strokeWidth="2" />
+      <path d="M90 18l12 12M102 18L90 30" stroke="#dc2626" strokeWidth="2.5" strokeLinecap="round" />
+    </svg>
+  ),
+};
 
-  async function excluir(id) {
-    if (!confirm("Tem certeza que deseja excluir esta conta?")) return;
-    try {
-      await api(`/contas-pagar/${id}`, { method: "DELETE" });
-      carregar();
-    } catch (e) {
-      alert(e.message);
-    }
-  }
+/* ═══════════════════════════════════════════════════════════
+   STATUS CONFIG
+   ═══════════════════════════════════════════════════════════ */
+const STATUS_CONFIG = {
+  pendente:  { label: "Pendente",  bg: "#fff7ed", color: "#ea580c", dot: "#fb923c" },
+  pago:      { label: "Pago",      bg: "#f0fdf4", color: "#16a34a", dot: "#4ade80" },
+  atrasado:  { label: "Atrasado",  bg: "#fef2f2", color: "#dc2626", dot: "#f87171" },
+  cancelado: { label: "Cancelado", bg: "#f8fafc", color: "#94a3b8", dot: "#cbd5e1" },
+};
 
-  function abrirEditar(conta) {
-    setForm({ ...conta });
-    setModalAberto(true);
-  }
+const CATEGORIAS = [
+  "Aluguel",
+  "Água / Luz / Internet",
+  "Material de escritório",
+  "Equipamentos",
+  "Salários",
+  "Impostos",
+  "Marketing",
+  "Software / Assinaturas",
+  "Manutenção",
+  "Outros",
+];
 
-  function abrirPagar(conta) {
-    setFormPgto({
-      id: conta.id,
-      descricao: conta.descricao,
-      valor_total: conta.valor,
-      valor_restante: conta.valor - (conta.valor_pago || 0),
-      valor_pago: conta.valor - (conta.valor_pago || 0),
-      data_pagamento: hoje(),
-      forma_pagamento: conta.forma_pagamento || "",
-    });
-    setModalPgto(true);
-  }
+/* ═══════════════════════════════════════════════════════════
+   STYLES — Ultra Premium Minimal SaaS
+   ═══════════════════════════════════════════════════════════ */
+const S = {
+  /* ── Loading ─────────────────────────────────────── */
+  loadingWrap: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "20px",
+    minHeight: "400px",
+  },
+  loadingPulse: { display: "flex", gap: "8px", alignItems: "center" },
+  loadingDot: (delay) => ({
+    width: "10px",
+    height: "10px",
+    borderRadius: "50%",
+    background: "#2563eb",
+    animation: "pulse-dot 1.4s ease-in-out infinite",
+    animationDelay: delay,
+  }),
+  loadingText: {
+    fontSize: "14px",
+    fontWeight: "500",
+    color: "#94a3b8",
+    letterSpacing: "0.02em",
+  },
 
-  /* ── Render ────────────────────────────────── */
-  if (loading) {
-    return <div style={S.loadingBox}>Carregando contas a pagar...</div>;
-  }
+  /* ── Stats Grid ──────────────────────────────────── */
+  statsGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+    gap: "16px",
+  },
+  statCard: {
+    background: "#fff",
+    borderRadius: "16px",
+    padding: "22px",
+    border: "1px solid #f1f5f9",
+    display: "flex",
+    flexDirection: "column",
+    gap: "10px",
+  },
+  statTop: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+  },
+  statIconBox: (accent) => ({
+    width: "36px",
+    height: "36px",
+    borderRadius: "10px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+    background: accent + "14",
+    color: accent,
+  }),
+  statLabel: {
+    fontSize: "13px",
+    fontWeight: "600",
+    color: "#64748b",
+  },
+  statValue: {
+    fontSize: "32px",
+    fontWeight: "800",
+    color: "#0f172a",
+    letterSpacing: "-0.03em",
+    lineHeight: 1,
+  },
+  statSub: {
+    fontSize: "12px",
+    color: "#94a3b8",
+    fontWeight: "500",
+  },
 
+  /* ── Search Bar ──────────────────────────��───────── */
+  searchBar: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+  },
+  searchInputWrap: (focused) => ({
+    flex: 1,
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    height: "40px",
+    borderRadius: "10px",
+    border: `1px solid ${focused ? "#2563eb" : "#e2e8f0"}`,
+    padding: "0 14px",
+    background: "#fff",
+    transition: "all 0.2s ease",
+    boxSizing: "border-box",
+    boxShadow: focused ? "0 0 0 3px rgba(37,99,235,0.1)" : "none",
+  }),
+  searchIcon: (focused) => ({
+    display: "flex",
+    alignItems: "center",
+    flexShrink: 0,
+    color: focused ? "#2563eb" : "#94a3b8",
+    transition: "color 0.2s ease",
+  }),
+  searchInput: {
+    flex: 1,
+    border: "none",
+    outline: "none",
+    fontSize: "14px",
+    color: "#0f172a",
+    background: "transparent",
+    fontWeight: "400",
+    height: "100%",
+    fontFamily: "inherit",
+  },
+  searchClear: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "20px",
+    height: "20px",
+    borderRadius: "50%",
+    border: "none",
+    background: "#f1f5f9",
+    color: "#94a3b8",
+    fontSize: "10px",
+    cursor: "pointer",
+    flexShrink: 0,
+    lineHeight: 1,
+    fontFamily: "inherit",
+  },
+
+  /* ── Buttons ─────────────────────────────────────── */
+  btnPrimary: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "8px",
+    border: "none",
+    borderRadius: "10px",
+    padding: "10px 20px",
+    background: "#2563eb",
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: "14px",
+    cursor: "pointer",
+    boxShadow: "0 1px 3px rgba(37,99,235,0.2)",
+    transition: "all 0.2s ease",
+    whiteSpace: "nowrap",
+    height: "40px",
+    boxSizing: "border-box",
+    fontFamily: "inherit",
+  },
+  btnSecondary: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "6px",
+    border: "1px solid #e2e8f0",
+    borderRadius: "10px",
+    padding: "0 16px",
+    background: "#fff",
+    color: "#475569",
+    fontWeight: "500",
+    fontSize: "13px",
+    cursor: "pointer",
+    transition: "all 0.15s ease",
+    whiteSpace: "nowrap",
+    height: "40px",
+    boxSizing: "border-box",
+    fontFamily: "inherit",
+  },
+
+  /* ── Table ───────────────────────────────────────── */
+  tableCard: {
+    background: "#fff",
+    borderRadius: "16px",
+    border: "1px solid #f1f5f9",
+    overflow: "hidden",
+  },
+  tableHeader: {
+    display: "flex",
+    alignItems: "center",
+    padding: "0 24px",
+    height: "44px",
+    background: "#fafbfc",
+    borderBottom: "1px solid #f1f5f9",
+    gap: "12px",
+  },
+  thCell: {
+    fontSize: "11px",
+    fontWeight: "600",
+    color: "#94a3b8",
+    textTransform: "uppercase",
+    letterSpacing: "0.06em",
+  },
+  list: {
+    listStyle: "none",
+    padding: 0,
+    margin: 0,
+  },
+  row: (hovered) => ({
+    display: "flex",
+    alignItems: "center",
+    padding: "14px 24px",
+    borderBottom: "1px solid #f8fafc",
+    gap: "12px",
+    transition: "background 0.15s ease",
+    cursor: "default",
+    background: hovered ? "#fafbfc" : "transparent",
+  }),
+  cellTextBold: {
+    fontSize: "14px",
+    color: "#0f172a",
+    fontWeight: "600",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+  },
+  cellText: {
+    fontSize: "13px",
+    color: "#475569",
+    fontWeight: "400",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+  },
+  cellEmpty: {
+    fontSize: "13px",
+    color: "#d1d5db",
+    fontWeight: "400",
+  },
+  cellSub: {
+    fontSize: "12px",
+    color: "#94a3b8",
+    fontWeight: "500",
+  },
+  tableFooter: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: "12px 24px",
+    borderTop: "1px solid #f1f5f9",
+    background: "#fafbfc",
+  },
+  footerText: {
+    fontSize: "13px",
+    color: "#94a3b8",
+    fontWeight: "400",
+  },
+
+  /* ── Action Buttons ──────────────────────────────── */
+  actionBtn: (hovered, color) => ({
+    width: "34px",
+    height: "34px",
+    borderRadius: "8px",
+    border: hovered ? `1px solid ${color}20` : "1px solid transparent",
+    background: hovered ? `${color}08` : "transparent",
+    color: hovered ? color : "#64748b",
+    cursor: "pointer",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    transition: "all 0.15s ease",
+    padding: 0,
+    flexShrink: 0,
+  }),
+
+  /* ── Badge ───────────────────────────────────────── */
+  badge: (bg, color) => ({
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "5px",
+    padding: "5px 10px",
+    borderRadius: "8px",
+    fontSize: "12px",
+    fontWeight: "600",
+    whiteSpace: "nowrap",
+    flexShrink: 0,
+    background: bg,
+    color: color,
+  }),
+  badgeDot: (dotColor) => ({
+    width: "6px",
+    height: "6px",
+    borderRadius: "50%",
+    flexShrink: 0,
+    background: dotColor,
+  }),
+  categoriaBadge: {
+    display: "inline-flex",
+    alignItems: "center",
+    padding: "4px 10px",
+    borderRadius: "6px",
+    fontSize: "12px",
+    fontWeight: "500",
+    background: "#f1f5f9",
+    color: "#475569",
+    whiteSpace: "nowrap",
+  },
+
+  /* ── Empty State ─────────────────────────────────── */
+  emptyState: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: "12px",
+    padding: "64px 20px",
+  },
+  emptyTitle: {
+    margin: 0,
+    fontSize: "16px",
+    fontWeight: "600",
+    color: "#0f172a",
+  },
+  emptyText: {
+    margin: 0,
+    color: "#94a3b8",
+    fontSize: "14px",
+    fontWeight: "400",
+    textAlign: "center",
+    maxWidth: "360px",
+    lineHeight: 1.5,
+  },
+
+  /* ── Modal ───────────────────────────────────────── */
+  modalOverlay: {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: "rgba(15, 23, 42, 0.5)",
+    backdropFilter: "blur(4px)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 1000,
+    padding: "20px",
+  },
+  modal: {
+    background: "#fff",
+    borderRadius: "16px",
+    width: "100%",
+    maxWidth: "520px",
+    maxHeight: "90vh",
+    overflow: "auto",
+    boxShadow:
+      "0 20px 50px rgba(15, 23, 42, 0.15), 0 0 0 1px rgba(15, 23, 42, 0.05)",
+  },
+  modalHeader: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: "20px 24px",
+    borderBottom: "1px solid #f1f5f9",
+  },
+  modalTitle: {
+    margin: 0,
+    fontSize: "16px",
+    fontWeight: "600",
+    color: "#0f172a",
+  },
+  modalCloseBtn: {
+    width: "32px",
+    height: "32px",
+    borderRadius: "8px",
+    border: "none",
+    background: "transparent",
+    color: "#94a3b8",
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    transition: "all 0.15s ease",
+  },
+  modalBody: {
+    padding: "24px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "16px",
+  },
+  modalFooter: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: "10px",
+    padding: "16px 24px",
+    borderTop: "1px solid #f1f5f9",
+  },
+
+  /* ── Form ────────────────────────────────────────── */
+  formGroup: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "6px",
+  },
+  formLabel: {
+    fontSize: "13px",
+    fontWeight: "600",
+    color: "#334155",
+  },
+  formInput: {
+    height: "40px",
+    borderRadius: "10px",
+    border: "1px solid #e2e8f0",
+    padding: "0 14px",
+    fontSize: "14px",
+    color: "#0f172a",
+    background: "#fff",
+    outline: "none",
+    transition: "all 0.2s ease",
+    fontFamily: "inherit",
+    boxSizing: "border-box",
+  },
+  formSelect: {
+    height: "40px",
+    borderRadius: "10px",
+    border: "1px solid #e2e8f0",
+    padding: "0 14px",
+    fontSize: "14px",
+    color: "#0f172a",
+    background: "#fff",
+    outline: "none",
+    transition: "all 0.2s ease",
+    fontFamily: "inherit",
+    boxSizing: "border-box",
+    cursor: "pointer",
+  },
+  formRow: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "12px",
+  },
+  formTextarea: {
+    borderRadius: "10px",
+    border: "1px solid #e2e8f0",
+    padding: "10px 14px",
+    fontSize: "14px",
+    color: "#0f172a",
+    background: "#fff",
+    outline: "none",
+    transition: "all 0.2s ease",
+    fontFamily: "inherit",
+    boxSizing: "border-box",
+    resize: "vertical",
+    minHeight: "80px",
+  },
+};
+
+/* ═══════════════════════════════════════════════════════════
+   SUB-COMPONENTES INTERNOS
+   ═══════════════════════════════════════════════════════════ */
+
+function Loading({ text = "Carregando" }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-
-      {/* ── KPI Cards ────────────────────────── */}
-      <div style={S.kpiGrid4}>
-        <CardKPI
-          titulo="Total Pendente"
-          valor={formatMoney(resumo.total_pendente)}
-          cor="#f97316"
-          icone={Icons.money}
-        />
-        <CardKPI
-          titulo="Total Pago (Geral)"
-          valor={formatMoney(resumo.total_pago)}
-          cor="#16a34a"
-          icone={Icons.check}
-        />
-        <CardKPI
-          titulo="Total Vencido"
-          valor={formatMoney(resumo.total_vencido)}
-          cor="#dc2626"
-          icone={Icons.inadimplencia}
-          subtitulo={`${resumo.qtd_vencidas || 0} conta(s)`}
-          trend="down"
-        />
-        <CardKPI
-          titulo="Contas no Mês"
-          valor={contasFiltradas.length}
-          cor="#2563eb"
-          icone={Icons.pagar}
-        />
+    <div style={S.loadingWrap}>
+      <div style={S.loadingPulse}>
+        <div style={S.loadingDot("0s")} />
+        <div style={S.loadingDot("0.2s")} />
+        <div style={S.loadingDot("0.4s")} />
       </div>
-
-      {/* ── Toolbar ──────────────────────────── */}
-      <div style={S.toolbar}>
-        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-          {/* Busca */}
-          <div style={{ position: "relative" }}>
-            <span style={{
-              position: "absolute", left: 10, top: "50%",
-              transform: "translateY(-50%)", color: "#94a3b8",
-              display: "flex",
-            }}>
-              {Icons.search}
-            </span>
-            <input
-              style={{ ...S.input, paddingLeft: 32, width: 200 }}
-              placeholder="Buscar..."
-              value={busca}
-              onChange={(e) => setBusca(e.target.value)}
-            />
-          </div>
-
-          {/* Filtro Status */}
-          <span style={{ color: "#94a3b8", display: "flex" }}>{Icons.filter}</span>
-          <select value={filtroStatus} onChange={(e) => setFiltroStatus(e.target.value)} style={S.select}>
-            <option value="">Todos os status</option>
-            <option value="pendente">Pendente</option>
-            <option value="parcial">Parcial</option>
-            <option value="pago">Pago</option>
-          </select>
-
-          {/* Filtro Categoria */}
-          <select value={filtroCategoria} onChange={(e) => setFiltroCategoria(e.target.value)} style={S.select}>
-            <option value="">Todas as categorias</option>
-            {categorias.map((c) => (
-              <option key={c.id} value={c.id}>{c.nome}</option>
-            ))}
-          </select>
-        </div>
-
-        <div style={{ display: "flex", gap: 8 }}>
-          <button
-            style={S.btnOutline}
-            onClick={() => exportarCSV("/exportar/contas-pagar", "contas_pagar.csv", { mes, ano, status: filtroStatus })}
-          >
-            {Icons.download} <span>Exportar</span>
-          </button>
-          <button
-            style={S.btnPrimary}
-            onClick={() => { setForm({ data_emissao: hoje(), total_parcelas: 1 }); setModalAberto(true); }}
-          >
-            {Icons.plus} <span>Nova Conta</span>
-          </button>
-        </div>
-      </div>
-
-      {/* ── Tabela ───────────────────────────── */}
-      <div style={S.card}>
-        {contasFiltradas.length === 0 ? (
-          <div style={S.emptyState}>
-            {busca || filtroStatus || filtroCategoria
-              ? "Nenhuma conta encontrada com os filtros aplicados."
-              : "Nenhuma conta a pagar registrada neste período."
-            }
-          </div>
-        ) : (
-          <div style={S.tableWrapper}>
-            <table style={S.table}>
-              <thead>
-                <tr>
-                  <th style={S.th}>Descrição</th>
-                  <th style={S.th}>Categoria</th>
-                  <th style={S.th}>Fornecedor</th>
-                  <th style={S.th}>Valor</th>
-                  <th style={S.th}>Vencimento</th>
-                  <th style={S.th}>Status</th>
-                  <th style={S.th}>Parcela</th>
-                  <th style={{ ...S.th, textAlign: "center" }}>Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {contasFiltradas.map((c) => {
-                  const vencida = c.status !== "pago" && c.data_vencimento < hoje();
-                  const proximaVencer = !vencida && c.status !== "pago" && (() => {
-                    const diff = (new Date(c.data_vencimento) - new Date()) / (1000 * 60 * 60 * 24);
-                    return diff <= 5 && diff >= 0;
-                  })();
-
-                  return (
-                    <tr
-                      key={c.id}
-                      style={{
-                        background: vencida ? "#fef2f2" : proximaVencer ? "#fffbeb" : "transparent",
-                        transition: "background 0.15s ease",
-                      }}
-                    >
-                      <td style={S.td}>
-                        <span style={{ fontWeight: 500, color: "#0f172a", display: "block" }}>
-                          {c.descricao}
-                        </span>
-                        {c.numero_documento && (
-                          <span style={{ fontSize: 11, color: "#94a3b8" }}>
-                            Doc: {c.numero_documento}
-                          </span>
-                        )}
-                      </td>
-                      <td style={S.td}>
-                        {c.categoria_nome ? (
-                          <span style={{
-                            ...S.tagCategoria,
-                            borderColor: c.categoria_cor || "#94a3b8",
-                            color: c.categoria_cor || "#64748b",
-                          }}>
-                            {c.categoria_nome}
-                          </span>
-                        ) : (
-                          <span style={{ color: "#cbd5e1", fontSize: 12 }}>—</span>
-                        )}
-                      </td>
-                      <td style={S.td}>
-                        <span style={{ color: "#64748b" }}>{c.fornecedor || "—"}</span>
-                      </td>
-                      <td style={S.td}>
-                        <span style={{ fontWeight: 600, color: "#dc2626" }}>
-                          {formatMoney(c.valor)}
-                        </span>
-                        {c.valor_pago > 0 && c.valor_pago < c.valor && (
-                          <span style={{ display: "block", fontSize: 11, color: "#16a34a" }}>
-                            Pago: {formatMoney(c.valor_pago)}
-                          </span>
-                        )}
-                        {c.valor_pago > 0 && c.valor_pago < c.valor && (
-                          <span style={{ display: "block", fontSize: 10, color: "#f97316" }}>
-                            Restante: {formatMoney(c.valor - c.valor_pago)}
-                          </span>
-                        )}
-                      </td>
-                      <td style={S.td}>
-                        <span style={{
-                          color: vencida ? "#dc2626" : proximaVencer ? "#d97706" : "#334155",
-                          fontWeight: vencida || proximaVencer ? 600 : 400,
-                        }}>
-                          {formatDate(c.data_vencimento)}
-                        </span>
-                        {vencida && (
-                          <span style={{ display: "block", fontSize: 10, color: "#dc2626", fontWeight: 700 }}>
-                            VENCIDA
-                          </span>
-                        )}
-                        {proximaVencer && (
-                          <span style={{ display: "block", fontSize: 10, color: "#d97706", fontWeight: 600 }}>
-                            VENCE EM BREVE
-                          </span>
-                        )}
-                      </td>
-                      <td style={S.td}>
-                        <Badge status={c.status} />
-                      </td>
-                      <td style={S.td}>
-                        <span style={{ color: "#94a3b8", fontSize: 12 }}>
-                          {c.parcela_atual}/{c.total_parcelas}
-                        </span>
-                      </td>
-                      <td style={{ ...S.td, textAlign: "center" }}>
-                        <div style={{ display: "flex", gap: 4, justifyContent: "center" }}>
-                          {c.status !== "pago" && (
-                            <button
-                              style={S.btnIconSuccess}
-                              onClick={() => abrirPagar(c)}
-                              title="Registrar Pagamento"
-                            >
-                              {Icons.check}
-                            </button>
-                          )}
-                          <button
-                            style={S.btnIcon}
-                            onClick={() => abrirEditar(c)}
-                            title="Editar"
-                          >
-                            {Icons.edit}
-                          </button>
-                          {c.status !== "pago" && (
-                            <button
-                              style={S.btnIconDanger}
-                              onClick={() => excluir(c.id)}
-                              title="Excluir"
-                            >
-                              {Icons.trash}
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
-      {/* ── Modal Nova/Editar Conta ──────────── */}
-      <Modal
-        aberto={modalAberto}
-        onFechar={() => { setModalAberto(false); setForm({}); }}
-        titulo={form.id ? "Editar Conta a Pagar" : "Nova Conta a Pagar"}
-        largura={620}
-      >
-        <div style={S.formGrid}>
-          <div style={S.formGroup2}>
-            <label style={S.label}>Descrição *</label>
-            <input
-              style={S.input}
-              value={form.descricao || ""}
-              onChange={(e) => setForm({ ...form, descricao: e.target.value })}
-              placeholder="Ex: Aluguel do consultório"
-            />
-          </div>
-          <div style={S.formGroup}>
-            <label style={S.label}>Categoria</label>
-            <select
-              style={S.input}
-              value={form.categoria_id || ""}
-              onChange={(e) => setForm({ ...form, categoria_id: e.target.value })}
-            >
-              <option value="">Selecione</option>
-              {categorias.map((c) => (
-                <option key={c.id} value={c.id}>{c.nome}</option>
-              ))}
-            </select>
-          </div>
-          <div style={S.formGroup}>
-            <label style={S.label}>Fornecedor</label>
-            <input
-              style={S.input}
-              value={form.fornecedor || ""}
-              onChange={(e) => setForm({ ...form, fornecedor: e.target.value })}
-              placeholder="Nome do fornecedor"
-            />
-          </div>
-          <div style={S.formGroup}>
-            <label style={S.label}>Valor Total (R$) *</label>
-            <input
-              style={S.input}
-              type="number"
-              step="0.01"
-              min="0"
-              value={form.valor || ""}
-              onChange={(e) => setForm({ ...form, valor: parseFloat(e.target.value) || 0 })}
-              placeholder="0,00"
-            />
-          </div>
-          <div style={S.formGroup}>
-            <label style={S.label}>Data Vencimento *</label>
-            <input
-              style={S.input}
-              type="date"
-              value={form.data_vencimento || ""}
-              onChange={(e) => setForm({ ...form, data_vencimento: e.target.value })}
-            />
-          </div>
-          <div style={S.formGroup}>
-            <label style={S.label}>Data Emissão</label>
-            <input
-              style={S.input}
-              type="date"
-              value={form.data_emissao || ""}
-              onChange={(e) => setForm({ ...form, data_emissao: e.target.value })}
-            />
-          </div>
-          <div style={S.formGroup}>
-            <label style={S.label}>Forma de Pagamento</label>
-            <select
-              style={S.input}
-              value={form.forma_pagamento || ""}
-              onChange={(e) => setForm({ ...form, forma_pagamento: e.target.value })}
-            >
-              <option value="">Selecione</option>
-              {formasPagamento.map((f) => (
-                <option key={f.id} value={f.tipo}>{f.nome}</option>
-              ))}
-            </select>
-          </div>
-          {!form.id && (
-            <div style={S.formGroup}>
-              <label style={S.label}>Nº Parcelas</label>
-              <input
-                style={S.input}
-                type="number"
-                min="1"
-                max="48"
-                value={form.total_parcelas || 1}
-                onChange={(e) => setForm({ ...form, total_parcelas: parseInt(e.target.value) || 1 })}
-              />
-              {(form.total_parcelas || 1) > 1 && form.valor > 0 && (
-                <span style={{ fontSize: 11, color: "#2563eb", marginTop: 2 }}>
-                  {form.total_parcelas}x de {formatMoney(form.valor / form.total_parcelas)}
-                </span>
-              )}
-            </div>
-          )}
-          <div style={S.formGroup}>
-            <label style={S.label}>Nº Documento</label>
-            <input
-              style={S.input}
-              value={form.numero_documento || ""}
-              onChange={(e) => setForm({ ...form, numero_documento: e.target.value })}
-              placeholder="Nota fiscal, boleto..."
-            />
-          </div>
-          <div style={S.formGroup}>
-            <label style={S.label}>Código de Barras</label>
-            <input
-              style={S.input}
-              value={form.codigo_barras || ""}
-              onChange={(e) => setForm({ ...form, codigo_barras: e.target.value })}
-              placeholder="Código de barras do boleto"
-            />
-          </div>
-          <div style={S.formGroup2}>
-            <label style={S.label}>Observações</label>
-            <textarea
-              style={{ ...S.input, minHeight: 60, resize: "vertical" }}
-              value={form.observacoes || ""}
-              onChange={(e) => setForm({ ...form, observacoes: e.target.value })}
-              placeholder="Anotações adicionais..."
-            />
-          </div>
-        </div>
-        <div style={S.formActions}>
-          <button style={S.btnOutline} onClick={() => { setModalAberto(false); setForm({}); }}>
-            Cancelar
-          </button>
-          <button
-            style={{
-              ...S.btnPrimary,
-              opacity: salvando || !form.descricao || !form.valor || !form.data_vencimento ? 0.6 : 1,
-            }}
-            onClick={salvar}
-            disabled={salvando || !form.descricao || !form.valor || !form.data_vencimento}
-          >
-            {salvando ? "Salvando..." : form.id ? "Salvar Alterações" : "Criar Conta"}
-          </button>
-        </div>
-      </Modal>
-
-      {/* ── Modal Registrar Pagamento ────────── */}
-      <Modal
-        aberto={modalPgto}
-        onFechar={() => { setModalPgto(false); setFormPgto({}); }}
-        titulo="Registrar Pagamento"
-        largura={460}
-      >
-        <div style={{
-          padding: 16, background: "#f8fafc",
-          borderRadius: 10, marginBottom: 16,
-        }}>
-          <p style={{ margin: 0, fontSize: 13, color: "#64748b" }}>
-            Conta: <strong style={{ color: "#0f172a" }}>{formPgto.descricao}</strong>
-          </p>
-          <p style={{ margin: "4px 0 0", fontSize: 13, color: "#64748b" }}>
-            Valor total: <strong style={{ color: "#dc2626" }}>{formatMoney(formPgto.valor_total)}</strong>
-            {" • "}
-            Restante: <strong style={{ color: "#f97316" }}>{formatMoney(formPgto.valor_restante)}</strong>
-          </p>
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <div style={S.formGroup}>
-            <label style={S.label}>Valor do Pagamento (R$) *</label>
-            <input
-              style={S.input}
-              type="number"
-              step="0.01"
-              min="0"
-              max={formPgto.valor_restante}
-              value={formPgto.valor_pago || ""}
-              onChange={(e) => setFormPgto({ ...formPgto, valor_pago: parseFloat(e.target.value) || 0 })}
-            />
-            <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
-              <button
-                style={{ ...S.btnOutline, padding: "4px 10px", fontSize: 11 }}
-                onClick={() => setFormPgto({ ...formPgto, valor_pago: formPgto.valor_restante })}
-              >
-                Valor total
-              </button>
-              <button
-                style={{ ...S.btnOutline, padding: "4px 10px", fontSize: 11 }}
-                onClick={() => setFormPgto({ ...formPgto, valor_pago: formPgto.valor_restante / 2 })}
-              >
-                Metade
-              </button>
-            </div>
-          </div>
-          <div style={S.formGroup}>
-            <label style={S.label}>Data do Pagamento *</label>
-            <input
-              style={S.input}
-              type="date"
-              value={formPgto.data_pagamento || ""}
-              onChange={(e) => setFormPgto({ ...formPgto, data_pagamento: e.target.value })}
-            />
-          </div>
-          <div style={S.formGroup}>
-            <label style={S.label}>Forma de Pagamento</label>
-            <select
-              style={S.input}
-              value={formPgto.forma_pagamento || ""}
-              onChange={(e) => setFormPgto({ ...formPgto, forma_pagamento: e.target.value })}
-            >
-              <option value="">Selecione</option>
-              {formasPagamento.map((f) => (
-                <option key={f.id} value={f.tipo}>{f.nome}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div style={S.formActions}>
-          <button style={S.btnOutline} onClick={() => { setModalPgto(false); setFormPgto({}); }}>
-            Cancelar
-          </button>
-          <button
-            style={{
-              ...S.btnPrimary,
-              background: "#16a34a",
-              opacity: salvando || !formPgto.valor_pago ? 0.6 : 1,
-            }}
-            onClick={registrarPagamento}
-            disabled={salvando || !formPgto.valor_pago}
-          >
-            {salvando ? "Processando..." : `Pagar ${formatMoney(formPgto.valor_pago || 0)}`}
-          </button>
-        </div>
-      </Modal>
+      <span style={S.loadingText}>{text}</span>
+      <style>{`
+        @keyframes pulse-dot {
+          0%, 80%, 100% { transform: scale(0); opacity: 0.5; }
+          40% { transform: scale(1); opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 }
+
+function StatCard({ label, value, icon, accent, sub }) {
+  return (
+    <div style={S.statCard}>
+      <div style={S.statTop}>
+        <span style={S.statIconBox(accent)}>{icon}</span>
+        <span style={S.statLabel}>{label}</span>
+      </div>
+      <strong style={S.statValue}>{value}</strong>
+      {sub && <span style={S.statSub}>{sub}</span>}
+    </div>
+  );
+}
+
+function StatusBadge({ status }) {
+  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.pendente;
+  return (
+    <span style={S.badge(cfg.bg, cfg.color)}>
+      <span style={S.badgeDot(cfg.dot)} />
+      {cfg.label}
+    </span>
+  );
+}
+
+function EmptyState({ title, text, action, onAction }) {
+  return (
+    <div style={S.emptyState}>
+      {Icons.emptyState}
+      <h3 style={S.emptyTitle}>{title}</h3>
+      <p style={S.emptyText}>{text}</p>
+      {action && (
+        <button style={{ ...S.btnPrimary, marginTop: "4px" }} onClick={onAction}>
+          {Icons.plus}
+          <span>{action}</span>
+        </button>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
+   COMPONENTE PRINCIPAL — ContasPagar
+   ══════════════════════════════���════════════════════════════ */
+function ContasPagar() {
+  const [contas, setContas] = useState([]);
+  const [carregando, setCarregando] = useState(true);
+  const [busca, setBusca] = useState("");
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [hoveredId, setHoveredId] = useState(null);
+  const [hoveredAction, setHoveredAction] = useState(null);
+  const [modal, setModal] = useState(null); // "novo" | "editar" | null
+  const [form, setForm] = useState({});
+
+  /* ── Fetch ───────────────────────────────────────── */
+  const carregar = () => {
+    setCarregando(true);
+    fetch(`${API}/financeiro/contas-pagar`, { headers: headers() })
+      .then((r) => r.json())
+      .then((d) => setContas(Array.isArray(d) ? d : []))
+      .catch(console.error)
+      .finally(() => setCarregando(false));
+  };
+
+  useEffect(() => {
+    carregar();
+  }, []);
+
+  /* ── Filtro ──────────────────────────────────────── */
+  const filtradas = useMemo(() => {
+    const t = busca.trim().toLowerCase();
+    if (!t) return contas;
+    return contas.filter(
+      (c) =>
+        (c.descricao || "").toLowerCase().includes(t) ||
+        (c.fornecedor || "").toLowerCase().includes(t) ||
+        (c.categoria || "").toLowerCase().includes(t) ||
+        (c.status || "").toLowerCase().includes(t)
+    );
+  }, [contas, busca]);
+
+  /* ── Stats ───────────────────────────────────────── */
+  const stats = useMemo(() => {
+    const pendentes = contas.filter((c) => c.status === "pendente");
+    const pagas = contas.filter((c) => c.status === "pago");
+    const atrasadas = contas.filter((c) => c.status === "atrasado");
+    return {
+      total: contas.length,
+      valorPendente: pendentes.reduce((s, c) => s + Number(c.valor || 0), 0),
+      valorPago: pagas.reduce((s, c) => s + Number(c.valor || 0), 0),
+      qtdAtrasadas: atrasadas.length,
+    };
+  }, [contas]);
+
+  /* ── Handlers ────────────────────────────────────── */
+  const abrirNovo = () => {
+    setForm({
+      descricao: "",
+      valor: "",
+      data_vencimento: "",
+      fornecedor: "",
+      categoria: "",
+      status: "pendente",
+      observacoes: "",
+    });
+    setModal("novo");
+  };
+
+  const abrirEditar = (c) => {
+    setForm({ ...c });
+    setModal("editar");
+  };
+
+  const salvar = async () => {
+    const url =
+      modal === "novo"
+        ? `${API}/financeiro/contas-pagar`
+        : `${API}/financeiro/contas-pagar/${form.id}`;
+    const method = modal === "novo" ? "POST" : "PUT";
+    try {
+      await fetch(url, {
+        method,
+        headers: headers(),
+        body: JSON.stringify(form),
+      });
+      setModal(null);
+      carregar();
+    } catch (e) {
+      console.error(e);
+      alert("Erro ao salvar conta a pagar.");
+    }
+  };
+
+  const excluir = async (id) => {
+    if (!window.confirm("Tem certeza que deseja excluir esta conta a pagar?"))
+      return;
+    try {
+      await fetch(`${API}/financeiro/contas-pagar/${id}`, {
+        method: "DELETE",
+        headers: headers(),
+      });
+      carregar();
+    } catch (e) {
+      console.error(e);
+      alert("Erro ao excluir.");
+    }
+  };
+
+  const marcarPago = async (id) => {
+    try {
+      await fetch(`${API}/financeiro/contas-pagar/${id}`, {
+        method: "PUT",
+        headers: headers(),
+        body: JSON.stringify({
+          status: "pago",
+          data_pagamento: new Date().toISOString().split("T")[0],
+        }),
+      });
+      carregar();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const setField = (field, value) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleInputFocus = (e) => {
+    e.target.style.borderColor = "#2563eb";
+    e.target.style.boxShadow = "0 0 0 3px rgba(37,99,235,0.1)";
+  };
+
+  const handleInputBlur = (e) => {
+    e.target.style.borderColor = "#e2e8f0";
+    e.target.style.boxShadow = "none";
+  };
+
+  /* ── Loading ─────────────────────────────────────── */
+  if (carregando) return <Loading text="Carregando contas a pagar" />;
+
+  /* ── Colunas ─────────────────────────────────────── */
+  const COL = {
+    descricao:  { flex: "1.8", minWidth: "160px" },
+    fornecedor: { flex: "1.2", minWidth: "120px" },
+    categoria:  { width: "140px" },
+    valor:      { width: "120px", textAlign: "right" },
+    vencimento: { width: "110px" },
+    status:     { width: "120px" },
+    acoes:      { width: "130px", justifyContent: "flex-end" },
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+
+      {/* ══════════════════════════════════════════════
+          STATS GRID
+          ══════════════════════════════════════════════ */}
+      <div style={S.statsGrid}>
+        <StatCard
+          label="Total de contas"
+          value={stats.total}
+          icon={Icons.dollarSign}
+          accent="#2563eb"
+          sub="cadastradas"
+        />
+        <StatCard
+          label="Valor pendente"
+          value={fmt(stats.valorPendente)}
+          icon={Icons.clock}
+          accent="#ea580c"
+          sub="a pagar"
+        />
+        <StatCard
+          label="Valor pago"
+          value={fmt(stats.valorPago)}
+          icon={Icons.checkCircle}
+          accent="#16a34a"
+          sub="confirmado"
+        />
+        <StatCard
+          label="Em atraso"
+          value={stats.qtdAtrasadas}
+          icon={Icons.alertTriangle}
+          accent="#dc2626"
+          sub="contas atrasadas"
+        />
+      </div>
+
+      {/* ══════════════════════════════════════════════
+          SEARCH BAR
+          ══════════════════════════════════════════════ */}
+      <div style={S.searchBar}>
+        <div style={S.searchInputWrap(searchFocused)}>
+          <span style={S.searchIcon(searchFocused)}>{Icons.search}</span>
+          <input
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            onFocus={() => setSearchFocused(true)}
+            onBlur={() => setSearchFocused(false)}
+            placeholder="Buscar por descrição, fornecedor, categoria ou status..."
+            style={S.searchInput}
+          />
+          {busca && (
+            <button style={S.searchClear} onClick={() => setBusca("")}>
+              ✕
+            </button>
+          )}
+        </div>
+        <button
+          style={S.btnSecondary}
+          onClick={carregar}
+          onMouseEnter={(e) => (e.currentTarget.style.background = "#f8fafc")}
+          onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
+        >
+          {Icons.refresh}
+          <span>Atualizar</span>
+        </button>
+        <button
+          style={S.btnPrimary}
+          onClick={abrirNovo}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = "translateY(-1px)";
+            e.currentTarget.style.boxShadow = "0 6px 20px rgba(37,99,235,0.3)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = "translateY(0)";
+            e.currentTarget.style.boxShadow = "0 1px 3px rgba(37,99,235,0.2)";
+          }}
+        >
+          {Icons.plus}
+          <span>Nova conta</span>
+        </button>
+      </div>
+
+      {/* ══════════════════════════════════════════════
+          TABELA ou EMPTY STATE
+          ══════════��═══════════════════════════════════ */}
+      {filtradas.length === 0 ? (
+        <EmptyState
+          title="Nenhuma conta a pagar encontrada"
+          text={
+            busca
+              ? "Nenhum resultado para a busca atual. Tente outro termo."
+              : "Cadastre a primeira conta a pagar para começar a controlar suas despesas."
+          }
+          action={!busca ? "Nova conta a pagar" : null}
+          onAction={abrirNovo}
+        />
+      ) : (
+        <div style={S.tableCard}>
+          {/* ── Header ───────────────────────────── */}
+          <div style={S.tableHeader}>
+            <span style={{ ...S.thCell, ...COL.descricao }}>Descrição</span>
+            <span style={{ ...S.thCell, ...COL.fornecedor }}>Fornecedor</span>
+            <span style={{ ...S.thCell, ...COL.categoria }}>Categoria</span>
+            <span style={{ ...S.thCell, ...COL.valor }}>Valor</span>
+            <span style={{ ...S.thCell, ...COL.vencimento }}>Vencimento</span>
+            <span style={{ ...S.thCell, ...COL.status }}>Status</span>
+            <span style={{ ...S.thCell, ...COL.acoes }}>Ações</span>
+          </div>
+
+          {/* ── Rows ─────────────────────────────── */}
+          <ul style={S.list}>
+            {filtradas.map((c) => {
+              const isHovered = hoveredId === c.id;
+              return (
+                <li
+                  key={c.id}
+                  style={S.row(isHovered)}
+                  onMouseEnter={() => setHoveredId(c.id)}
+                  onMouseLeave={() => setHoveredId(null)}
+                >
+                  {/* Descrição */}
+                  <div style={{ ...COL.descricao, minWidth: 0 }}>
+                    <span style={S.cellTextBold}>{c.descricao || "—"}</span>
+                  </div>
+
+                  {/* Fornecedor */}
+                  <div style={{ ...COL.fornecedor, minWidth: 0 }}>
+                    <span style={c.fornecedor ? S.cellText : S.cellEmpty}>
+                      {c.fornecedor || "Sem fornecedor"}
+                    </span>
+                  </div>
+
+                  {/* Categoria */}
+                  <div style={{ ...COL.categoria }}>
+                    {c.categoria ? (
+                      <span style={S.categoriaBadge}>{c.categoria}</span>
+                    ) : (
+                      <span style={S.cellEmpty}>—</span>
+                    )}
+                  </div>
+
+                  {/* Valor */}
+                  <div style={{ ...COL.valor }}>
+                    <span
+                      style={{
+                        ...S.cellTextBold,
+                        color: "#dc2626",
+                        width: "100%",
+                        textAlign: "right",
+                        display: "block",
+                      }}
+                    >
+                      {fmt(c.valor)}
+                    </span>
+                  </div>
+
+                  {/* Vencimento */}
+                  <div style={{ ...COL.vencimento }}>
+                    <span style={S.cellText}>{fmtData(c.data_vencimento)}</span>
+                  </div>
+
+                  {/* Status */}
+                  <div style={{ ...COL.status }}>
+                    <StatusBadge status={c.status} />
+                  </div>
+
+                  {/* Ações */}
+                  <div
+                    style={{
+                      ...COL.acoes,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "4px",
+                      justifyContent: "flex-end",
+                    }}
+                  >
+                    {/* Marcar como pago */}
+                    {c.status !== "pago" && c.status !== "cancelado" && (
+                      <button
+                        title="Marcar como pago"
+                        style={S.actionBtn(
+                          hoveredAction === `check-${c.id}`,
+                          "#16a34a"
+                        )}
+                        onClick={() => marcarPago(c.id)}
+                        onMouseEnter={() => setHoveredAction(`check-${c.id}`)}
+                        onMouseLeave={() => setHoveredAction(null)}
+                      >
+                        {Icons.check}
+                      </button>
+                    )}
+
+                    {/* Editar */}
+                    <button
+                      title="Editar"
+                      style={S.actionBtn(
+                        hoveredAction === `edit-${c.id}`,
+                        "#2563eb"
+                      )}
+                      onClick={() => abrirEditar(c)}
+                      onMouseEnter={() => setHoveredAction(`edit-${c.id}`)}
+                      onMouseLeave={() => setHoveredAction(null)}
+                    >
+                      {Icons.edit}
+                    </button>
+
+                    {/* Excluir */}
+                    <button
+                      title="Excluir"
+                      style={S.actionBtn(
+                        hoveredAction === `del-${c.id}`,
+                        "#dc2626"
+                      )}
+                      onClick={() => excluir(c.id)}
+                      onMouseEnter={() => setHoveredAction(`del-${c.id}`)}
+                      onMouseLeave={() => setHoveredAction(null)}
+                    >
+                      {Icons.trash}
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+
+          {/* ── Footer ───────────────────────────── */}
+          <div style={S.tableFooter}>
+            <span style={S.footerText}>
+              {filtradas.length}{" "}
+              {filtradas.length === 1 ? "conta encontrada" : "contas encontradas"}
+            </span>
+            <span style={S.footerText}>
+              Total: {fmt(filtradas.reduce((s, c) => s + Number(c.valor || 0), 0))}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════
+          MODAL — Nova / Editar conta a pagar
+          ══════════════════════════════════════════════ */}
+      {modal && (
+        <div style={S.modalOverlay} onClick={() => setModal(null)}>
+          <div style={S.modal} onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div style={S.modalHeader}>
+              <h3 style={S.modalTitle}>
+                {modal === "novo"
+                  ? "Nova conta a pagar"
+                  : "Editar conta a pagar"}
+              </h3>
+              <button
+                style={S.modalCloseBtn}
+                onClick={() => setModal(null)}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.background = "#f1f5f9")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.background = "transparent")
+                }
+              >
+                {Icons.x}
+              </button>
+            </div>
+
+            {/* Body */}
+            <div style={S.modalBody}>
+              {/* Descrição */}
+              <div style={S.formGroup}>
+                <label style={S.formLabel}>Descrição *</label>
+                <input
+                  style={S.formInput}
+                  value={form.descricao || ""}
+                  onChange={(e) => setField("descricao", e.target.value)}
+                  onFocus={handleInputFocus}
+                  onBlur={handleInputBlur}
+                  placeholder="Ex: Aluguel da clínica"
+                />
+              </div>
+
+              {/* Valor + Vencimento */}
+              <div style={S.formRow}>
+                <div style={S.formGroup}>
+                  <label style={S.formLabel}>Valor (R$) *</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    style={S.formInput}
+                    value={form.valor || ""}
+                    onChange={(e) => setField("valor", e.target.value)}
+                    onFocus={handleInputFocus}
+                    onBlur={handleInputBlur}
+                    placeholder="0,00"
+                  />
+                </div>
+                <div style={S.formGroup}>
+                  <label style={S.formLabel}>Vencimento *</label>
+                  <input
+                    type="date"
+                    style={S.formInput}
+                    value={form.data_vencimento || ""}
+                    onChange={(e) =>
+                      setField("data_vencimento", e.target.value)
+                    }
+                    onFocus={handleInputFocus}
+                    onBlur={handleInputBlur}
+                  />
+                </div>
+              </div>
+
+              {/* Fornecedor + Categoria */}
+              <div style={S.formRow}>
+                <div style={S.formGroup}>
+                  <label style={S.formLabel}>Fornecedor</label>
+                  <input
+                    style={S.formInput}
+                    value={form.fornecedor || ""}
+                    onChange={(e) => setField("fornecedor", e.target.value)}
+                    onFocus={handleInputFocus}
+                    onBlur={handleInputBlur}
+                    placeholder="Nome do fornecedor"
+                  />
+                </div>
+                <div style={S.formGroup}>
+                  <label style={S.formLabel}>Categoria</label>
+                  <select
+                    style={S.formSelect}
+                    value={form.categoria || ""}
+                    onChange={(e) => setField("categoria", e.target.value)}
+                    onFocus={handleInputFocus}
+                    onBlur={handleInputBlur}
+                  >
+                    <option value="">Selecione...</option>
+                    {CATEGORIAS.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Status */}
+              <div style={S.formGroup}>
+                <label style={S.formLabel}>Status</label>
+                <select
+                  style={S.formSelect}
+                  value={form.status || "pendente"}
+                  onChange={(e) => setField("status", e.target.value)}
+                  onFocus={handleInputFocus}
+                  onBlur={handleInputBlur}
+                >
+                  <option value="pendente">Pendente</option>
+                  <option value="pago">Pago</option>
+                  <option value="atrasado">Atrasado</option>
+                  <option value="cancelado">Cancelado</option>
+                </select>
+              </div>
+
+              {/* Observações */}
+              <div style={S.formGroup}>
+                <label style={S.formLabel}>Observações</label>
+                <textarea
+                  style={S.formTextarea}
+                  value={form.observacoes || ""}
+                  onChange={(e) => setField("observacoes", e.target.value)}
+                  onFocus={handleInputFocus}
+                  onBlur={handleInputBlur}
+                  placeholder="Anotações opcionais..."
+                  rows={3}
+                />
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div style={S.modalFooter}>
+              <button
+                style={S.btnSecondary}
+                onClick={() => setModal(null)}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.background = "#f8fafc")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.background = "#fff")
+                }
+              >
+                Cancelar
+              </button>
+              <button
+                style={S.btnPrimary}
+                onClick={salvar}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-1px)";
+                  e.currentTarget.style.boxShadow =
+                    "0 6px 20px rgba(37,99,235,0.3)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow =
+                    "0 1px 3px rgba(37,99,235,0.2)";
+                }}
+              >
+                {modal === "novo" ? "Criar conta" : "Salvar alterações"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default ContasPagar;

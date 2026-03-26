@@ -1,798 +1,1424 @@
-import { useState, useEffect, useCallback } from "react";
-import {
-  api, formatMoney, formatDate, exportarCSV, hoje,
-  Icons, S, Modal, CardKPI, Badge,
-} from "./FinanceiroHelpers";
+import { useEffect, useState, useMemo } from "react";
 
-export default function Comissoes({ mes, ano }) {
-  const [comissoes, setComissoes] = useState([]);
-  const [resumoProfissionais, setResumoProfissionais] = useState([]);
-  const [totais, setTotais] = useState({ total_geral: 0, total_pendente: 0, total_pago: 0 });
-  const [profissionais, setProfissionais] = useState([]);
-  const [loading, setLoading] = useState(true);
+/* ═══════════════════════════════════════════════════════════
+   CONFIG
+   ═══════════════════════════════════════════════════════════ */
+const API = "http://localhost:3001";
 
-  // Modais
-  const [modalProfissional, setModalProfissional] = useState(false);
-  const [formProf, setFormProf] = useState({ tipo: "dentista", tipo_comissao: "percentual" });
-  const [salvando, setSalvando] = useState(false);
+function headers() {
+  return {
+    Authorization: localStorage.getItem("token"),
+    "Content-Type": "application/json",
+  };
+}
 
-  // Filtros
-  const [filtroProfissional, setFiltroProfissional] = useState("");
-  const [filtroStatus, setFiltroStatus] = useState("");
-  const [viewMode, setViewMode] = useState("resumo"); // resumo | detalhado
+function fmt(v) {
+  return Number(v || 0).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+}
 
-  // Seleção para pagamento em lote
-  const [selecionados, setSelecionados] = useState([]);
+function fmtData(d) {
+  if (!d) return "—";
+  const p = d.split("-");
+  if (p.length !== 3) return d;
+  return `${p[2]}/${p[1]}/${p[0]}`;
+}
 
-  /* ── Carregar dados ────────────────────────── */
-  const carregar = useCallback(async () => {
-    try {
-      setLoading(true);
-      const params = new URLSearchParams({ mes, ano });
-      if (filtroProfissional) params.set("profissional_id", filtroProfissional);
-      if (filtroStatus) params.set("status", filtroStatus);
+function hoje() {
+  return new Date().toISOString().split("T")[0];
+}
 
-      const [comData, profsData] = await Promise.all([
-        api(`/comissoes?${params}`),
-        api("/profissionais"),
-      ]);
+function mesPassado() {
+  const d = new Date();
+  d.setMonth(d.getMonth() - 1);
+  return d.toISOString().split("T")[0];
+}
 
-      setComissoes(comData.comissoes || []);
-      setResumoProfissionais(comData.resumo_profissionais || []);
-      setTotais({
-        total_geral: comData.total_geral || 0,
-        total_pendente: comData.total_pendente || 0,
-        total_pago: comData.total_pago || 0,
-      });
-      setProfissionais(profsData || []);
-    } catch (e) {
-      console.error("Erro ao carregar comissões:", e);
-    } finally {
-      setLoading(false);
-    }
-  }, [mes, ano, filtroProfissional, filtroStatus]);
+/* ═══════════════════════════════════════════════════════════
+   ICONS — Lucide-style inline SVGs
+   ═══════════════════════════════════════════════════════════ */
+const Icons = {
+  users: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  ),
+  dollarSign: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="12" x2="12" y1="2" y2="22" />
+      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+    </svg>
+  ),
+  percent: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="19" x2="5" y1="5" y2="19" />
+      <circle cx="6.5" cy="6.5" r="2.5" />
+      <circle cx="17.5" cy="17.5" r="2.5" />
+    </svg>
+  ),
+  trendingUp: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
+      <polyline points="16 7 22 7 22 13" />
+    </svg>
+  ),
+  calendar: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
+      <path d="M16 2v4" /><path d="M8 2v4" /><path d="M3 10h18" />
+    </svg>
+  ),
+  search: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="8" />
+      <path d="m21 21-4.35-4.35" />
+    </svg>
+  ),
+  refresh: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+      <path d="M3 3v5h5" />
+      <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+      <path d="M16 16h5v5" />
+    </svg>
+  ),
+  settings: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  ),
+  chevronDown: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  ),
+  chevronUp: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m18 15-6-6-6 6" />
+    </svg>
+  ),
+  check: (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  ),
+  x: (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 6 6 18" /><path d="m6 6 12 12" />
+    </svg>
+  ),
+  edit: (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+      <path d="m15 5 4 4" />
+    </svg>
+  ),
+  user: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  ),
+  emptyState: (
+    <svg width="64" height="64" viewBox="0 0 120 120" fill="none">
+      <rect x="10" y="24" width="100" height="76" rx="16" fill="#f1f5f9" stroke="#e2e8f0" strokeWidth="2" />
+      <rect x="22" y="40" width="76" height="8" rx="4" fill="#e2e8f0" />
+      <rect x="22" y="56" width="52" height="8" rx="4" fill="#e2e8f0" />
+      <rect x="22" y="72" width="64" height="8" rx="4" fill="#e2e8f0" />
+      <circle cx="96" cy="24" r="18" fill="#eff6ff" stroke="#bfdbfe" strokeWidth="2" />
+      <path d="M92 24l4 4 8-8" stroke="#2563eb" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+    </svg>
+  ),
+};
 
-  useEffect(() => {
-    carregar();
-  }, [carregar]);
+/* ═══════════════════════════════════════════════════════════
+   STATUS CONFIG
+   ═══════════════════════════════════════════════════════════ */
+const STATUS_CONFIG = {
+  pendente: { label: "Pendente", bg: "#fff7ed", color: "#ea580c", dot: "#fb923c" },
+  pago:     { label: "Pago",     bg: "#f0fdf4", color: "#16a34a", dot: "#4ade80" },
+};
 
-  /* ── Ações: Profissional ──────────────────── */
-  async function salvarProfissional() {
-    try {
-      setSalvando(true);
-      if (formProf.id) {
-        await api(`/profissionais/${formProf.id}`, {
-          method: "PUT",
-          body: JSON.stringify(formProf),
-        });
-      } else {
-        await api("/profissionais", {
-          method: "POST",
-          body: JSON.stringify(formProf),
-        });
-      }
-      setModalProfissional(false);
-      setFormProf({ tipo: "dentista", tipo_comissao: "percentual" });
-      carregar();
-    } catch (e) {
-      alert(e.message);
-    } finally {
-      setSalvando(false);
-    }
+/* ═══════════════════════════════════════════════════════════
+   STYLES — Ultra Premium Minimal SaaS
+   ═══════════════════════════════════════════════════════════ */
+const S = {
+  /* ── Loading ─────────────────────────────────────── */
+  loadingWrap: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "20px",
+    minHeight: "400px",
+  },
+  loadingPulse: { display: "flex", gap: "8px", alignItems: "center" },
+  loadingDot: (delay) => ({
+    width: "10px",
+    height: "10px",
+    borderRadius: "50%",
+    background: "#2563eb",
+    animation: "pulse-dot 1.4s ease-in-out infinite",
+    animationDelay: delay,
+  }),
+  loadingText: {
+    fontSize: "14px",
+    fontWeight: "500",
+    color: "#94a3b8",
+    letterSpacing: "0.02em",
+  },
+
+  /* ── Stats Grid ──────────────────────────────────── */
+  statsGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+    gap: "16px",
+  },
+  statCard: {
+    background: "#fff",
+    borderRadius: "16px",
+    padding: "22px",
+    border: "1px solid #f1f5f9",
+    display: "flex",
+    flexDirection: "column",
+    gap: "10px",
+  },
+  statTop: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+  },
+  statIconBox: (accent) => ({
+    width: "36px",
+    height: "36px",
+    borderRadius: "10px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+    background: accent + "14",
+    color: accent,
+  }),
+  statLabel: {
+    fontSize: "13px",
+    fontWeight: "600",
+    color: "#64748b",
+  },
+  statValue: {
+    fontSize: "32px",
+    fontWeight: "800",
+    color: "#0f172a",
+    letterSpacing: "-0.03em",
+    lineHeight: 1,
+  },
+  statSub: {
+    fontSize: "12px",
+    color: "#94a3b8",
+    fontWeight: "500",
+  },
+
+  /* ── Filter Bar ──────────────────────────────────── */
+  filterBar: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    flexWrap: "wrap",
+  },
+  searchInputWrap: (focused) => ({
+    flex: 1,
+    minWidth: "220px",
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    height: "40px",
+    borderRadius: "10px",
+    border: `1px solid ${focused ? "#2563eb" : "#e2e8f0"}`,
+    padding: "0 14px",
+    background: "#fff",
+    transition: "all 0.2s ease",
+    boxSizing: "border-box",
+    boxShadow: focused ? "0 0 0 3px rgba(37,99,235,0.1)" : "none",
+  }),
+  searchIcon: (focused) => ({
+    display: "flex",
+    alignItems: "center",
+    flexShrink: 0,
+    color: focused ? "#2563eb" : "#94a3b8",
+    transition: "color 0.2s ease",
+  }),
+  searchInput: {
+    flex: 1,
+    border: "none",
+    outline: "none",
+    fontSize: "14px",
+    color: "#0f172a",
+    background: "transparent",
+    fontWeight: "400",
+    height: "100%",
+    fontFamily: "inherit",
+  },
+  searchClear: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "20px",
+    height: "20px",
+    borderRadius: "50%",
+    border: "none",
+    background: "#f1f5f9",
+    color: "#94a3b8",
+    fontSize: "10px",
+    cursor: "pointer",
+    flexShrink: 0,
+    lineHeight: 1,
+    fontFamily: "inherit",
+  },
+  filterGroup: {
+    display: "flex",
+    alignItems: "center",
+    gap: "6px",
+  },
+  filterLabel: {
+    fontSize: "13px",
+    fontWeight: "600",
+    color: "#64748b",
+    display: "flex",
+    alignItems: "center",
+    gap: "4px",
+  },
+  filterInput: {
+    height: "40px",
+    borderRadius: "10px",
+    border: "1px solid #e2e8f0",
+    padding: "0 14px",
+    fontSize: "14px",
+    color: "#0f172a",
+    background: "#fff",
+    outline: "none",
+    transition: "all 0.2s ease",
+    fontFamily: "inherit",
+    boxSizing: "border-box",
+  },
+
+  /* ── Buttons ─────────────────────────────────────── */
+  btnPrimary: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "8px",
+    border: "none",
+    borderRadius: "10px",
+    padding: "10px 20px",
+    background: "#2563eb",
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: "14px",
+    cursor: "pointer",
+    boxShadow: "0 1px 3px rgba(37,99,235,0.2)",
+    transition: "all 0.2s ease",
+    whiteSpace: "nowrap",
+    height: "40px",
+    boxSizing: "border-box",
+    fontFamily: "inherit",
+  },
+  btnSecondary: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "6px",
+    border: "1px solid #e2e8f0",
+    borderRadius: "10px",
+    padding: "0 16px",
+    background: "#fff",
+    color: "#475569",
+    fontWeight: "500",
+    fontSize: "13px",
+    cursor: "pointer",
+    transition: "all 0.15s ease",
+    whiteSpace: "nowrap",
+    height: "40px",
+    boxSizing: "border-box",
+    fontFamily: "inherit",
+  },
+
+  /* ── Table ───────────────────────────────────────── */
+  tableCard: {
+    background: "#fff",
+    borderRadius: "16px",
+    border: "1px solid #f1f5f9",
+    overflow: "hidden",
+  },
+  tableHeader: {
+    display: "flex",
+    alignItems: "center",
+    padding: "0 24px",
+    height: "44px",
+    background: "#fafbfc",
+    borderBottom: "1px solid #f1f5f9",
+    gap: "12px",
+  },
+  thCell: {
+    fontSize: "11px",
+    fontWeight: "600",
+    color: "#94a3b8",
+    textTransform: "uppercase",
+    letterSpacing: "0.06em",
+  },
+  list: {
+    listStyle: "none",
+    padding: 0,
+    margin: 0,
+  },
+  row: (hovered) => ({
+    display: "flex",
+    alignItems: "center",
+    padding: "14px 24px",
+    borderBottom: "1px solid #f8fafc",
+    gap: "12px",
+    transition: "background 0.15s ease",
+    cursor: "pointer",
+    background: hovered ? "#fafbfc" : "transparent",
+  }),
+  cellTextBold: {
+    fontSize: "14px",
+    color: "#0f172a",
+    fontWeight: "600",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+  },
+  cellText: {
+    fontSize: "13px",
+    color: "#475569",
+    fontWeight: "400",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+  },
+  cellSub: {
+    fontSize: "12px",
+    color: "#94a3b8",
+    fontWeight: "500",
+  },
+  tableFooter: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: "12px 24px",
+    borderTop: "1px solid #f1f5f9",
+    background: "#fafbfc",
+  },
+  footerText: {
+    fontSize: "13px",
+    color: "#94a3b8",
+    fontWeight: "400",
+  },
+
+  /* ── Avatar ──────────────────────────────────────── */
+  avatar: (color) => ({
+    width: "36px",
+    height: "36px",
+    borderRadius: "10px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+    background: color + "14",
+    color: color,
+    fontSize: "14px",
+    fontWeight: "700",
+  }),
+
+  /* ── Badges ──────────────────────────────────────── */
+  badge: (bg, color) => ({
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "5px",
+    padding: "5px 10px",
+    borderRadius: "8px",
+    fontSize: "12px",
+    fontWeight: "600",
+    whiteSpace: "nowrap",
+    flexShrink: 0,
+    background: bg,
+    color: color,
+  }),
+  badgeDot: (dotColor) => ({
+    width: "6px",
+    height: "6px",
+    borderRadius: "50%",
+    flexShrink: 0,
+    background: dotColor,
+  }),
+  percentBadge: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "4px",
+    padding: "4px 10px",
+    borderRadius: "6px",
+    fontSize: "13px",
+    fontWeight: "700",
+    background: "#eff6ff",
+    color: "#2563eb",
+  },
+
+  /* ── Progress Bar ────────────────────────────────── */
+  progressTrack: {
+    flex: 1,
+    height: "6px",
+    borderRadius: "3px",
+    background: "#f1f5f9",
+    overflow: "hidden",
+  },
+  progressFill: (pct, color) => ({
+    height: "100%",
+    borderRadius: "3px",
+    background: color,
+    width: `${Math.min(pct, 100)}%`,
+    transition: "width 0.6s ease",
+  }),
+
+  /* ── Expanded Detail ─────────────────────────────── */
+  expandedRow: {
+    padding: "0 24px 16px 24px",
+    borderBottom: "1px solid #f1f5f9",
+    background: "#fafbfc",
+  },
+  expandedInner: {
+    display: "flex",
+    gap: "12px",
+    flexWrap: "wrap",
+    padding: "16px 0 0 0",
+  },
+  detailCard: {
+    flex: "1 1 200px",
+    background: "#fff",
+    borderRadius: "12px",
+    border: "1px solid #f1f5f9",
+    padding: "16px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "8px",
+  },
+  detailLabel: {
+    fontSize: "11px",
+    fontWeight: "600",
+    color: "#94a3b8",
+    textTransform: "uppercase",
+    letterSpacing: "0.06em",
+  },
+  detailValue: {
+    fontSize: "14px",
+    fontWeight: "600",
+    color: "#0f172a",
+  },
+  detailListItem: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: "6px 0",
+    borderBottom: "1px solid #f8fafc",
+    gap: "8px",
+  },
+
+  /* ── Action Buttons (table) ──────────────────────── */
+  actionBtn: (hovered, color) => ({
+    width: "34px",
+    height: "34px",
+    borderRadius: "8px",
+    border: hovered ? `1px solid ${color}20` : "1px solid transparent",
+    background: hovered ? `${color}08` : "transparent",
+    color: hovered ? color : "#64748b",
+    cursor: "pointer",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    transition: "all 0.15s ease",
+    padding: 0,
+    flexShrink: 0,
+  }),
+
+  /* ── Modal ───────────────────────────────────────── */
+  modalOverlay: {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: "rgba(15, 23, 42, 0.5)",
+    backdropFilter: "blur(4px)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 1000,
+    padding: "20px",
+  },
+  modal: {
+    background: "#fff",
+    borderRadius: "16px",
+    width: "100%",
+    maxWidth: "480px",
+    maxHeight: "90vh",
+    overflow: "auto",
+    boxShadow:
+      "0 20px 50px rgba(15, 23, 42, 0.15), 0 0 0 1px rgba(15, 23, 42, 0.05)",
+  },
+  modalHeader: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: "20px 24px",
+    borderBottom: "1px solid #f1f5f9",
+  },
+  modalTitle: {
+    margin: 0,
+    fontSize: "16px",
+    fontWeight: "600",
+    color: "#0f172a",
+  },
+  modalCloseBtn: {
+    width: "32px",
+    height: "32px",
+    borderRadius: "8px",
+    border: "none",
+    background: "transparent",
+    color: "#94a3b8",
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    transition: "all 0.15s ease",
+  },
+  modalBody: {
+    padding: "24px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "16px",
+  },
+  modalFooter: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: "10px",
+    padding: "16px 24px",
+    borderTop: "1px solid #f1f5f9",
+  },
+
+  /* ── Form ────────────────────────────────────────── */
+  formGroup: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "6px",
+  },
+  formLabel: {
+    fontSize: "13px",
+    fontWeight: "600",
+    color: "#334155",
+  },
+  formInput: {
+    height: "40px",
+    borderRadius: "10px",
+    border: "1px solid #e2e8f0",
+    padding: "0 14px",
+    fontSize: "14px",
+    color: "#0f172a",
+    background: "#fff",
+    outline: "none",
+    transition: "all 0.2s ease",
+    fontFamily: "inherit",
+    boxSizing: "border-box",
+  },
+  formSelect: {
+    height: "40px",
+    borderRadius: "10px",
+    border: "1px solid #e2e8f0",
+    padding: "0 14px",
+    fontSize: "14px",
+    color: "#0f172a",
+    background: "#fff",
+    outline: "none",
+    transition: "all 0.2s ease",
+    fontFamily: "inherit",
+    boxSizing: "border-box",
+    cursor: "pointer",
+  },
+  formRow: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "12px",
+  },
+  formHint: {
+    fontSize: "12px",
+    color: "#94a3b8",
+    fontWeight: "400",
+  },
+
+  /* ── Empty State ─────────────────────────────────── */
+  emptyState: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: "12px",
+    padding: "64px 20px",
+  },
+  emptyTitle: {
+    margin: 0,
+    fontSize: "16px",
+    fontWeight: "600",
+    color: "#0f172a",
+  },
+  emptyText: {
+    margin: 0,
+    color: "#94a3b8",
+    fontSize: "14px",
+    fontWeight: "400",
+    textAlign: "center",
+    maxWidth: "360px",
+    lineHeight: 1.5,
+  },
+};
+
+/* ═══════════════════════════════════════════════════════════
+   CORES PARA AVATARES
+   ═══════════════════════════════════════════════════════════ */
+const AVATAR_COLORS = [
+  "#2563eb", "#8b5cf6", "#ec4899", "#16a34a",
+  "#ea580c", "#0891b2", "#dc2626", "#ca8a04",
+];
+
+function getAvatarColor(name) {
+  let hash = 0;
+  for (let i = 0; i < (name || "").length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
   }
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
 
-  async function desativarProfissional(id) {
-    if (!confirm("Desativar este profissional?")) return;
-    try {
-      await api(`/profissionais/${id}`, { method: "DELETE" });
-      carregar();
-    } catch (e) {
-      alert(e.message);
-    }
-  }
+function getInitials(name) {
+  if (!name) return "?";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0][0].toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
 
-  /* ── Ações: Comissões ─────────────────────── */
-  async function pagarComissao(id) {
-    if (!confirm("Confirmar pagamento desta comissão?")) return;
-    try {
-      await api(`/comissoes/${id}/pagar`, {
-        method: "PUT",
-        body: JSON.stringify({ data_pagamento: hoje() }),
-      });
-      carregar();
-    } catch (e) {
-      alert(e.message);
-    }
-  }
+/* ═══════════════════════════════════════════════════════════
+   SUB-COMPONENTES INTERNOS
+   ═══════════════════════════════════════════════════════════ */
 
-  async function pagarLote() {
-    if (!selecionados.length) return alert("Selecione pelo menos uma comissão.");
-    if (!confirm(`Pagar ${selecionados.length} comissão(ões) selecionada(s)?`)) return;
-    try {
-      await api("/comissoes/pagar-lote", {
-        method: "PUT",
-        body: JSON.stringify({ ids: selecionados, data_pagamento: hoje() }),
-      });
-      setSelecionados([]);
-      carregar();
-    } catch (e) {
-      alert(e.message);
-    }
-  }
-
-  function toggleSelecionado(id) {
-    setSelecionados((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
-    );
-  }
-
-  function toggleTodos() {
-    const pendentes = comissoes.filter((c) => c.status === "pendente").map((c) => c.id);
-    if (selecionados.length === pendentes.length) {
-      setSelecionados([]);
-    } else {
-      setSelecionados(pendentes);
-    }
-  }
-
-  /* ── Render ────────────────────────────────── */
-  if (loading) {
-    return <div style={S.loadingBox}>Carregando comissões...</div>;
-  }
-
-  const pendentesCount = comissoes.filter((c) => c.status === "pendente").length;
-
+function Loading({ text = "Carregando" }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-
-      {/* ── KPI Cards ────────────────────────── */}
-      <div style={S.kpiGrid4}>
-        <CardKPI
-          titulo="Total Comissões"
-          valor={formatMoney(totais.total_geral)}
-          cor="#8b5cf6"
-          icone={Icons.comissoes}
-        />
-        <CardKPI
-          titulo="Pendente de Pagamento"
-          valor={formatMoney(totais.total_pendente)}
-          cor="#f97316"
-          icone={Icons.money}
-          subtitulo={`${pendentesCount} comissão(ões)`}
-        />
-        <CardKPI
-          titulo="Pago no Período"
-          valor={formatMoney(totais.total_pago)}
-          cor="#16a34a"
-          icone={Icons.check}
-        />
-        <CardKPI
-          titulo="Profissionais Ativos"
-          valor={profissionais.length}
-          cor="#2563eb"
-          icone={Icons.comissoes}
-        />
+    <div style={S.loadingWrap}>
+      <div style={S.loadingPulse}>
+        <div style={S.loadingDot("0s")} />
+        <div style={S.loadingDot("0.2s")} />
+        <div style={S.loadingDot("0.4s")} />
       </div>
-
-      {/* ── Toolbar ───────────��──────────────── */}
-      <div style={S.toolbar}>
-        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-          {/* View mode toggle */}
-          <div style={{
-            display: "flex", background: "#f1f5f9",
-            borderRadius: 8, padding: 2, gap: 2,
-          }}>
-            <button
-              onClick={() => setViewMode("resumo")}
-              style={{
-                ...estilos.toggleBtn,
-                ...(viewMode === "resumo" ? estilos.toggleBtnActive : {}),
-              }}
-            >
-              Por Profissional
-            </button>
-            <button
-              onClick={() => setViewMode("detalhado")}
-              style={{
-                ...estilos.toggleBtn,
-                ...(viewMode === "detalhado" ? estilos.toggleBtnActive : {}),
-              }}
-            >
-              Detalhado
-            </button>
-          </div>
-
-          <span style={{ color: "#94a3b8", display: "flex" }}>{Icons.filter}</span>
-          <select
-            value={filtroProfissional}
-            onChange={(e) => setFiltroProfissional(e.target.value)}
-            style={S.select}
-          >
-            <option value="">Todos os profissionais</option>
-            {profissionais.map((p) => (
-              <option key={p.id} value={p.id}>{p.nome}</option>
-            ))}
-          </select>
-          <select
-            value={filtroStatus}
-            onChange={(e) => setFiltroStatus(e.target.value)}
-            style={S.select}
-          >
-            <option value="">Todos os status</option>
-            <option value="pendente">Pendente</option>
-            <option value="pago">Pago</option>
-          </select>
-        </div>
-
-        <div style={{ display: "flex", gap: 8 }}>
-          <button
-            style={S.btnOutline}
-            onClick={() => exportarCSV("/exportar/comissoes", "comissoes.csv", {
-              mes, ano, profissional_id: filtroProfissional,
-            })}
-          >
-            {Icons.download} <span>Exportar</span>
-          </button>
-          <button
-            style={S.btnPrimary}
-            onClick={() => {
-              setFormProf({ tipo: "dentista", tipo_comissao: "percentual" });
-              setModalProfissional(true);
-            }}
-          >
-            {Icons.plus} <span>Novo Profissional</span>
-          </button>
-        </div>
-      </div>
-
-      {/* ── Profissionais Cadastrados ─────────── */}
-      <div style={S.card}>
-        <h4 style={S.cardTitle}>
-          👨‍⚕️ Profissionais Cadastrados
-          <span style={{ fontSize: 12, fontWeight: 400, color: "#94a3b8", marginLeft: 8 }}>
-            ({profissionais.length})
-          </span>
-        </h4>
-        {profissionais.length === 0 ? (
-          <div style={S.emptyState}>
-            Nenhum profissional cadastrado. Cadastre um profissional para começar a calcular comissões.
-          </div>
-        ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 }}>
-            {profissionais.map((p) => (
-              <div key={p.id} style={estilos.profCard}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                  <div style={estilos.profAvatar}>
-                    {p.nome?.charAt(0)?.toUpperCase() || "?"}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: "#0f172a" }}>
-                      {p.nome}
-                    </p>
-                    {p.cro && (
-                      <p style={{ margin: 0, fontSize: 11, color: "#94a3b8" }}>CRO: {p.cro}</p>
-                    )}
-                  </div>
-                </div>
-
-                <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 10 }}>
-                  {p.especialidade && (
-                    <div style={estilos.profInfo}>
-                      <span style={estilos.profInfoLabel}>Especialidade</span>
-                      <span style={estilos.profInfoValue}>{p.especialidade}</span>
-                    </div>
-                  )}
-                  <div style={estilos.profInfo}>
-                    <span style={estilos.profInfoLabel}>Tipo Comissão</span>
-                    <span style={estilos.profInfoValue}>
-                      {p.tipo_comissao === "percentual"
-                        ? `${p.percentual_comissao}%`
-                        : `Fixo: ${formatMoney(p.valor_fixo_comissao)}`
-                      }
-                    </span>
-                  </div>
-                  <div style={estilos.profInfo}>
-                    <span style={estilos.profInfoLabel}>Tipo</span>
-                    <span style={{
-                      ...estilos.profInfoValue,
-                      textTransform: "capitalize",
-                    }}>{p.tipo}</span>
-                  </div>
-                  {p.telefone && (
-                    <div style={estilos.profInfo}>
-                      <span style={estilos.profInfoLabel}>Telefone</span>
-                      <span style={estilos.profInfoValue}>{p.telefone}</span>
-                    </div>
-                  )}
-                </div>
-
-                <div style={{ display: "flex", gap: 6 }}>
-                  <button
-                    style={{ ...S.btnIcon, flex: 1 }}
-                    onClick={() => { setFormProf({ ...p }); setModalProfissional(true); }}
-                    title="Editar"
-                  >
-                    {Icons.edit}
-                  </button>
-                  <button
-                    style={{ ...S.btnIconDanger, flex: 1 }}
-                    onClick={() => desativarProfissional(p.id)}
-                    title="Desativar"
-                  >
-                    {Icons.trash}
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* ── Comissões: Vista Resumo por Profissional ── */}
-      {viewMode === "resumo" && (
-        <div style={S.card}>
-          <h4 style={S.cardTitle}>💰 Resumo de Comissões por Profissional</h4>
-          {resumoProfissionais.length === 0 ? (
-            <div style={S.emptyState}>Nenhuma comissão gerada neste período.</div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {resumoProfissionais.map((rp) => {
-                const pctPago = rp.total_comissao > 0
-                  ? (rp.total_pago / rp.total_comissao) * 100
-                  : 0;
-
-                return (
-                  <div key={rp.profissional_id} style={estilos.resumoCard}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1 }}>
-                      <div style={estilos.profAvatar}>
-                        {rp.profissional_nome?.charAt(0)?.toUpperCase() || "?"}
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                          <div>
-                            <span style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>
-                              {rp.profissional_nome}
-                            </span>
-                            {rp.profissional_cro && (
-                              <span style={{ fontSize: 11, color: "#94a3b8", marginLeft: 8 }}>
-                                CRO: {rp.profissional_cro}
-                              </span>
-                            )}
-                          </div>
-                          <span style={{ fontSize: 11, color: "#94a3b8" }}>
-                            {rp.quantidade} procedimento(s)
-                          </span>
-                        </div>
-
-                        {/* Barra de progresso */}
-                        <div style={S.progressBar}>
-                          <div style={{
-                            ...S.progressFill,
-                            width: `${pctPago}%`,
-                            background: pctPago >= 100
-                              ? "linear-gradient(90deg, #22c55e, #16a34a)"
-                              : "linear-gradient(90deg, #8b5cf6, #6d28d9)",
-                          }} />
-                        </div>
-
-                        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6, gap: 12, flexWrap: "wrap" }}>
-                          <span style={{ fontSize: 12, color: "#8b5cf6", fontWeight: 600 }}>
-                            Total: {formatMoney(rp.total_comissao)}
-                          </span>
-                          <span style={{ fontSize: 12, color: "#16a34a" }}>
-                            Pago: {formatMoney(rp.total_pago)}
-                          </span>
-                          <span style={{ fontSize: 12, color: "#f97316" }}>
-                            Pendente: {formatMoney(rp.total_pendente)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ── Comissões: Vista Detalhada ────────── */}
-      {viewMode === "detalhado" && (
-        <div style={S.card}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-            <h4 style={{ ...S.cardTitle, marginBottom: 0, paddingBottom: 0 }}>
-              📋 Comissões Detalhadas
-              <span style={{ fontSize: 12, fontWeight: 400, color: "#94a3b8", marginLeft: 8 }}>
-                ({comissoes.length})
-              </span>
-            </h4>
-            {selecionados.length > 0 && (
-              <button
-                style={{
-                  ...S.btnPrimary,
-                  background: "#16a34a",
-                  fontSize: 12,
-                  padding: "6px 14px",
-                }}
-                onClick={pagarLote}
-              >
-                {Icons.check}
-                Pagar {selecionados.length} selecionada(s) ({formatMoney(
-                  comissoes
-                    .filter((c) => selecionados.includes(c.id))
-                    .reduce((s, c) => s + c.valor_comissao, 0)
-                )})
-              </button>
-            )}
-          </div>
-
-          {comissoes.length === 0 ? (
-            <div style={S.emptyState}>Nenhuma comissão gerada neste período.</div>
-          ) : (
-            <div style={S.tableWrapper}>
-              <table style={S.table}>
-                <thead>
-                  <tr>
-                    <th style={{ ...S.th, width: 36 }}>
-                      {pendentesCount > 0 && (
-                        <input
-                          type="checkbox"
-                          checked={selecionados.length === pendentesCount && pendentesCount > 0}
-                          onChange={toggleTodos}
-                          style={{ cursor: "pointer" }}
-                        />
-                      )}
-                    </th>
-                    <th style={S.th}>Profissional</th>
-                    <th style={S.th}>Paciente</th>
-                    <th style={S.th}>Procedimento</th>
-                    <th style={S.th}>Valor Proc.</th>
-                    <th style={S.th}>%</th>
-                    <th style={S.th}>Comissão</th>
-                    <th style={S.th}>Data Ref.</th>
-                    <th style={S.th}>Status</th>
-                    <th style={{ ...S.th, textAlign: "center" }}>Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {comissoes.map((c) => (
-                    <tr key={c.id} style={{
-                      background: selecionados.includes(c.id) ? "#f5f3ff" : "transparent",
-                    }}>
-                      <td style={S.td}>
-                        {c.status === "pendente" && (
-                          <input
-                            type="checkbox"
-                            checked={selecionados.includes(c.id)}
-                            onChange={() => toggleSelecionado(c.id)}
-                            style={{ cursor: "pointer" }}
-                          />
-                        )}
-                      </td>
-                      <td style={S.td}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                          <div style={{ ...estilos.miniAvatar }}>
-                            {c.profissional_nome?.charAt(0)?.toUpperCase() || "?"}
-                          </div>
-                          <span style={{ fontWeight: 500, color: "#0f172a", fontSize: 13 }}>
-                            {c.profissional_nome}
-                          </span>
-                        </div>
-                      </td>
-                      <td style={S.td}>
-                        <span style={{ color: "#64748b", fontSize: 12 }}>
-                          {c.paciente_nome || "—"}
-                        </span>
-                      </td>
-                      <td style={S.td}>
-                        <span style={{ color: "#334155", fontSize: 12 }}>
-                          {c.procedimento || "—"}
-                        </span>
-                      </td>
-                      <td style={S.td}>
-                        <span style={{ color: "#0f172a", fontWeight: 500 }}>
-                          {formatMoney(c.valor_procedimento)}
-                        </span>
-                      </td>
-                      <td style={S.td}>
-                        <span style={{
-                          padding: "2px 6px", borderRadius: 4,
-                          background: "#f5f3ff", color: "#7c3aed",
-                          fontSize: 11, fontWeight: 600,
-                        }}>
-                          {c.percentual}%
-                        </span>
-                      </td>
-                      <td style={S.td}>
-                        <span style={{ fontWeight: 700, color: "#8b5cf6" }}>
-                          {formatMoney(c.valor_comissao)}
-                        </span>
-                      </td>
-                      <td style={S.td}>
-                        <span style={{ color: "#64748b", fontSize: 12 }}>
-                          {formatDate(c.data_referencia)}
-                        </span>
-                      </td>
-                      <td style={S.td}>
-                        <Badge status={c.status} />
-                        {c.data_pagamento && (
-                          <span style={{ display: "block", fontSize: 10, color: "#94a3b8", marginTop: 2 }}>
-                            Pago em {formatDate(c.data_pagamento)}
-                          </span>
-                        )}
-                      </td>
-                      <td style={{ ...S.td, textAlign: "center" }}>
-                        {c.status === "pendente" && (
-                          <button
-                            style={S.btnIconSuccess}
-                            onClick={() => pagarComissao(c.id)}
-                            title="Pagar comissão"
-                          >
-                            {Icons.check}
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ── Modal Profissional ───────────────── */}
-      <Modal
-        aberto={modalProfissional}
-        onFechar={() => { setModalProfissional(false); setFormProf({ tipo: "dentista", tipo_comissao: "percentual" }); }}
-        titulo={formProf.id ? "Editar Profissional" : "Novo Profissional"}
-        largura={580}
-      >
-        <div style={S.formGrid}>
-          <div style={S.formGroup2}>
-            <label style={S.label}>Nome *</label>
-            <input
-              style={S.input}
-              value={formProf.nome || ""}
-              onChange={(e) => setFormProf({ ...formProf, nome: e.target.value })}
-              placeholder="Nome completo do profissional"
-            />
-          </div>
-          <div style={S.formGroup}>
-            <label style={S.label}>CPF</label>
-            <input
-              style={S.input}
-              value={formProf.cpf || ""}
-              onChange={(e) => setFormProf({ ...formProf, cpf: e.target.value })}
-              placeholder="000.000.000-00"
-            />
-          </div>
-          <div style={S.formGroup}>
-            <label style={S.label}>CRO</label>
-            <input
-              style={S.input}
-              value={formProf.cro || ""}
-              onChange={(e) => setFormProf({ ...formProf, cro: e.target.value })}
-              placeholder="CRO-XX 00000"
-            />
-          </div>
-          <div style={S.formGroup}>
-            <label style={S.label}>Especialidade</label>
-            <input
-              style={S.input}
-              value={formProf.especialidade || ""}
-              onChange={(e) => setFormProf({ ...formProf, especialidade: e.target.value })}
-              placeholder="Ex: Ortodontia, Endodontia..."
-            />
-          </div>
-          <div style={S.formGroup}>
-            <label style={S.label}>Tipo</label>
-            <select
-              style={S.input}
-              value={formProf.tipo || "dentista"}
-              onChange={(e) => setFormProf({ ...formProf, tipo: e.target.value })}
-            >
-              <option value="dentista">Dentista</option>
-              <option value="auxiliar">Auxiliar</option>
-              <option value="higienista">Higienista</option>
-              <option value="outro">Outro</option>
-            </select>
-          </div>
-          <div style={S.formGroup}>
-            <label style={S.label}>Telefone</label>
-            <input
-              style={S.input}
-              value={formProf.telefone || ""}
-              onChange={(e) => setFormProf({ ...formProf, telefone: e.target.value })}
-              placeholder="(00) 00000-0000"
-            />
-          </div>
-          <div style={S.formGroup}>
-            <label style={S.label}>Email</label>
-            <input
-              style={S.input}
-              type="email"
-              value={formProf.email || ""}
-              onChange={(e) => setFormProf({ ...formProf, email: e.target.value })}
-              placeholder="email@exemplo.com"
-            />
-          </div>
-
-          {/* Comissão */}
-          <div style={{ ...S.formGroup2, marginTop: 4 }}>
-            <div style={{
-              padding: 14, background: "#f5f3ff",
-              borderRadius: 10, border: "1px solid #e9d5ff",
-            }}>
-              <p style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 600, color: "#7c3aed" }}>
-                💰 Configuração de Comissão
-              </p>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                <div style={S.formGroup}>
-                  <label style={S.label}>Tipo de Comissão</label>
-                  <select
-                    style={S.input}
-                    value={formProf.tipo_comissao || "percentual"}
-                    onChange={(e) => setFormProf({ ...formProf, tipo_comissao: e.target.value })}
-                  >
-                    <option value="percentual">Percentual (%)</option>
-                    <option value="fixo">Valor Fixo (R$)</option>
-                  </select>
-                </div>
-
-                {formProf.tipo_comissao === "percentual" ? (
-                  <div style={S.formGroup}>
-                    <label style={S.label}>Percentual (%)</label>
-                    <input
-                      style={S.input}
-                      type="number"
-                      step="0.5"
-                      min="0"
-                      max="100"
-                      value={formProf.percentual_comissao || ""}
-                      onChange={(e) => setFormProf({
-                        ...formProf,
-                        percentual_comissao: parseFloat(e.target.value) || 0,
-                      })}
-                      placeholder="Ex: 30"
-                    />
-                    {formProf.percentual_comissao > 0 && (
-                      <span style={{ fontSize: 11, color: "#7c3aed", marginTop: 2 }}>
-                        A cada R$ 1.000, recebe {formatMoney(1000 * formProf.percentual_comissao / 100)}
-                      </span>
-                    )}
-                  </div>
-                ) : (
-                  <div style={S.formGroup}>
-                    <label style={S.label}>Valor Fixo (R$)</label>
-                    <input
-                      style={S.input}
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={formProf.valor_fixo_comissao || ""}
-                      onChange={(e) => setFormProf({
-                        ...formProf,
-                        valor_fixo_comissao: parseFloat(e.target.value) || 0,
-                      })}
-                      placeholder="0,00"
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div style={S.formGroup2}>
-            <label style={S.label}>Observações</label>
-            <textarea
-              style={{ ...S.input, minHeight: 55, resize: "vertical" }}
-              value={formProf.observacoes || ""}
-              onChange={(e) => setFormProf({ ...formProf, observacoes: e.target.value })}
-              placeholder="Anotações sobre o profissional..."
-            />
-          </div>
-        </div>
-
-        <div style={S.formActions}>
-          <button
-            style={S.btnOutline}
-            onClick={() => {
-              setModalProfissional(false);
-              setFormProf({ tipo: "dentista", tipo_comissao: "percentual" });
-            }}
-          >
-            Cancelar
-          </button>
-          <button
-            style={{
-              ...S.btnPrimary,
-              background: "#7c3aed",
-              opacity: salvando || !formProf.nome ? 0.6 : 1,
-            }}
-            onClick={salvarProfissional}
-            disabled={salvando || !formProf.nome}
-          >
-            {salvando ? "Salvando..." : formProf.id ? "Salvar Alterações" : "Cadastrar Profissional"}
-          </button>
-        </div>
-      </Modal>
+      <span style={S.loadingText}>{text}</span>
+      <style>{`
+        @keyframes pulse-dot {
+          0%, 80%, 100% { transform: scale(0); opacity: 0.5; }
+          40% { transform: scale(1); opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 }
 
-/* ══════════════════════════════════════════════════════════════
-   ESTILOS LOCAIS
-   ══════════════════════════════════════════════════════════════ */
-const estilos = {
-  toggleBtn: {
-    padding: "6px 14px",
-    border: "none",
-    borderRadius: 6,
-    fontSize: 12,
-    fontWeight: 500,
-    cursor: "pointer",
-    background: "transparent",
-    color: "#64748b",
-    transition: "all 0.15s",
-  },
-  toggleBtnActive: {
-    background: "#fff",
-    color: "#0f172a",
-    fontWeight: 600,
-    boxShadow: "0 1px 3px rgba(15,23,42,0.08)",
-  },
-  profCard: {
-    padding: 16,
-    borderRadius: 12,
-    border: "1px solid #f1f5f9",
-    background: "#fafafa",
-  },
-  profAvatar: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
-    background: "linear-gradient(135deg, #8b5cf6, #6d28d9)",
-    color: "#fff",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: 15,
-    fontWeight: 700,
-    flexShrink: 0,
-  },
-  miniAvatar: {
-    width: 26,
-    height: 26,
-    borderRadius: 7,
-    background: "linear-gradient(135deg, #8b5cf6, #6d28d9)",
-    color: "#fff",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: 11,
-    fontWeight: 700,
-    flexShrink: 0,
-  },
-  profInfo: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    fontSize: 12,
-  },
-  profInfoLabel: {
-    color: "#94a3b8",
-    fontWeight: 500,
-  },
-  profInfoValue: {
-    color: "#334155",
-    fontWeight: 600,
-  },
-  resumoCard: {
-    padding: "16px 20px",
-    borderRadius: 12,
-    border: "1px solid #f1f5f9",
-    background: "#fafafa",
-  },
-};
+function StatCard({ label, value, icon, accent, sub }) {
+  return (
+    <div style={S.statCard}>
+      <div style={S.statTop}>
+        <span style={S.statIconBox(accent)}>{icon}</span>
+        <span style={S.statLabel}>{label}</span>
+      </div>
+      <strong style={S.statValue}>{value}</strong>
+      {sub && <span style={S.statSub}>{sub}</span>}
+    </div>
+  );
+}
+
+function StatusBadge({ status }) {
+  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.pendente;
+  return (
+    <span style={S.badge(cfg.bg, cfg.color)}>
+      <span style={S.badgeDot(cfg.dot)} />
+      {cfg.label}
+    </span>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
+   COMPONENTE PRINCIPAL — Comissoes
+   ═══════════════════════════════════════════════════════════ */
+function Comissoes() {
+  const [comissoes, setComissoes] = useState([]);
+  const [carregando, setCarregando] = useState(true);
+  const [busca, setBusca] = useState("");
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [dataInicio, setDataInicio] = useState(mesPassado());
+  const [dataFim, setDataFim] = useState(hoje());
+  const [expandedId, setExpandedId] = useState(null);
+  const [hoveredId, setHoveredId] = useState(null);
+  const [hoveredAction, setHoveredAction] = useState(null);
+  const [modal, setModal] = useState(null); // "config" | null
+  const [configForm, setConfigForm] = useState({
+    profissional_nome: "",
+    percentual: "",
+    tipo: "percentual",
+  });
+
+  /* ── Fetch ───────────────────────────────────────── */
+  const carregar = () => {
+    setCarregando(true);
+    fetch(
+      `${API}/financeiro/comissoes?data_inicio=${dataInicio}&data_fim=${dataFim}`,
+      { headers: headers() }
+    )
+      .then((r) => r.json())
+      .then((d) => setComissoes(Array.isArray(d) ? d : []))
+      .catch(console.error)
+      .finally(() => setCarregando(false));
+  };
+
+  useEffect(() => {
+    carregar();
+  }, [dataInicio, dataFim]);
+
+  /* ── Agrupado por profissional ───────────────────── */
+  const agrupado = useMemo(() => {
+    const mapa = {};
+    comissoes.forEach((c) => {
+      const nome = c.profissional_nome || c.profissional || "Não atribuído";
+      if (!mapa[nome]) {
+        mapa[nome] = {
+          nome,
+          percentual: Number(c.percentual || 0),
+          total_atendimentos: 0,
+          total_faturado: 0,
+          total_comissao: 0,
+          comissao_paga: 0,
+          comissao_pendente: 0,
+          itens: [],
+        };
+      }
+      const valor = Number(c.valor || 0);
+      const comissaoValor = Number(c.comissao || c.valor_comissao || 0);
+      mapa[nome].total_atendimentos += 1;
+      mapa[nome].total_faturado += valor;
+      mapa[nome].total_comissao += comissaoValor;
+      if (c.status === "pago") mapa[nome].comissao_paga += comissaoValor;
+      else mapa[nome].comissao_pendente += comissaoValor;
+      mapa[nome].itens.push(c);
+    });
+    return Object.values(mapa).sort((a, b) => b.total_comissao - a.total_comissao);
+  }, [comissoes]);
+
+  /* ── Filtro ──────────────────────────────────────── */
+  const filtrados = useMemo(() => {
+    const t = busca.trim().toLowerCase();
+    if (!t) return agrupado;
+    return agrupado.filter((p) => p.nome.toLowerCase().includes(t));
+  }, [agrupado, busca]);
+
+  /* ── Stats ───────────────────────────────────────── */
+  const stats = useMemo(() => {
+    const totalComissao = agrupado.reduce((s, p) => s + p.total_comissao, 0);
+    const totalFaturado = agrupado.reduce((s, p) => s + p.total_faturado, 0);
+    const totalPendente = agrupado.reduce((s, p) => s + p.comissao_pendente, 0);
+    return {
+      profissionais: agrupado.length,
+      totalComissao,
+      totalFaturado,
+      totalPendente,
+      mediaPercentual:
+        agrupado.length > 0
+          ? (
+              agrupado.reduce((s, p) => s + p.percentual, 0) / agrupado.length
+            ).toFixed(1)
+          : "0",
+    };
+  }, [agrupado]);
+
+  /* ── Handlers ────────────────────────────────────── */
+  const toggleExpand = (nome) => {
+    setExpandedId(expandedId === nome ? null : nome);
+  };
+
+  const marcarComissaoPaga = async (id) => {
+    try {
+      await fetch(`${API}/financeiro/comissoes/${id}`, {
+        method: "PUT",
+        headers: headers(),
+        body: JSON.stringify({
+          status: "pago",
+          data_pagamento: new Date().toISOString().split("T")[0],
+        }),
+      });
+      carregar();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const salvarConfig = async () => {
+    try {
+      await fetch(`${API}/financeiro/comissoes/config`, {
+        method: "POST",
+        headers: headers(),
+        body: JSON.stringify(configForm),
+      });
+      setModal(null);
+      carregar();
+    } catch (e) {
+      console.error(e);
+      alert("Erro ao salvar configuração de comissão.");
+    }
+  };
+
+  const handleInputFocus = (e) => {
+    e.target.style.borderColor = "#2563eb";
+    e.target.style.boxShadow = "0 0 0 3px rgba(37,99,235,0.1)";
+  };
+
+  const handleInputBlur = (e) => {
+    e.target.style.borderColor = "#e2e8f0";
+    e.target.style.boxShadow = "none";
+  };
+
+  /* ── Loading ─────────────────────────────────────── */
+  if (carregando) return <Loading text="Carregando comissões" />;
+
+  /* ── Colunas ─────────────────────────────────────── */
+  const COL = {
+    profissional:  { flex: "1.5", minWidth: "180px" },
+    atendimentos:  { width: "110px", textAlign: "center" },
+    faturado:      { width: "130px", textAlign: "right" },
+    percentual:    { width: "100px", textAlign: "center" },
+    comissao:      { width: "130px", textAlign: "right" },
+    status:        { width: "120px" },
+    expandir:      { width: "50px", justifyContent: "flex-end" },
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+
+      {/* ══════════════════════════════════════════════
+          STATS GRID
+          ══════════════════════════════════════════════ */}
+      <div style={S.statsGrid}>
+        <StatCard
+          label="Profissionais"
+          value={stats.profissionais}
+          icon={Icons.users}
+          accent="#8b5cf6"
+          sub="com comissões"
+        />
+        <StatCard
+          label="Total faturado"
+          value={fmt(stats.totalFaturado)}
+          icon={Icons.trendingUp}
+          accent="#16a34a"
+          sub="no período"
+        />
+        <StatCard
+          label="Total em comissões"
+          value={fmt(stats.totalComissao)}
+          icon={Icons.dollarSign}
+          accent="#2563eb"
+          sub={`média ${stats.mediaPercentual}%`}
+        />
+        <StatCard
+          label="Comissões pendentes"
+          value={fmt(stats.totalPendente)}
+          icon={Icons.percent}
+          accent="#ea580c"
+          sub="a pagar"
+        />
+      </div>
+
+      {/* ══════════════════════════════════════════════
+          FILTER BAR
+          ══════════════════════════════════════════════ */}
+      <div style={S.filterBar}>
+        <div style={S.searchInputWrap(searchFocused)}>
+          <span style={S.searchIcon(searchFocused)}>{Icons.search}</span>
+          <input
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            onFocus={() => setSearchFocused(true)}
+            onBlur={() => setSearchFocused(false)}
+            placeholder="Buscar profissional..."
+            style={S.searchInput}
+          />
+          {busca && (
+            <button style={S.searchClear} onClick={() => setBusca("")}>
+              ✕
+            </button>
+          )}
+        </div>
+
+        {/* Datas */}
+        <div style={S.filterGroup}>
+          <span style={S.filterLabel}>{Icons.calendar} De</span>
+          <input
+            type="date"
+            style={S.filterInput}
+            value={dataInicio}
+            onChange={(e) => setDataInicio(e.target.value)}
+            onFocus={handleInputFocus}
+            onBlur={handleInputBlur}
+          />
+        </div>
+        <div style={S.filterGroup}>
+          <span style={S.filterLabel}>{Icons.calendar} Até</span>
+          <input
+            type="date"
+            style={S.filterInput}
+            value={dataFim}
+            onChange={(e) => setDataFim(e.target.value)}
+            onFocus={handleInputFocus}
+            onBlur={handleInputBlur}
+          />
+        </div>
+
+        <button
+          style={S.btnSecondary}
+          onClick={carregar}
+          onMouseEnter={(e) => (e.currentTarget.style.background = "#f8fafc")}
+          onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
+        >
+          {Icons.refresh}
+          <span>Atualizar</span>
+        </button>
+
+        <button
+          style={S.btnPrimary}
+          onClick={() => {
+            setConfigForm({ profissional_nome: "", percentual: "", tipo: "percentual" });
+            setModal("config");
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = "translateY(-1px)";
+            e.currentTarget.style.boxShadow = "0 6px 20px rgba(37,99,235,0.3)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = "translateY(0)";
+            e.currentTarget.style.boxShadow = "0 1px 3px rgba(37,99,235,0.2)";
+          }}
+        >
+          {Icons.settings}
+          <span>Configurar</span>
+        </button>
+      </div>
+
+      {/* ══════════════════════════════════════════════
+          TABELA ou EMPTY STATE
+          ══════════════════════════════════════════════ */}
+      {filtrados.length === 0 ? (
+        <div style={{ background: "#fff", borderRadius: "16px", border: "1px solid #f1f5f9" }}>
+          <div style={S.emptyState}>
+            {Icons.emptyState}
+            <h3 style={S.emptyTitle}>
+              {busca
+                ? "Nenhum profissional encontrado"
+                : "Nenhuma comissão no período"}
+            </h3>
+            <p style={S.emptyText}>
+              {busca
+                ? "Tente ajustar o termo de busca."
+                : "Ajuste o intervalo de datas ou configure comissões para os profissionais."}
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div style={S.tableCard}>
+          {/* Header */}
+          <div style={S.tableHeader}>
+            <span style={{ ...S.thCell, ...COL.profissional }}>Profissional</span>
+            <span style={{ ...S.thCell, ...COL.atendimentos }}>Atendimentos</span>
+            <span style={{ ...S.thCell, ...COL.faturado }}>Faturado</span>
+            <span style={{ ...S.thCell, ...COL.percentual }}>Percentual</span>
+            <span style={{ ...S.thCell, ...COL.comissao }}>Comissão</span>
+            <span style={{ ...S.thCell, ...COL.status }}>Pendente</span>
+            <span style={{ ...S.thCell, ...COL.expandir }}></span>
+          </div>
+
+          {/* Rows */}
+          <ul style={S.list}>
+            {filtrados.map((p) => {
+              const isHovered = hoveredId === p.nome;
+              const isExpanded = expandedId === p.nome;
+              const color = getAvatarColor(p.nome);
+              const pagoPct =
+                p.total_comissao > 0
+                  ? (p.comissao_paga / p.total_comissao) * 100
+                  : 0;
+
+              return (
+                <li key={p.nome} style={{ margin: 0 }}>
+                  {/* ── Main Row ──────────────────── */}
+                  <div
+                    style={S.row(isHovered)}
+                    onMouseEnter={() => setHoveredId(p.nome)}
+                    onMouseLeave={() => setHoveredId(null)}
+                    onClick={() => toggleExpand(p.nome)}
+                  >
+                    {/* Profissional */}
+                    <div
+                      style={{
+                        ...COL.profissional,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "12px",
+                        minWidth: 0,
+                      }}
+                    >
+                      <div style={S.avatar(color)}>
+                        {getInitials(p.nome)}
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "2px", minWidth: 0 }}>
+                        <span style={S.cellTextBold}>{p.nome}</span>
+                        <span style={S.cellSub}>
+                          {p.total_atendimentos}{" "}
+                          {p.total_atendimentos === 1 ? "atendimento" : "atendimentos"}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Atendimentos */}
+                    <div style={{ ...COL.atendimentos, display: "flex", justifyContent: "center" }}>
+                      <span style={S.cellTextBold}>{p.total_atendimentos}</span>
+                    </div>
+
+                    {/* Faturado */}
+                    <div style={{ ...COL.faturado }}>
+                      <span
+                        style={{
+                          ...S.cellTextBold,
+                          color: "#16a34a",
+                          width: "100%",
+                          textAlign: "right",
+                          display: "block",
+                        }}
+                      >
+                        {fmt(p.total_faturado)}
+                      </span>
+                    </div>
+
+                    {/* Percentual */}
+                    <div style={{ ...COL.percentual, display: "flex", justifyContent: "center" }}>
+                      <span style={S.percentBadge}>
+                        {p.percentual}%
+                      </span>
+                    </div>
+
+                    {/* Comissão */}
+                    <div style={{ ...COL.comissao }}>
+                      <span
+                        style={{
+                          ...S.cellTextBold,
+                          color: "#2563eb",
+                          width: "100%",
+                          textAlign: "right",
+                          display: "block",
+                        }}
+                      >
+                        {fmt(p.total_comissao)}
+                      </span>
+                    </div>
+
+                    {/* Pendente (progress) */}
+                    <div
+                      style={{
+                        ...COL.status,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                      }}
+                    >
+                      <div style={S.progressTrack}>
+                        <div style={S.progressFill(pagoPct, "#16a34a")} />
+                      </div>
+                      <span style={{ ...S.cellSub, minWidth: "50px", textAlign: "right" }}>
+                        {fmt(p.comissao_pendente)}
+                      </span>
+                    </div>
+
+                    {/* Expandir */}
+                    <div
+                      style={{
+                        ...COL.expandir,
+                        display: "flex",
+                        justifyContent: "flex-end",
+                        alignItems: "center",
+                      }}
+                    >
+                      <span style={{ display: "flex", color: "#94a3b8" }}>
+                        {isExpanded ? Icons.chevronUp : Icons.chevronDown}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* ── Expanded Detail ───────────── */}
+                  {isExpanded && (
+                    <div style={S.expandedRow}>
+                      <div style={S.expandedInner}>
+                        {/* Card: Resumo financeiro */}
+                        <div style={S.detailCard}>
+                          <span style={S.detailLabel}>Resumo financeiro</span>
+                          <div style={S.detailListItem}>
+                            <span style={S.cellText}>Faturado</span>
+                            <span style={{ ...S.cellTextBold, color: "#16a34a" }}>
+                              {fmt(p.total_faturado)}
+                            </span>
+                          </div>
+                          <div style={S.detailListItem}>
+                            <span style={S.cellText}>Comissão total</span>
+                            <span style={{ ...S.cellTextBold, color: "#2563eb" }}>
+                              {fmt(p.total_comissao)}
+                            </span>
+                          </div>
+                          <div style={S.detailListItem}>
+                            <span style={S.cellText}>Pago</span>
+                            <span style={{ ...S.cellTextBold, color: "#16a34a" }}>
+                              {fmt(p.comissao_paga)}
+                            </span>
+                          </div>
+                          <div style={{ ...S.detailListItem, borderBottom: "none" }}>
+                            <span style={S.cellText}>Pendente</span>
+                            <span style={{ ...S.cellTextBold, color: "#ea580c" }}>
+                              {fmt(p.comissao_pendente)}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Card: Últimos atendimentos */}
+                        <div style={{ ...S.detailCard, flex: "2 1 300px" }}>
+                          <span style={S.detailLabel}>
+                            Atendimentos ({p.itens.length})
+                          </span>
+                          {p.itens.slice(0, 6).map((item, idx) => {
+                            const comVal = Number(
+                              item.comissao || item.valor_comissao || 0
+                            );
+                            return (
+                              <div key={item.id || idx} style={S.detailListItem}>
+                                <div style={{ display: "flex", flexDirection: "column", gap: "2px", flex: 1, minWidth: 0 }}>
+                                  <span style={S.cellText}>
+                                    {item.descricao || item.procedimento || "—"}
+                                  </span>
+                                  <span style={S.cellSub}>
+                                    {fmtData(item.data || item.data_atendimento)} ·{" "}
+                                    {item.paciente_nome || "—"}
+                                  </span>
+                                </div>
+                                <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+                                  <span style={{ ...S.cellTextBold, color: "#2563eb" }}>
+                                    {fmt(comVal)}
+                                  </span>
+                                  <StatusBadge status={item.status || "pendente"} />
+                                  {item.status !== "pago" && (
+                                    <button
+                                      title="Marcar como pago"
+                                      style={S.actionBtn(
+                                        hoveredAction === `pay-${item.id}`,
+                                        "#16a34a"
+                                      )}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        marcarComissaoPaga(item.id);
+                                      }}
+                                      onMouseEnter={() =>
+                                        setHoveredAction(`pay-${item.id}`)
+                                      }
+                                      onMouseLeave={() =>
+                                        setHoveredAction(null)
+                                      }
+                                    >
+                                      {Icons.check}
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                          {p.itens.length > 6 && (
+                            <span style={{ ...S.cellSub, textAlign: "center", paddingTop: "4px" }}>
+                              + {p.itens.length - 6} atendimentos...
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+
+          {/* Footer */}
+          <div style={S.tableFooter}>
+            <span style={S.footerText}>
+              {filtrados.length}{" "}
+              {filtrados.length === 1 ? "profissional" : "profissionais"}
+            </span>
+            <span style={{ ...S.footerText, fontWeight: "600", color: "#2563eb" }}>
+              Total comissões: {fmt(stats.totalComissao)}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════
+          MODAL — Configurar comissão
+          ══════════════════════════════════════════════ */}
+      {modal === "config" && (
+        <div style={S.modalOverlay} onClick={() => setModal(null)}>
+          <div style={S.modal} onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div style={S.modalHeader}>
+              <h3 style={S.modalTitle}>Configurar comissão</h3>
+              <button
+                style={S.modalCloseBtn}
+                onClick={() => setModal(null)}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.background = "#f1f5f9")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.background = "transparent")
+                }
+              >
+                {Icons.x}
+              </button>
+            </div>
+
+            {/* Body */}
+            <div style={S.modalBody}>
+              {/* Profissional */}
+              <div style={S.formGroup}>
+                <label style={S.formLabel}>Profissional *</label>
+                <input
+                  style={S.formInput}
+                  value={configForm.profissional_nome || ""}
+                  onChange={(e) =>
+                    setConfigForm((prev) => ({
+                      ...prev,
+                      profissional_nome: e.target.value,
+                    }))
+                  }
+                  onFocus={handleInputFocus}
+                  onBlur={handleInputBlur}
+                  placeholder="Nome do profissional"
+                />
+              </div>
+
+              {/* Tipo + Valor */}
+              <div style={S.formRow}>
+                <div style={S.formGroup}>
+                  <label style={S.formLabel}>Tipo</label>
+                  <select
+                    style={S.formSelect}
+                    value={configForm.tipo || "percentual"}
+                    onChange={(e) =>
+                      setConfigForm((prev) => ({
+                        ...prev,
+                        tipo: e.target.value,
+                      }))
+                    }
+                    onFocus={handleInputFocus}
+                    onBlur={handleInputBlur}
+                  >
+                    <option value="percentual">Percentual (%)</option>
+                    <option value="fixo">Valor fixo (R$)</option>
+                  </select>
+                </div>
+                <div style={S.formGroup}>
+                  <label style={S.formLabel}>
+                    {configForm.tipo === "percentual"
+                      ? "Percentual (%)"
+                      : "Valor fixo (R$)"}
+                  </label>
+                  <input
+                    type="number"
+                    step={configForm.tipo === "percentual" ? "0.5" : "0.01"}
+                    min="0"
+                    max={configForm.tipo === "percentual" ? "100" : undefined}
+                    style={S.formInput}
+                    value={configForm.percentual || ""}
+                    onChange={(e) =>
+                      setConfigForm((prev) => ({
+                        ...prev,
+                        percentual: e.target.value,
+                      }))
+                    }
+                    onFocus={handleInputFocus}
+                    onBlur={handleInputBlur}
+                    placeholder={
+                      configForm.tipo === "percentual" ? "Ex: 30" : "Ex: 150,00"
+                    }
+                  />
+                  <span style={S.formHint}>
+                    {configForm.tipo === "percentual"
+                      ? "Percentual sobre cada atendimento"
+                      : "Valor fixo por atendimento"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div style={S.modalFooter}>
+              <button
+                style={S.btnSecondary}
+                onClick={() => setModal(null)}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.background = "#f8fafc")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.background = "#fff")
+                }
+              >
+                Cancelar
+              </button>
+              <button
+                style={S.btnPrimary}
+                onClick={salvarConfig}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-1px)";
+                  e.currentTarget.style.boxShadow =
+                    "0 6px 20px rgba(37,99,235,0.3)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow =
+                    "0 1px 3px rgba(37,99,235,0.2)";
+                }}
+              >
+                Salvar configuração
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default Comissoes;

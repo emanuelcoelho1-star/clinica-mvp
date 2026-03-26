@@ -1,709 +1,1029 @@
-import { useState, useEffect, useCallback } from "react";
-import {
-  api, formatMoney, formatDate, exportarCSV, hoje,
-  Icons, S, Modal, CardKPI,
-} from "./FinanceiroHelpers";
+import { useEffect, useState, useMemo } from "react";
 
-export default function FluxoCaixa({ mes, ano }) {
-  const [dados, setDados] = useState({ movimentacoes: [], por_dia: [], totais: {}, projecao: {} });
-  const [categorias, setCategorias] = useState([]);
-  const [formasPagamento, setFormasPagamento] = useState([]);
-  const [loading, setLoading] = useState(true);
+/* ═══════════════════════════════════════════════════════════
+   CONFIG
+   ═══════════════════════════════════════════════════════════ */
+const API = "http://localhost:3001";
 
-  // Modal
-  const [modalAberto, setModalAberto] = useState(false);
-  const [form, setForm] = useState({ tipo: "entrada" });
-  const [salvando, setSalvando] = useState(false);
+function headers() {
+  return {
+    Authorization: localStorage.getItem("token"),
+    "Content-Type": "application/json",
+  };
+}
 
-  // Visualização
-  const [periodo, setPeriodo] = useState("mensal");
-  const [viewMode, setViewMode] = useState("lista"); // lista | agrupado
+function fmt(v) {
+  return Number(v || 0).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+}
 
-  /* ── Carregar dados ────────────────────────── */
-  const carregar = useCallback(async () => {
-    try {
-      setLoading(true);
-      const [fluxo, cats, formas] = await Promise.all([
-        api(`/fluxo-caixa?mes=${mes}&ano=${ano}&periodo=${periodo}`),
-        api("/categorias"),
-        api("/formas-pagamento"),
-      ]);
-      setDados(fluxo);
-      setCategorias(cats || []);
-      setFormasPagamento(formas || []);
-    } catch (e) {
-      console.error("Erro ao carregar fluxo de caixa:", e);
-    } finally {
-      setLoading(false);
-    }
-  }, [mes, ano, periodo]);
+function fmtData(d) {
+  if (!d) return "—";
+  const p = d.split("-");
+  if (p.length !== 3) return d;
+  return `${p[2]}/${p[1]}/${p[0]}`;
+}
 
-  useEffect(() => {
-    carregar();
-  }, [carregar]);
+function hoje() {
+  return new Date().toISOString().split("T")[0];
+}
 
-  /* ── Ações ─────────────────────────────────── */
-  async function salvar() {
-    try {
-      setSalvando(true);
-      await api("/fluxo-caixa", {
-        method: "POST",
-        body: JSON.stringify(form),
-      });
-      setModalAberto(false);
-      setForm({ tipo: "entrada" });
-      carregar();
-    } catch (e) {
-      alert(e.message);
-    } finally {
-      setSalvando(false);
-    }
-  }
+function mesPassado() {
+  const d = new Date();
+  d.setMonth(d.getMonth() - 1);
+  return d.toISOString().split("T")[0];
+}
 
-  async function excluir(id) {
-    if (!confirm("Excluir este lançamento?")) return;
-    try {
-      await api(`/fluxo-caixa/${id}`, { method: "DELETE" });
-      carregar();
-    } catch (e) {
-      alert(e.message);
-    }
-  }
+/* ═══════════════════════════════════════════════════════════
+   ICONS — Lucide-style inline SVGs
+   ═══════════════════════════════════════════════════════════ */
+const Icons = {
+  trendingUp: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
+      <polyline points="16 7 22 7 22 13" />
+    </svg>
+  ),
+  trendingDown: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="22 17 13.5 8.5 8.5 13.5 2 7" />
+      <polyline points="16 17 22 17 22 11" />
+    </svg>
+  ),
+  arrowUpDown: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m21 16-4 4-4-4" /><path d="M17 20V4" />
+      <path d="m3 8 4-4 4 4" /><path d="M7 4v16" />
+    </svg>
+  ),
+  barChart: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="12" x2="12" y1="20" y2="10" />
+      <line x1="18" x2="18" y1="20" y2="4" />
+      <line x1="6" x2="6" y1="20" y2="16" />
+    </svg>
+  ),
+  calendar: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
+      <path d="M16 2v4" /><path d="M8 2v4" /><path d="M3 10h18" />
+    </svg>
+  ),
+  refresh: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+      <path d="M3 3v5h5" />
+      <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+      <path d="M16 16h5v5" />
+    </svg>
+  ),
+  arrowUp: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m18 15-6-6-6 6" />
+    </svg>
+  ),
+  arrowDown: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  ),
+  emptyState: (
+    <svg width="64" height="64" viewBox="0 0 120 120" fill="none">
+      <rect x="10" y="24" width="100" height="76" rx="16" fill="#f1f5f9" stroke="#e2e8f0" strokeWidth="2" />
+      <rect x="24" y="70" width="14" height="22" rx="4" fill="#e2e8f0" />
+      <rect x="44" y="55" width="14" height="37" rx="4" fill="#e2e8f0" />
+      <rect x="64" y="42" width="14" height="50" rx="4" fill="#e2e8f0" />
+      <rect x="84" y="50" width="14" height="42" rx="4" fill="#e2e8f0" />
+      <circle cx="96" cy="24" r="18" fill="#eff6ff" stroke="#bfdbfe" strokeWidth="2" />
+      <path d="M90 24h12M96 18v12" stroke="#2563eb" strokeWidth="2.5" strokeLinecap="round" />
+    </svg>
+  ),
+};
 
-  /* ── Gráfico Fluxo por Dia (SVG) ──────────── */
-  function GraficoFluxoDiario() {
-    const dias = dados.por_dia || [];
-    if (!dias.length) {
-      return <div style={{ padding: 30, textAlign: "center", color: "#94a3b8", fontSize: 13 }}>Sem movimentações no período</div>;
-    }
+/* ═══════════════════════════════════════════════════════════
+   STYLES — Ultra Premium Minimal SaaS
+   ═══════════════════════════════════════════════════════════ */
+const S = {
+  /* ── Loading ─────────────────────────────────────── */
+  loadingWrap: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "20px",
+    minHeight: "400px",
+  },
+  loadingPulse: { display: "flex", gap: "8px", alignItems: "center" },
+  loadingDot: (delay) => ({
+    width: "10px",
+    height: "10px",
+    borderRadius: "50%",
+    background: "#2563eb",
+    animation: "pulse-dot 1.4s ease-in-out infinite",
+    animationDelay: delay,
+  }),
+  loadingText: {
+    fontSize: "14px",
+    fontWeight: "500",
+    color: "#94a3b8",
+    letterSpacing: "0.02em",
+  },
 
-    const maxVal = Math.max(...dias.flatMap((d) => [d.entradas, d.saidas]), 1);
-    const w = 700;
-    const h = 220;
-    const padding = { top: 15, right: 15, bottom: 35, left: 10 };
-    const chartW = w - padding.left - padding.right;
-    const chartH = h - padding.top - padding.bottom;
-    const barGroupW = chartW / dias.length;
-    const barW = Math.min(barGroupW * 0.35, 24);
-    const gap = (barGroupW - barW * 2) / 3;
+  /* ── Stats Grid ──────────────────────────────────── */
+  statsGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+    gap: "16px",
+  },
+  statCard: {
+    background: "#fff",
+    borderRadius: "16px",
+    padding: "22px",
+    border: "1px solid #f1f5f9",
+    display: "flex",
+    flexDirection: "column",
+    gap: "10px",
+  },
+  statTop: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+  },
+  statIconBox: (accent) => ({
+    width: "36px",
+    height: "36px",
+    borderRadius: "10px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+    background: accent + "14",
+    color: accent,
+  }),
+  statLabel: {
+    fontSize: "13px",
+    fontWeight: "600",
+    color: "#64748b",
+  },
+  statValue: {
+    fontSize: "32px",
+    fontWeight: "800",
+    color: "#0f172a",
+    letterSpacing: "-0.03em",
+    lineHeight: 1,
+  },
+  statSub: {
+    fontSize: "12px",
+    color: "#94a3b8",
+    fontWeight: "500",
+  },
 
-    return (
-      <svg viewBox={`0 0 ${w} ${h}`} style={{ width: "100%", maxWidth: 700, height: "auto" }}>
-        {/* Grid */}
-        {[0, 0.25, 0.5, 0.75, 1].map((pct, i) => (
-          <line
-            key={i}
-            x1={padding.left} x2={w - padding.right}
-            y1={padding.top + chartH * (1 - pct)}
-            y2={padding.top + chartH * (1 - pct)}
-            stroke="#f1f5f9" strokeWidth="1"
-          />
-        ))}
-        {/* Barras por dia */}
-        {dias.map((d, i) => {
-          const x = padding.left + i * barGroupW;
-          const hEnt = (d.entradas / maxVal) * chartH;
-          const hSai = (d.saidas / maxVal) * chartH;
-          const labelDia = d.data ? d.data.split("-")[2] : "";
-          return (
-            <g key={i}>
-              <rect
-                x={x + gap} y={padding.top + chartH - hEnt}
-                width={barW} height={hEnt}
-                rx="2" fill="#22c55e" opacity="0.8"
-              />
-              <rect
-                x={x + gap + barW + 2} y={padding.top + chartH - hSai}
-                width={barW} height={hSai}
-                rx="2" fill="#ef4444" opacity="0.8"
-              />
-              <text
-                x={x + barGroupW / 2} y={h - 10}
-                textAnchor="middle" fontSize="10" fill="#94a3b8"
-              >
-                {labelDia}
-              </text>
-            </g>
-          );
-        })}
-        {/* Legenda */}
-        <rect x={padding.left} y={h - 18} width="7" height="7" rx="2" fill="#22c55e" />
-        <text x={padding.left + 10} y={h - 11} fontSize="9" fill="#64748b">Entradas</text>
-        <rect x={padding.left + 65} y={h - 18} width="7" height="7" rx="2" fill="#ef4444" />
-        <text x={padding.left + 75} y={h - 11} fontSize="9" fill="#64748b">Saídas</text>
-      </svg>
-    );
-  }
+  /* ── Filter Bar ──────────────────────────────────── */
+  filterBar: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    flexWrap: "wrap",
+  },
+  filterGroup: {
+    display: "flex",
+    alignItems: "center",
+    gap: "6px",
+  },
+  filterLabel: {
+    fontSize: "13px",
+    fontWeight: "600",
+    color: "#64748b",
+    display: "flex",
+    alignItems: "center",
+    gap: "4px",
+  },
+  filterInput: {
+    height: "40px",
+    borderRadius: "10px",
+    border: "1px solid #e2e8f0",
+    padding: "0 14px",
+    fontSize: "14px",
+    color: "#0f172a",
+    background: "#fff",
+    outline: "none",
+    transition: "all 0.2s ease",
+    fontFamily: "inherit",
+    boxSizing: "border-box",
+  },
+  btnSecondary: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "6px",
+    border: "1px solid #e2e8f0",
+    borderRadius: "10px",
+    padding: "0 16px",
+    background: "#fff",
+    color: "#475569",
+    fontWeight: "500",
+    fontSize: "13px",
+    cursor: "pointer",
+    transition: "all 0.15s ease",
+    whiteSpace: "nowrap",
+    height: "40px",
+    boxSizing: "border-box",
+    fontFamily: "inherit",
+  },
+  periodChip: (active) => ({
+    display: "inline-flex",
+    alignItems: "center",
+    height: "34px",
+    padding: "0 14px",
+    borderRadius: "8px",
+    fontSize: "13px",
+    fontWeight: "600",
+    cursor: "pointer",
+    border: "none",
+    transition: "all 0.15s ease",
+    fontFamily: "inherit",
+    background: active ? "#2563eb" : "#f1f5f9",
+    color: active ? "#fff" : "#64748b",
+  }),
 
-  /* ── Gráfico Saldo Acumulado (linha SVG) ──── */
-  function GraficoSaldoAcumulado() {
-    const movs = dados.movimentacoes || [];
-    if (!movs.length) {
-      return <div style={{ padding: 30, textAlign: "center", color: "#94a3b8", fontSize: 13 }}>Sem dados</div>;
-    }
+  /* ── Card ────────────────────────────────────────── */
+  card: {
+    background: "#fff",
+    borderRadius: "16px",
+    border: "1px solid #f1f5f9",
+    padding: "24px",
+  },
+  cardHeader: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: "18px",
+    gap: "12px",
+  },
+  cardTitleRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+  },
+  cardIcon: {
+    display: "flex",
+    color: "#94a3b8",
+  },
+  cardTitle: {
+    margin: 0,
+    fontSize: "15px",
+    fontWeight: "600",
+    color: "#0f172a",
+    letterSpacing: "-0.01em",
+  },
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))",
+    gap: "20px",
+  },
 
-    const saldos = movs.map((m) => m.saldo_acumulado);
-    const maxSaldo = Math.max(...saldos.map(Math.abs), 1);
-    const minSaldo = Math.min(...saldos, 0);
-    const range = maxSaldo - minSaldo || 1;
+  /* ── Chart (CSS puro) ────────────────────────────── */
+  chartContainer: {
+    display: "flex",
+    alignItems: "flex-end",
+    gap: "6px",
+    height: "200px",
+    padding: "0 4px",
+  },
+  chartBarGroup: {
+    flex: 1,
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: "6px",
+    height: "100%",
+    justifyContent: "flex-end",
+  },
+  chartBarsRow: {
+    display: "flex",
+    gap: "3px",
+    width: "100%",
+    justifyContent: "center",
+    alignItems: "flex-end",
+    flex: 1,
+  },
+  chartBar: (color, pct) => ({
+    flex: 1,
+    maxWidth: "22px",
+    borderRadius: "5px 5px 0 0",
+    transition: "height 0.6s ease",
+    minHeight: "4px",
+    background: color,
+    height: `${pct}%`,
+    cursor: "default",
+  }),
+  chartLabel: {
+    fontSize: "10px",
+    fontWeight: "600",
+    color: "#94a3b8",
+    textTransform: "uppercase",
+    letterSpacing: "0.04em",
+    textAlign: "center",
+  },
+  legendWrap: {
+    display: "flex",
+    gap: "16px",
+    marginTop: "16px",
+    justifyContent: "center",
+  },
+  legendItem: {
+    display: "flex",
+    alignItems: "center",
+    gap: "6px",
+    fontSize: "12px",
+    color: "#64748b",
+    fontWeight: "500",
+  },
+  legendDot: (color) => ({
+    width: "10px",
+    height: "10px",
+    borderRadius: "3px",
+    background: color,
+  }),
 
-    const w = 700;
-    const h = 180;
-    const padding = { top: 15, right: 15, bottom: 25, left: 10 };
-    const chartW = w - padding.left - padding.right;
-    const chartH = h - padding.top - padding.bottom;
+  /* ── Saldo Acumulado (mini chart) ────────────────── */
+  saldoBarWrap: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    padding: "10px 0",
+    borderBottom: "1px solid #f1f5f9",
+  },
+  saldoLabel: {
+    fontSize: "13px",
+    fontWeight: "500",
+    color: "#475569",
+    width: "80px",
+    flexShrink: 0,
+  },
+  saldoBarTrack: {
+    flex: 1,
+    height: "8px",
+    borderRadius: "4px",
+    background: "#f1f5f9",
+    overflow: "hidden",
+  },
+  saldoBarFill: (pct, color) => ({
+    height: "100%",
+    borderRadius: "4px",
+    background: color,
+    width: `${Math.min(Math.abs(pct), 100)}%`,
+    transition: "width 0.6s ease",
+  }),
+  saldoValue: (positive) => ({
+    fontSize: "14px",
+    fontWeight: "700",
+    color: positive ? "#16a34a" : "#dc2626",
+    minWidth: "100px",
+    textAlign: "right",
+  }),
 
-    const points = movs.map((m, i) => {
-      const x = padding.left + (i / (movs.length - 1 || 1)) * chartW;
-      const y = padding.top + chartH - ((m.saldo_acumulado - minSaldo) / range) * chartH;
-      return `${x},${y}`;
-    });
+  /* ── Table ───────────────────────────────────────── */
+  tableCard: {
+    background: "#fff",
+    borderRadius: "16px",
+    border: "1px solid #f1f5f9",
+    overflow: "hidden",
+  },
+  tableHeader: {
+    display: "flex",
+    alignItems: "center",
+    padding: "0 24px",
+    height: "44px",
+    background: "#fafbfc",
+    borderBottom: "1px solid #f1f5f9",
+    gap: "12px",
+  },
+  thCell: {
+    fontSize: "11px",
+    fontWeight: "600",
+    color: "#94a3b8",
+    textTransform: "uppercase",
+    letterSpacing: "0.06em",
+  },
+  list: {
+    listStyle: "none",
+    padding: 0,
+    margin: 0,
+  },
+  row: (hovered) => ({
+    display: "flex",
+    alignItems: "center",
+    padding: "14px 24px",
+    borderBottom: "1px solid #f8fafc",
+    gap: "12px",
+    transition: "background 0.15s ease",
+    cursor: "default",
+    background: hovered ? "#fafbfc" : "transparent",
+  }),
+  cellTextBold: {
+    fontSize: "14px",
+    color: "#0f172a",
+    fontWeight: "600",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+  },
+  cellText: {
+    fontSize: "13px",
+    color: "#475569",
+    fontWeight: "400",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+  },
+  tableFooter: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: "12px 24px",
+    borderTop: "1px solid #f1f5f9",
+    background: "#fafbfc",
+  },
+  footerText: {
+    fontSize: "13px",
+    color: "#94a3b8",
+    fontWeight: "400",
+  },
 
-    const polyline = points.join(" ");
+  /* ── Type Badge ──────────────────────────────────── */
+  typeBadge: (tipo) => ({
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "5px",
+    padding: "5px 10px",
+    borderRadius: "8px",
+    fontSize: "12px",
+    fontWeight: "600",
+    whiteSpace: "nowrap",
+    flexShrink: 0,
+    background: tipo === "entrada" ? "#f0fdf4" : "#fef2f2",
+    color: tipo === "entrada" ? "#16a34a" : "#dc2626",
+  }),
+  typeDot: (tipo) => ({
+    width: "6px",
+    height: "6px",
+    borderRadius: "50%",
+    flexShrink: 0,
+    background: tipo === "entrada" ? "#4ade80" : "#f87171",
+  }),
 
-    // Área preenchida
-    const firstX = padding.left;
-    const lastX = padding.left + chartW;
-    const bottomY = padding.top + chartH;
-    const areaPoints = `${firstX},${bottomY} ${polyline} ${lastX},${bottomY}`;
+  /* ── Empty State ─────────────────────────────────── */
+  emptyState: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: "12px",
+    padding: "64px 20px",
+  },
+  emptyStateInline: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: "8px",
+    padding: "32px 0",
+  },
+  emptyTitle: {
+    margin: 0,
+    fontSize: "16px",
+    fontWeight: "600",
+    color: "#0f172a",
+  },
+  emptyText: {
+    margin: 0,
+    color: "#94a3b8",
+    fontSize: "14px",
+    fontWeight: "400",
+    textAlign: "center",
+    maxWidth: "360px",
+    lineHeight: 1.5,
+  },
+};
 
-    const ultimoSaldo = saldos[saldos.length - 1] || 0;
-    const corLinha = ultimoSaldo >= 0 ? "#22c55e" : "#ef4444";
+/* ═══════════════════════════════════════════════════════════
+   SUB-COMPONENTES INTERNOS
+   ═══════════════════════════════════════════════════════════ */
 
-    return (
-      <svg viewBox={`0 0 ${w} ${h}`} style={{ width: "100%", maxWidth: 700, height: "auto" }}>
-        {/* Linha zero */}
-        {minSaldo < 0 && (
-          <line
-            x1={padding.left} x2={w - padding.right}
-            y1={padding.top + chartH - ((0 - minSaldo) / range) * chartH}
-            y2={padding.top + chartH - ((0 - minSaldo) / range) * chartH}
-            stroke="#f1f5f9" strokeWidth="1" strokeDasharray="4"
-          />
-        )}
-        {/* Área */}
-        <polygon points={areaPoints} fill={corLinha} opacity="0.08" />
-        {/* Linha */}
-        <polyline
-          points={polyline}
-          fill="none" stroke={corLinha} strokeWidth="2.5"
-          strokeLinecap="round" strokeLinejoin="round"
-        />
-        {/* Ponto final */}
-        {movs.length > 0 && (() => {
-          const lastPt = points[points.length - 1].split(",");
-          return (
-            <circle cx={parseFloat(lastPt[0])} cy={parseFloat(lastPt[1])} r="4" fill={corLinha} stroke="#fff" strokeWidth="2" />
-          );
-        })()}
-        {/* Label saldo final */}
-        <text
-          x={w - padding.right} y={padding.top + 12}
-          textAnchor="end" fontSize="11" fill={corLinha} fontWeight="700"
-        >
-          Saldo: {formatMoney(ultimoSaldo)}
-        </text>
-      </svg>
-    );
-  }
-
-  /* ── Render ────────────────────────────────── */
-  if (loading) {
-    return <div style={S.loadingBox}>Carregando fluxo de caixa...</div>;
-  }
-
-  const t = dados.totais || {};
-  const p = dados.projecao || {};
-
+function Loading({ text = "Carregando" }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-
-      {/* ── KPI Cards ────────────────────────── */}
-      <div style={S.kpiGrid}>
-        <CardKPI
-          titulo="Total Entradas"
-          valor={formatMoney(t.entradas)}
-          cor="#16a34a"
-          icone={Icons.receber}
-        />
-        <CardKPI
-          titulo="Total Saídas"
-          valor={formatMoney(t.saidas)}
-          cor="#dc2626"
-          icone={Icons.pagar}
-        />
-        <CardKPI
-          titulo="Saldo do Período"
-          valor={formatMoney(t.saldo)}
-          cor={t.saldo >= 0 ? "#16a34a" : "#dc2626"}
-          icone={Icons.money}
-          trend={t.saldo >= 0 ? "up" : "down"}
-        />
-        <CardKPI
-          titulo="Projeção (A Receber)"
-          valor={formatMoney(p.a_receber)}
-          cor="#2563eb"
-          icone={Icons.trendUp}
-          subtitulo="Pendente no mês"
-        />
-        <CardKPI
-          titulo="Projeção (A Pagar)"
-          valor={formatMoney(p.a_pagar)}
-          cor="#f97316"
-          icone={Icons.trendDown}
-          subtitulo="Pendente no mês"
-        />
-        <CardKPI
-          titulo="Saldo Projetado"
-          valor={formatMoney(p.saldo_projetado)}
-          cor={p.saldo_projetado >= 0 ? "#16a34a" : "#dc2626"}
-          icone={Icons.fluxo}
-          trend={p.saldo_projetado >= 0 ? "up" : "down"}
-          subtitulo="Realizado + pendente"
-        />
+    <div style={S.loadingWrap}>
+      <div style={S.loadingPulse}>
+        <div style={S.loadingDot("0s")} />
+        <div style={S.loadingDot("0.2s")} />
+        <div style={S.loadingDot("0.4s")} />
       </div>
-
-      {/* ── Toolbar ──────────────────────────── */}
-      <div style={S.toolbar}>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          {/* Período */}
-          <div style={{
-            display: "flex", background: "#f1f5f9",
-            borderRadius: 8, padding: 2, gap: 2,
-          }}>
-            <button
-              onClick={() => setPeriodo("mensal")}
-              style={{
-                ...estilos.toggleBtn,
-                ...(periodo === "mensal" ? estilos.toggleBtnActive : {}),
-              }}
-            >
-              Mensal
-            </button>
-            <button
-              onClick={() => setPeriodo("semanal")}
-              style={{
-                ...estilos.toggleBtn,
-                ...(periodo === "semanal" ? estilos.toggleBtnActive : {}),
-              }}
-            >
-              Semanal
-            </button>
-          </div>
-
-          {/* View mode */}
-          <div style={{
-            display: "flex", background: "#f1f5f9",
-            borderRadius: 8, padding: 2, gap: 2,
-          }}>
-            <button
-              onClick={() => setViewMode("lista")}
-              style={{
-                ...estilos.toggleBtn,
-                ...(viewMode === "lista" ? estilos.toggleBtnActive : {}),
-              }}
-            >
-              Lista
-            </button>
-            <button
-              onClick={() => setViewMode("agrupado")}
-              style={{
-                ...estilos.toggleBtn,
-                ...(viewMode === "agrupado" ? estilos.toggleBtnActive : {}),
-              }}
-            >
-              Por Dia
-            </button>
-          </div>
-        </div>
-
-        <div style={{ display: "flex", gap: 8 }}>
-          <button
-            style={S.btnOutline}
-            onClick={() => exportarCSV("/exportar/fluxo-caixa", "fluxo_caixa.csv", { mes, ano })}
-          >
-            {Icons.download} <span>Exportar</span>
-          </button>
-          <button
-            style={S.btnPrimary}
-            onClick={() => { setForm({ tipo: "entrada", data: hoje() }); setModalAberto(true); }}
-          >
-            {Icons.plus} <span>Novo Lançamento</span>
-          </button>
-        </div>
-      </div>
-
-      {/* ── Gráficos ─────────────────────────── */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-        <div style={S.card}>
-          <h4 style={S.cardTitle}>📊 Entradas vs Saídas por Dia</h4>
-          <GraficoFluxoDiario />
-        </div>
-        <div style={S.card}>
-          <h4 style={S.cardTitle}>📈 Saldo Acumulado</h4>
-          <GraficoSaldoAcumulado />
-        </div>
-      </div>
-
-      {/* ── Movimentações ────────────────────── */}
-      <div style={S.card}>
-        <h4 style={S.cardTitle}>
-          📋 Movimentações
-          <span style={{ fontSize: 12, fontWeight: 400, color: "#94a3b8", marginLeft: 8 }}>
-            ({dados.movimentacoes?.length || 0} lançamento(s))
-          </span>
-        </h4>
-
-        {viewMode === "lista" ? (
-          /* ── Vista Lista ──────────────────── */
-          dados.movimentacoes?.length === 0 ? (
-            <div style={S.emptyState}>Nenhuma movimentação registrada neste período.</div>
-          ) : (
-            <div style={S.tableWrapper}>
-              <table style={S.table}>
-                <thead>
-                  <tr>
-                    <th style={S.th}>Tipo</th>
-                    <th style={S.th}>Descrição</th>
-                    <th style={S.th}>Valor</th>
-                    <th style={S.th}>Data</th>
-                    <th style={S.th}>Forma Pgto</th>
-                    <th style={S.th}>Saldo</th>
-                    <th style={{ ...S.th, textAlign: "center" }}>Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {dados.movimentacoes.map((m) => (
-                    <tr key={m.id}>
-                      <td style={S.td}>
-                        <span style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: 4,
-                          padding: "3px 8px",
-                          borderRadius: 6,
-                          fontSize: 11,
-                          fontWeight: 600,
-                          background: m.tipo === "entrada" ? "#dcfce7" : "#fee2e2",
-                          color: m.tipo === "entrada" ? "#16a34a" : "#dc2626",
-                        }}>
-                          {m.tipo === "entrada" ? "↓ Entrada" : "↑ Saída"}
-                        </span>
-                      </td>
-                      <td style={S.td}>
-                        <span style={{ fontWeight: 500, color: "#0f172a" }}>{m.descricao}</span>
-                      </td>
-                      <td style={S.td}>
-                        <span style={{
-                          fontWeight: 600,
-                          color: m.tipo === "entrada" ? "#16a34a" : "#dc2626",
-                        }}>
-                          {m.tipo === "entrada" ? "+" : "−"} {formatMoney(m.valor)}
-                        </span>
-                      </td>
-                      <td style={S.td}>
-                        <span style={{ color: "#64748b" }}>{formatDate(m.data)}</span>
-                      </td>
-                      <td style={S.td}>
-                        <span style={{ color: "#64748b", fontSize: 12, textTransform: "capitalize" }}>
-                          {m.forma_pagamento || "—"}
-                        </span>
-                      </td>
-                      <td style={S.td}>
-                        <span style={{
-                          fontWeight: 600,
-                          color: m.saldo_acumulado >= 0 ? "#16a34a" : "#dc2626",
-                        }}>
-                          {formatMoney(m.saldo_acumulado)}
-                        </span>
-                      </td>
-                      <td style={{ ...S.td, textAlign: "center" }}>
-                        {!m.conta_pagar_id && !m.conta_receber_id && (
-                          <button
-                            style={S.btnIconDanger}
-                            onClick={() => excluir(m.id)}
-                            title="Excluir lançamento manual"
-                          >
-                            {Icons.trash}
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )
-        ) : (
-          /* ── Vista Agrupada por Dia ────────── */
-          dados.por_dia?.length === 0 ? (
-            <div style={S.emptyState}>Nenhuma movimentação registrada neste período.</div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              {dados.por_dia.map((dia) => {
-                const saldoDia = dia.entradas - dia.saidas;
-                return (
-                  <div key={dia.data} style={estilos.diaGroup}>
-                    {/* Header do dia */}
-                    <div style={estilos.diaHeader}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <span style={estilos.diaData}>{formatDate(dia.data)}</span>
-                        <span style={estilos.diaDiaSemana}>
-                          {new Date(dia.data + "T12:00:00").toLocaleDateString("pt-BR", { weekday: "long" })}
-                        </span>
-                      </div>
-                      <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
-                        <span style={{ fontSize: 12, color: "#16a34a", fontWeight: 600 }}>
-                          ↓ {formatMoney(dia.entradas)}
-                        </span>
-                        <span style={{ fontSize: 12, color: "#dc2626", fontWeight: 600 }}>
-                          ↑ {formatMoney(dia.saidas)}
-                        </span>
-                        <span style={{
-                          fontSize: 12, fontWeight: 700,
-                          color: saldoDia >= 0 ? "#16a34a" : "#dc2626",
-                          padding: "2px 8px",
-                          background: saldoDia >= 0 ? "#f0fdf4" : "#fef2f2",
-                          borderRadius: 6,
-                        }}>
-                          {saldoDia >= 0 ? "+" : ""}{formatMoney(saldoDia)}
-                        </span>
-                      </div>
-                    </div>
-                    {/* Itens do dia */}
-                    <div style={{ display: "flex", flexDirection: "column" }}>
-                      {dia.movimentacoes.map((m) => (
-                        <div key={m.id} style={estilos.diaItem}>
-                          <span style={{
-                            width: 6, height: 6, borderRadius: "50%", flexShrink: 0,
-                            background: m.tipo === "entrada" ? "#22c55e" : "#ef4444",
-                          }} />
-                          <span style={{ flex: 1, fontSize: 13, color: "#334155" }}>{m.descricao}</span>
-                          <span style={{
-                            fontSize: 12, color: "#94a3b8",
-                            textTransform: "capitalize",
-                          }}>
-                            {m.forma_pagamento || ""}
-                          </span>
-                          <span style={{
-                            fontSize: 13, fontWeight: 600, minWidth: 90, textAlign: "right",
-                            color: m.tipo === "entrada" ? "#16a34a" : "#dc2626",
-                          }}>
-                            {m.tipo === "entrada" ? "+" : "−"} {formatMoney(m.valor)}
-                          </span>
-                          {!m.conta_pagar_id && !m.conta_receber_id && (
-                            <button
-                              style={{ ...S.btnIconDanger, width: 24, height: 24 }}
-                              onClick={() => excluir(m.id)}
-                            >
-                              {Icons.trash}
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )
-        )}
-      </div>
-
-      {/* ── Modal Novo Lançamento ────────────── */}
-      <Modal
-        aberto={modalAberto}
-        onFechar={() => { setModalAberto(false); setForm({ tipo: "entrada" }); }}
-        titulo="Novo Lançamento Manual"
-        largura={500}
-      >
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          {/* Tipo (toggle) */}
-          <div style={S.formGroup}>
-            <label style={S.label}>Tipo *</label>
-            <div style={{
-              display: "flex", background: "#f1f5f9",
-              borderRadius: 10, padding: 3, gap: 3,
-            }}>
-              <button
-                type="button"
-                onClick={() => setForm({ ...form, tipo: "entrada" })}
-                style={{
-                  flex: 1, padding: "8px 0", border: "none",
-                  borderRadius: 8, fontSize: 13, fontWeight: 600,
-                  cursor: "pointer", transition: "all 0.15s",
-                  background: form.tipo === "entrada" ? "#dcfce7" : "transparent",
-                  color: form.tipo === "entrada" ? "#16a34a" : "#94a3b8",
-                }}
-              >
-                ↓ Entrada
-              </button>
-              <button
-                type="button"
-                onClick={() => setForm({ ...form, tipo: "saida" })}
-                style={{
-                  flex: 1, padding: "8px 0", border: "none",
-                  borderRadius: 8, fontSize: 13, fontWeight: 600,
-                  cursor: "pointer", transition: "all 0.15s",
-                  background: form.tipo === "saida" ? "#fee2e2" : "transparent",
-                  color: form.tipo === "saida" ? "#dc2626" : "#94a3b8",
-                }}
-              >
-                ↑ Saída
-              </button>
-            </div>
-          </div>
-
-          <div style={S.formGroup}>
-            <label style={S.label}>Descrição *</label>
-            <input
-              style={S.input}
-              value={form.descricao || ""}
-              onChange={(e) => setForm({ ...form, descricao: e.target.value })}
-              placeholder="Ex: Recebimento avulso, ajuste de caixa..."
-            />
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <div style={S.formGroup}>
-              <label style={S.label}>Valor (R$) *</label>
-              <input
-                style={S.input}
-                type="number"
-                step="0.01"
-                min="0"
-                value={form.valor || ""}
-                onChange={(e) => setForm({ ...form, valor: parseFloat(e.target.value) || 0 })}
-                placeholder="0,00"
-              />
-            </div>
-            <div style={S.formGroup}>
-              <label style={S.label}>Data *</label>
-              <input
-                style={S.input}
-                type="date"
-                value={form.data || ""}
-                onChange={(e) => setForm({ ...form, data: e.target.value })}
-              />
-            </div>
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <div style={S.formGroup}>
-              <label style={S.label}>Categoria</label>
-              <select
-                style={S.input}
-                value={form.categoria_id || ""}
-                onChange={(e) => setForm({ ...form, categoria_id: e.target.value })}
-              >
-                <option value="">Selecione</option>
-                {categorias
-                  .filter((c) => form.tipo === "entrada" ? c.tipo === "receita" : c.tipo === "despesa")
-                  .map((c) => (
-                    <option key={c.id} value={c.id}>{c.nome}</option>
-                  ))
-                }
-              </select>
-            </div>
-            <div style={S.formGroup}>
-              <label style={S.label}>Forma de Pagamento</label>
-              <select
-                style={S.input}
-                value={form.forma_pagamento || ""}
-                onChange={(e) => setForm({ ...form, forma_pagamento: e.target.value })}
-              >
-                <option value="">Selecione</option>
-                {formasPagamento.map((f) => (
-                  <option key={f.id} value={f.tipo}>{f.nome}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div style={S.formGroup}>
-            <label style={S.label}>Observações</label>
-            <textarea
-              style={{ ...S.input, minHeight: 55, resize: "vertical" }}
-              value={form.observacoes || ""}
-              onChange={(e) => setForm({ ...form, observacoes: e.target.value })}
-              placeholder="Anotações..."
-            />
-          </div>
-        </div>
-
-        <div style={S.formActions}>
-          <button style={S.btnOutline} onClick={() => { setModalAberto(false); setForm({ tipo: "entrada" }); }}>
-            Cancelar
-          </button>
-          <button
-            style={{
-              ...S.btnPrimary,
-              background: form.tipo === "entrada" ? "#16a34a" : "#dc2626",
-              opacity: salvando || !form.descricao || !form.valor || !form.data ? 0.6 : 1,
-            }}
-            onClick={salvar}
-            disabled={salvando || !form.descricao || !form.valor || !form.data}
-          >
-            {salvando ? "Salvando..." : form.tipo === "entrada" ? "Registrar Entrada" : "Registrar Saída"}
-          </button>
-        </div>
-      </Modal>
+      <span style={S.loadingText}>{text}</span>
+      <style>{`
+        @keyframes pulse-dot {
+          0%, 80%, 100% { transform: scale(0); opacity: 0.5; }
+          40% { transform: scale(1); opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 }
 
-/* ══════════════════════════════════════════════════════════════
-   ESTILOS LOCAIS
-   ══════════════════════════════════════════════════════════════ */
-const estilos = {
-  toggleBtn: {
-    padding: "6px 14px",
-    border: "none",
-    borderRadius: 6,
-    fontSize: 12,
-    fontWeight: 500,
-    cursor: "pointer",
-    background: "transparent",
-    color: "#64748b",
-    transition: "all 0.15s",
-  },
-  toggleBtnActive: {
-    background: "#fff",
-    color: "#0f172a",
-    fontWeight: 600,
-    boxShadow: "0 1px 3px rgba(15,23,42,0.08)",
-  },
-  diaGroup: {
-    background: "#fff",
-    borderRadius: 12,
-    border: "1px solid #f1f5f9",
-    overflow: "hidden",
-  },
-  diaHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: "12px 16px",
-    background: "#f8fafc",
-    borderBottom: "1px solid #f1f5f9",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  diaData: {
-    fontSize: 14,
-    fontWeight: 700,
-    color: "#0f172a",
-  },
-  diaDiaSemana: {
-    fontSize: 12,
-    color: "#94a3b8",
-    textTransform: "capitalize",
-  },
-  diaItem: {
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-    padding: "10px 16px",
-    borderBottom: "1px solid #f8fafc",
-  },
-};
+function StatCard({ label, value, icon, accent, sub }) {
+  return (
+    <div style={S.statCard}>
+      <div style={S.statTop}>
+        <span style={S.statIconBox(accent)}>{icon}</span>
+        <span style={S.statLabel}>{label}</span>
+      </div>
+      <strong style={S.statValue}>{value}</strong>
+      {sub && <span style={S.statSub}>{sub}</span>}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
+   COMPONENTE PRINCIPAL — FluxoCaixa
+   ═══════════════════════════════════════════════════════════ */
+function FluxoCaixa() {
+  const [movimentacoes, setMovimentacoes] = useState([]);
+  const [carregando, setCarregando] = useState(true);
+  const [dataInicio, setDataInicio] = useState(mesPassado());
+  const [dataFim, setDataFim] = useState(hoje());
+  const [periodoAtivo, setPeriodoAtivo] = useState("mes");
+  const [hoveredId, setHoveredId] = useState(null);
+
+  /* ── Fetch ───────────────────────────────────────── */
+  const carregar = () => {
+    setCarregando(true);
+    fetch(
+      `${API}/financeiro/fluxo-caixa?data_inicio=${dataInicio}&data_fim=${dataFim}`,
+      { headers: headers() }
+    )
+      .then((r) => r.json())
+      .then((d) => setMovimentacoes(Array.isArray(d) ? d : []))
+      .catch(console.error)
+      .finally(() => setCarregando(false));
+  };
+
+  useEffect(() => {
+    carregar();
+  }, [dataInicio, dataFim]);
+
+  /* ── Atalhos de período ──────────────────────────── */
+  const setPeriodo = (tipo) => {
+    const h = new Date();
+    let inicio;
+    switch (tipo) {
+      case "semana":
+        inicio = new Date(h);
+        inicio.setDate(h.getDate() - 7);
+        break;
+      case "mes":
+        inicio = new Date(h);
+        inicio.setMonth(h.getMonth() - 1);
+        break;
+      case "trimestre":
+        inicio = new Date(h);
+        inicio.setMonth(h.getMonth() - 3);
+        break;
+      case "ano":
+        inicio = new Date(h);
+        inicio.setFullYear(h.getFullYear() - 1);
+        break;
+      default:
+        inicio = new Date(h);
+        inicio.setMonth(h.getMonth() - 1);
+    }
+    setDataInicio(inicio.toISOString().split("T")[0]);
+    setDataFim(h.toISOString().split("T")[0]);
+    setPeriodoAtivo(tipo);
+  };
+
+  /* ── KPIs ────────────────────────────────────────── */
+  const kpis = useMemo(() => {
+    const entradas = movimentacoes.filter((m) => m.tipo === "entrada");
+    const saidas = movimentacoes.filter((m) => m.tipo === "saida");
+    const totalEntradas = entradas.reduce((s, m) => s + Number(m.valor || 0), 0);
+    const totalSaidas = saidas.reduce((s, m) => s + Number(m.valor || 0), 0);
+    return {
+      totalEntradas,
+      totalSaidas,
+      saldo: totalEntradas - totalSaidas,
+      qtdMovimentacoes: movimentacoes.length,
+    };
+  }, [movimentacoes]);
+
+  /* ── Dados do gráfico agrupados por dia ──────────── */
+  const chartData = useMemo(() => {
+    const mapa = {};
+    movimentacoes.forEach((m) => {
+      const dia = m.data || m.data_vencimento || "sem-data";
+      if (!mapa[dia]) mapa[dia] = { dia, entradas: 0, saidas: 0 };
+      if (m.tipo === "entrada") mapa[dia].entradas += Number(m.valor || 0);
+      else mapa[dia].saidas += Number(m.valor || 0);
+    });
+    return Object.values(mapa).sort((a, b) => a.dia.localeCompare(b.dia));
+  }, [movimentacoes]);
+
+  const maxChart = useMemo(
+    () =>
+      Math.max(
+        ...chartData.map((d) => Math.max(d.entradas, d.saidas)),
+        1
+      ),
+    [chartData]
+  );
+
+  /* ── Saldo acumulado por dia ─────────────────────── */
+  const saldoAcumulado = useMemo(() => {
+    let acumulado = 0;
+    return chartData.map((d) => {
+      acumulado += d.entradas - d.saidas;
+      return { dia: d.dia, saldo: acumulado };
+    });
+  }, [chartData]);
+
+  const maxSaldo = useMemo(
+    () => Math.max(...saldoAcumulado.map((d) => Math.abs(d.saldo)), 1),
+    [saldoAcumulado]
+  );
+
+  /* ── Input focus handlers ────────────────────────── */
+  const handleInputFocus = (e) => {
+    e.target.style.borderColor = "#2563eb";
+    e.target.style.boxShadow = "0 0 0 3px rgba(37,99,235,0.1)";
+  };
+
+  const handleInputBlur = (e) => {
+    e.target.style.borderColor = "#e2e8f0";
+    e.target.style.boxShadow = "none";
+  };
+
+  /* ── Loading ─────────────────────────────────────── */
+  if (carregando) return <Loading text="Carregando fluxo de caixa" />;
+
+  /* ── Colunas ─────────────────────────────────────── */
+  const COL = {
+    data:      { width: "110px" },
+    descricao: { flex: "2", minWidth: "180px" },
+    tipo:      { width: "120px" },
+    valor:     { width: "130px", textAlign: "right" },
+    saldo:     { width: "130px", textAlign: "right" },
+  };
+
+  /* ── Calcular saldo corrente na tabela ───────────── */
+  let saldoCorrente = 0;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+
+      {/* ══════════════════════════════════════════════
+          STATS GRID
+          ══════════════════════════════════════════════ */}
+      <div style={S.statsGrid}>
+        <StatCard
+          label="Total de entradas"
+          value={fmt(kpis.totalEntradas)}
+          icon={Icons.trendingUp}
+          accent="#16a34a"
+          sub={`${movimentacoes.filter((m) => m.tipo === "entrada").length} movimentações`}
+        />
+        <StatCard
+          label="Total de saídas"
+          value={fmt(kpis.totalSaidas)}
+          icon={Icons.trendingDown}
+          accent="#dc2626"
+          sub={`${movimentacoes.filter((m) => m.tipo === "saida").length} movimentações`}
+        />
+        <StatCard
+          label="Saldo do período"
+          value={fmt(kpis.saldo)}
+          icon={Icons.arrowUpDown}
+          accent={kpis.saldo >= 0 ? "#2563eb" : "#dc2626"}
+          sub={kpis.saldo >= 0 ? "saldo positivo" : "saldo negativo"}
+        />
+        <StatCard
+          label="Movimentações"
+          value={kpis.qtdMovimentacoes}
+          icon={Icons.barChart}
+          accent="#8b5cf6"
+          sub="no período selecionado"
+        />
+      </div>
+
+      {/* ══════════════════════════════════════════════
+          FILTROS DE PERÍODO
+          ══════════════════════════════════════════════ */}
+      <div style={S.filterBar}>
+        {/* Chips rápidos */}
+        <div style={{ display: "flex", gap: "6px" }}>
+          {[
+            { id: "semana", label: "7 dias" },
+            { id: "mes", label: "30 dias" },
+            { id: "trimestre", label: "3 meses" },
+            { id: "ano", label: "12 meses" },
+          ].map((p) => (
+            <button
+              key={p.id}
+              style={S.periodChip(periodoAtivo === p.id)}
+              onClick={() => setPeriodo(p.id)}
+              onMouseEnter={(e) => {
+                if (periodoAtivo !== p.id) e.currentTarget.style.background = "#e2e8f0";
+              }}
+              onMouseLeave={(e) => {
+                if (periodoAtivo !== p.id) e.currentTarget.style.background = "#f1f5f9";
+              }}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Separador */}
+        <div style={{ width: "1px", height: "24px", background: "#e2e8f0" }} />
+
+        {/* Datas customizadas */}
+        <div style={S.filterGroup}>
+          <span style={S.filterLabel}>
+            {Icons.calendar} De
+          </span>
+          <input
+            type="date"
+            style={S.filterInput}
+            value={dataInicio}
+            onChange={(e) => {
+              setDataInicio(e.target.value);
+              setPeriodoAtivo(null);
+            }}
+            onFocus={handleInputFocus}
+            onBlur={handleInputBlur}
+          />
+        </div>
+        <div style={S.filterGroup}>
+          <span style={S.filterLabel}>
+            {Icons.calendar} Até
+          </span>
+          <input
+            type="date"
+            style={S.filterInput}
+            value={dataFim}
+            onChange={(e) => {
+              setDataFim(e.target.value);
+              setPeriodoAtivo(null);
+            }}
+            onFocus={handleInputFocus}
+            onBlur={handleInputBlur}
+          />
+        </div>
+
+        {/* Atualizar */}
+        <button
+          style={S.btnSecondary}
+          onClick={carregar}
+          onMouseEnter={(e) => (e.currentTarget.style.background = "#f8fafc")}
+          onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
+        >
+          {Icons.refresh}
+          <span>Atualizar</span>
+        </button>
+      </div>
+
+      {/* ══════════════════════════════════════════════
+          GRID 2 COLUNAS — Gráfico + Saldo Acumulado
+          ══════════════════════════════════════════════ */}
+      <div style={S.grid}>
+
+        {/* ── Gráfico de barras ────────────────────── */}
+        <div style={S.card}>
+          <div style={S.cardHeader}>
+            <div style={S.cardTitleRow}>
+              <span style={S.cardIcon}>{Icons.barChart}</span>
+              <h2 style={S.cardTitle}>Entradas vs Saídas</h2>
+            </div>
+          </div>
+
+          {chartData.length === 0 ? (
+            <div style={S.emptyStateInline}>
+              {Icons.emptyState}
+              <p style={S.emptyTitle}>Sem movimentações no período</p>
+              <p style={S.emptyText}>Ajuste as datas para visualizar o fluxo.</p>
+            </div>
+          ) : (
+            <>
+              <div style={S.chartContainer}>
+                {chartData.slice(-12).map((d, i) => {
+                  const entradaPct = (d.entradas / maxChart) * 100;
+                  const saidaPct = (d.saidas / maxChart) * 100;
+                  const labelDia = d.dia !== "sem-data"
+                    ? d.dia.slice(8, 10) + "/" + d.dia.slice(5, 7)
+                    : "—";
+                  return (
+                    <div key={i} style={S.chartBarGroup}>
+                      <div style={S.chartBarsRow}>
+                        <div
+                          style={S.chartBar("#2563eb", entradaPct)}
+                          title={`Entradas: ${fmt(d.entradas)}`}
+                        />
+                        <div
+                          style={S.chartBar("#f87171", saidaPct)}
+                          title={`Saídas: ${fmt(d.saidas)}`}
+                        />
+                      </div>
+                      <span style={S.chartLabel}>{labelDia}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              <div style={S.legendWrap}>
+                <span style={S.legendItem}>
+                  <span style={S.legendDot("#2563eb")} />
+                  Entradas
+                </span>
+                <span style={S.legendItem}>
+                  <span style={S.legendDot("#f87171")} />
+                  Saídas
+                </span>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* ── Saldo Acumulado ──────────────────────── */}
+        <div style={S.card}>
+          <div style={S.cardHeader}>
+            <div style={S.cardTitleRow}>
+              <span style={S.cardIcon}>{Icons.arrowUpDown}</span>
+              <h2 style={S.cardTitle}>Saldo acumulado</h2>
+            </div>
+          </div>
+
+          {saldoAcumulado.length === 0 ? (
+            <div style={S.emptyStateInline}>
+              {Icons.emptyState}
+              <p style={S.emptyTitle}>Sem dados de saldo</p>
+              <p style={S.emptyText}>Os dados aparecerão aqui quando disponíveis.</p>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "0" }}>
+              {saldoAcumulado.slice(-8).map((d, i) => {
+                const positive = d.saldo >= 0;
+                const labelDia = d.dia !== "sem-data"
+                  ? d.dia.slice(8, 10) + "/" + d.dia.slice(5, 7)
+                  : "—";
+                return (
+                  <div key={i} style={S.saldoBarWrap}>
+                    <span style={S.saldoLabel}>{labelDia}</span>
+                    <div style={S.saldoBarTrack}>
+                      <div
+                        style={S.saldoBarFill(
+                          (Math.abs(d.saldo) / maxSaldo) * 100,
+                          positive ? "#2563eb" : "#f87171"
+                        )}
+                      />
+                    </div>
+                    <span style={S.saldoValue(positive)}>
+                      {positive ? "+" : ""}
+                      {fmt(d.saldo)}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ══════════════════════════════════════════════
+          TABELA DE MOVIMENTAÇÕES
+          ══════════════════════════════════════════════ */}
+      {movimentacoes.length === 0 ? (
+        <div style={{ ...S.card }}>
+          <div style={S.emptyState}>
+            {Icons.emptyState}
+            <h3 style={S.emptyTitle}>Nenhuma movimentação no período</h3>
+            <p style={S.emptyText}>
+              Selecione outro intervalo de datas ou cadastre contas a receber e a pagar para alimentar o fluxo de caixa.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div style={S.tableCard}>
+          {/* Header */}
+          <div style={S.tableHeader}>
+            <span style={{ ...S.thCell, ...COL.data }}>Data</span>
+            <span style={{ ...S.thCell, ...COL.descricao }}>Descrição</span>
+            <span style={{ ...S.thCell, ...COL.tipo }}>Tipo</span>
+            <span style={{ ...S.thCell, ...COL.valor }}>Valor</span>
+            <span style={{ ...S.thCell, ...COL.saldo }}>Saldo</span>
+          </div>
+
+          {/* Rows */}
+          <ul style={S.list}>
+            {movimentacoes.map((m, i) => {
+              const isEntrada = m.tipo === "entrada";
+              if (isEntrada) saldoCorrente += Number(m.valor || 0);
+              else saldoCorrente -= Number(m.valor || 0);
+              const saldoAtual = saldoCorrente;
+              const isHovered = hoveredId === (m.id || i);
+
+              return (
+                <li
+                  key={m.id || i}
+                  style={S.row(isHovered)}
+                  onMouseEnter={() => setHoveredId(m.id || i)}
+                  onMouseLeave={() => setHoveredId(null)}
+                >
+                  {/* Data */}
+                  <div style={{ ...COL.data }}>
+                    <span style={S.cellText}>
+                      {fmtData(m.data || m.data_vencimento)}
+                    </span>
+                  </div>
+
+                  {/* Descrição */}
+                  <div style={{ ...COL.descricao, minWidth: 0 }}>
+                    <span style={S.cellTextBold}>{m.descricao || "—"}</span>
+                  </div>
+
+                  {/* Tipo */}
+                  <div style={{ ...COL.tipo }}>
+                    <span style={S.typeBadge(m.tipo)}>
+                      <span style={S.typeDot(m.tipo)} />
+                      {isEntrada ? "Entrada" : "Saída"}
+                    </span>
+                  </div>
+
+                  {/* Valor */}
+                  <div style={{ ...COL.valor }}>
+                    <span
+                      style={{
+                        ...S.cellTextBold,
+                        color: isEntrada ? "#16a34a" : "#dc2626",
+                        width: "100%",
+                        textAlign: "right",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "flex-end",
+                        gap: "4px",
+                      }}
+                    >
+                      <span style={{ display: "flex", color: isEntrada ? "#16a34a" : "#dc2626" }}>
+                        {isEntrada ? Icons.arrowUp : Icons.arrowDown}
+                      </span>
+                      {fmt(m.valor)}
+                    </span>
+                  </div>
+
+                  {/* Saldo acumulado */}
+                  <div style={{ ...COL.saldo }}>
+                    <span
+                      style={{
+                        ...S.cellTextBold,
+                        color: saldoAtual >= 0 ? "#2563eb" : "#dc2626",
+                        width: "100%",
+                        textAlign: "right",
+                        display: "block",
+                      }}
+                    >
+                      {saldoAtual >= 0 ? "+" : ""}
+                      {fmt(saldoAtual)}
+                    </span>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+
+          {/* Footer */}
+          <div style={S.tableFooter}>
+            <span style={S.footerText}>
+              {movimentacoes.length}{" "}
+              {movimentacoes.length === 1 ? "movimentação" : "movimentações"}
+            </span>
+            <span
+              style={{
+                ...S.footerText,
+                fontWeight: "600",
+                color: kpis.saldo >= 0 ? "#16a34a" : "#dc2626",
+              }}
+            >
+              Saldo final: {kpis.saldo >= 0 ? "+" : ""}
+              {fmt(kpis.saldo)}
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default FluxoCaixa;
