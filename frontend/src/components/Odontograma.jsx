@@ -899,4 +899,191 @@ export default function Odontograma({ pacienteId }) {
               { id: "adulto", label: "Adulto" },
               { id: "infantil", label: "Infantil" },
               { id: "ambos", label: "Ambos" },
-            ].map((m)
+                        ].map((m) => (
+              <button
+                key={m.id}
+                onClick={() => setModoArcada(m.id)}
+                style={{
+                  padding: "6px 14px", border: "none", cursor: "pointer",
+                  fontSize: "12px", fontWeight: "600", fontFamily: "inherit",
+                  background: modoArcada === m.id ? "#2563eb" : "transparent",
+                  color: modoArcada === m.id ? "#fff" : "#64748b",
+                  transition: "all 0.15s",
+                }}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Filtro */}
+          <button
+            onClick={() => setFiltroCondicao(null)}
+            style={{
+              display: "flex", alignItems: "center", gap: "6px",
+              padding: "6px 12px", border: "1px solid #e2e8f0", borderRadius: "8px",
+              background: filtroCondicao ? "#eff6ff" : "transparent",
+              cursor: "pointer", fontSize: "12px", fontWeight: "600",
+              color: filtroCondicao ? "#2563eb" : "#64748b",
+              fontFamily: "inherit", transition: "all 0.15s",
+            }}
+          >
+            {Icons.filter}
+            {filtroCondicao ? `Filtro: ${getCondCor(filtroCondicao).label}` : "Filtrar"}
+          </button>
+
+          {/* Limpar */}
+          <button
+            onClick={limparTudo}
+            style={{
+              display: "flex", alignItems: "center", gap: "6px",
+              padding: "6px 12px", border: "1px solid #fecaca", borderRadius: "8px",
+              background: "#fef2f2", cursor: "pointer", fontSize: "12px",
+              fontWeight: "600", color: "#dc2626", fontFamily: "inherit",
+            }}
+          >
+            {Icons.trash} Limpar
+          </button>
+
+          {/* Salvar */}
+          <button
+            onClick={salvar}
+            disabled={salvando || !alterado}
+            style={{
+              display: "flex", alignItems: "center", gap: "6px",
+              padding: "6px 16px", border: "none", borderRadius: "8px",
+              background: alterado ? "#2563eb" : "#e2e8f0",
+              cursor: alterado ? "pointer" : "default",
+              fontSize: "12px", fontWeight: "700", color: alterado ? "#fff" : "#94a3b8",
+              fontFamily: "inherit", transition: "all 0.15s",
+              opacity: salvando ? 0.6 : 1,
+            }}
+          >
+            {Icons.save} {salvando ? "Salvando..." : "Salvar"}
+          </button>
+        </div>
+      </div>
+
+      {/* ── Corpo: Arcadas + Painel lateral ─────────────── */}
+      <div style={{ display: "flex", gap: "20px", flexWrap: "wrap" }}>
+
+        {/* Coluna das arcadas */}
+        <div style={{ flex: "1 1 500px", display: "flex", flexDirection: "column", gap: "12px" }}>
+
+          {/* Arcada superior adulto */}
+          {(modoArcada === "adulto" || modoArcada === "ambos") && (
+            <div style={{
+              background: "#fff", borderRadius: "12px", border: "1px solid #f1f5f9",
+              padding: "16px",
+            }}>
+              <div style={{
+                fontSize: "11px", fontWeight: "700", color: "#94a3b8",
+                textTransform: "uppercase", letterSpacing: "0.06em",
+                marginBottom: "10px", textAlign: "center",
+              }}>
+                Arcada Superior — Permanente
+              </div>
+              <div style={{ display: "flex", gap: "4px", justifyContent: "center" }}>
+                <Fileira dentes={ARCADA_SUP_DIR} {...fileiraProps} />
+                <div style={{ width: "12px" }} />
+                <Fileira dentes={ARCADA_SUP_ESQ} {...fileiraProps} />
+              </div>
+            </div>
+          )}
+
+          {/* Arcada superior decídua */}
+          {(modoArcada === "infantil" || modoArcada === "ambos") && (
+            <div style={{
+              background: "#fff", borderRadius: "12px", border: "1px solid #f1f5f9",
+              padding: "16px",
+            }}>
+              <div style={{
+                fontSize: "11px", fontWeight: "700", color: "#94a3b8",
+                textTransform: "uppercase", letterSpacing: "0.06em",
+                marginBottom: "10px", textAlign: "center",
+              }}>
+                Arcada Superior — Decídua
+              </div>
+              <div style={{ display: "flex", gap: "4px", justifyContent: "center" }}>
+                <Fileira dentes={ARCADA_DEC_SUP_DIR} {...fileiraProps} />
+                <div style={{ width: "12px" }} />
+                <Fileira dentes={ARCADA_DEC_SUP_ESQ} {...fileiraProps} />
+              </div>
+            </div>
+          )}
+
+          {/* Arcada inferior decídua */}
+          {(modoArcada === "infantil" || modoArcada === "ambos") && (
+            <div style={{
+              background: "#fff", borderRadius: "12px", border: "1px solid #f1f5f9",
+              padding: "16px",
+            }}>
+              <div style={{
+                fontSize: "11px", fontWeight: "700", color: "#94a3b8",
+                textTransform: "uppercase", letterSpacing: "0.06em",
+                marginBottom: "10px", textAlign: "center",
+              }}>
+                Arcada Inferior — Decídua
+              </div>
+              <div style={{ display: "flex", gap: "4px", justifyContent: "center" }}>
+                <Fileira dentes={ARCADA_DEC_INF_DIR} {...fileiraProps} />
+                <div style={{ width: "12px" }} />
+                <Fileira dentes={ARCADA_DEC_INF_ESQ} {...fileiraProps} />
+              </div>
+            </div>
+          )}
+
+          {/* Arcada inferior adulto */}
+          {(modoArcada === "adulto" || modoArcada === "ambos") && (
+            <div style={{
+              background: "#fff", borderRadius: "12px", border: "1px solid #f1f5f9",
+              padding: "16px",
+            }}>
+              <div style={{
+                fontSize: "11px", fontWeight: "700", color: "#94a3b8",
+                textTransform: "uppercase", letterSpacing: "0.06em",
+                marginBottom: "10px", textAlign: "center",
+              }}>
+                Arcada Inferior — Permanente
+              </div>
+              <div style={{ display: "flex", gap: "4px", justifyContent: "center" }}>
+                <Fileira dentes={ARCADA_INF_DIR} {...fileiraProps} />
+                <div style={{ width: "12px" }} />
+                <Fileira dentes={ARCADA_INF_ESQ} {...fileiraProps} />
+              </div>
+            </div>
+          )}
+
+          {/* Legenda + Resumo */}
+          <Legenda filtroCondicao={filtroCondicao} onFiltro={setFiltroCondicao} />
+          <Resumo mapa={mapa} />
+        </div>
+
+        {/* Painel lateral do dente selecionado */}
+        {selectedDente && (
+          <div style={{ flex: "0 0 320px", maxWidth: "360px" }}>
+            <PainelDente
+              denteNum={selectedDente}
+              mapa={mapa}
+              notas={notas}
+              onNotaChange={handleNotaChange}
+              onClose={() => setSelectedDente(null)}
+              onFaceClick={handleFaceClick}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* ── Popup de condição ─────────────────────────────── */}
+      {popup && (
+        <CondPopup
+          pos={popupPos}
+          denteFace={popup}
+          onSelect={handleSelectCond}
+          onSelectAll={handleSelectAll}
+          onClose={() => setPopup(null)}
+        />
+      )}
+    </div>
+  );
+}
