@@ -3,17 +3,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 /* ═══════════════════════════════════════════════════════════════
    ODONTOGRAMA PROFISSIONAL — FDI (Permanente + Decíduo)
    ─────────────────────────────────────────────────────────────
-   Melhorias vs versão anterior:
-   • Notas/observações por dente
-   • Painel lateral de detalhes do dente selecionado
-   • Resumo/contadores de condições
-   • Toggle Adulto / Infantil (decíduo)
-   • Aplicar condição em TODAS as faces do dente de uma vez
-   • Hover com tooltip visual na face
-   • Histórico visual (tabela de dentes alterados)
-   • Filtro por condição (destaca dentes com a condição)
-   • Dentes com formato anatômico SVG (molar, pré-molar, canino, incisivo)
-   • Layout responsivo melhorado
+   ★ Anatomia SVG Premium — dentes realistas com:
+     • Coroas diferenciadas (molar, pré-molar, canino, incisivo)
+     • Raízes anatômicas (3 raízes molar, 2 pré-molar, 1 canino/incisivo)
+     • Gradientes suaves e sombras para efeito 3D
+     • Sulcos oclusais detalhados
+     • Contornos suaves com curvas Bézier
    ═══════════════════════════════════════════════════════════════ */
 
 /* ── Condições e cores ─────────────────────────────────────── */
@@ -42,7 +37,7 @@ const NOMES_DENTES = {
   14: "1º Pré-molar sup. dir.", 15: "2º Pré-molar sup. dir.", 16: "1º Molar sup. dir.",
   17: "2º Molar sup. dir.", 18: "3º Molar sup. dir. (siso)",
   21: "Incisivo central sup. esq.", 22: "Incisivo lateral sup. esq.", 23: "Canino sup. esq.",
-  24: "1º Pr��-molar sup. esq.", 25: "2º Pré-molar sup. esq.", 26: "1º Molar sup. esq.",
+  24: "1º Pré-molar sup. esq.", 25: "2º Pré-molar sup. esq.", 26: "1º Molar sup. esq.",
   27: "2º Molar sup. esq.", 28: "3º Molar sup. esq. (siso)",
   31: "Incisivo central inf. esq.", 32: "Incisivo lateral inf. esq.", 33: "Canino inf. esq.",
   34: "1º Pré-molar inf. esq.", 35: "2º Pré-molar inf. esq.", 36: "1º Molar inf. esq.",
@@ -127,13 +122,28 @@ const Icons = {
     </svg>
   ),
 };
+
 /* ═══════════════════════════════════════════════════════════════
-   DESENHO ANATÔMICO SVG DOS DENTES
+   ★ ANATOMIA SVG PREMIUM DOS DENTES
+   ─────────────────────────────────────────────────────────────
+   Cada tipo de dente tem coroa e raízes únicas, com:
+   • Curvas Bézier suaves para contornos realistas
+   • Cúspides pronunciadas em molares e pré-molares
+   • Ponta afilada em caninos
+   • Bordas em lâmina nos incisivos
+   • Raízes com espessura variável e terminações cônicas
+   • Linha cervical (junção esmalte-cemento) visível
+   • Sulcos oclusais decorativos
    ═══════════════════════════════════════════════════════════════ */
+
 function getToothType(numero) {
   const q = Math.floor(numero / 10);
   const pos = numero % 10;
-  if (q >= 5) { if (pos >= 4) return "molar"; if (pos === 3) return "canine"; return "incisor"; }
+  if (q >= 5) {
+    if (pos >= 4) return "molar";
+    if (pos === 3) return "canine";
+    return "incisor";
+  }
   if (pos >= 6) return "molar";
   if (pos >= 4) return "premolar";
   if (pos === 3) return "canine";
@@ -145,97 +155,285 @@ function isUpperTooth(numero) {
   return q === 1 || q === 2 || q === 5 || q === 6;
 }
 
-function getAnatomyPaths(type, upper, w, h) {
-  if (type === "molar") {
-    if (upper) return {
-      crown: `M${w*0.08},${h*0.55} C${w*0.06},${h*0.48},${w*0.10},${h*0.42},${w*0.18},${h*0.40} L${w*0.28},${h*0.38} C${w*0.34},${h*0.34},${w*0.40},${h*0.36},${w*0.44},${h*0.38} L${w*0.50},${h*0.36} C${w*0.56},${h*0.36},${w*0.62},${h*0.34},${w*0.66},${h*0.38} L${w*0.72},${h*0.38} C${w*0.82},${h*0.40},${w*0.90},${h*0.44},${w*0.92},${h*0.55} C${w*0.94},${h*0.66},${w*0.92},${h*0.78},${w*0.86},${h*0.88} C${w*0.78},${h*0.96},${w*0.22},${h*0.96},${w*0.14},${h*0.88} C${w*0.08},${h*0.78},${w*0.06},${h*0.66},${w*0.08},${h*0.55} Z`,
-      roots: [
-        `M${w*0.24},${h*0.42} Q${w*0.20},${h*0.22} ${w*0.22},${h*0.06}`,
-        `M${w*0.50},${h*0.38} Q${w*0.50},${h*0.18} ${w*0.50},${h*0.04}`,
-        `M${w*0.76},${h*0.42} Q${w*0.80},${h*0.22} ${w*0.78},${h*0.06}`,
-      ],
-    };
-    return {
-      crown: `M${w*0.08},${h*0.45} C${w*0.06},${h*0.34},${w*0.10},${h*0.22},${w*0.14},${h*0.14} C${w*0.22},${h*0.04},${w*0.78},${h*0.04},${w*0.86},${h*0.14} C${w*0.90},${h*0.22},${w*0.94},${h*0.34},${w*0.92},${h*0.45} C${w*0.94},${h*0.52},${w*0.88},${h*0.58},${w*0.82},${h*0.60} L${w*0.62},${h*0.62} C${w*0.56},${h*0.66},${w*0.44},${h*0.66},${w*0.38},${h*0.62} L${w*0.18},${h*0.60} C${w*0.12},${h*0.58},${w*0.06},${h*0.52},${w*0.08},${h*0.45} Z`,
-      roots: [
-        `M${w*0.30},${h*0.60} Q${w*0.26},${h*0.78} ${w*0.24},${h*0.94}`,
-        `M${w*0.70},${h*0.60} Q${w*0.74},${h*0.78} ${w*0.76},${h*0.94}`,
-      ],
-    };
-  }
-  if (type === "premolar") {
-    if (upper) return {
-      crown: `M${w*0.14},${h*0.55} C${w*0.12},${h*0.48},${w*0.16},${h*0.42},${w*0.24},${h*0.40} C${w*0.34},${h*0.36},${w*0.42},${h*0.38},${w*0.46},${h*0.40} L${w*0.54},${h*0.40} C${w*0.58},${h*0.38},${w*0.66},${h*0.36},${w*0.76},${h*0.40} C${w*0.84},${h*0.42},${w*0.88},${h*0.48},${w*0.86},${h*0.55} C${w*0.90},${h*0.68},${w*0.86},${h*0.82},${w*0.78},${h*0.90} C${w*0.68},${h*0.97},${w*0.32},${h*0.97},${w*0.22},${h*0.90} C${w*0.14},${h*0.82},${w*0.10},${h*0.68},${w*0.14},${h*0.55} Z`,
-      roots: [
-        `M${w*0.36},${h*0.42} Q${w*0.32},${h*0.24} ${w*0.30},${h*0.06}`,
-        `M${w*0.64},${h*0.42} Q${w*0.68},${h*0.24} ${w*0.70},${h*0.06}`,
-      ],
-    };
-    return {
-      crown: `M${w*0.14},${h*0.45} C${w*0.12},${h*0.34},${w*0.16},${h*0.22},${w*0.22},${h*0.14} C${w*0.32},${h*0.04},${w*0.68},${h*0.04},${w*0.78},${h*0.14} C${w*0.84},${h*0.22},${w*0.88},${h*0.34},${w*0.86},${h*0.45} C${w*0.88},${h*0.52},${w*0.84},${h*0.56},${w*0.76},${h*0.58} L${w*0.54},${h*0.60} C${w*0.48},${h*0.62},${w*0.42},${h*0.62},${w*0.38},${h*0.60} L${w*0.24},${h*0.58} C${w*0.16},${h*0.56},${w*0.12},${h*0.52},${w*0.14},${h*0.45} Z`,
-      roots: [
-        `M${w*0.50},${h*0.60} Q${w*0.50},${h*0.78} ${w*0.50},${h*0.94}`,
-      ],
-    };
-  }
-  if (type === "canine") {
-    if (upper) return {
-      crown: `M${w*0.20},${h*0.58} C${w*0.18},${h*0.52},${w*0.22},${h*0.44},${w*0.30},${h*0.42} C${w*0.38},${h*0.38},${w*0.44},${h*0.36},${w*0.50},${h*0.34} C${w*0.56},${h*0.36},${w*0.62},${h*0.38},${w*0.70},${h*0.42} C${w*0.78},${h*0.44},${w*0.82},${h*0.52},${w*0.80},${h*0.58} C${w*0.84},${h*0.70},${w*0.80},${h*0.84},${w*0.72},${h*0.92} C${w*0.64},${h*0.98},${w*0.36},${h*0.98},${w*0.28},${h*0.92} C${w*0.20},${h*0.84},${w*0.16},${h*0.70},${w*0.20},${h*0.58} Z`,
-      roots: [
-        `M${w*0.50},${h*0.36} Q${w*0.50},${h*0.18} ${w*0.50},${h*0.03}`,
-      ],
-    };
-    return {
-      crown: `M${w*0.20},${h*0.42} C${w*0.16},${h*0.30},${w*0.20},${h*0.16},${w*0.28},${h*0.08} C${w*0.36},${h*0.02},${w*0.64},${h*0.02},${w*0.72},${h*0.08} C${w*0.80},${h*0.16},${w*0.84},${h*0.30},${w*0.80},${h*0.42} C${w*0.82},${h*0.48},${w*0.78},${h*0.54},${w*0.70},${h*0.58} C${w*0.62},${h*0.64},${w*0.56},${h*0.66},${w*0.50},${h*0.66} C${w*0.44},${h*0.66},${w*0.38},${h*0.64},${w*0.30},${h*0.58} C${w*0.22},${h*0.54},${w*0.18},${h*0.48},${w*0.20},${h*0.42} Z`,
-      roots: [
-        `M${w*0.50},${h*0.64} Q${w*0.50},${h*0.82} ${w*0.50},${h*0.97}`,
-      ],
-    };
-  }
-  // incisor
-  if (upper) return {
-    crown: `M${w*0.22},${h*0.56} C${w*0.20},${h*0.50},${w*0.24},${h*0.44},${w*0.32},${h*0.42} C${w*0.40},${h*0.40},${w*0.46},${h*0.40},${w*0.50},${h*0.40} C${w*0.54},${h*0.40},${w*0.60},${h*0.40},${w*0.68},${h*0.42} C${w*0.76},${h*0.44},${w*0.80},${h*0.50},${w*0.78},${h*0.56} C${w*0.82},${h*0.68},${w*0.78},${h*0.82},${w*0.72},${h*0.90} C${w*0.64},${h*0.97},${w*0.36},${h*0.97},${w*0.28},${h*0.90} C${w*0.22},${h*0.82},${w*0.18},${h*0.68},${w*0.22},${h*0.56} Z`,
-    roots: [
-      `M${w*0.50},${h*0.42} Q${w*0.50},${h*0.22} ${w*0.50},${h*0.04}`,
-    ],
-  };
-  return {
-    crown: `M${w*0.22},${h*0.44} C${w*0.18},${h*0.32},${w*0.22},${h*0.18},${w*0.28},${h*0.10} C${w*0.36},${h*0.03},${w*0.64},${h*0.03},${w*0.72},${h*0.10} C${w*0.78},${h*0.18},${w*0.82},${h*0.32},${w*0.78},${h*0.44} C${w*0.80},${h*0.50},${w*0.76},${h*0.56},${w*0.68},${h*0.58} C${w*0.60},${h*0.60},${w*0.54},${h*0.60},${w*0.50},${h*0.60} C${w*0.46},${h*0.60},${w*0.40},${h*0.60},${w*0.32},${h*0.58} C${w*0.24},${h*0.56},${w*0.20},${h*0.50},${w*0.22},${h*0.44} Z`,
-    roots: [
-      `M${w*0.50},${h*0.58} Q${w*0.50},${h*0.78} ${w*0.50},${h*0.96}`,
-    ],
-  };
-}
+/* Gerador de IDs únicos para gradientes SVG */
+let _gradId = 0;
+function nextGradId() { return `tg${++_gradId}`; }
 
-/* ── Componente SVG anatômico (decorativo) ─────────────────── */
+/* ── Componente SVG Anatômico Premium ────────────────────────── */
 function ToothAnatomySVG({ numero, ausente }) {
-  const w = 46, h = 48;
+  const W = 52, H = 56;
   const type = getToothType(numero);
   const upper = isUpperTooth(numero);
-  const { crown, roots } = getAnatomyPaths(type, upper, w, h);
+
+  // IDs únicos para gradientes
+  const gradCrown = useMemo(() => nextGradId(), []);
+  const gradRoot  = useMemo(() => nextGradId(), []);
+  const gradShine = useMemo(() => nextGradId(), []);
+
+  /* ─── Paths por tipo ──────────────────────────────────────── */
+  let crownPath, rootPaths, sulcos, cervicalLine;
+
+  if (type === "molar") {
+    if (upper) {
+      // Molar superior — coroa larga com 4 cúspides, 3 raízes
+      crownPath = `
+        M 8,${H*0.92}
+        C 6,${H*0.86}, 5,${H*0.76}, 5,${H*0.68}
+        C 5,${H*0.62}, 7,${H*0.56}, 10,${H*0.54}
+        C 12,${H*0.52}, 14,${H*0.50}, 16,${H*0.48}
+        L 18,${H*0.46}
+        C 20,${H*0.44}, 22,${H*0.45}, 24,${H*0.44}
+        L 26,${H*0.43}
+        C 28,${H*0.44}, 30,${H*0.44}, 32,${H*0.46}
+        L 34,${H*0.48}
+        C 36,${H*0.50}, 38,${H*0.52}, 40,${H*0.54}
+        C 43,${H*0.56}, 46,${H*0.62}, 47,${H*0.68}
+        C 47,${H*0.76}, 46,${H*0.86}, 44,${H*0.92}
+        C 42,${H*0.97}, 10,${H*0.97}, 8,${H*0.92}
+        Z`;
+      rootPaths = [
+        // Raiz palatina (central, mais grossa)
+        `M 22,${H*0.46} C 21,${H*0.34}, 20,${H*0.22}, 20,${H*0.14} C 20,${H*0.08}, 22,${H*0.03}, 24,${H*0.02} C 26,${H*0.03}, 27,${H*0.06}, 27,${H*0.10} C 28,${H*0.22}, 28,${H*0.34}, 28,${H*0.44}`,
+        // Raiz mesio-vestibular
+        `M 13,${H*0.52} C 12,${H*0.40}, 10,${H*0.28}, 9,${H*0.18} C 8,${H*0.10}, 10,${H*0.04}, 12,${H*0.06} C 14,${H*0.08}, 15,${H*0.16}, 15,${H*0.26} C 15,${H*0.36}, 15,${H*0.46}, 16,${H*0.50}`,
+        // Raiz disto-vestibular
+        `M 38,${H*0.52} C 38,${H*0.42}, 40,${H*0.30}, 41,${H*0.20} C 42,${H*0.12}, 40,${H*0.06}, 38,${H*0.07} C 36,${H*0.08}, 36,${H*0.16}, 36,${H*0.28} C 36,${H*0.38}, 36,${H*0.46}, 35,${H*0.50}`,
+      ];
+      sulcos = [
+        `M 16,${H*0.64} Q 26,${H*0.58} 36,${H*0.64}`,
+        `M 26,${H*0.58} L 26,${H*0.76}`,
+      ];
+      cervicalLine = `M 10,${H*0.54} Q 26,${H*0.48} 42,${H*0.54}`;
+    } else {
+      // Molar inferior — coroa larga, 2 raízes
+      crownPath = `
+        M 8,${H*0.08}
+        C 6,${H*0.14}, 5,${H*0.22}, 5,${H*0.30}
+        C 5,${H*0.36}, 7,${H*0.42}, 10,${H*0.44}
+        C 14,${H*0.47}, 38,${H*0.47}, 42,${H*0.44}
+        C 45,${H*0.42}, 47,${H*0.36}, 47,${H*0.30}
+        C 47,${H*0.22}, 46,${H*0.14}, 44,${H*0.08}
+        C 42,${H*0.03}, 10,${H*0.03}, 8,${H*0.08}
+        Z`;
+      rootPaths = [
+        // Raiz mesial
+        `M 16,${H*0.46} C 15,${H*0.56}, 14,${H*0.68}, 12,${H*0.78} C 11,${H*0.86}, 12,${H*0.94}, 14,${H*0.96} C 16,${H*0.94}, 17,${H*0.88}, 18,${H*0.78} C 18,${H*0.68}, 18,${H*0.56}, 18,${H*0.47}`,
+        // Raiz distal
+        `M 34,${H*0.46} C 34,${H*0.56}, 36,${H*0.68}, 38,${H*0.78} C 39,${H*0.86}, 38,${H*0.94}, 36,${H*0.96} C 34,${H*0.94}, 33,${H*0.88}, 32,${H*0.78} C 32,${H*0.68}, 33,${H*0.56}, 34,${H*0.47}`,
+      ];
+      sulcos = [
+        `M 14,${H*0.22} Q 26,${H*0.30} 38,${H*0.22}`,
+        `M 26,${H*0.18} L 26,${H*0.36}`,
+      ];
+      cervicalLine = `M 12,${H*0.44} Q 26,${H*0.50} 40,${H*0.44}`;
+    }
+  } else if (type === "premolar") {
+    if (upper) {
+      // Pré-molar superior — coroa mais estreita, 2 cúspides, 1-2 raízes
+      crownPath = `
+        M 12,${H*0.92}
+        C 10,${H*0.86}, 10,${H*0.76}, 10,${H*0.68}
+        C 10,${H*0.60}, 13,${H*0.54}, 17,${H*0.50}
+        L 22,${H*0.47}
+        C 24,${H*0.46}, 28,${H*0.46}, 30,${H*0.47}
+        L 35,${H*0.50}
+        C 39,${H*0.54}, 42,${H*0.60}, 42,${H*0.68}
+        C 42,${H*0.76}, 42,${H*0.86}, 40,${H*0.92}
+        C 38,${H*0.97}, 14,${H*0.97}, 12,${H*0.92}
+        Z`;
+      rootPaths = [
+        // Raiz vestibular
+        `M 20,${H*0.50} C 19,${H*0.38}, 17,${H*0.24}, 16,${H*0.14} C 15,${H*0.06}, 17,${H*0.02}, 19,${H*0.03} C 21,${H*0.04}, 22,${H*0.12}, 22,${H*0.24} C 22,${H*0.34}, 22,${H*0.44}, 23,${H*0.48}`,
+        // Raiz palatina
+        `M 32,${H*0.50} C 32,${H*0.38}, 34,${H*0.24}, 35,${H*0.14} C 36,${H*0.06}, 34,${H*0.02}, 32,${H*0.03} C 30,${H*0.04}, 30,${H*0.12}, 30,${H*0.24} C 30,${H*0.34}, 30,${H*0.44}, 30,${H*0.48}`,
+      ];
+      sulcos = [
+        `M 20,${H*0.64} Q 26,${H*0.58} 32,${H*0.64}`,
+      ];
+      cervicalLine = `M 15,${H*0.54} Q 26,${H*0.48} 37,${H*0.54}`;
+    } else {
+      // Pré-molar inferior — 1 raiz
+      crownPath = `
+        M 12,${H*0.08}
+        C 10,${H*0.14}, 10,${H*0.22}, 10,${H*0.30}
+        C 10,${H*0.38}, 13,${H*0.44}, 18,${H*0.46}
+        C 22,${H*0.48}, 30,${H*0.48}, 34,${H*0.46}
+        C 39,${H*0.44}, 42,${H*0.38}, 42,${H*0.30}
+        C 42,${H*0.22}, 42,${H*0.14}, 40,${H*0.08}
+        C 38,${H*0.03}, 14,${H*0.03}, 12,${H*0.08}
+        Z`;
+      rootPaths = [
+        `M 24,${H*0.48} C 24,${H*0.58}, 23,${H*0.72}, 23,${H*0.82} C 23,${H*0.90}, 25,${H*0.97}, 26,${H*0.97} C 27,${H*0.97}, 29,${H*0.90}, 29,${H*0.82} C 29,${H*0.72}, 28,${H*0.58}, 28,${H*0.48}`,
+      ];
+      sulcos = [
+        `M 18,${H*0.22} Q 26,${H*0.28} 34,${H*0.22}`,
+      ];
+      cervicalLine = `M 16,${H*0.44} Q 26,${H*0.50} 36,${H*0.44}`;
+    }
+  } else if (type === "canine") {
+    if (upper) {
+      // Canino superior — ponta de cúspide pronunciada, raiz longa
+      crownPath = `
+        M 14,${H*0.92}
+        C 12,${H*0.86}, 12,${H*0.74}, 12,${H*0.66}
+        C 12,${H*0.58}, 16,${H*0.52}, 21,${H*0.48}
+        C 23,${H*0.46}, 25,${H*0.44}, 26,${H*0.42}
+        C 27,${H*0.44}, 29,${H*0.46}, 31,${H*0.48}
+        C 36,${H*0.52}, 40,${H*0.58}, 40,${H*0.66}
+        C 40,${H*0.74}, 40,${H*0.86}, 38,${H*0.92}
+        C 36,${H*0.97}, 16,${H*0.97}, 14,${H*0.92}
+        Z`;
+      rootPaths = [
+        `M 24,${H*0.44} C 23,${H*0.32}, 22,${H*0.20}, 22,${H*0.12} C 22,${H*0.06}, 24,${H*0.02}, 26,${H*0.02} C 28,${H*0.02}, 30,${H*0.06}, 30,${H*0.12} C 30,${H*0.20}, 29,${H*0.32}, 28,${H*0.44}`,
+      ];
+      sulcos = [];
+      cervicalLine = `M 16,${H*0.54} Q 26,${H*0.46} 36,${H*0.54}`;
+    } else {
+      // Canino inferior
+      crownPath = `
+        M 14,${H*0.08}
+        C 12,${H*0.14}, 12,${H*0.24}, 12,${H*0.32}
+        C 12,${H*0.40}, 16,${H*0.46}, 21,${H*0.50}
+        C 23,${H*0.52}, 25,${H*0.54}, 26,${H*0.56}
+        C 27,${H*0.54}, 29,${H*0.52}, 31,${H*0.50}
+        C 36,${H*0.46}, 40,${H*0.40}, 40,${H*0.32}
+        C 40,${H*0.24}, 40,${H*0.14}, 38,${H*0.08}
+        C 36,${H*0.03}, 16,${H*0.03}, 14,${H*0.08}
+        Z`;
+      rootPaths = [
+        `M 24,${H*0.54} C 23,${H*0.66}, 22,${H*0.78}, 22,${H*0.86} C 22,${H*0.92}, 24,${H*0.97}, 26,${H*0.97} C 28,${H*0.97}, 30,${H*0.92}, 30,${H*0.86} C 30,${H*0.78}, 29,${H*0.66}, 28,${H*0.54}`,
+      ];
+      sulcos = [];
+      cervicalLine = `M 16,${H*0.46} Q 26,${H*0.54} 36,${H*0.46}`;
+    }
+  } else {
+    // Incisivo
+    if (upper) {
+      // Incisivo superior — coroa em pá, raiz cônica
+      crownPath = `
+        M 14,${H*0.92}
+        C 12,${H*0.86}, 13,${H*0.72}, 13,${H*0.64}
+        C 13,${H*0.56}, 17,${H*0.50}, 22,${H*0.48}
+        C 24,${H*0.47}, 28,${H*0.47}, 30,${H*0.48}
+        C 35,${H*0.50}, 39,${H*0.56}, 39,${H*0.64}
+        C 39,${H*0.72}, 40,${H*0.86}, 38,${H*0.92}
+        C 36,${H*0.97}, 16,${H*0.97}, 14,${H*0.92}
+        Z`;
+      rootPaths = [
+        `M 23,${H*0.48} C 23,${H*0.36}, 22,${H*0.22}, 22,${H*0.14} C 22,${H*0.06}, 24,${H*0.02}, 26,${H*0.02} C 28,${H*0.02}, 30,${H*0.06}, 30,${H*0.14} C 30,${H*0.22}, 29,${H*0.36}, 29,${H*0.48}`,
+      ];
+      sulcos = [];
+      cervicalLine = `M 17,${H*0.52} Q 26,${H*0.47} 35,${H*0.52}`;
+    } else {
+      // Incisivo inferior — mais estreito
+      crownPath = `
+        M 16,${H*0.08}
+        C 14,${H*0.14}, 15,${H*0.26}, 15,${H*0.34}
+        C 15,${H*0.40}, 19,${H*0.46}, 22,${H*0.48}
+        C 24,${H*0.49}, 28,${H*0.49}, 30,${H*0.48}
+        C 33,${H*0.46}, 37,${H*0.40}, 37,${H*0.34}
+        C 37,${H*0.26}, 38,${H*0.14}, 36,${H*0.08}
+        C 34,${H*0.03}, 18,${H*0.03}, 16,${H*0.08}
+        Z`;
+      rootPaths = [
+        `M 23,${H*0.48} C 23,${H*0.60}, 23,${H*0.74}, 23,${H*0.84} C 23,${H*0.92}, 25,${H*0.97}, 26,${H*0.97} C 27,${H*0.97}, 29,${H*0.92}, 29,${H*0.84} C 29,${H*0.74}, 29,${H*0.60}, 29,${H*0.48}`,
+      ];
+      sulcos = [];
+      cervicalLine = `M 19,${H*0.46} Q 26,${H*0.51} 33,${H*0.46}`;
+    }
+  }
 
   return (
     <svg
-      width={w} height={h}
-      viewBox={`0 0 ${w} ${h}`}
+      width={W} height={H}
+      viewBox={`0 0 ${W} ${H}`}
       style={{
         display: "block",
-        filter: ausente ? "saturate(0.2) opacity(0.35)" : "none",
+        filter: ausente ? "saturate(0.15) opacity(0.30)" : "drop-shadow(0 1px 2px rgba(0,0,0,0.06))",
         pointerEvents: "none",
       }}
     >
-      {roots.map((d, i) => (
-        <path key={i} d={d} stroke="#b0bec5" strokeWidth="1.4" fill="none" strokeLinecap="round" />
+      <defs>
+        {/* Gradiente da coroa — efeito cerâmica/esmalte */}
+        <linearGradient id={gradCrown} x1="0" y1="0" x2="0.3" y2="1">
+          <stop offset="0%" stopColor="#ffffff" stopOpacity="0.95" />
+          <stop offset="35%" stopColor="#f1f5f9" stopOpacity="0.9" />
+          <stop offset="70%" stopColor="#e2e8f0" stopOpacity="0.85" />
+          <stop offset="100%" stopColor="#cbd5e1" stopOpacity="0.7" />
+        </linearGradient>
+        {/* Gradiente das raízes — mais amarelado/cemento */}
+        <linearGradient id={gradRoot} x1="0.3" y1="0" x2="0.7" y2="1">
+          <stop offset="0%" stopColor="#e8e0d8" />
+          <stop offset="50%" stopColor="#ddd5cc" />
+          <stop offset="100%" stopColor="#d0c8be" />
+        </linearGradient>
+        {/* Brilho especular */}
+        <radialGradient id={gradShine} cx="0.35" cy="0.3" r="0.5">
+          <stop offset="0%" stopColor="#ffffff" stopOpacity="0.6" />
+          <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+
+      {/* Raízes com preenchimento gradiente */}
+      {rootPaths.map((d, i) => (
+        <path
+          key={`root-fill-${i}`}
+          d={d}
+          fill={`url(#${gradRoot})`}
+          stroke="#b8a99a"
+          strokeWidth="1.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
       ))}
-      <path d={crown} fill="#f0f4f8" stroke="#90a4ae" strokeWidth="1.3" />
+
+      {/* Coroa com gradiente premium */}
+      <path
+        d={crownPath}
+        fill={`url(#${gradCrown})`}
+        stroke="#90a4ae"
+        strokeWidth="1.4"
+        strokeLinejoin="round"
+      />
+
+      {/* Brilho especular sobre a coroa */}
+      <path
+        d={crownPath}
+        fill={`url(#${gradShine})`}
+        stroke="none"
+      />
+
+      {/* Linha cervical */}
+      {cervicalLine && (
+        <path
+          d={cervicalLine}
+          fill="none"
+          stroke="#b0bec5"
+          strokeWidth="0.8"
+          strokeDasharray="2,2"
+          opacity="0.6"
+        />
+      )}
+
+      {/* Sulcos oclusais */}
+      {sulcos.map((d, i) => (
+        <path
+          key={`sulco-${i}`}
+          d={d}
+          fill="none"
+          stroke="#94a3b8"
+          strokeWidth="0.7"
+          strokeLinecap="round"
+          opacity="0.5"
+        />
+      ))}
     </svg>
   );
 }
 
-/* ── SVG de um dente (5 faces) ─────────────────────────────── */
+/* ── SVG de um dente (5 faces clicáveis) ───────────────────── */
 const DENTE_SIZE = 46;
 const SZ = DENTE_SIZE;
-const HF = SZ / 2;
 const QR = SZ / 4;
 const TQ = (SZ * 3) / 4;
 
@@ -254,7 +452,7 @@ function DenteSVG({ numero, faces, onFaceClick, ausente, selected, dimmed, onDen
   return (
     <div
       style={{
-        display: "flex", flexDirection: "column", alignItems: "center", gap: "1px",
+        display: "flex", flexDirection: "column", alignItems: "center", gap: "2px",
         opacity: dimmed ? 0.25 : 1, transition: "opacity 0.2s",
         cursor: "pointer",
       }}
@@ -270,7 +468,7 @@ function DenteSVG({ numero, faces, onFaceClick, ausente, selected, dimmed, onDen
         {numero}
       </span>
 
-      {/* Anatomia acima das faces para dentes superiores */}
+      {/* Anatomia acima para dentes superiores */}
       {upper && <ToothAnatomySVG numero={numero} ausente={ausente} />}
 
       {/* Faces clicáveis */}
@@ -280,7 +478,7 @@ function DenteSVG({ numero, faces, onFaceClick, ausente, selected, dimmed, onDen
         style={{
           cursor: "pointer",
           filter: ausente ? "saturate(0.3) opacity(0.5)" : "none",
-          borderRadius: "4px",
+          borderRadius: "6px",
           outline: selected ? "2px solid #2563eb" : "none",
           outlineOffset: "2px",
           transition: "outline 0.15s",
@@ -315,7 +513,7 @@ function DenteSVG({ numero, faces, onFaceClick, ausente, selected, dimmed, onDen
         )}
       </svg>
 
-      {/* Anatomia abaixo das faces para dentes inferiores */}
+      {/* Anatomia abaixo para dentes inferiores */}
       {!upper && <ToothAnatomySVG numero={numero} ausente={ausente} />}
     </div>
   );
@@ -365,6 +563,7 @@ function Fileira({ dentes, mapa, onFaceClick, selectedDente, filtroCondicao, onD
     </div>
   );
 }
+
 /* ── Popup de seleção de condição ──────────────────────────── */
 function CondPopup({ pos, denteFace, onSelect, onSelectAll, onClose }) {
   const ref = useRef(null);
@@ -499,8 +698,8 @@ function PainelDente({ denteNum, mapa, notas, onNotaChange, onClose, onFaceClick
         </button>
       </div>
 
-      {/* Anatomia decorativa centralizada */}
-      <div style={{ display: "flex", justifyContent: "center" }}>
+      {/* Anatomia decorativa centralizada — agora maior no painel */}
+      <div style={{ display: "flex", justifyContent: "center", transform: "scale(1.8)", transformOrigin: "center", padding: "20px 0" }}>
         <ToothAnatomySVG numero={denteNum} ausente={ausente} />
       </div>
 
@@ -663,6 +862,7 @@ function Resumo({ mapa }) {
     </div>
   );
 }
+
 /* ═══════════════════════════════════════════════════════════════
    COMPONENTE PRINCIPAL
    ═══════════════════════════════════════════════════════════════ */
@@ -740,7 +940,7 @@ export default function Odontograma({ pacienteId }) {
     const x = e?.clientX || 200;
     const y = e?.clientY || 200;
     const popX = Math.min(x, window.innerWidth - 240);
-    const popY = Math.min(y, window.innerHeight - 460);
+        const popY = Math.min(y, window.innerHeight - 460);
     setPopup({ dente, face });
     setPopupPos({ x: popX, y: popY });
     setSelectedDente(dente);
@@ -841,7 +1041,8 @@ export default function Odontograma({ pacienteId }) {
   }
 
   const fileiraProps = { mapa, onFaceClick: handleFaceClick, selectedDente, filtroCondicao, onDenteClick: setSelectedDente, notas };
-    return (
+
+  return (
     <div style={{ position: "relative" }}>
 
       {/* ── Header ─────────────────────────────────────── */}
@@ -899,7 +1100,7 @@ export default function Odontograma({ pacienteId }) {
               { id: "adulto", label: "Adulto" },
               { id: "infantil", label: "Infantil" },
               { id: "ambos", label: "Ambos" },
-                        ].map((m) => (
+            ].map((m) => (
               <button
                 key={m.id}
                 onClick={() => setModoArcada(m.id)}
