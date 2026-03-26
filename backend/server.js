@@ -9,6 +9,7 @@ const arquivosRoutes = require("./routes/arquivos");
 const documentosRoutes = require("./routes/documentos");
 const pagamentosRoutes = require("./routes/pagamentos");
 const evolucoesRoutes = require("./routes/evolucoes");
+const tratamentosRoutes = require("./routes/tratamentos");
 const authRoutes = require("./routes/auth");
 
 require("./database");
@@ -31,6 +32,7 @@ app.use("/arquivos", arquivosRoutes);
 app.use("/documentos", documentosRoutes);
 app.use("/pagamentos", pagamentosRoutes);
 app.use("/evolucoes", evolucoesRoutes);
+app.use("/tratamentos", tratamentosRoutes);
 app.use("/auth", authRoutes);
 
 app.listen(PORT, () => {

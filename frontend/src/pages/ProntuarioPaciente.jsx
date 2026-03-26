@@ -6,6 +6,7 @@ import AbaDocumentos from "../components/AbaDocumentos";
 import AbaArquivos from "../components/AbaArquivos";
 import AbaPagamentos from "../components/AbaPagamentos";
 import AbaEvolucoes from "../components/AbaEvolucoes";
+import AbaTratamentos from "../components/AbaTratamentos";
 import Odontograma from "../components/Odontograma";
 
 /* ── Helpers ─────────────────────────────────────────────── */
@@ -312,7 +313,7 @@ function ProntuarioPaciente() {
   }
 
   /* ── Abas que já têm componente ─────────────────────────── */
-  const ABAS_COM_COMPONENTE = ["visao-geral", "anamneses", "orcamentos", "evolucoes", "documentos", "arquivos", "pagamentos"];
+  const ABAS_COM_COMPONENTE = ["visao-geral", "anamneses", "orcamentos", "tratamentos", "evolucoes", "documentos", "arquivos", "pagamentos"];
 
   /* ── Render ─────────────────────────────────────────────── */
   return (
@@ -444,7 +445,7 @@ function ProntuarioPaciente() {
             <InfoCard title="Endereço" icon={Icons.mapPin} items={dadosEndereco} />
             <InfoCard title="Responsável" icon={Icons.users} items={dadosResponsavel} />
 
-            {/* Observações */}
+            {/* Observaç��es */}
             <div style={s.card}>
               <div style={s.cardHeader}>
                 <div style={s.cardTitleRow}>
@@ -475,6 +476,11 @@ function ProntuarioPaciente() {
       {/* ── Tab: Orçamentos ──────────────────────────────── */}
       {abaAtiva === "orcamentos" && (
         <AbaOrcamentos pacienteId={paciente.id} />
+      )}
+
+      {/* ── Tab: Tratamentos ─────────────────────────────── */}
+      {abaAtiva === "tratamentos" && (
+        <AbaTratamentos pacienteId={paciente.id} />
       )}
 
       {/* ── Tab: Pagamentos ──────────────────────────────── */}
@@ -714,7 +720,7 @@ const s = {
   },
   obsEmpty: { color: "#c1c9d4", fontStyle: "italic" },
 
-  /* ── Odontograma Card ──────────────────────────────── */
+  /* ── Odontograma Card ────────────────────────��─────── */
   odontogramaCard: {
     background: "#fff",
     borderRadius: "16px",

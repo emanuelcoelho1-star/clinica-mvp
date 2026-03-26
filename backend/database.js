@@ -143,7 +143,7 @@ db.serialize(() => {
     )
   `);
 
-  /* ── NOVA TABELA: arquivos ──────────────────────────── */
+  /* ── TABELA: arquivos ──────────────────────────── */
   db.run(`
     CREATE TABLE IF NOT EXISTS arquivos (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -159,7 +159,7 @@ db.serialize(() => {
     )
   `);
 
-  /* ── NOVA TABELA: documentos ────────────────────────── */
+  /* ── TABELA: documentos ────────────────────────── */
   db.run(`
     CREATE TABLE IF NOT EXISTS documentos (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -175,7 +175,7 @@ db.serialize(() => {
     )
   `);
 
-  /* ── NOVA TABELA: pagamentos ────────────────────────── */
+  /* ── TABELA: pagamentos ────────────────────────── */
   db.run(`
     CREATE TABLE IF NOT EXISTS pagamentos (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -195,7 +195,7 @@ db.serialize(() => {
     )
   `);
 
-  /* ── NOVA TABELA: evolucoes ──────────���──────────────── */
+  /* ── TABELA: evolucoes ─────────────────────────── */
   db.run(`
     CREATE TABLE IF NOT EXISTS evolucoes (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -206,6 +206,25 @@ db.serialize(() => {
       descricao TEXT,
       observacoes TEXT,
       profissional TEXT,
+      created_at TEXT DEFAULT (datetime('now','localtime')),
+      FOREIGN KEY (paciente_id) REFERENCES pacientes(id)
+    )
+  `);
+
+  /* ── NOVA TABELA: tratamentos ──────────────────── */
+  db.run(`
+    CREATE TABLE IF NOT EXISTS tratamentos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      paciente_id INTEGER NOT NULL,
+      data_inicio TEXT NOT NULL,
+      data_fim TEXT,
+      procedimento TEXT NOT NULL,
+      dente TEXT,
+      status TEXT NOT NULL DEFAULT 'em_andamento',
+      valor REAL DEFAULT 0,
+      profissional TEXT,
+      descricao TEXT,
+      observacoes TEXT,
       created_at TEXT DEFAULT (datetime('now','localtime')),
       FOREIGN KEY (paciente_id) REFERENCES pacientes(id)
     )
