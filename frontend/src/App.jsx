@@ -7,6 +7,7 @@ import Agenda from "./pages/Agenda";
 import CadastroPaciente from "./pages/CadastroPaciente";
 import ProntuarioPaciente from "./pages/ProntuarioPaciente";
 import Configuracoes from "./pages/Configuracoes";
+import Financeiro from "./pages/Financeiro"; // ← NOVO
 
 /* ═══════════════════════════════════════════════════════════
    NAV CONFIG
@@ -43,6 +44,17 @@ const NAV_ITEMS = [
         <circle cx="9" cy="7" r="4" />
         <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
         <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      </svg>
+    ),
+  },
+  // ← NOVO: Item Financeiro no menu
+  {
+    path: "/financeiro",
+    label: "Financeiro",
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="12" x2="12" y1="2" y2="22" />
+        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
       </svg>
     ),
   },
@@ -99,7 +111,6 @@ function AvatarDropdown() {
   const ref = useRef(null);
   const navigate = useNavigate();
 
-  // Dados do usuário do localStorage
   const usuario = (() => {
     try {
       return JSON.parse(localStorage.getItem("usuario")) || {};
@@ -113,7 +124,6 @@ function AvatarDropdown() {
   const foto = usuario.foto || null;
   const initials = getInitials(nome);
 
-  // Fechar dropdown ao clicar fora
   useEffect(() => {
     const handleClickFora = (e) => {
       if (ref.current && !ref.current.contains(e.target)) {
@@ -132,7 +142,6 @@ function AvatarDropdown() {
 
   return (
     <div ref={ref} style={S.avatarContainer}>
-      {/* ── Avatar Button ────────────────────── */}
       <button
         onClick={() => setAberto(!aberto)}
         style={S.avatarBtn}
@@ -146,10 +155,8 @@ function AvatarDropdown() {
         <span style={S.avatarOnlineDot} />
       </button>
 
-      {/* ── Dropdown ─────────────────────────── */}
       {aberto && (
         <div style={S.dropdown}>
-          {/* Header */}
           <div style={S.dropdownHeader}>
             {foto ? (
               <img src={foto} alt={nome} style={S.dropdownAvatar} />
@@ -162,16 +169,13 @@ function AvatarDropdown() {
             </div>
           </div>
 
-          {/* Status */}
           <div style={S.dropdownStatus}>
             <span style={S.dropdownStatusDot} />
             <span style={S.dropdownStatusText}>Online</span>
           </div>
 
-          {/* Divider */}
           <div style={S.dropdownDivider} />
 
-          {/* Configurações */}
           <button
             style={{
               ...S.dropdownItem,
@@ -185,10 +189,8 @@ function AvatarDropdown() {
             <span>Configurações</span>
           </button>
 
-          {/* Divider */}
           <div style={S.dropdownDivider} />
 
-          {/* Sair */}
           <button
             style={{
               ...S.dropdownItem,
@@ -210,7 +212,7 @@ function AvatarDropdown() {
 
 /* ═══════════════════════════════════════════════════════════
    TOP BAR
-   ═══��═══════════════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════ */
 function TopBar() {
   const location = useLocation();
   const [hoveredPath, setHoveredPath] = useState(null);
@@ -227,6 +229,9 @@ function TopBar() {
     if (path === "/agenda") {
       return location.pathname === "/agenda";
     }
+    if (path === "/financeiro") {                           // ← NOVO
+      return location.pathname === "/financeiro";           // ← NOVO
+    }                                                       // ← NOVO
     return location.pathname === path;
   };
 
@@ -234,16 +239,13 @@ function TopBar() {
     <header style={S.topBar}>
       <div style={S.topBarInner}>
 
-        {/* ── Logo ─────────────────────────── */}
         <Link to="/" style={S.brand}>
           <div style={S.brandIcon}>{LogoIcon}</div>
           <span style={S.brandName}>OdontoPro</span>
         </Link>
 
-        {/* ── Divider ──────────────────────── */}
         <div style={S.divider} />
 
-        {/* ── Nav ──────────────────────────── */}
         <nav style={S.nav}>
           {NAV_ITEMS.map((item) => {
             const ativo = isActive(item.path);
@@ -270,7 +272,6 @@ function TopBar() {
           })}
         </nav>
 
-        {/* ── Right side: Avatar ──────────── */}
         <div style={S.topBarRight}>
           <AvatarDropdown />
         </div>
@@ -296,6 +297,7 @@ function Layout() {
             <Route path="/pacientes/novo" element={<CadastroPaciente />} />
             <Route path="/pacientes/editar/:id" element={<CadastroPaciente />} />
             <Route path="/pacientes/:id" element={<ProntuarioPaciente />} />
+            <Route path="/financeiro" element={<Financeiro />} />  {/* ← NOVO */}
             <Route path="/configuracoes" element={<Configuracoes />} />
           </Routes>
         </div>
@@ -329,7 +331,6 @@ function App() {
    STYLES — Ultra Premium Minimal SaaS
    ═══════════════════════════════════════════════════════════ */
 const S = {
-  /* ── App shell ───────────────────────────── */
   app: {
     display: "flex",
     flexDirection: "column",
@@ -337,8 +338,6 @@ const S = {
     background: "#f0f4fa",
     fontFamily: "'Inter', 'DM Sans', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
   },
-
-  /* ── Top Bar ─────────────────────────────── */
   topBar: {
     position: "sticky",
     top: 0,
@@ -357,8 +356,6 @@ const S = {
     padding: "0 24px",
     height: "56px",
   },
-
-  /* ── Brand ───────────────────────────────── */
   brand: {
     display: "flex",
     alignItems: "center",
@@ -381,8 +378,6 @@ const S = {
     color: "#0f172a",
     letterSpacing: "-0.025em",
   },
-
-  /* ── Divider ─────────────────────────────── */
   divider: {
     width: "1px",
     height: "20px",
@@ -390,8 +385,6 @@ const S = {
     margin: "0 20px",
     flexShrink: 0,
   },
-
-  /* ── Nav ──────────────────────────────────── */
   nav: {
     display: "flex",
     alignItems: "center",
@@ -437,8 +430,6 @@ const S = {
     background: "#2563eb",
     borderRadius: "999px",
   },
-
-  /* ── Right side ──────────────────────────── */
   topBarRight: {
     display: "flex",
     alignItems: "center",
@@ -446,8 +437,6 @@ const S = {
     marginLeft: "auto",
     flexShrink: 0,
   },
-
-  /* ── Avatar ──────────────────────────────── */
   avatarContainer: {
     position: "relative",
   },
@@ -497,8 +486,6 @@ const S = {
     border: "2px solid #fff",
     boxSizing: "border-box",
   },
-
-  /* ── Dropdown ─────────────────────────────── */
   dropdown: {
     position: "absolute",
     top: "calc(100% + 8px)",
@@ -615,8 +602,6 @@ const S = {
     background: "#fef2f2",
     color: "#ef4444",
   },
-
-  /* ── Main content ────────────────────────── */
   main: {
     flex: 1,
     padding: "28px 24px",
