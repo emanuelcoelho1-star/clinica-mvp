@@ -12,7 +12,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
    • Hover com tooltip visual na face
    • Histórico visual (tabela de dentes alterados)
    • Filtro por condição (destaca dentes com a condição)
-   • Dentes com formato anatômico (molar, pré-molar, canino, incisivo)
+   • Dentes com formato anatômico SVG (molar, pré-molar, canino, incisivo)
    • Layout responsivo melhorado
    ═══════════════════════════════════════════════════════════════ */
 
@@ -42,7 +42,7 @@ const NOMES_DENTES = {
   14: "1º Pré-molar sup. dir.", 15: "2º Pré-molar sup. dir.", 16: "1º Molar sup. dir.",
   17: "2º Molar sup. dir.", 18: "3º Molar sup. dir. (siso)",
   21: "Incisivo central sup. esq.", 22: "Incisivo lateral sup. esq.", 23: "Canino sup. esq.",
-  24: "1º Pré-molar sup. esq.", 25: "2º Pré-molar sup. esq.", 26: "1º Molar sup. esq.",
+  24: "1º Pr��-molar sup. esq.", 25: "2º Pré-molar sup. esq.", 26: "1º Molar sup. esq.",
   27: "2º Molar sup. esq.", 28: "3º Molar sup. esq. (siso)",
   31: "Incisivo central inf. esq.", 32: "Incisivo lateral inf. esq.", 33: "Canino inf. esq.",
   34: "1º Pré-molar inf. esq.", 35: "2º Pré-molar inf. esq.", 36: "1º Molar inf. esq.",
@@ -127,6 +127,110 @@ const Icons = {
     </svg>
   ),
 };
+/* ═══════════════════════════════════════════════════════════════
+   DESENHO ANATÔMICO SVG DOS DENTES
+   ═══════════════════════════════════════════════════════════════ */
+function getToothType(numero) {
+  const q = Math.floor(numero / 10);
+  const pos = numero % 10;
+  if (q >= 5) { if (pos >= 4) return "molar"; if (pos === 3) return "canine"; return "incisor"; }
+  if (pos >= 6) return "molar";
+  if (pos >= 4) return "premolar";
+  if (pos === 3) return "canine";
+  return "incisor";
+}
+
+function isUpperTooth(numero) {
+  const q = Math.floor(numero / 10);
+  return q === 1 || q === 2 || q === 5 || q === 6;
+}
+
+function getAnatomyPaths(type, upper, w, h) {
+  if (type === "molar") {
+    if (upper) return {
+      crown: `M${w*0.08},${h*0.55} C${w*0.06},${h*0.48},${w*0.10},${h*0.42},${w*0.18},${h*0.40} L${w*0.28},${h*0.38} C${w*0.34},${h*0.34},${w*0.40},${h*0.36},${w*0.44},${h*0.38} L${w*0.50},${h*0.36} C${w*0.56},${h*0.36},${w*0.62},${h*0.34},${w*0.66},${h*0.38} L${w*0.72},${h*0.38} C${w*0.82},${h*0.40},${w*0.90},${h*0.44},${w*0.92},${h*0.55} C${w*0.94},${h*0.66},${w*0.92},${h*0.78},${w*0.86},${h*0.88} C${w*0.78},${h*0.96},${w*0.22},${h*0.96},${w*0.14},${h*0.88} C${w*0.08},${h*0.78},${w*0.06},${h*0.66},${w*0.08},${h*0.55} Z`,
+      roots: [
+        `M${w*0.24},${h*0.42} Q${w*0.20},${h*0.22} ${w*0.22},${h*0.06}`,
+        `M${w*0.50},${h*0.38} Q${w*0.50},${h*0.18} ${w*0.50},${h*0.04}`,
+        `M${w*0.76},${h*0.42} Q${w*0.80},${h*0.22} ${w*0.78},${h*0.06}`,
+      ],
+    };
+    return {
+      crown: `M${w*0.08},${h*0.45} C${w*0.06},${h*0.34},${w*0.10},${h*0.22},${w*0.14},${h*0.14} C${w*0.22},${h*0.04},${w*0.78},${h*0.04},${w*0.86},${h*0.14} C${w*0.90},${h*0.22},${w*0.94},${h*0.34},${w*0.92},${h*0.45} C${w*0.94},${h*0.52},${w*0.88},${h*0.58},${w*0.82},${h*0.60} L${w*0.62},${h*0.62} C${w*0.56},${h*0.66},${w*0.44},${h*0.66},${w*0.38},${h*0.62} L${w*0.18},${h*0.60} C${w*0.12},${h*0.58},${w*0.06},${h*0.52},${w*0.08},${h*0.45} Z`,
+      roots: [
+        `M${w*0.30},${h*0.60} Q${w*0.26},${h*0.78} ${w*0.24},${h*0.94}`,
+        `M${w*0.70},${h*0.60} Q${w*0.74},${h*0.78} ${w*0.76},${h*0.94}`,
+      ],
+    };
+  }
+  if (type === "premolar") {
+    if (upper) return {
+      crown: `M${w*0.14},${h*0.55} C${w*0.12},${h*0.48},${w*0.16},${h*0.42},${w*0.24},${h*0.40} C${w*0.34},${h*0.36},${w*0.42},${h*0.38},${w*0.46},${h*0.40} L${w*0.54},${h*0.40} C${w*0.58},${h*0.38},${w*0.66},${h*0.36},${w*0.76},${h*0.40} C${w*0.84},${h*0.42},${w*0.88},${h*0.48},${w*0.86},${h*0.55} C${w*0.90},${h*0.68},${w*0.86},${h*0.82},${w*0.78},${h*0.90} C${w*0.68},${h*0.97},${w*0.32},${h*0.97},${w*0.22},${h*0.90} C${w*0.14},${h*0.82},${w*0.10},${h*0.68},${w*0.14},${h*0.55} Z`,
+      roots: [
+        `M${w*0.36},${h*0.42} Q${w*0.32},${h*0.24} ${w*0.30},${h*0.06}`,
+        `M${w*0.64},${h*0.42} Q${w*0.68},${h*0.24} ${w*0.70},${h*0.06}`,
+      ],
+    };
+    return {
+      crown: `M${w*0.14},${h*0.45} C${w*0.12},${h*0.34},${w*0.16},${h*0.22},${w*0.22},${h*0.14} C${w*0.32},${h*0.04},${w*0.68},${h*0.04},${w*0.78},${h*0.14} C${w*0.84},${h*0.22},${w*0.88},${h*0.34},${w*0.86},${h*0.45} C${w*0.88},${h*0.52},${w*0.84},${h*0.56},${w*0.76},${h*0.58} L${w*0.54},${h*0.60} C${w*0.48},${h*0.62},${w*0.42},${h*0.62},${w*0.38},${h*0.60} L${w*0.24},${h*0.58} C${w*0.16},${h*0.56},${w*0.12},${h*0.52},${w*0.14},${h*0.45} Z`,
+      roots: [
+        `M${w*0.50},${h*0.60} Q${w*0.50},${h*0.78} ${w*0.50},${h*0.94}`,
+      ],
+    };
+  }
+  if (type === "canine") {
+    if (upper) return {
+      crown: `M${w*0.20},${h*0.58} C${w*0.18},${h*0.52},${w*0.22},${h*0.44},${w*0.30},${h*0.42} C${w*0.38},${h*0.38},${w*0.44},${h*0.36},${w*0.50},${h*0.34} C${w*0.56},${h*0.36},${w*0.62},${h*0.38},${w*0.70},${h*0.42} C${w*0.78},${h*0.44},${w*0.82},${h*0.52},${w*0.80},${h*0.58} C${w*0.84},${h*0.70},${w*0.80},${h*0.84},${w*0.72},${h*0.92} C${w*0.64},${h*0.98},${w*0.36},${h*0.98},${w*0.28},${h*0.92} C${w*0.20},${h*0.84},${w*0.16},${h*0.70},${w*0.20},${h*0.58} Z`,
+      roots: [
+        `M${w*0.50},${h*0.36} Q${w*0.50},${h*0.18} ${w*0.50},${h*0.03}`,
+      ],
+    };
+    return {
+      crown: `M${w*0.20},${h*0.42} C${w*0.16},${h*0.30},${w*0.20},${h*0.16},${w*0.28},${h*0.08} C${w*0.36},${h*0.02},${w*0.64},${h*0.02},${w*0.72},${h*0.08} C${w*0.80},${h*0.16},${w*0.84},${h*0.30},${w*0.80},${h*0.42} C${w*0.82},${h*0.48},${w*0.78},${h*0.54},${w*0.70},${h*0.58} C${w*0.62},${h*0.64},${w*0.56},${h*0.66},${w*0.50},${h*0.66} C${w*0.44},${h*0.66},${w*0.38},${h*0.64},${w*0.30},${h*0.58} C${w*0.22},${h*0.54},${w*0.18},${h*0.48},${w*0.20},${h*0.42} Z`,
+      roots: [
+        `M${w*0.50},${h*0.64} Q${w*0.50},${h*0.82} ${w*0.50},${h*0.97}`,
+      ],
+    };
+  }
+  // incisor
+  if (upper) return {
+    crown: `M${w*0.22},${h*0.56} C${w*0.20},${h*0.50},${w*0.24},${h*0.44},${w*0.32},${h*0.42} C${w*0.40},${h*0.40},${w*0.46},${h*0.40},${w*0.50},${h*0.40} C${w*0.54},${h*0.40},${w*0.60},${h*0.40},${w*0.68},${h*0.42} C${w*0.76},${h*0.44},${w*0.80},${h*0.50},${w*0.78},${h*0.56} C${w*0.82},${h*0.68},${w*0.78},${h*0.82},${w*0.72},${h*0.90} C${w*0.64},${h*0.97},${w*0.36},${h*0.97},${w*0.28},${h*0.90} C${w*0.22},${h*0.82},${w*0.18},${h*0.68},${w*0.22},${h*0.56} Z`,
+    roots: [
+      `M${w*0.50},${h*0.42} Q${w*0.50},${h*0.22} ${w*0.50},${h*0.04}`,
+    ],
+  };
+  return {
+    crown: `M${w*0.22},${h*0.44} C${w*0.18},${h*0.32},${w*0.22},${h*0.18},${w*0.28},${h*0.10} C${w*0.36},${h*0.03},${w*0.64},${h*0.03},${w*0.72},${h*0.10} C${w*0.78},${h*0.18},${w*0.82},${h*0.32},${w*0.78},${h*0.44} C${w*0.80},${h*0.50},${w*0.76},${h*0.56},${w*0.68},${h*0.58} C${w*0.60},${h*0.60},${w*0.54},${h*0.60},${w*0.50},${h*0.60} C${w*0.46},${h*0.60},${w*0.40},${h*0.60},${w*0.32},${h*0.58} C${w*0.24},${h*0.56},${w*0.20},${h*0.50},${w*0.22},${h*0.44} Z`,
+    roots: [
+      `M${w*0.50},${h*0.58} Q${w*0.50},${h*0.78} ${w*0.50},${h*0.96}`,
+    ],
+  };
+}
+
+/* ── Componente SVG anatômico (decorativo) ─────────────────── */
+function ToothAnatomySVG({ numero, ausente }) {
+  const w = 46, h = 48;
+  const type = getToothType(numero);
+  const upper = isUpperTooth(numero);
+  const { crown, roots } = getAnatomyPaths(type, upper, w, h);
+
+  return (
+    <svg
+      width={w} height={h}
+      viewBox={`0 0 ${w} ${h}`}
+      style={{
+        display: "block",
+        filter: ausente ? "saturate(0.2) opacity(0.35)" : "none",
+        pointerEvents: "none",
+      }}
+    >
+      {roots.map((d, i) => (
+        <path key={i} d={d} stroke="#b0bec5" strokeWidth="1.4" fill="none" strokeLinecap="round" />
+      ))}
+      <path d={crown} fill="#f0f4f8" stroke="#90a4ae" strokeWidth="1.3" />
+    </svg>
+  );
+}
 
 /* ── SVG de um dente (5 faces) ─────────────────────────────── */
 const DENTE_SIZE = 46;
@@ -137,6 +241,7 @@ const TQ = (SZ * 3) / 4;
 
 function DenteSVG({ numero, faces, onFaceClick, ausente, selected, dimmed, onDenteClick }) {
   const [hoveredFace, setHoveredFace] = useState(null);
+  const upper = isUpperTooth(numero);
 
   const facePaths = {
     oclusal:    { d: `M${QR},${QR} L${TQ},${QR} L${TQ},${TQ} L${QR},${TQ} Z` },
@@ -149,12 +254,13 @@ function DenteSVG({ numero, faces, onFaceClick, ausente, selected, dimmed, onDen
   return (
     <div
       style={{
-        display: "flex", flexDirection: "column", alignItems: "center", gap: "3px",
+        display: "flex", flexDirection: "column", alignItems: "center", gap: "1px",
         opacity: dimmed ? 0.25 : 1, transition: "opacity 0.2s",
         cursor: "pointer",
       }}
       onClick={() => onDenteClick && onDenteClick(numero)}
     >
+      {/* Número */}
       <span style={{
         fontSize: "10px", fontWeight: "700",
         color: selected ? "#2563eb" : ausente ? "#d1d5db" : "#475569",
@@ -163,6 +269,11 @@ function DenteSVG({ numero, faces, onFaceClick, ausente, selected, dimmed, onDen
       }}>
         {numero}
       </span>
+
+      {/* Anatomia acima das faces para dentes superiores */}
+      {upper && <ToothAnatomySVG numero={numero} ausente={ausente} />}
+
+      {/* Faces clicáveis */}
       <svg
         width={SZ} height={SZ}
         viewBox={`0 0 ${SZ} ${SZ}`}
@@ -203,6 +314,9 @@ function DenteSVG({ numero, faces, onFaceClick, ausente, selected, dimmed, onDen
           </>
         )}
       </svg>
+
+      {/* Anatomia abaixo das faces para dentes inferiores */}
+      {!upper && <ToothAnatomySVG numero={numero} ausente={ausente} />}
     </div>
   );
 }
@@ -216,7 +330,6 @@ function Fileira({ dentes, mapa, onFaceClick, selectedDente, filtroCondicao, onD
         const ausente = Object.values(f).some((v) => v === "ausente");
         const temNota = notas[num] && notas[num].trim().length > 0;
 
-        // Se há filtro, dimmed se o dente NÃO tem essa condição
         let dimmed = false;
         if (filtroCondicao) {
           const temCond = Object.values(f).some((v) => v === filtroCondicao);
@@ -252,7 +365,6 @@ function Fileira({ dentes, mapa, onFaceClick, selectedDente, filtroCondicao, onD
     </div>
   );
 }
-
 /* ── Popup de seleção de condição ──────────────────────────── */
 function CondPopup({ pos, denteFace, onSelect, onSelectAll, onClose }) {
   const ref = useRef(null);
@@ -385,6 +497,11 @@ function PainelDente({ denteNum, mapa, notas, onNotaChange, onClose, onFaceClick
         }}>
           {Icons.x}
         </button>
+      </div>
+
+      {/* Anatomia decorativa centralizada */}
+      <div style={{ display: "flex", justifyContent: "center" }}>
+        <ToothAnatomySVG numero={denteNum} ausente={ausente} />
       </div>
 
       {/* Faces */}
@@ -546,7 +663,6 @@ function Resumo({ mapa }) {
     </div>
   );
 }
-
 /* ═══════════════════════════════════════════════════════════════
    COMPONENTE PRINCIPAL
    ═══════════════════════════════════════════════════════════════ */
@@ -559,14 +675,13 @@ export default function Odontograma({ pacienteId }) {
   const [msgSucesso, setMsgSucesso] = useState(false);
   const [alterado, setAlterado] = useState(false);
 
-  const [modoArcada, setModoArcada] = useState("adulto"); // "adulto" | "infantil" | "ambos"
+  const [modoArcada, setModoArcada] = useState("adulto");
   const [filtroCondicao, setFiltroCondicao] = useState(null);
   const [selectedDente, setSelectedDente] = useState(null);
 
-  // popup
   const [popup, setPopup] = useState(null);
   const [popupPos, setPopupPos] = useState({ x: 0, y: 0 });
-  const [applyAllCond, setApplyAllCond] = useState(null); // condição a aplicar em todas as faces
+  const [applyAllCond, setApplyAllCond] = useState(null);
 
   /* ── Carregar ────────────────────────────────────────── */
   useEffect(() => {
@@ -635,7 +750,6 @@ export default function Odontograma({ pacienteId }) {
     if (!popup) return;
 
     if (applyAllCond) {
-      // Aplicar em todas as faces
       setMapa((prev) => ({
         ...prev,
         [popup.dente]: {
@@ -678,7 +792,6 @@ export default function Odontograma({ pacienteId }) {
 
   const handleSelectAll = useCallback((dente) => {
     setApplyAllCond(dente);
-    // mantém o popup aberto para o user escolher a condição
   }, []);
 
   const handleNotaChange = useCallback((dente, texto) => {
@@ -728,8 +841,7 @@ export default function Odontograma({ pacienteId }) {
   }
 
   const fileiraProps = { mapa, onFaceClick: handleFaceClick, selectedDente, filtroCondicao, onDenteClick: setSelectedDente, notas };
-
-  return (
+    return (
     <div style={{ position: "relative" }}>
 
       {/* ── Header ─────────────────────────────────────── */}
@@ -787,212 +899,4 @@ export default function Odontograma({ pacienteId }) {
               { id: "adulto", label: "Adulto" },
               { id: "infantil", label: "Infantil" },
               { id: "ambos", label: "Ambos" },
-            ].map((m) => (
-              <button
-                key={m.id}
-                onClick={() => setModoArcada(m.id)}
-                style={{
-                  padding: "6px 12px", border: "none",
-                  background: modoArcada === m.id ? "#2563eb" : "#fff",
-                  color: modoArcada === m.id ? "#fff" : "#64748b",
-                  fontSize: "11px", fontWeight: "700", cursor: "pointer",
-                  transition: "all 0.15s", fontFamily: "inherit",
-                }}
-              >
-                {m.label}
-              </button>
-            ))}
-          </div>
-
-          <button
-            onClick={limparTudo}
-            style={{
-              display: "inline-flex", alignItems: "center", gap: "5px",
-              padding: "7px 14px", border: "1px solid #e2e8f0", borderRadius: "8px",
-              background: "#fff", color: "#64748b", fontSize: "12px", fontWeight: "600",
-              cursor: "pointer", transition: "all 0.15s", fontFamily: "inherit",
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = "#fef2f2"; e.currentTarget.style.color = "#ef4444"; e.currentTarget.style.borderColor = "#fecaca"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = "#fff"; e.currentTarget.style.color = "#64748b"; e.currentTarget.style.borderColor = "#e2e8f0"; }}
-          >
-            {Icons.trash}
-            <span>Limpar</span>
-          </button>
-
-          <button
-            onClick={salvar}
-            disabled={salvando || !alterado}
-            style={{
-              display: "inline-flex", alignItems: "center", gap: "6px",
-              padding: "7px 18px", border: "none", borderRadius: "8px",
-              background: alterado ? "#2563eb" : "#94a3b8",
-              color: "#fff", fontSize: "12px", fontWeight: "700",
-              cursor: alterado ? "pointer" : "default",
-              opacity: salvando ? 0.6 : 1,
-              transition: "all 0.2s", fontFamily: "inherit",
-              boxShadow: alterado ? "0 2px 8px rgba(37,99,235,0.3)" : "none",
-            }}
-          >
-            {Icons.save}
-            {salvando ? "Salvando..." : "Salvar"}
-          </button>
-        </div>
-      </div>
-
-      {/* ── Layout: Arcadas + Painel ──────────────────── */}
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: selectedDente ? "1fr 320px" : "1fr",
-        gap: "20px", transition: "all 0.2s",
-      }}>
-
-        {/* ── Arcadas ─────────────────────────────────── */}
-        <div style={{
-          display: "flex", flexDirection: "column", gap: "6px",
-          background: "#fafbfc", borderRadius: "14px", padding: "20px 16px",
-          border: "1px solid #f1f5f9",
-        }}>
-
-          {/* Superior Permanente */}
-          {(modoArcada === "adulto" || modoArcada === "ambos") && (
-            <>
-              <div style={{ textAlign: "center", marginBottom: "4px" }}>
-                <span style={st.secLabel}>ARCADA SUPERIOR — Permanente</span>
-                <span style={st.quadLabel}>Q1 / Q2</span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "center", gap: "16px", flexWrap: "wrap" }}>
-                <Fileira dentes={ARCADA_SUP_DIR} {...fileiraProps} />
-                <div style={st.dividerV} />
-                <Fileira dentes={ARCADA_SUP_ESQ} {...fileiraProps} />
-              </div>
-            </>
-          )}
-
-          {/* Superior Decíduo */}
-          {(modoArcada === "infantil" || modoArcada === "ambos") && (
-            <>
-              {modoArcada === "ambos" && <div style={st.dividerH} />}
-              <div style={{ textAlign: "center", marginBottom: "2px" }}>
-                <span style={st.secLabel}>ARCADA SUPERIOR — Decídua</span>
-                <span style={st.quadLabel}>Q5 / Q6</span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "center", gap: "16px", flexWrap: "wrap" }}>
-                <Fileira dentes={ARCADA_DEC_SUP_DIR} {...fileiraProps} />
-                <div style={st.dividerV} />
-                <Fileira dentes={ARCADA_DEC_SUP_ESQ} {...fileiraProps} />
-              </div>
-            </>
-          )}
-
-          {/* Separador central */}
-          <div style={{ borderTop: "2px dashed #cbd5e1", margin: "14px 0", position: "relative" }}>
-            <span style={{
-              position: "absolute", left: "50%", top: "50%", transform: "translate(-50%, -50%)",
-              background: "#fafbfc", padding: "0 12px", fontSize: "10px", fontWeight: "700",
-              color: "#cbd5e1", textTransform: "uppercase", letterSpacing: "0.1em",
-            }}>
-              Linha média
-            </span>
-          </div>
-
-          {/* Inferior Decíduo */}
-          {(modoArcada === "infantil" || modoArcada === "ambos") && (
-            <>
-              <div style={{ textAlign: "center", marginBottom: "2px" }}>
-                <span style={st.secLabel}>ARCADA INFERIOR — Decídua</span>
-                <span style={st.quadLabel}>Q8 / Q7</span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "center", gap: "16px", flexWrap: "wrap" }}>
-                <Fileira dentes={ARCADA_DEC_INF_DIR} {...fileiraProps} />
-                <div style={st.dividerV} />
-                <Fileira dentes={ARCADA_DEC_INF_ESQ} {...fileiraProps} />
-              </div>
-              {modoArcada === "ambos" && <div style={st.dividerH} />}
-            </>
-          )}
-
-          {/* Inferior Permanente */}
-          {(modoArcada === "adulto" || modoArcada === "ambos") && (
-            <>
-              <div style={{ textAlign: "center", marginBottom: "4px" }}>
-                <span style={st.secLabel}>ARCADA INFERIOR — Permanente</span>
-                <span style={st.quadLabel}>Q4 / Q3</span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "center", gap: "16px", flexWrap: "wrap" }}>
-                <Fileira dentes={ARCADA_INF_DIR} {...fileiraProps} />
-                <div style={st.dividerV} />
-                <Fileira dentes={ARCADA_INF_ESQ} {...fileiraProps} />
-              </div>
-            </>
-          )}
-        </div>
-
-        {/* ── Painel lateral ──────────────────────────── */}
-        {selectedDente && (
-          <PainelDente
-            denteNum={selectedDente}
-            mapa={mapa}
-            notas={notas}
-            onNotaChange={handleNotaChange}
-            onClose={() => setSelectedDente(null)}
-            onFaceClick={handleFaceClick}
-          />
-        )}
-      </div>
-
-      {/* ── Resumo de condições ───────────────────────── */}
-      <Resumo mapa={mapa} />
-
-      {/* ── Legenda clicável (filtro) ─────────────────── */}
-      <Legenda filtroCondicao={filtroCondicao} onFiltro={setFiltroCondicao} />
-
-      {/* ── Dica ──────────────────────────────────────── */}
-      <div style={{
-        display: "flex", alignItems: "center", gap: "6px",
-        justifyContent: "center", marginTop: "8px",
-      }}>
-        <span style={{ display: "flex", color: "#cbd5e1" }}>{Icons.info}</span>
-        <span style={{ fontSize: "11px", color: "#94a3b8", fontWeight: "500" }}>
-          Clique numa face para alterar a condição · Clique no número do dente para ver detalhes · Clique na legenda para filtrar
-        </span>
-      </div>
-
-      {/* ── Popup ──────────────────────────────────────── */}
-      <CondPopup
-        pos={popupPos}
-        denteFace={popup}
-        onSelect={handleSelectCond}
-        onSelectAll={handleSelectAll}
-        onClose={() => { setPopup(null); setApplyAllCond(null); }}
-      />
-    </div>
-  );
-}
-
-/* ── Mini‑estilos ──────────────────────────────────────────── */
-const st = {
-  secLabel: {
-    fontSize: "10px",
-    fontWeight: "700",
-    color: "#94a3b8",
-    textTransform: "uppercase",
-    letterSpacing: "0.08em",
-  },
-  quadLabel: {
-    fontSize: "9px",
-    fontWeight: "700",
-    color: "#cbd5e1",
-    marginLeft: "8px",
-    letterSpacing: "0.04em",
-  },
-  dividerV: {
-    width: "2px",
-    background: "#e2e8f0",
-    borderRadius: "2px",
-    alignSelf: "stretch",
-  },
-  dividerH: {
-    borderTop: "1px solid #f1f5f9",
-    margin: "8px 0",
-  },
-};
+            ].map((m)
