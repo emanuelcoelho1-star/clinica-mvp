@@ -5,6 +5,7 @@ function Login() {
   const [senha, setSenha] = useState("");
   const [erro, setErro] = useState("");
   const [carregando, setCarregando] = useState(false);
+  const [mostrarSenha, setMostrarSenha] = useState(false);
 
   const fazerLogin = async (e) => {
     e.preventDefault();
@@ -14,9 +15,7 @@ function Login() {
     try {
       const response = await fetch("http://localhost:3001/auth/login", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, senha }),
       });
 
@@ -28,7 +27,12 @@ function Login() {
         return;
       }
 
+      // Salvar token e dados do usuário
       localStorage.setItem("token", data.token);
+      if (data.usuario) {
+        localStorage.setItem("usuario", JSON.stringify(data.usuario));
+      }
+
       window.location.href = "/";
     } catch (error) {
       setErro("Não foi possível conectar ao servidor");
@@ -51,36 +55,56 @@ function Login() {
             <label style={styles.label}>E-mail</label>
             <input
               type="email"
-              placeholder="admin@teste.com"
+              placeholder="seu@email.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               style={styles.input}
               required
+              autoComplete="email"
             />
           </div>
 
           <div style={styles.inputGroup}>
             <label style={styles.label}>Senha</label>
-            <input
-              type="password"
-              placeholder="Digite sua senha"
-              value={senha}
-              onChange={(e) => setSenha(e.target.value)}
-              style={styles.input}
-              required
-            />
+            <div style={styles.senhaWrapper}>
+              <input
+                type={mostrarSenha ? "text" : "password"}
+                placeholder="Digite sua senha"
+                value={senha}
+                onChange={(e) => setSenha(e.target.value)}
+                style={{ ...styles.input, paddingRight: "48px" }}
+                required
+                autoComplete="current-password"
+              />
+              <button
+                type="button"
+                onClick={() => setMostrarSenha(!mostrarSenha)}
+                style={styles.toggleSenha}
+                tabIndex={-1}
+              >
+                {mostrarSenha ? "🙈" : "👁️"}
+              </button>
+            </div>
           </div>
 
           {erro && <p style={styles.erro}>{erro}</p>}
 
-          <button 
-            type="submit" 
-            style={{...styles.button, opacity: carregando ? 0.7 : 1, cursor: carregando ? "not-allowed" : "pointer"}} 
+          <button
+            type="submit"
+            style={{
+              ...styles.button,
+              opacity: carregando ? 0.7 : 1,
+              cursor: carregando ? "not-allowed" : "pointer",
+            }}
             disabled={carregando}
           >
             {carregando ? "Entrando..." : "Entrar"}
           </button>
         </form>
+
+        <p style={styles.footer}>
+          Protegido com criptografia de ponta a ponta
+        </p>
       </div>
     </div>
   );
@@ -178,6 +202,7 @@ const styles = {
     letterSpacing: "0.04em",
   },
   input: {
+    width: "100%",
     padding: "13px 16px",
     borderRadius: "12px",
     border: "1px solid #e2e8f0",
@@ -187,6 +212,25 @@ const styles = {
     color: "#0f172a",
     boxSizing: "border-box",
     transition: "all 0.2s ease",
+  },
+  senhaWrapper: {
+    position: "relative",
+    width: "100%",
+  },
+  toggleSenha: {
+    position: "absolute",
+    right: "12px",
+    top: "50%",
+    transform: "translateY(-50%)",
+    background: "none",
+    border: "none",
+    cursor: "pointer",
+    fontSize: "16px",
+    padding: "4px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    opacity: 0.6,
   },
   button: {
     marginTop: "12px",
@@ -211,6 +255,13 @@ const styles = {
     borderRadius: "12px",
     border: "1px solid #fecaca",
     fontWeight: "600",
+  },
+  footer: {
+    marginTop: "20px",
+    marginBottom: 0,
+    fontSize: "12px",
+    color: "#94a3b8",
+    fontWeight: "500",
   },
 };
 

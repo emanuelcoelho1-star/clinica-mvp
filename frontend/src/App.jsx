@@ -1,11 +1,12 @@
-import { BrowserRouter, Routes, Route, Link, useLocation } from "react-router-dom";
-import { useState } from "react";
+import { BrowserRouter, Routes, Route, Link, useLocation, useNavigate } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
 import Pacientes from "./pages/Pacientes";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import Agenda from "./pages/Agenda";
 import CadastroPaciente from "./pages/CadastroPaciente";
 import ProntuarioPaciente from "./pages/ProntuarioPaciente";
+import Configuracoes from "./pages/Configuracoes";
 
 /* ═══════════════════════════════════════════════════════════
    NAV CONFIG
@@ -56,6 +57,13 @@ const LogoIcon = (
   </svg>
 );
 
+const SettingsIcon = (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+    <circle cx="12" cy="12" r="3" />
+  </svg>
+);
+
 const LogoutIcon = (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -64,13 +72,148 @@ const LogoutIcon = (
   </svg>
 );
 
+const UserIcon = (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+    <circle cx="12" cy="7" r="4" />
+  </svg>
+);
+
+/* ═══════════════════════════════════════════════════════════
+   HELPER: pegar iniciais do nome
+   ═══════════════════════════════════════════════════════════ */
+function getInitials(nome) {
+  if (!nome) return "U";
+  const parts = nome.trim().split(" ").filter(Boolean);
+  if (parts.length === 1) return parts[0][0].toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   AVATAR DROPDOWN
+   ═══════════════════════════════════════════════════════════ */
+function AvatarDropdown() {
+  const [aberto, setAberto] = useState(false);
+  const [hoverConfig, setHoverConfig] = useState(false);
+  const [hoverLogout, setHoverLogout] = useState(false);
+  const ref = useRef(null);
+  const navigate = useNavigate();
+
+  // Dados do usuário do localStorage
+  const usuario = (() => {
+    try {
+      return JSON.parse(localStorage.getItem("usuario")) || {};
+    } catch {
+      return {};
+    }
+  })();
+
+  const nome = usuario.nome || "Administrador";
+  const email = usuario.email || "";
+  const foto = usuario.foto || null;
+  const initials = getInitials(nome);
+
+  // Fechar dropdown ao clicar fora
+  useEffect(() => {
+    const handleClickFora = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) {
+        setAberto(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickFora);
+    return () => document.removeEventListener("mousedown", handleClickFora);
+  }, []);
+
+  const fazerLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("usuario");
+    window.location.href = "/";
+  };
+
+  return (
+    <div ref={ref} style={S.avatarContainer}>
+      {/* ── Avatar Button ────────────────────── */}
+      <button
+        onClick={() => setAberto(!aberto)}
+        style={S.avatarBtn}
+        title={nome}
+      >
+        {foto ? (
+          <img src={foto} alt={nome} style={S.avatarImg} />
+        ) : (
+          <div style={S.avatarInitials}>{initials}</div>
+        )}
+        <span style={S.avatarOnlineDot} />
+      </button>
+
+      {/* ── Dropdown ─────────────────────────── */}
+      {aberto && (
+        <div style={S.dropdown}>
+          {/* Header */}
+          <div style={S.dropdownHeader}>
+            {foto ? (
+              <img src={foto} alt={nome} style={S.dropdownAvatar} />
+            ) : (
+              <div style={S.dropdownAvatarFallback}>{initials}</div>
+            )}
+            <div style={S.dropdownInfo}>
+              <span style={S.dropdownNome}>{nome}</span>
+              <span style={S.dropdownEmail}>{email}</span>
+            </div>
+          </div>
+
+          {/* Status */}
+          <div style={S.dropdownStatus}>
+            <span style={S.dropdownStatusDot} />
+            <span style={S.dropdownStatusText}>Online</span>
+          </div>
+
+          {/* Divider */}
+          <div style={S.dropdownDivider} />
+
+          {/* Configurações */}
+          <button
+            style={{
+              ...S.dropdownItem,
+              ...(hoverConfig ? S.dropdownItemHover : {}),
+            }}
+            onClick={() => { setAberto(false); navigate("/configuracoes"); }}
+            onMouseEnter={() => setHoverConfig(true)}
+            onMouseLeave={() => setHoverConfig(false)}
+          >
+            <span style={S.dropdownItemIcon}>{SettingsIcon}</span>
+            <span>Configurações</span>
+          </button>
+
+          {/* Divider */}
+          <div style={S.dropdownDivider} />
+
+          {/* Sair */}
+          <button
+            style={{
+              ...S.dropdownItem,
+              ...S.dropdownItemLogout,
+              ...(hoverLogout ? S.dropdownItemLogoutHover : {}),
+            }}
+            onClick={fazerLogout}
+            onMouseEnter={() => setHoverLogout(true)}
+            onMouseLeave={() => setHoverLogout(false)}
+          >
+            <span style={S.dropdownItemIcon}>{LogoutIcon}</span>
+            <span>Sair da conta</span>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ═══════════════════════════════════════════════════════════
    TOP BAR
-   ═══════════════════════════════════════════════════════════ */
+   ═══��═══════════════════════════════════════════════════════ */
 function TopBar() {
   const location = useLocation();
   const [hoveredPath, setHoveredPath] = useState(null);
-  const [logoutHover, setLogoutHover] = useState(false);
 
   const isActive = (path) => {
     if (path === "/pacientes") {
@@ -127,30 +270,9 @@ function TopBar() {
           })}
         </nav>
 
-        {/* ── Right side ───────────────────── */}
+        {/* ── Right side: Avatar ──────────── */}
         <div style={S.topBarRight}>
-          {/* Status */}
-          <div style={S.statusPill}>
-            <span style={S.statusDot} />
-            <span style={S.statusText}>Online</span>
-          </div>
-
-          {/* Logout */}
-          <button
-            style={{
-              ...S.logoutBtn,
-              ...(logoutHover ? S.logoutBtnHover : {}),
-            }}
-            onClick={() => {
-              localStorage.removeItem("token");
-              window.location.reload();
-            }}
-            onMouseEnter={() => setLogoutHover(true)}
-            onMouseLeave={() => setLogoutHover(false)}
-          >
-            {LogoutIcon}
-            <span>Sair</span>
-          </button>
+          <AvatarDropdown />
         </div>
 
       </div>
@@ -174,6 +296,7 @@ function Layout() {
             <Route path="/pacientes/novo" element={<CadastroPaciente />} />
             <Route path="/pacientes/editar/:id" element={<CadastroPaciente />} />
             <Route path="/pacientes/:id" element={<ProntuarioPaciente />} />
+            <Route path="/configuracoes" element={<Configuracoes />} />
           </Routes>
         </div>
       </main>
@@ -323,47 +446,173 @@ const S = {
     marginLeft: "auto",
     flexShrink: 0,
   },
-  statusPill: {
-    display: "inline-flex",
+
+  /* ── Avatar ──────────────────────────────── */
+  avatarContainer: {
+    position: "relative",
+  },
+  avatarBtn: {
+    position: "relative",
+    width: "36px",
+    height: "36px",
+    borderRadius: "50%",
+    border: "2px solid #e2e8f0",
+    background: "transparent",
+    padding: 0,
+    cursor: "pointer",
+    transition: "all 0.2s ease",
+    overflow: "hidden",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarImg: {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
+    borderRadius: "50%",
+  },
+  avatarInitials: {
+    width: "100%",
+    height: "100%",
+    borderRadius: "50%",
+    background: "linear-gradient(135deg, #2563eb, #1d4ed8)",
+    color: "#fff",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "13px",
+    fontWeight: "700",
+    letterSpacing: "0.02em",
+    lineHeight: 1,
+  },
+  avatarOnlineDot: {
+    position: "absolute",
+    bottom: "0px",
+    right: "0px",
+    width: "9px",
+    height: "9px",
+    borderRadius: "50%",
+    background: "#22c55e",
+    border: "2px solid #fff",
+    boxSizing: "border-box",
+  },
+
+  /* ── Dropdown ─────────────────────────────── */
+  dropdown: {
+    position: "absolute",
+    top: "calc(100% + 8px)",
+    right: 0,
+    width: "280px",
+    background: "#fff",
+    borderRadius: "16px",
+    boxShadow: "0 20px 50px rgba(15, 23, 42, 0.15), 0 0 0 1px rgba(15, 23, 42, 0.05)",
+    padding: "6px",
+    zIndex: 200,
+    animation: "fadeIn 0.15s ease",
+  },
+  dropdownHeader: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    padding: "14px 12px",
+  },
+  dropdownAvatar: {
+    width: "42px",
+    height: "42px",
+    borderRadius: "50%",
+    objectFit: "cover",
+    flexShrink: 0,
+  },
+  dropdownAvatarFallback: {
+    width: "42px",
+    height: "42px",
+    borderRadius: "50%",
+    background: "linear-gradient(135deg, #2563eb, #1d4ed8)",
+    color: "#fff",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "15px",
+    fontWeight: "700",
+    flexShrink: 0,
+  },
+  dropdownInfo: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "2px",
+    overflow: "hidden",
+  },
+  dropdownNome: {
+    fontSize: "14px",
+    fontWeight: "600",
+    color: "#0f172a",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+  },
+  dropdownEmail: {
+    fontSize: "12px",
+    color: "#94a3b8",
+    fontWeight: "500",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+  },
+  dropdownStatus: {
+    display: "flex",
     alignItems: "center",
     gap: "6px",
-    padding: "5px 12px",
-    borderRadius: "999px",
-    background: "#f0fdf4",
-    border: "1px solid #dcfce7",
+    padding: "6px 12px 10px 12px",
   },
-  statusDot: {
+  dropdownStatusDot: {
     width: "6px",
     height: "6px",
     borderRadius: "50%",
     background: "#22c55e",
     flexShrink: 0,
   },
-  statusText: {
+  dropdownStatusText: {
     fontSize: "12px",
-    fontWeight: "600",
+    fontWeight: "500",
     color: "#16a34a",
-    lineHeight: 1,
   },
-  logoutBtn: {
-    display: "inline-flex",
+  dropdownDivider: {
+    height: "1px",
+    background: "#f1f5f9",
+    margin: "2px 8px",
+  },
+  dropdownItem: {
+    display: "flex",
     alignItems: "center",
-    gap: "6px",
-    border: "1px solid #f1f5f9",
+    gap: "10px",
+    width: "100%",
+    padding: "10px 12px",
+    border: "none",
     background: "transparent",
-    color: "#94a3b8",
-    borderRadius: "8px",
-    padding: "6px 14px",
+    borderRadius: "10px",
+    cursor: "pointer",
     fontSize: "13px",
     fontWeight: "500",
-    cursor: "pointer",
+    color: "#334155",
     transition: "all 0.15s ease",
-    height: "32px",
     boxSizing: "border-box",
+    textAlign: "left",
   },
-  logoutBtnHover: {
+  dropdownItemHover: {
+    background: "#f8fafc",
+    color: "#0f172a",
+  },
+  dropdownItemIcon: {
+    display: "flex",
+    alignItems: "center",
+    color: "#94a3b8",
+  },
+  dropdownItemLogout: {
+    color: "#94a3b8",
+  },
+  dropdownItemLogoutHover: {
     background: "#fef2f2",
-    borderColor: "#fecaca",
     color: "#ef4444",
   },
 

@@ -79,11 +79,14 @@ db.serialize(() => {
     )
   `);
 
+  /* ── TABELA: usuarios (MELHORADA) ───────────────── */
   db.run(`
     CREATE TABLE IF NOT EXISTS usuarios (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nome TEXT NOT NULL DEFAULT 'Administrador',
       email TEXT UNIQUE NOT NULL,
-      senha TEXT NOT NULL
+      senha TEXT NOT NULL,
+      created_at TEXT DEFAULT (datetime('now','localtime'))
     )
   `);
 
@@ -211,7 +214,7 @@ db.serialize(() => {
     )
   `);
 
-  /* ── NOVA TABELA: tratamentos ──────────────────── */
+  /* ── TABELA: tratamentos ───────────────────────── */
   db.run(`
     CREATE TABLE IF NOT EXISTS tratamentos (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -230,6 +233,7 @@ db.serialize(() => {
     )
   `);
 
+  /* ── MIGRAÇÕES: pacientes ──────────────────────── */
   adicionarColunaSeNaoExistir("pacientes", "telefone", "TEXT");
   adicionarColunaSeNaoExistir("pacientes", "email", "TEXT");
   adicionarColunaSeNaoExistir("pacientes", "como_conheceu", "TEXT");
@@ -249,6 +253,10 @@ db.serialize(() => {
   adicionarColunaSeNaoExistir("pacientes", "responsavel_cpf", "TEXT");
   adicionarColunaSeNaoExistir("pacientes", "responsavel_data_nascimento", "TEXT");
   adicionarColunaSeNaoExistir("pacientes", "responsavel_telefone", "TEXT");
+
+  /* ── MIGRAÇÕES: usuarios (NOVO) ────────────────── */
+  adicionarColunaSeNaoExistir("usuarios", "nome", "TEXT DEFAULT 'Administrador'");
+  adicionarColunaSeNaoExistir("usuarios", "created_at", "TEXT");
 });
 
 module.exports = db;
