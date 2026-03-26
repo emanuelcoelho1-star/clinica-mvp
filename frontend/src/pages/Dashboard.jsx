@@ -87,12 +87,6 @@ const Icons = {
       <path d="m9 18 6-6-6-6" />
     </svg>
   ),
-  fileText: (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
-      <polyline points="14 2 14 8 20 8" />
-    </svg>
-  ),
   phone: (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
@@ -251,7 +245,6 @@ function Dashboard() {
     weekday: "long", day: "numeric", month: "long",
   });
 
-  /* ── Nome do usuário logado ──────────────────── */
   const nomeUsuario = (() => {
     try {
       const u = JSON.parse(localStorage.getItem("usuario"));
@@ -261,7 +254,7 @@ function Dashboard() {
     }
   })();
 
-  /* ── Loading (mesmos dots do prontuário) ──────── */
+  /* ── Loading ─────────────────────────────────────── */
   if (carregando) {
     return (
       <div style={S.loadingWrap}>
@@ -292,7 +285,7 @@ function Dashboard() {
               <span style={S.heroDateIcon}>{Icons.calendar}</span>
               <span>{dataFormatada}</span>
             </div>
-            <h1 style={S.heroTitle}>{saudacao()}, {nomeUsuario} ��</h1>
+            <h1 style={S.heroTitle}>{saudacao()}, {nomeUsuario}</h1>
             <p style={S.heroSub}>
               Você tem <strong style={{ color: "#2563eb" }}>{consultasHoje.length} consulta{consultasHoje.length !== 1 ? "s" : ""}</strong> agendada{consultasHoje.length !== 1 ? "s" : ""} para hoje
               {consultasHoje.length > 0 ? ` — próxima às ${consultasHoje[0].horario}.` : "."}
@@ -492,7 +485,7 @@ function Dashboard() {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   STYLES — Mesmo design system do ProntuarioPaciente
+   STYLES
    ═══════════════════════════════════════════════════════════ */
 const S = {
   page: {
@@ -501,7 +494,7 @@ const S = {
     gap: "24px",
   },
 
-  /* ── Loading (idêntico ao prontuário) ──────────── */
+  /* ── Loading ───────────────────────────────────── */
   loadingWrap: {
     display: "flex",
     flexDirection: "column",
@@ -671,7 +664,7 @@ const S = {
     fontWeight: "500",
   },
 
-  /* ── Card (idêntico ao prontuário) ──────────────── */
+  /* ── Card ───────────────────────────────────────── */
   card: {
     background: "#fff",
     borderRadius: "16px",
@@ -834,7 +827,7 @@ const S = {
     color: "#94a3b8",
   },
 
-  /* ── Avatar (idêntico ao prontuário) ────────────── */
+  /* ── Avatar ─────────────────────────────────────── */
   avatar: {
     width: "42px",
     height: "42px",
@@ -855,7 +848,7 @@ const S = {
     flexShrink: 0,
   },
 
-  /* ── Badge (idêntico ao prontuário chips) ────────── */
+  /* ── Badge ──────────────────────────────────────── */
   badge: {
     display: "inline-flex",
     alignItems: "center",
@@ -895,7 +888,7 @@ const S = {
     fontWeight: "500",
   },
 
-  /* ── Quick Actions Card (dark) ──────────────────── */
+  /* ── Quick Actions Card ─────────────────────────── */
   quickCard: {
     background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
     borderRadius: "16px",
