@@ -1,11 +1,58 @@
 import { useState } from "react";
 
+/* ── Icons ────────────────────────────────────────────────── */
+const LockIcon = (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+  </svg>
+);
+
+const MailIcon = (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect width="20" height="16" x="2" y="4" rx="2" />
+    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+  </svg>
+);
+
+const KeyIcon = (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="7.5" cy="15.5" r="5.5" />
+    <path d="m21 2-9.3 9.3" />
+    <path d="M18.5 5.5 21 3" />
+  </svg>
+);
+
+const EyeIcon = (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+    <circle cx="12" cy="12" r="3" />
+  </svg>
+);
+
+const EyeOffIcon = (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+    <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
+    <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
+    <line x1="2" x2="22" y1="2" y2="22" />
+  </svg>
+);
+
+const ShieldIcon = (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+  </svg>
+);
+
 function Login() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [erro, setErro] = useState("");
   const [carregando, setCarregando] = useState(false);
   const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [focusEmail, setFocusEmail] = useState(false);
+  const [focusSenha, setFocusSenha] = useState(false);
 
   const fazerLogin = async (e) => {
     e.preventDefault();
@@ -27,7 +74,6 @@ function Login() {
         return;
       }
 
-      // Salvar token e dados do usuário
       localStorage.setItem("token", data.token);
       if (data.usuario) {
         localStorage.setItem("usuario", JSON.stringify(data.usuario));
@@ -41,226 +87,406 @@ function Login() {
   };
 
   return (
-    <div style={styles.container}>
-      <div style={styles.backgroundGlowOne}></div>
-      <div style={styles.backgroundGlowTwo}></div>
+    <div style={S.page}>
+      {/* Background decorations */}
+      <div style={S.bgCircle1} />
+      <div style={S.bgCircle2} />
+      <div style={S.bgCircle3} />
 
-      <div style={styles.card}>
-        <div style={styles.logo}>🦷</div>
-        <h1 style={styles.title}>Odonto Pro</h1>
-        <p style={styles.subtitle}>Acesse sua clínica com segurança</p>
-
-        <form onSubmit={fazerLogin} style={styles.form}>
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>E-mail</label>
-            <input
-              type="email"
-              placeholder="seu@email.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              style={styles.input}
-              required
-              autoComplete="email"
-            />
+      <div style={S.wrapper}>
+        {/* ── Logo / Header ──────────────────── */}
+        <div style={S.logoSection}>
+          <div style={S.logoBox}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 5.5c-1.5-2-4-2.5-6-1s-2.5 4.5-1 7c1.3 2.2 5 6 7 8.5 2-2.5 5.7-6.3 7-8.5 1.5-2.5.5-5.5-1-7s-4.5-1-6 1z" />
+            </svg>
           </div>
+          <div>
+            <h1 style={S.logoTitle}>OdontoPro</h1>
+            <p style={S.logoSub}>Sistema de gestão odontológica</p>
+          </div>
+        </div>
 
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Senha</label>
-            <div style={styles.senhaWrapper}>
-              <input
-                type={mostrarSenha ? "text" : "password"}
-                placeholder="Digite sua senha"
-                value={senha}
-                onChange={(e) => setSenha(e.target.value)}
-                style={{ ...styles.input, paddingRight: "48px" }}
-                required
-                autoComplete="current-password"
-              />
-              <button
-                type="button"
-                onClick={() => setMostrarSenha(!mostrarSenha)}
-                style={styles.toggleSenha}
-                tabIndex={-1}
-              >
-                {mostrarSenha ? "🙈" : "👁️"}
-              </button>
+        {/* ── Card Principal ─────────────────── */}
+        <div style={S.card}>
+          <div style={S.cardHeader}>
+            <div style={S.cardIconWrap}>
+              <span style={S.cardIconCircle}>{LockIcon}</span>
             </div>
+            <h2 style={S.cardTitle}>Acesse sua conta</h2>
+            <p style={S.cardDesc}>Entre com suas credenciais para continuar</p>
           </div>
 
-          {erro && <p style={styles.erro}>{erro}</p>}
+          <form onSubmit={fazerLogin} style={S.form}>
+            {/* E-mail */}
+            <div style={S.inputGroup}>
+              <label style={S.label}>E-mail</label>
+              <div style={{
+                ...S.inputWrapper,
+                borderColor: focusEmail ? "#2563eb" : "#e2e8f0",
+                boxShadow: focusEmail ? "0 0 0 3px rgba(37, 99, 235, 0.1)" : "none",
+              }}>
+                <span style={{ ...S.inputIcon, color: focusEmail ? "#2563eb" : "#94a3b8" }}>{MailIcon}</span>
+                <input
+                  type="email"
+                  placeholder="seu@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onFocus={() => setFocusEmail(true)}
+                  onBlur={() => setFocusEmail(false)}
+                  style={S.input}
+                  required
+                  autoComplete="email"
+                />
+              </div>
+            </div>
 
-          <button
-            type="submit"
-            style={{
-              ...styles.button,
-              opacity: carregando ? 0.7 : 1,
-              cursor: carregando ? "not-allowed" : "pointer",
-            }}
-            disabled={carregando}
-          >
-            {carregando ? "Entrando..." : "Entrar"}
-          </button>
-        </form>
+            {/* Senha */}
+            <div style={S.inputGroup}>
+              <label style={S.label}>Senha</label>
+              <div style={{
+                ...S.inputWrapper,
+                borderColor: focusSenha ? "#2563eb" : "#e2e8f0",
+                boxShadow: focusSenha ? "0 0 0 3px rgba(37, 99, 235, 0.1)" : "none",
+              }}>
+                <span style={{ ...S.inputIcon, color: focusSenha ? "#2563eb" : "#94a3b8" }}>{KeyIcon}</span>
+                <input
+                  type={mostrarSenha ? "text" : "password"}
+                  placeholder="Digite sua senha"
+                  value={senha}
+                  onChange={(e) => setSenha(e.target.value)}
+                  onFocus={() => setFocusSenha(true)}
+                  onBlur={() => setFocusSenha(false)}
+                  style={S.input}
+                  required
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setMostrarSenha(!mostrarSenha)}
+                  style={S.toggleSenha}
+                  tabIndex={-1}
+                >
+                  {mostrarSenha ? EyeOffIcon : EyeIcon}
+                </button>
+              </div>
+            </div>
 
-        <p style={styles.footer}>
-          Protegido com criptografia de ponta a ponta
-        </p>
+            {/* Erro */}
+            {erro && (
+              <div style={S.erroBox}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="15" x2="9" y1="9" y2="15" />
+                  <line x1="9" x2="15" y1="9" y2="15" />
+                </svg>
+                <span>{erro}</span>
+              </div>
+            )}
+
+            {/* Botão */}
+            <button
+              type="submit"
+              style={{
+                ...S.btnPrimary,
+                opacity: carregando ? 0.7 : 1,
+                cursor: carregando ? "not-allowed" : "pointer",
+              }}
+              disabled={carregando}
+            >
+              {carregando ? (
+                <>
+                  <span style={S.spinner} />
+                  <span>Entrando...</span>
+                </>
+              ) : (
+                <span>Entrar</span>
+              )}
+            </button>
+          </form>
+
+          {/* Footer */}
+          <div style={S.cardFooter}>
+            <span style={S.footerIcon}>{ShieldIcon}</span>
+            <span style={S.footerText}>Conexão segura e criptografada</span>
+          </div>
+        </div>
+
+        {/* Versão */}
+        <p style={S.version}>OdontoPro v1.0 — © 2025</p>
       </div>
+
+      {/* Keyframes */}
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+      `}</style>
     </div>
   );
 }
 
-const styles = {
-  container: {
+/* ═══════════════════════════════════════════════════════════
+   STYLES — Mesmo design system do ProntuarioPaciente
+   ═══════════════════════════════════════════════════════════ */
+const S = {
+  page: {
     minHeight: "100vh",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    background: "linear-gradient(135deg, #eff6ff 0%, #dbeafe 45%, #f8fafc 100%)",
-    fontFamily: "'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+    background: "#f0f4fa",
+    fontFamily: "'Inter', 'DM Sans', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
     padding: "24px",
     boxSizing: "border-box",
     position: "relative",
     overflow: "hidden",
   },
-  backgroundGlowOne: {
+
+  /* Background circles */
+  bgCircle1: {
     position: "absolute",
-    width: "320px",
-    height: "320px",
-    borderRadius: "999px",
-    background: "rgba(37, 99, 235, 0.15)",
-    top: "-80px",
+    width: "500px",
+    height: "500px",
+    borderRadius: "50%",
+    background: "rgba(37, 99, 235, 0.04)",
+    top: "-150px",
+    right: "-100px",
+  },
+  bgCircle2: {
+    position: "absolute",
+    width: "400px",
+    height: "400px",
+    borderRadius: "50%",
+    background: "rgba(37, 99, 235, 0.03)",
+    bottom: "-120px",
     left: "-80px",
-    filter: "blur(30px)",
   },
-  backgroundGlowTwo: {
+  bgCircle3: {
     position: "absolute",
-    width: "320px",
-    height: "320px",
-    borderRadius: "999px",
-    background: "rgba(59, 130, 246, 0.12)",
-    bottom: "-100px",
-    right: "-80px",
-    filter: "blur(30px)",
+    width: "200px",
+    height: "200px",
+    borderRadius: "50%",
+    background: "rgba(37, 99, 235, 0.05)",
+    top: "50%",
+    left: "10%",
   },
-  card: {
+
+  wrapper: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: "24px",
     width: "100%",
-    maxWidth: "430px",
-    backgroundColor: "rgba(255, 255, 255, 0.92)",
-    backdropFilter: "blur(10px)",
-    borderRadius: "28px",
-    padding: "36px",
-    boxShadow: "0 30px 60px rgba(15, 23, 42, 0.12)",
-    border: "1px solid rgba(255, 255, 255, 0.7)",
-    boxSizing: "border-box",
-    textAlign: "center",
+    maxWidth: "420px",
     position: "relative",
     zIndex: 2,
   },
-  logo: {
-    width: "72px",
-    height: "72px",
-    margin: "0 auto 18px auto",
-    borderRadius: "22px",
+
+  /* Logo section */
+  logoSection: {
+    display: "flex",
+    alignItems: "center",
+    gap: "14px",
+  },
+  logoBox: {
+    width: "44px",
+    height: "44px",
+    borderRadius: "12px",
+    background: "#2563eb",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    fontSize: "30px",
-    background: "linear-gradient(135deg, #2563eb, #1d4ed8)",
-    color: "#fff",
-    boxShadow: "0 16px 30px rgba(37, 99, 235, 0.28)",
+    boxShadow: "0 8px 20px rgba(37, 99, 235, 0.25)",
   },
-  title: {
+  logoTitle: {
     margin: 0,
-    fontSize: "32px",
+    fontSize: "22px",
+    fontWeight: "700",
     color: "#0f172a",
-    fontWeight: "800",
-    letterSpacing: "-0.02em",
+    letterSpacing: "-0.025em",
   },
-  subtitle: {
-    margin: "10px 0 28px 0",
-    color: "#64748b",
-    fontSize: "15px",
+  logoSub: {
+    margin: "2px 0 0 0",
+    fontSize: "13px",
+    color: "#94a3b8",
     fontWeight: "500",
   },
+
+  /* Card — mesmo padrão do prontuário */
+  card: {
+    width: "100%",
+    background: "#fff",
+    borderRadius: "16px",
+    border: "1px solid #f1f5f9",
+    padding: "32px",
+    boxSizing: "border-box",
+  },
+
+  cardHeader: {
+    textAlign: "center",
+    marginBottom: "28px",
+  },
+  cardIconWrap: {
+    display: "flex",
+    justifyContent: "center",
+    marginBottom: "16px",
+  },
+  cardIconCircle: {
+    width: "52px",
+    height: "52px",
+    borderRadius: "14px",
+    background: "#f0f4ff",
+    color: "#2563eb",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cardTitle: {
+    margin: 0,
+    fontSize: "20px",
+    fontWeight: "700",
+    color: "#0f172a",
+    letterSpacing: "-0.02em",
+  },
+  cardDesc: {
+    margin: "6px 0 0 0",
+    fontSize: "14px",
+    color: "#94a3b8",
+    fontWeight: "500",
+  },
+
+  /* Form */
   form: {
     display: "flex",
     flexDirection: "column",
-    gap: "16px",
-    textAlign: "left",
+    gap: "18px",
   },
   inputGroup: {
     display: "flex",
     flexDirection: "column",
-    gap: "8px",
+    gap: "6px",
   },
   label: {
-    fontSize: "14px",
+    fontSize: "12px",
     fontWeight: "600",
     color: "#334155",
     textTransform: "uppercase",
-    letterSpacing: "0.04em",
+    letterSpacing: "0.06em",
   },
-  input: {
-    width: "100%",
-    padding: "13px 16px",
+  inputWrapper: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    padding: "0 14px",
     borderRadius: "12px",
     border: "1px solid #e2e8f0",
-    fontSize: "14px",
-    outline: "none",
-    backgroundColor: "#f8fafc",
-    color: "#0f172a",
-    boxSizing: "border-box",
+    background: "#fafbfc",
+    height: "46px",
     transition: "all 0.2s ease",
+    boxSizing: "border-box",
   },
-  senhaWrapper: {
-    position: "relative",
-    width: "100%",
+  inputIcon: {
+    display: "flex",
+    alignItems: "center",
+    flexShrink: 0,
+    transition: "color 0.2s ease",
+  },
+  input: {
+    flex: 1,
+    border: "none",
+    outline: "none",
+    background: "transparent",
+    fontSize: "14px",
+    color: "#0f172a",
+    fontWeight: "500",
+    fontFamily: "inherit",
+    height: "100%",
   },
   toggleSenha: {
-    position: "absolute",
-    right: "12px",
-    top: "50%",
-    transform: "translateY(-50%)",
-    background: "none",
-    border: "none",
-    cursor: "pointer",
-    fontSize: "16px",
-    padding: "4px",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    opacity: 0.6,
+    background: "none",
+    border: "none",
+    cursor: "pointer",
+    color: "#94a3b8",
+    padding: "4px",
+    borderRadius: "6px",
+    transition: "all 0.15s ease",
+    flexShrink: 0,
   },
-  button: {
-    marginTop: "12px",
-    padding: "13px 18px",
+
+  /* Erro — mesmo padrão do prontuário alertaBanner */
+  erroBox: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    borderRadius: "10px",
+    padding: "10px 14px",
+    fontSize: "13px",
+    fontWeight: "600",
+    border: "1px solid #fecaca",
+    background: "#fef2f2",
+    color: "#b91c1c",
+  },
+
+  /* Botão — mesmo padrão do btnPrimary do prontuário */
+  btnPrimary: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "8px",
     border: "none",
     borderRadius: "12px",
-    background: "linear-gradient(135deg, #2563eb, #1d4ed8)",
+    padding: "0 20px",
+    background: "#2563eb",
     color: "#fff",
-    fontSize: "15px",
-    fontWeight: "700",
-    cursor: "pointer",
-    boxShadow: "0 10px 20px rgba(37, 99, 235, 0.22)",
-    height: "44px",
-    transition: "all 0.2s ease",
-  },
-  erro: {
-    margin: 0,
-    color: "#b91c1c",
-    fontSize: "14px",
-    backgroundColor: "#fee2e2",
-    padding: "12px 14px",
-    borderRadius: "12px",
-    border: "1px solid #fecaca",
     fontWeight: "600",
+    fontSize: "14px",
+    cursor: "pointer",
+    boxShadow: "0 4px 12px rgba(37, 99, 235, 0.25)",
+    transition: "all 0.2s ease",
+    height: "46px",
+    width: "100%",
+    boxSizing: "border-box",
+    fontFamily: "inherit",
+    marginTop: "4px",
   },
-  footer: {
-    marginTop: "20px",
-    marginBottom: 0,
+
+  spinner: {
+    width: "16px",
+    height: "16px",
+    border: "2px solid rgba(255,255,255,0.3)",
+    borderTopColor: "#fff",
+    borderRadius: "50%",
+    animation: "spin 0.6s linear infinite",
+    flexShrink: 0,
+  },
+
+  /* Footer do card */
+  cardFooter: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "6px",
+    marginTop: "24px",
+    paddingTop: "18px",
+    borderTop: "1px solid #f1f5f9",
+  },
+  footerIcon: {
+    display: "flex",
+    color: "#22c55e",
+  },
+  footerText: {
     fontSize: "12px",
     color: "#94a3b8",
+    fontWeight: "500",
+  },
+
+  /* Versão */
+  version: {
+    margin: 0,
+    fontSize: "12px",
+    color: "#cbd5e1",
     fontWeight: "500",
   },
 };
