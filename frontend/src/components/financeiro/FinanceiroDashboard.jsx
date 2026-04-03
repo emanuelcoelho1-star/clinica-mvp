@@ -90,9 +90,12 @@ const Icons = {
 
 /* ═══════════════════════════════════════════════════════════
    STATUS CONFIG
+   ✅ CORRIGIDO: adicionados "pago" e "parcial" (usados pelo backend)
    ═══════════════════════════════════════════════════════════ */
 const STATUS_RECEBER = {
   pendente:  { label: "Pendente",  bg: "#eff6ff", color: "#2563eb", dot: "#60a5fa" },
+  parcial:   { label: "Parcial",   bg: "#fff7ed", color: "#ea580c", dot: "#fb923c" },
+  pago:      { label: "Recebido",  bg: "#f0fdf4", color: "#16a34a", dot: "#4ade80" },
   recebido:  { label: "Recebido",  bg: "#f0fdf4", color: "#16a34a", dot: "#4ade80" },
   atrasado:  { label: "Atrasado",  bg: "#fef2f2", color: "#dc2626", dot: "#f87171" },
   cancelado: { label: "Cancelado", bg: "#f8fafc", color: "#94a3b8", dot: "#cbd5e1" },
@@ -100,6 +103,7 @@ const STATUS_RECEBER = {
 
 const STATUS_PAGAR = {
   pendente:  { label: "Pendente",  bg: "#fff7ed", color: "#ea580c", dot: "#fb923c" },
+  parcial:   { label: "Parcial",   bg: "#fef3c7", color: "#d97706", dot: "#fbbf24" },
   pago:      { label: "Pago",      bg: "#f0fdf4", color: "#16a34a", dot: "#4ade80" },
   atrasado:  { label: "Atrasado",  bg: "#fef2f2", color: "#dc2626", dot: "#f87171" },
   cancelado: { label: "Cancelado", bg: "#f8fafc", color: "#94a3b8", dot: "#cbd5e1" },
@@ -107,7 +111,7 @@ const STATUS_PAGAR = {
 
 /* ═══════════════════════════════════════════════════════════
    STYLES — Ultra Premium Minimal SaaS
-   ══════════��════════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════ */
 const S = {
   /* ── Loading ─────────────────────────────────────── */
   loadingWrap: {
@@ -459,6 +463,7 @@ function SectionCard({ title, icon, action, onAction, children, empty }) {
 
 /* ═══════════════════════════════════════════════════════════
    COMPONENTE PRINCIPAL — FinanceiroDashboard
+   ✅ CORRIGIDO: parseamento de { contas, resumo } e KPIs
    ═══════════════════════════════════════════════════════════ */
 function FinanceiroDashboard() {
   const [dados, setDados] = useState(null);
@@ -472,16 +477,36 @@ function FinanceiroDashboard() {
         .catch(() => ({})),
       fetch(`${API}/financeiro/contas-receber`, { headers: headers() })
         .then((r) => r.json())
-        .catch(() => []),
+        .catch(() => ({})),
       fetch(`${API}/financeiro/contas-pagar`, { headers: headers() })
         .then((r) => r.json())
-        .catch(() => []),
+        .catch(() => ({})),
     ])
       .then(([dash, receber, pagar]) => {
+        /* ✅ FIX 1: backend retorna { contas: [...], resumo: {...} }, não array */
+        const listaReceber = Array.isArray(receber)
+          ? receber
+          : (receber && Array.isArray(receber.contas))
+            ? receber.contas
+            : [];
+        const listaPagar = Array.isArray(pagar)
+          ? pagar
+          : (pagar && Array.isArray(pagar.contas))
+            ? pagar.contas
+            : [];
+
+        /* ✅ FIX 2: extrair resumo para KPIs quando dashboard não retorna campos antigos */
+        const resumoReceber = receber?.resumo || {};
+        const resumoPagar = pagar?.resumo || {};
+
         setDados({
           ...dash,
-          ultimasReceber: Array.isArray(receber) ? receber.slice(0, 5) : [],
-          ultimasPagar: Array.isArray(pagar) ? pagar.slice(0, 5) : [],
+          /* Campos de resumo para KPIs — tenta dashboard primeiro, fallback para resumo das contas */
+          total_receber: dash.total_receber || resumoReceber.total_pendente || 0,
+          total_pagar: dash.total_pagar || resumoPagar.total_pendente || 0,
+          inadimplentes: dash.inadimplentes || resumoReceber.qtd_vencidas || 0,
+          ultimasReceber: listaReceber.slice(0, 5),
+          ultimasPagar: listaPagar.slice(0, 5),
         });
       })
       .catch((err) => console.error("Erro ao carregar dashboard:", err))

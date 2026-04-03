@@ -43,7 +43,7 @@ function faixaAtraso(dias) {
   return { label: "60+ dias", bg: "#450a0a", color: "#fecaca", severity: 4 };
 }
 
-/* ═══════════���═══════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════
    ICONS — Lucide-style inline SVGs
    ═══════════════════════════════════════════════════════════ */
 const Icons = {
@@ -144,7 +144,6 @@ const Icons = {
    STYLES — Ultra Premium Minimal SaaS
    ═══════════════════════════════════════════════════════════ */
 const S = {
-  /* ── Loading ─────────────────────────────────────── */
   loadingWrap: {
     display: "flex",
     flexDirection: "column",
@@ -168,8 +167,6 @@ const S = {
     color: "#94a3b8",
     letterSpacing: "0.02em",
   },
-
-  /* ── Stats Grid ──────────────────────────────────── */
   statsGrid: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
@@ -217,8 +214,6 @@ const S = {
     color: "#94a3b8",
     fontWeight: "500",
   },
-
-  /* ── Search Bar ──────────────────────────────────── */
   searchBar: {
     display: "flex",
     alignItems: "center",
@@ -289,8 +284,6 @@ const S = {
     background: active ? "#dc2626" : "#f1f5f9",
     color: active ? "#fff" : "#64748b",
   }),
-
-  /* ── Buttons ─────────────────────────────────────── */
   btnSecondary: {
     display: "inline-flex",
     alignItems: "center",
@@ -309,8 +302,6 @@ const S = {
     boxSizing: "border-box",
     fontFamily: "inherit",
   },
-
-  /* ── Table ───────────────────────────────────────── */
   tableCard: {
     background: "#fff",
     borderRadius: "16px",
@@ -382,8 +373,6 @@ const S = {
     color: "#94a3b8",
     fontWeight: "400",
   },
-
-  /* ── Badges ──────────────────────────────────────── */
   badge: (bg, color) => ({
     display: "inline-flex",
     alignItems: "center",
@@ -417,8 +406,6 @@ const S = {
     background: faixa ? faixa.bg : "#f1f5f9",
     color: faixa ? faixa.color : "#64748b",
   }),
-
-  /* ── Expanded Detail Row ─────────────────────────── */
   expandedRow: {
     padding: "0 24px 16px 24px",
     borderBottom: "1px solid #f1f5f9",
@@ -473,8 +460,6 @@ const S = {
     whiteSpace: "nowrap",
     fontFamily: "inherit",
   }),
-
-  /* ── Action Buttons (table) ──────────────────────── */
   actionBtn: (hovered, color) => ({
     width: "34px",
     height: "34px",
@@ -490,8 +475,6 @@ const S = {
     padding: 0,
     flexShrink: 0,
   }),
-
-  /* ── Severity Progress Bar ───────────────────────── */
   severityBar: {
     display: "flex",
     gap: "3px",
@@ -504,8 +487,6 @@ const S = {
     background: filled ? "#dc2626" : "#e2e8f0",
     transition: "background 0.3s ease",
   }),
-
-  /* ── Empty State ─────────────────────────────────── */
   emptyState: {
     display: "flex",
     flexDirection: "column",
@@ -578,6 +559,7 @@ function SeverityIndicator({ level }) {
 
 /* ═══════════════════════════════════════════════════════════
    COMPONENTE PRINCIPAL — Inadimplencia
+   ✅ CORRIGIDO: parseamento de { contas } e rota /receber
    ═══════════════════════════════════════════════════════════ */
 function Inadimplencia() {
   const [contas, setContas] = useState([]);
@@ -589,13 +571,22 @@ function Inadimplencia() {
   const [hoveredId, setHoveredId] = useState(null);
   const [hoveredAction, setHoveredAction] = useState(null);
 
-  /* ── Fetch ───────────────────────────────────────── */
+  /* ── Fetch ─���───────────────────────────────────────
+     ✅ FIX 1: backend retorna { contas: [...], resumo: {...} }
+     Antes: `Array.isArray(d) ? d : []` → sempre vazio!
+     Agora: extrai d.contas se existir
+     ─────────────────────────────────────────────────── */
   const carregar = () => {
     setCarregando(true);
     fetch(`${API}/financeiro/contas-receber`, { headers: headers() })
       .then((r) => r.json())
       .then((d) => {
-        const lista = Array.isArray(d) ? d : [];
+        /* ✅ CORRIGIDO: aceita array OU { contas: [...] } */
+        const lista = Array.isArray(d)
+          ? d
+          : (d && Array.isArray(d.contas))
+            ? d.contas
+            : [];
         // Filtra apenas atrasadas
         const atrasadas = lista.filter(
           (c) => c.status === "atrasado" || (c.status === "pendente" && diasAtraso(c.data_vencimento) > 0)
@@ -614,7 +605,6 @@ function Inadimplencia() {
   const filtradas = useMemo(() => {
     let resultado = contas;
 
-    // Filtro de busca
     const t = busca.trim().toLowerCase();
     if (t) {
       resultado = resultado.filter(
@@ -624,7 +614,6 @@ function Inadimplencia() {
       );
     }
 
-    // Filtro por faixa de atraso
     if (filtroFaixa !== "todos") {
       resultado = resultado.filter((c) => {
         const dias = diasAtraso(c.data_vencimento);
@@ -640,7 +629,6 @@ function Inadimplencia() {
       });
     }
 
-    // Ordenar por dias de atraso (mais atrasado primeiro)
     resultado.sort(
       (a, b) => diasAtraso(b.data_vencimento) - diasAtraso(a.data_vencimento)
     );
@@ -671,18 +659,22 @@ function Inadimplencia() {
     };
   }, [contas]);
 
-  /* ── Handlers ────────────────────────────────────── */
+  /* ── Handlers ──────────────────────────────────────
+     ✅ FIX 2: usa rota correta /contas-receber/:id/receber
+     Antes: PUT /contas-receber/${id} com status: "recebido" → backend não aceita!
+     Backend usa status "pago" e a rota dedicada /receber
+     ─────────────────────────────────────────────────── */
   const toggleExpand = (id) => {
     setExpandedId(expandedId === id ? null : id);
   };
 
   const marcarRecebido = async (id) => {
     try {
-      await fetch(`${API}/financeiro/contas-receber/${id}`, {
+      /* ✅ CORRIGIDO: rota /receber com data_recebimento */
+      await fetch(`${API}/financeiro/contas-receber/${id}/receber`, {
         method: "PUT",
         headers: headers(),
         body: JSON.stringify({
-          status: "recebido",
           data_recebimento: new Date().toISOString().split("T")[0],
         }),
       });

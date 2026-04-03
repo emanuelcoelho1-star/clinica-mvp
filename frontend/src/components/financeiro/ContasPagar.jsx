@@ -788,7 +788,7 @@ function ContasPagar() {
      - Define status como "pago" ou "parcial" automaticamente
      - Registra no fluxo de caixa
      Antes usava PUT /contas-pagar/:id que só atualiza campos de edição */
-  const marcarPago = async (id) => {
+   const marcarPago = async (id) => {
     try {
       await fetch(`${API}/financeiro/contas-pagar/${id}/pagar`, {
         method: "PUT",
