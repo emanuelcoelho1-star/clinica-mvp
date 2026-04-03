@@ -128,11 +128,9 @@ const Icons = {
 
 /* ═══════════════════════════════════════════════════════════
    STATUS CONFIG
-   🔧 FIX: adicionado "parcial" (usado pelo backend)
    ═══════════════════════════════════════════════════════════ */
 const STATUS_CONFIG = {
   pendente:  { label: "Pendente",  bg: "#fff7ed", color: "#ea580c", dot: "#fb923c" },
-  parcial:   { label: "Parcial",   bg: "#fef3c7", color: "#d97706", dot: "#fbbf24" },
   pago:      { label: "Pago",      bg: "#f0fdf4", color: "#16a34a", dot: "#4ade80" },
   atrasado:  { label: "Atrasado",  bg: "#fef2f2", color: "#dc2626", dot: "#f87171" },
   cancelado: { label: "Cancelado", bg: "#f8fafc", color: "#94a3b8", dot: "#cbd5e1" },
@@ -418,7 +416,7 @@ const S = {
     flexShrink: 0,
   }),
 
-  /* ── Badge ───────────────────────────────────────── */
+  /* ── Badge ─────��─────────────────────────────────── */
   badge: (bg, color) => ({
     display: "inline-flex",
     alignItems: "center",
@@ -676,6 +674,7 @@ function ContasPagar() {
   const [form, setForm] = useState({});
 
   /* ── Fetch ───────────────────────────────────────── */
+  /* ✅ CORRIGIDO: backend retorna { contas, resumo }, não array direto */
   const carregar = () => {
     setCarregando(true);
     fetch(`${API}/financeiro/contas-pagar`, { headers: headers() })
@@ -705,21 +704,20 @@ function ContasPagar() {
       (c) =>
         (c.descricao || "").toLowerCase().includes(t) ||
         (c.fornecedor || "").toLowerCase().includes(t) ||
-        (c.categoria_nome || c.categoria || "").toLowerCase().includes(t) ||
+        (c.categoria || "").toLowerCase().includes(t) ||
         (c.status || "").toLowerCase().includes(t)
     );
   }, [contas, busca]);
 
   /* ── Stats ───────────────────────────────────────── */
-  /* 🔧 FIX: inclui "parcial" nos pendentes */
   const stats = useMemo(() => {
-    const pendentes = contas.filter((c) => c.status === "pendente" || c.status === "parcial");
+    const pendentes = contas.filter((c) => c.status === "pendente");
     const pagas = contas.filter((c) => c.status === "pago");
     const atrasadas = contas.filter((c) => c.status === "atrasado");
     return {
       total: contas.length,
       valorPendente: pendentes.reduce((s, c) => s + Number(c.valor || 0), 0),
-      valorPago: pagas.reduce((s, c) => s + Number(c.valor_pago || c.valor || 0), 0),
+      valorPago: pagas.reduce((s, c) => s + Number(c.valor || 0), 0),
       qtdAtrasadas: atrasadas.length,
     };
   }, [contas]);
@@ -743,6 +741,7 @@ function ContasPagar() {
     setModal("editar");
   };
 
+  /* ✅ CORRIGIDO: converte valor para número antes de enviar */
   const salvar = async () => {
     const url =
       modal === "novo"
@@ -782,13 +781,8 @@ function ContasPagar() {
     }
   };
 
-  /* 🔧 FIX CRÍTICO: usar a rota /pagar do backend em vez da rota PUT genérica
-     A rota PUT /contas-pagar/:id/pagar:
-     - Acumula valor_pago corretamente
-     - Define status como "pago" ou "parcial" automaticamente
-     - Registra no fluxo de caixa
-     Antes usava PUT /contas-pagar/:id que só atualiza campos de edição */
-   const marcarPago = async (id) => {
+  /* ✅ CORRIGIDO: usa rota dedicada /pagar em vez de PUT genérico */
+  const marcarPago = async (id) => {
     try {
       await fetch(`${API}/financeiro/contas-pagar/${id}/pagar`, {
         method: "PUT",
@@ -966,8 +960,8 @@ function ContasPagar() {
 
                   {/* Categoria */}
                   <div style={{ ...COL.categoria }}>
-                    {(c.categoria_nome || c.categoria) ? (
-                      <span style={S.categoriaBadge}>{c.categoria_nome || c.categoria}</span>
+                    {c.categoria ? (
+                      <span style={S.categoriaBadge}>{c.categoria}</span>
                     ) : (
                       <span style={S.cellEmpty}>—</span>
                     )}

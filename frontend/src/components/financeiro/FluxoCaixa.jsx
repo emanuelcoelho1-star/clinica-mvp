@@ -552,6 +552,7 @@ function StatCard({ label, value, icon, accent, sub }) {
 
 /* ═══════════════════════════════════════════════════════════
    COMPONENTE PRINCIPAL — FluxoCaixa
+   ✅ CORRIGIDO: 3 bugs — fetch parseamento, valor numérico, rota
    ═══════════════════════════════════════════════════════════ */
 function FluxoCaixa() {
   const [movimentacoes, setMovimentacoes] = useState([]);
@@ -562,6 +563,7 @@ function FluxoCaixa() {
   const [hoveredId, setHoveredId] = useState(null);
 
   /* ── Fetch ───────────────────────────────────────── */
+  /* ✅ CORREÇÃO 1: backend retorna { movimentacoes, totais, ... }, não array direto */
   const carregar = () => {
     setCarregando(true);
     fetch(
@@ -569,7 +571,15 @@ function FluxoCaixa() {
       { headers: headers() }
     )
       .then((r) => r.json())
-      .then((d) => setMovimentacoes(Array.isArray(d) ? d : []))
+      .then((d) => {
+        if (Array.isArray(d)) {
+          setMovimentacoes(d);
+        } else if (d && Array.isArray(d.movimentacoes)) {
+          setMovimentacoes(d.movimentacoes);
+        } else {
+          setMovimentacoes([]);
+        }
+      })
       .catch(console.error)
       .finally(() => setCarregando(false));
   };
