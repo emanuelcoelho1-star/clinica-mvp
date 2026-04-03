@@ -227,7 +227,7 @@ const S = {
     fontWeight: "500",
   },
 
-  /* ── Search Bar ──────────────────────────��───────── */
+  /* ── Search Bar ──────────────────────────────────── */
   searchBar: {
     display: "flex",
     alignItems: "center",
@@ -662,7 +662,7 @@ function EmptyState({ title, text, action, onAction }) {
 
 /* ═══════════════════════════════════════════════════════════
    COMPONENTE PRINCIPAL — ContasPagar
-   ══════════════════════════════���════════════════════════════ */
+   ═══════════════════════════════════════════════════════════ */
 function ContasPagar() {
   const [contas, setContas] = useState([]);
   const [carregando, setCarregando] = useState(true);
@@ -674,11 +674,20 @@ function ContasPagar() {
   const [form, setForm] = useState({});
 
   /* ── Fetch ───────────────────────────────────────── */
+  /* ✅ CORRIGIDO: backend retorna { contas, resumo }, não array direto */
   const carregar = () => {
     setCarregando(true);
     fetch(`${API}/financeiro/contas-pagar`, { headers: headers() })
       .then((r) => r.json())
-      .then((d) => setContas(Array.isArray(d) ? d : []))
+      .then((d) => {
+        if (Array.isArray(d)) {
+          setContas(d);
+        } else if (d && Array.isArray(d.contas)) {
+          setContas(d.contas);
+        } else {
+          setContas([]);
+        }
+      })
       .catch(console.error)
       .finally(() => setCarregando(false));
   };
@@ -732,6 +741,7 @@ function ContasPagar() {
     setModal("editar");
   };
 
+  /* ✅ CORRIGIDO: converte valor para número antes de enviar */
   const salvar = async () => {
     const url =
       modal === "novo"
@@ -739,10 +749,14 @@ function ContasPagar() {
         : `${API}/financeiro/contas-pagar/${form.id}`;
     const method = modal === "novo" ? "POST" : "PUT";
     try {
+      const payload = {
+        ...form,
+        valor: parseFloat(form.valor) || 0,
+      };
       await fetch(url, {
         method,
         headers: headers(),
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
       setModal(null);
       carregar();
@@ -896,7 +910,7 @@ function ContasPagar() {
 
       {/* ══════════════════════════════════════════════
           TABELA ou EMPTY STATE
-          ══════════��═══════════════════════════════════ */}
+          ══════════════════════════════════════════════ */}
       {filtradas.length === 0 ? (
         <EmptyState
           title="Nenhuma conta a pagar encontrada"

@@ -121,9 +121,12 @@ const Icons = {
 
 /* ═══════════════════════════════════════════════════════════
    STATUS CONFIG
+   ✅ CORRIGIDO: adicionado "pago" e "parcial" (usados pelo backend)
    ═══════════════════════════════════════════════════════════ */
 const STATUS_CONFIG = {
   pendente:  { label: "Pendente",  bg: "#eff6ff", color: "#2563eb", dot: "#60a5fa" },
+  parcial:   { label: "Parcial",   bg: "#fff7ed", color: "#ea580c", dot: "#fb923c" },
+  pago:      { label: "Recebido",  bg: "#f0fdf4", color: "#16a34a", dot: "#4ade80" },
   recebido:  { label: "Recebido",  bg: "#f0fdf4", color: "#16a34a", dot: "#4ade80" },
   atrasado:  { label: "Atrasado",  bg: "#fef2f2", color: "#dc2626", dot: "#f87171" },
   cancelado: { label: "Cancelado", bg: "#f8fafc", color: "#94a3b8", dot: "#cbd5e1" },
@@ -677,11 +680,20 @@ function ContasReceber() {
   const [form, setForm] = useState({});
 
   /* ── Fetch ───────────────────────────────────────── */
+  /* ✅ CORRIGIDO: backend retorna { contas, resumo }, não array direto */
   const carregar = () => {
     setCarregando(true);
     fetch(`${API}/financeiro/contas-receber`, { headers: headers() })
       .then((r) => r.json())
-      .then((d) => setContas(Array.isArray(d) ? d : []))
+      .then((d) => {
+        if (Array.isArray(d)) {
+          setContas(d);
+        } else if (d && Array.isArray(d.contas)) {
+          setContas(d.contas);
+        } else {
+          setContas([]);
+        }
+      })
       .catch(console.error)
       .finally(() => setCarregando(false));
   };
@@ -702,10 +714,11 @@ function ContasReceber() {
     );
   }, [contas, busca]);
 
-  /* ── Stats ───────────────────────────────────────── */
+  /* ── Stats ────────────────────────────────────��──── */
+  /* ✅ CORRIGIDO: aceita tanto "pago" quanto "recebido" como status de recebido */
   const stats = useMemo(() => {
-    const pendentes = contas.filter((c) => c.status === "pendente");
-    const recebidas = contas.filter((c) => c.status === "recebido");
+    const pendentes = contas.filter((c) => c.status === "pendente" || c.status === "parcial");
+    const recebidas = contas.filter((c) => c.status === "recebido" || c.status === "pago");
     const atrasadas = contas.filter((c) => c.status === "atrasado");
     return {
       total: contas.length,
@@ -733,6 +746,7 @@ function ContasReceber() {
     setModal("editar");
   };
 
+  /* ✅ CORRIGIDO: converte valor para número antes de enviar */
   const salvar = async () => {
     const url =
       modal === "novo"
@@ -740,10 +754,14 @@ function ContasReceber() {
         : `${API}/financeiro/contas-receber/${form.id}`;
     const method = modal === "novo" ? "POST" : "PUT";
     try {
+      const payload = {
+        ...form,
+        valor: parseFloat(form.valor) || 0,
+      };
       await fetch(url, {
         method,
         headers: headers(),
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
       setModal(null);
       carregar();
@@ -768,13 +786,13 @@ function ContasReceber() {
     }
   };
 
+  /* ✅ CORRIGIDO: usa a rota correta /receber do backend */
   const marcarRecebido = async (id) => {
     try {
-      await fetch(`${API}/financeiro/contas-receber/${id}`, {
+      await fetch(`${API}/financeiro/contas-receber/${id}/receber`, {
         method: "PUT",
         headers: headers(),
         body: JSON.stringify({
-          status: "recebido",
           data_recebimento: new Date().toISOString().split("T")[0],
         }),
       });
@@ -980,8 +998,8 @@ function ContasReceber() {
                       justifyContent: "flex-end",
                     }}
                   >
-                    {/* Marcar como recebido */}
-                    {c.status !== "recebido" && c.status !== "cancelado" && (
+                    {/* ✅ CORRIGIDO: aceita "pago" e "recebido" como já recebido */}
+                    {c.status !== "recebido" && c.status !== "pago" && c.status !== "cancelado" && (
                       <button
                         title="Marcar como recebido"
                         style={S.actionBtn(
