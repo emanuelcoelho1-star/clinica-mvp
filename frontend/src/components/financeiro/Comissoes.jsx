@@ -152,7 +152,7 @@ const Icons = {
 
 /* ═══════════════════════════════════════════════════════════
    STATUS CONFIG
-   ═══════════════════════════════════════════════════════════ */
+   ═════════════════════════════════════════════════════════���═ */
 const STATUS_CONFIG = {
   pendente: { label: "Pendente", bg: "#fff7ed", color: "#ea580c", dot: "#fb923c" },
   pago:     { label: "Pago",     bg: "#f0fdf4", color: "#16a34a", dot: "#4ade80" },
@@ -785,6 +785,7 @@ function Comissoes() {
   });
 
   /* ── Fetch ───────────────────────────────────────── */
+  /* ✅ CORREÇÃO 1: backend retorna { comissoes, resumo_profissionais, ... }, não array direto */
   const carregar = () => {
     setCarregando(true);
     fetch(
@@ -792,7 +793,15 @@ function Comissoes() {
       { headers: headers() }
     )
       .then((r) => r.json())
-      .then((d) => setComissoes(Array.isArray(d) ? d : []))
+      .then((d) => {
+        if (Array.isArray(d)) {
+          setComissoes(d);
+        } else if (d && Array.isArray(d.comissoes)) {
+          setComissoes(d.comissoes);
+        } else {
+          setComissoes([]);
+        }
+      })
       .catch(console.error)
       .finally(() => setCarregando(false));
   };
@@ -861,13 +870,13 @@ function Comissoes() {
     setExpandedId(expandedId === nome ? null : nome);
   };
 
+  /* ✅ CORREÇÃO 2: rota correta é /comissoes/:id/pagar */
   const marcarComissaoPaga = async (id) => {
     try {
-      await fetch(`${API}/financeiro/comissoes/${id}`, {
+      await fetch(`${API}/financeiro/comissoes/${id}/pagar`, {
         method: "PUT",
         headers: headers(),
         body: JSON.stringify({
-          status: "pago",
           data_pagamento: new Date().toISOString().split("T")[0],
         }),
       });
@@ -877,12 +886,19 @@ function Comissoes() {
     }
   };
 
+  /* ✅ CORREÇÃO 3: rota correta é /profissionais (POST) */
   const salvarConfig = async () => {
     try {
-      await fetch(`${API}/financeiro/comissoes/config`, {
+      const payload = {
+        nome: configForm.profissional_nome,
+        tipo_comissao: configForm.tipo,
+        percentual_comissao: configForm.tipo === "percentual" ? parseFloat(configForm.percentual) || 0 : 0,
+        valor_fixo_comissao: configForm.tipo === "fixo" ? parseFloat(configForm.percentual) || 0 : 0,
+      };
+      await fetch(`${API}/financeiro/profissionais`, {
         method: "POST",
         headers: headers(),
-        body: JSON.stringify(configForm),
+        body: JSON.stringify(payload),
       });
       setModal(null);
       carregar();
