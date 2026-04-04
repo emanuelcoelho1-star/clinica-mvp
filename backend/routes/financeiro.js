@@ -1504,7 +1504,7 @@ router.get("/exportar/contas-receber", auth, async (req, res) => {
 
     const header = "Descrição;Paciente;Procedimento;Valor;Recebido;Desconto;Vencimento;Recebimento;Forma Pgto;Status\n";
     const csv = header + rows.map((r) =>
-      `"${r.descricao || ""}";"${r.paciente || ""}";"${r.procedimento || ""}";"${(r.valor || 0).toFixed(2)}";"${(r.valor_recebido || 0).toFixed(2)}";"${(r.desconto || 0).toFixed(2)}";"${r.data_vencimento || ""}";"${r.data_recebimento || ""}";"${r.forma_pagamento || ""}";"${r.status || ""}"`
+     `"${r.descricao || ""}";"${r.paciente || ""}";"${r.procedimento || ""}";"${(r.valor || 0).toFixed(2)}";"${(r.valor_recebido || 0).toFixed(2)}";"${(r.desconto || 0).toFixed(2)}";"${r.data_vencimento || ""}";"${r.data_recebimento || ""}";"${r.forma_pagamento || ""}";"${r.status || ""}"`
     ).join("\n");
 
     res.setHeader("Content-Type", "text/csv; charset=utf-8");
