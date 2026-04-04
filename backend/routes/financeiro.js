@@ -460,13 +460,16 @@ router.delete("/contas-pagar/:id", auth, async (req, res) => {
   try {
     const conta = await dbGet("SELECT * FROM contas_pagar WHERE id = ?", [req.params.id]);
     if (!conta) return res.status(404).json({ erro: "Conta não encontrada." });
-    if (conta.status === "pago") {
-      return res.status(400).json({ erro: "Não é possível excluir conta já paga." });
-    }
 
+    // Remove lançamentos do fluxo de caixa vinculados
+    await dbRun("DELETE FROM fluxo_caixa WHERE conta_pagar_id = ?", [req.params.id]);
+
+    // Remove a conta
     await dbRun("DELETE FROM contas_pagar WHERE id = ?", [req.params.id]);
-    res.json({ mensagem: "Conta excluída." });
+
+    res.json({ mensagem: "Conta excluída com sucesso." });
   } catch (error) {
+    console.error("Erro ao excluir conta a pagar:", error);
     res.status(500).json({ erro: "Erro ao excluir conta." });
   }
 });
