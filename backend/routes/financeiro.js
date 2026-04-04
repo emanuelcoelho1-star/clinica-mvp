@@ -46,7 +46,6 @@ router.get("/dashboard", auth, async (req, res) => {
     const mesStr = String(mes).padStart(2, "0");
     const periodo = `${ano}-${mesStr}`;
 
-    // Receitas do mês (contas_receber pagas)
     const receitas = await dbGet(
       `SELECT COALESCE(SUM(valor_recebido), 0) as total
        FROM contas_receber
@@ -54,7 +53,6 @@ router.get("/dashboard", auth, async (req, res) => {
       [periodo]
     );
 
-    // Receitas dos pagamentos legados
     const receitasLegado = await dbGet(
       `SELECT COALESCE(SUM(valor), 0) as total
        FROM pagamentos
@@ -62,7 +60,6 @@ router.get("/dashboard", auth, async (req, res) => {
       [periodo]
     );
 
-    // Despesas do mês (contas_pagar pagas)
     const despesas = await dbGet(
       `SELECT COALESCE(SUM(valor_pago), 0) as total
        FROM contas_pagar
@@ -70,7 +67,6 @@ router.get("/dashboard", auth, async (req, res) => {
       [periodo]
     );
 
-    // Contas a receber pendentes
     const receberPendente = await dbGet(
       `SELECT COALESCE(SUM(valor - valor_recebido), 0) as total,
               COUNT(*) as quantidade
@@ -78,7 +74,6 @@ router.get("/dashboard", auth, async (req, res) => {
        WHERE status IN ('pendente', 'parcial')`
     );
 
-    // Contas a pagar pendentes
     const pagarPendente = await dbGet(
       `SELECT COALESCE(SUM(valor - valor_pago), 0) as total,
               COUNT(*) as quantidade
@@ -86,7 +81,6 @@ router.get("/dashboard", auth, async (req, res) => {
        WHERE status IN ('pendente', 'parcial')`
     );
 
-    // Contas vencidas (a pagar)
     const pagarVencido = await dbGet(
       `SELECT COALESCE(SUM(valor - valor_pago), 0) as total,
               COUNT(*) as quantidade
@@ -94,7 +88,6 @@ router.get("/dashboard", auth, async (req, res) => {
        WHERE status IN ('pendente', 'parcial') AND data_vencimento < date('now')`
     );
 
-    // Contas vencidas (a receber)
     const receberVencido = await dbGet(
       `SELECT COALESCE(SUM(valor - valor_recebido), 0) as total,
               COUNT(*) as quantidade
@@ -102,7 +95,6 @@ router.get("/dashboard", auth, async (req, res) => {
        WHERE status IN ('pendente', 'parcial') AND data_vencimento < date('now')`
     );
 
-    // Receitas vs Despesas últimos 6 meses
     const ultimos6Meses = [];
     for (let i = 5; i >= 0; i--) {
       const d = new Date(ano, mes - 1 - i, 1);
@@ -137,7 +129,6 @@ router.get("/dashboard", auth, async (req, res) => {
       });
     }
 
-    // Receitas por forma de pagamento (mês atual)
     const porFormaPagamento = await dbAll(
       `SELECT forma_pagamento, COALESCE(SUM(valor_recebido), 0) as total
        FROM contas_receber
@@ -151,14 +142,12 @@ router.get("/dashboard", auth, async (req, res) => {
       [periodo, periodo]
     );
 
-    // Agrupar formas de pagamento
     const formasAgrupadas = {};
     porFormaPagamento.forEach((r) => {
       const key = r.forma_pagamento || "outros";
       formasAgrupadas[key] = (formasAgrupadas[key] || 0) + r.total;
     });
 
-    // Meta do mês
     const meta = await dbGet(
       `SELECT * FROM metas_financeiras WHERE mes = ? AND ano = ? AND tipo = 'receita'`,
       [mes, ano]
@@ -302,7 +291,6 @@ router.get("/contas-pagar", auth, async (req, res) => {
     sql += " ORDER BY cp.data_vencimento ASC";
     const contas = await dbAll(sql, params);
 
-    // Resumo
     const resumo = await dbGet(`
       SELECT
         COALESCE(SUM(CASE WHEN status = 'pendente' THEN valor - valor_pago ELSE 0 END), 0) as total_pendente,
@@ -352,7 +340,6 @@ router.post("/contas-pagar", auth, async (req, res) => {
     const parcelas = total_parcelas || 1;
     const valorParcela = valor / parcelas;
 
-    // Gerar parcelas
     for (let i = 0; i < parcelas; i++) {
       const venc = new Date(data_vencimento);
       venc.setMonth(venc.getMonth() + i);
@@ -435,7 +422,6 @@ router.put("/contas-pagar/:id/pagar", auth, async (req, res) => {
       ]
     );
 
-    // Registrar no fluxo de caixa
     await dbRun(
       `INSERT INTO fluxo_caixa (tipo, categoria_id, conta_pagar_id, descricao, valor, data, forma_pagamento)
        VALUES ('saida', ?, ?, ?, ?, ?, ?)`,
@@ -563,7 +549,6 @@ router.post("/contas-receber", auth, async (req, res) => {
     res.status(500).json({ erro: "Erro ao criar conta a receber." });
   }
 });
-
 // PUT /financeiro/contas-receber/:id
 router.put("/contas-receber/:id", auth, async (req, res) => {
   try {
@@ -615,7 +600,6 @@ router.put("/contas-receber/:id/receber", auth, async (req, res) => {
       ]
     );
 
-    // Registrar no fluxo de caixa
     await dbRun(
       `INSERT INTO fluxo_caixa (tipo, conta_receber_id, descricao, valor, data, forma_pagamento)
        VALUES ('entrada', ?, ?, ?, ?, ?)`,
@@ -628,7 +612,6 @@ router.put("/contas-receber/:id/receber", auth, async (req, res) => {
       ]
     );
 
-    // Gerar comissão automaticamente se houver profissional
     if (conta.profissional_id && novoStatus === "pago") {
       const prof = await dbGet("SELECT * FROM profissionais WHERE id = ?", [conta.profissional_id]);
       if (prof && prof.ativo) {
@@ -661,18 +644,28 @@ router.put("/contas-receber/:id/receber", auth, async (req, res) => {
   }
 });
 
+// ══════════════════════════════════════════════════════════════
 // DELETE /financeiro/contas-receber/:id
+// ✅ CORRIGIDO: agora permite excluir contas com qualquer status
+//    e limpa dados relacionados (comissões + fluxo de caixa)
+// ══════════════════════════════════════════════════════════════
 router.delete("/contas-receber/:id", auth, async (req, res) => {
   try {
     const conta = await dbGet("SELECT * FROM contas_receber WHERE id = ?", [req.params.id]);
     if (!conta) return res.status(404).json({ erro: "Conta não encontrada." });
-    if (conta.status === "pago") {
-      return res.status(400).json({ erro: "Não é possível excluir conta já recebida." });
-    }
 
+    // Remove comissões vinculadas a esta conta (se houver)
+    await dbRun("DELETE FROM comissoes WHERE conta_receber_id = ?", [req.params.id]);
+
+    // Remove lançamentos do fluxo de caixa vinculados
+    await dbRun("DELETE FROM fluxo_caixa WHERE conta_receber_id = ?", [req.params.id]);
+
+    // Remove a conta
     await dbRun("DELETE FROM contas_receber WHERE id = ?", [req.params.id]);
-    res.json({ mensagem: "Conta excluída." });
+
+    res.json({ mensagem: "Conta excluída com sucesso." });
   } catch (error) {
+    console.error("Erro ao excluir conta a receber:", error);
     res.status(500).json({ erro: "Erro ao excluir conta." });
   }
 });
@@ -687,12 +680,11 @@ router.get("/fluxo-caixa", auth, async (req, res) => {
     const now = new Date();
     const mes = parseInt(req.query.mes) || now.getMonth() + 1;
     const ano = parseInt(req.query.ano) || now.getFullYear();
-    const periodo = req.query.periodo || "mensal"; // mensal | semanal
+    const periodo = req.query.periodo || "mensal";
 
     let movimentacoes;
 
     if (periodo === "semanal") {
-      // Últimas 4 semanas
       const dataInicio = new Date();
       dataInicio.setDate(dataInicio.getDate() - 28);
       const dataInicioStr = dataInicio.toISOString().split("T")[0];
@@ -713,7 +705,6 @@ router.get("/fluxo-caixa", auth, async (req, res) => {
       );
     }
 
-    // Calcular saldo acumulado
     let saldoAcumulado = 0;
     const movComSaldo = movimentacoes.map((m) => {
       if (m.tipo === "entrada") {
@@ -724,7 +715,6 @@ router.get("/fluxo-caixa", auth, async (req, res) => {
       return { ...m, saldo_acumulado: saldoAcumulado };
     });
 
-    // Agrupar por dia
     const porDia = {};
     movComSaldo.forEach((m) => {
       if (!porDia[m.data]) {
@@ -745,7 +735,6 @@ router.get("/fluxo-caixa", auth, async (req, res) => {
       .filter((m) => m.tipo === "saida")
       .reduce((s, m) => s + m.valor, 0);
 
-    // Projeção: contas pendentes pro restante do mês
     const mesStr = String(mes).padStart(2, "0");
     const hoje = new Date().toISOString().split("T")[0];
 
@@ -826,7 +815,6 @@ router.delete("/fluxo-caixa/:id", auth, async (req, res) => {
 // GET /financeiro/inadimplencia
 router.get("/inadimplencia", auth, async (req, res) => {
   try {
-    // Contas a receber vencidas agrupadas por paciente
     const inadimplentes = await dbAll(`
       SELECT
         p.id as paciente_id,
@@ -846,7 +834,6 @@ router.get("/inadimplencia", auth, async (req, res) => {
       ORDER BY valor_total_devido DESC
     `);
 
-    // Classificar por gravidade
     const classificados = inadimplentes.map((i) => {
       let gravidade = "leve";
       let cor = "#eab308";
@@ -860,7 +847,6 @@ router.get("/inadimplencia", auth, async (req, res) => {
       return { ...i, gravidade, cor };
     });
 
-    // Resumo geral
     const resumo = {
       total_inadimplentes: classificados.length,
       valor_total: classificados.reduce((s, i) => s + i.valor_total_devido, 0),
@@ -869,7 +855,6 @@ router.get("/inadimplencia", auth, async (req, res) => {
       leves: classificados.filter((i) => i.gravidade === "leve").length,
     };
 
-    // Detalhes por paciente (contas individuais)
     for (const inad of classificados) {
       inad.contas = await dbAll(
         `SELECT id, descricao, procedimento, valor, valor_recebido,
@@ -1001,7 +986,6 @@ router.get("/comissoes", auth, async (req, res) => {
     sql += " ORDER BY c.data_referencia DESC";
     const comissoes = await dbAll(sql, params);
 
-    // Resumo por profissional
     const resumoPorProf = {};
     comissoes.forEach((c) => {
       if (!resumoPorProf[c.profissional_id]) {
@@ -1048,7 +1032,6 @@ router.put("/comissoes/:id/pagar", auth, async (req, res) => {
       [data_pagamento || new Date().toISOString().split("T")[0], req.params.id]
     );
 
-    // Registrar saída no fluxo
     await dbRun(
       `INSERT INTO fluxo_caixa (tipo, descricao, valor, data, forma_pagamento)
        VALUES ('saida', ?, ?, ?, 'transferencia')`,
@@ -1090,209 +1073,6 @@ router.put("/comissoes/pagar-lote", auth, async (req, res) => {
     res.status(500).json({ erro: "Erro ao pagar comissões em lote." });
   }
 });
-
-/* ══════════════════════════════════════════════════════════════
-   9. FORMAS DE PAGAMENTO (CONFIG)
-   ══════════════════════════════════════════════════════════════ */
-
-// GET /financeiro/formas-pagamento
-router.get("/formas-pagamento", auth, async (req, res) => {
-  try {
-    const formas = await dbAll(
-      "SELECT * FROM formas_pagamento_config WHERE ativo = 1 ORDER BY nome"
-    );
-    res.json(formas);
-  } catch (error) {
-    res.status(500).json({ erro: "Erro ao listar formas de pagamento." });
-  }
-});
-
-// POST /financeiro/formas-pagamento
-router.post("/formas-pagamento", auth, async (req, res) => {
-  try {
-    const { nome, tipo, taxa_percentual, taxa_fixa, prazo_recebimento, max_parcelas } = req.body;
-    if (!nome) return res.status(400).json({ erro: "Nome é obrigatório." });
-
-    const result = await dbRun(
-      `INSERT INTO formas_pagamento_config
-         (nome, tipo, taxa_percentual, taxa_fixa, prazo_recebimento, max_parcelas)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [nome, tipo || "outros", taxa_percentual || 0, taxa_fixa || 0, prazo_recebimento || 0, max_parcelas || 1]
-    );
-
-    res.status(201).json({ id: result.lastID, mensagem: "Forma de pagamento criada." });
-  } catch (error) {
-    res.status(500).json({ erro: "Erro ao criar forma de pagamento." });
-  }
-});
-
-// PUT /financeiro/formas-pagamento/:id
-router.put("/formas-pagamento/:id", auth, async (req, res) => {
-  try {
-    const { nome, tipo, taxa_percentual, taxa_fixa, prazo_recebimento, max_parcelas } = req.body;
-    await dbRun(
-      `UPDATE formas_pagamento_config
-       SET nome = ?, tipo = ?, taxa_percentual = ?, taxa_fixa = ?,
-           prazo_recebimento = ?, max_parcelas = ?
-       WHERE id = ?`,
-      [nome, tipo, taxa_percentual, taxa_fixa, prazo_recebimento, max_parcelas, req.params.id]
-    );
-    res.json({ mensagem: "Forma de pagamento atualizada." });
-  } catch (error) {
-    res.status(500).json({ erro: "Erro ao atualizar forma de pagamento." });
-  }
-});
-
-// DELETE /financeiro/formas-pagamento/:id
-router.delete("/formas-pagamento/:id", auth, async (req, res) => {
-  try {
-    await dbRun("UPDATE formas_pagamento_config SET ativo = 0 WHERE id = ?", [req.params.id]);
-    res.json({ mensagem: "Forma de pagamento desativada." });
-  } catch (error) {
-    res.status(500).json({ erro: "Erro ao desativar forma de pagamento." });
-  }
-});
-
-/* ══════════════════════════════════════════════════════════════
-   10. METAS FINANCEIRAS
-   ══════════════════════════════════════════════════════════════ */
-
-// GET /financeiro/metas?ano=2026
-router.get("/metas", auth, async (req, res) => {
-  try {
-    const ano = parseInt(req.query.ano) || new Date().getFullYear();
-    const metas = await dbAll("SELECT * FROM metas_financeiras WHERE ano = ? ORDER BY mes", [ano]);
-    res.json(metas);
-  } catch (error) {
-    res.status(500).json({ erro: "Erro ao listar metas." });
-  }
-});
-
-// POST /financeiro/metas
-router.post("/metas", auth, async (req, res) => {
-  try {
-    const { titulo, tipo, valor_meta, mes, ano, observacoes } = req.body;
-    if (!titulo || !valor_meta || !mes || !ano) {
-      return res.status(400).json({ erro: "Título, valor, mês e ano são obrigatórios." });
-    }
-
-    // Verificar se já existe meta para o mesmo mês/ano/tipo
-    const existente = await dbGet(
-      "SELECT id FROM metas_financeiras WHERE mes = ? AND ano = ? AND tipo = ?",
-      [mes, ano, tipo || "receita"]
-    );
-
-    if (existente) {
-      await dbRun(
-        "UPDATE metas_financeiras SET titulo = ?, valor_meta = ?, observacoes = ? WHERE id = ?",
-        [titulo, valor_meta, observacoes || null, existente.id]
-      );
-      return res.json({ mensagem: "Meta atualizada." });
-    }
-
-    const result = await dbRun(
-      `INSERT INTO metas_financeiras (titulo, tipo, valor_meta, mes, ano, observacoes)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [titulo, tipo || "receita", valor_meta, mes, ano, observacoes || null]
-    );
-
-    res.status(201).json({ id: result.lastID, mensagem: "Meta criada." });
-  } catch (error) {
-    res.status(500).json({ erro: "Erro ao criar meta." });
-  }
-});
-
-// DELETE /financeiro/metas/:id
-router.delete("/metas/:id", auth, async (req, res) => {
-  try {
-    await dbRun("DELETE FROM metas_financeiras WHERE id = ?", [req.params.id]);
-    res.json({ mensagem: "Meta excluída." });
-  } catch (error) {
-    res.status(500).json({ erro: "Erro ao excluir meta." });
-  }
-});
-
-/* ══════════════════════════════════════════════════════════════
-   11. DRE SIMPLIFICADO
-   ══════════════════════════════════════════════════════════════ */
-
-// GET /financeiro/dre?mes=3&ano=2026
-router.get("/dre", auth, async (req, res) => {
-  try {
-    const now = new Date();
-    const mes = parseInt(req.query.mes) || now.getMonth() + 1;
-    const ano = parseInt(req.query.ano) || now.getFullYear();
-    const mesStr = String(mes).padStart(2, "0");
-    const periodo = `${ano}-${mesStr}`;
-
-    // Receitas por categoria
-    const receitas = await dbAll(
-      `SELECT
-         COALESCE(cr.procedimento, 'Outros') as categoria,
-         COALESCE(SUM(cr.valor_recebido), 0) as total
-       FROM contas_receber cr
-       WHERE cr.status = 'pago' AND strftime('%Y-%m', cr.data_recebimento) = ?
-       GROUP BY cr.procedimento
-       ORDER BY total DESC`,
-      [periodo]
-    );
-
-    // Receitas legadas
-    const receitasLegado = await dbAll(
-      `SELECT
-         COALESCE(pg.descricao, 'Procedimento') as categoria,
-         COALESCE(SUM(pg.valor), 0) as total
-       FROM pagamentos pg
-       WHERE pg.status = 'confirmado' AND strftime('%Y-%m', pg.data) = ?
-       GROUP BY pg.descricao
-       ORDER BY total DESC`,
-      [periodo]
-    );
-
-    // Despesas por categoria
-    const despesas = await dbAll(
-      `SELECT
-         COALESCE(cf.nome, 'Sem categoria') as categoria,
-         cf.cor,
-         COALESCE(SUM(cp.valor_pago), 0) as total
-       FROM contas_pagar cp
-       LEFT JOIN categorias_financeiras cf ON cp.categoria_id = cf.id
-       WHERE cp.status = 'pago' AND strftime('%Y-%m', cp.data_pagamento) = ?
-       GROUP BY cp.categoria_id
-       ORDER BY total DESC`,
-      [periodo]
-    );
-
-    // Comissões do mês
-    const comissoes = await dbGet(
-      `SELECT COALESCE(SUM(valor_comissao), 0) as total
-       FROM comissoes
-       WHERE strftime('%Y-%m', data_referencia) = ?`,
-      [periodo]
-    );
-
-    const totalReceitas = receitas.reduce((s, r) => s + r.total, 0)
-      + receitasLegado.reduce((s, r) => s + r.total, 0);
-    const totalDespesas = despesas.reduce((s, d) => s + d.total, 0);
-    const totalComissoes = comissoes?.total || 0;
-    const lucroOperacional = totalReceitas - totalDespesas;
-    const lucroLiquido = lucroOperacional - totalComissoes;
-
-    res.json({
-      periodo: { mes, ano },
-      receitas: {
-        itens: [...receitas, ...receitasLegado],
-        total: totalReceitas,
-      },
-      despesas: {
-        itens: despesas,
-        total: totalDespesas,
-      },
-      comissoes: totalComissoes,
-            lucro_operacional: lucroOperacional,
-      lucro_liquido: lucroLiquido,
-      margem_operacional: totalReceitas > 0 ? ((lucroOperacional / totalReceitas) * 100).toFixed(1) : 0,
-      margem_liquida: totalReceitas > 0 ? ((lucroLiquido / totalReceitas) * 100).toFixed(1) : 0,
     });
   } catch (error) {
     console.error("Erro no DRE:", error);

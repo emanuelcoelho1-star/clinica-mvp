@@ -119,9 +119,8 @@ const Icons = {
   ),
 };
 
-/* ═══════════════════════════════════════════════════════════
+/* ══════════════════���════════════════════════════════════════
    STATUS CONFIG
-   ✅ CORRIGIDO: adicionado "pago" e "parcial" (usados pelo backend)
    ═══════════════════════════════════════════════════════════ */
 const STATUS_CONFIG = {
   pendente:  { label: "Pendente",  bg: "#eff6ff", color: "#2563eb", dot: "#60a5fa" },
@@ -133,10 +132,9 @@ const STATUS_CONFIG = {
 };
 
 /* ═══════════════════════════════════════════════════════════
-   STYLES — Ultra Premium Minimal SaaS
+   STYLES
    ═══════════════════════════════════════════════════════════ */
 const S = {
-  /* ── Loading ─────────────────────────────────────── */
   loadingWrap: {
     display: "flex",
     flexDirection: "column",
@@ -160,8 +158,6 @@ const S = {
     color: "#94a3b8",
     letterSpacing: "0.02em",
   },
-
-  /* ── Stats Grid ──────────────────────────────────── */
   statsGrid: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
@@ -209,8 +205,6 @@ const S = {
     color: "#94a3b8",
     fontWeight: "500",
   },
-
-  /* ── Search Bar ──────────────────────────────────── */
   searchBar: {
     display: "flex",
     alignItems: "center",
@@ -264,8 +258,6 @@ const S = {
     lineHeight: 1,
     fontFamily: "inherit",
   },
-
-  /* ── Buttons ─────────────────────────────────────── */
   btnPrimary: {
     display: "inline-flex",
     alignItems: "center",
@@ -341,8 +333,6 @@ const S = {
     boxSizing: "border-box",
     fontFamily: "inherit",
   },
-
-  /* ── Table ───────────────────────────────────────── */
   tableCard: {
     background: "#fff",
     borderRadius: "16px",
@@ -414,8 +404,6 @@ const S = {
     color: "#94a3b8",
     fontWeight: "400",
   },
-
-  /* ── Action Buttons ──────────────────────────────── */
   actionBtn: (hovered, color) => ({
     width: "34px",
     height: "34px",
@@ -431,8 +419,6 @@ const S = {
     padding: 0,
     flexShrink: 0,
   }),
-
-  /* ── Badge ───────────────────────────────────────── */
   badge: (bg, color) => ({
     display: "inline-flex",
     alignItems: "center",
@@ -453,8 +439,6 @@ const S = {
     flexShrink: 0,
     background: dotColor,
   }),
-
-  /* ── Empty State ─────────────────────────────────── */
   emptyState: {
     display: "flex",
     flexDirection: "column",
@@ -477,8 +461,6 @@ const S = {
     maxWidth: "360px",
     lineHeight: 1.5,
   },
-
-  /* ── Modal ───────────────────────────────────────── */
   modalOverlay: {
     position: "fixed",
     top: 0,
@@ -543,8 +525,6 @@ const S = {
     padding: "16px 24px",
     borderTop: "1px solid #f1f5f9",
   },
-
-  /* ── Form ────────────────────────────────────────── */
   formGroup: {
     display: "flex",
     flexDirection: "column",
@@ -601,6 +581,31 @@ const S = {
     resize: "vertical",
     minHeight: "80px",
   },
+  /* ── NOVO: Mensagem de sucesso/erro ── */
+  successMsg: {
+    padding: "12px 16px",
+    borderRadius: "10px",
+    background: "#f0fdf4",
+    border: "1px solid #bbf7d0",
+    color: "#16a34a",
+    fontSize: "13px",
+    fontWeight: "500",
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+  },
+  errorMsg: {
+    padding: "12px 16px",
+    borderRadius: "10px",
+    background: "#fef2f2",
+    border: "1px solid #fecaca",
+    color: "#dc2626",
+    fontSize: "13px",
+    fontWeight: "500",
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+  },
 };
 
 /* ═══════════════════════════════════════════════════════════
@@ -640,8 +645,7 @@ function StatCard({ label, value, icon, accent, sub }) {
 }
 
 function StatusBadge({ status }) {
-  const cfg =
-    STATUS_CONFIG[status] || STATUS_CONFIG.pendente;
+  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.pendente;
   return (
     <span style={S.badge(cfg.bg, cfg.color)}>
       <span style={S.badgeDot(cfg.dot)} />
@@ -676,11 +680,17 @@ function ContasReceber() {
   const [searchFocused, setSearchFocused] = useState(false);
   const [hoveredId, setHoveredId] = useState(null);
   const [hoveredAction, setHoveredAction] = useState(null);
-  const [modal, setModal] = useState(null); // "novo" | "editar" | null
+  const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
+  const [mensagem, setMensagem] = useState(null); // ← NOVO: { tipo: "sucesso"|"erro", texto: "..." }
+
+  /* ── Helper: mostrar mensagem temporária ─────────── */
+  const mostrarMensagem = (tipo, texto) => {
+    setMensagem({ tipo, texto });
+    setTimeout(() => setMensagem(null), 4000);
+  };
 
   /* ── Fetch ───────────────────────────────────────── */
-  /* ✅ CORRIGIDO: backend retorna { contas, resumo }, não array direto */
   const carregar = () => {
     setCarregando(true);
     fetch(`${API}/financeiro/contas-receber`, { headers: headers() })
@@ -714,8 +724,7 @@ function ContasReceber() {
     );
   }, [contas, busca]);
 
-  /* ── Stats ────────────────────────────────────��──── */
-  /* ✅ CORRIGIDO: aceita tanto "pago" quanto "recebido" como status de recebido */
+  /* ── Stats ───────────────────────────────────────── */
   const stats = useMemo(() => {
     const pendentes = contas.filter((c) => c.status === "pendente" || c.status === "parcial");
     const recebidas = contas.filter((c) => c.status === "recebido" || c.status === "pago");
@@ -746,7 +755,6 @@ function ContasReceber() {
     setModal("editar");
   };
 
-  /* ✅ CORRIGIDO: converte valor para número antes de enviar */
   const salvar = async () => {
     const url =
       modal === "novo"
@@ -758,44 +766,72 @@ function ContasReceber() {
         ...form,
         valor: parseFloat(form.valor) || 0,
       };
-      await fetch(url, {
+      const resp = await fetch(url, {
         method,
         headers: headers(),
         body: JSON.stringify(payload),
       });
+
+      const data = await resp.json().catch(() => ({}));
+
+      if (!resp.ok) {
+        alert(data.erro || "Erro ao salvar conta a receber.");
+        return;
+      }
+
       setModal(null);
+      mostrarMensagem("sucesso", modal === "novo" ? "Conta criada com sucesso!" : "Conta atualizada com sucesso!");
       carregar();
     } catch (e) {
       console.error(e);
-      alert("Erro ao salvar conta a receber.");
+      alert("Erro de rede ao salvar conta a receber.");
     }
   };
 
+  /* ── CORRIGIDO: excluir com tratamento de resposta ── */
   const excluir = async (id) => {
     if (!window.confirm("Tem certeza que deseja excluir esta conta a receber?"))
       return;
     try {
-      await fetch(`${API}/financeiro/contas-receber/${id}`, {
+      const resp = await fetch(`${API}/financeiro/contas-receber/${id}`, {
         method: "DELETE",
         headers: headers(),
       });
+
+      const data = await resp.json().catch(() => ({}));
+
+      if (!resp.ok) {
+        // Mostra o erro retornado pelo backend
+        mostrarMensagem("erro", data.erro || "Erro ao excluir conta a receber.");
+        return;
+      }
+
+      mostrarMensagem("sucesso", "Conta excluída com sucesso!");
       carregar();
     } catch (e) {
       console.error(e);
-      alert("Erro ao excluir.");
+      mostrarMensagem("erro", "Erro de rede ao excluir conta.");
     }
   };
 
-  /* ✅ CORRIGIDO: usa a rota correta /receber do backend */
   const marcarRecebido = async (id) => {
     try {
-      await fetch(`${API}/financeiro/contas-receber/${id}/receber`, {
+      const resp = await fetch(`${API}/financeiro/contas-receber/${id}/receber`, {
         method: "PUT",
         headers: headers(),
         body: JSON.stringify({
           data_recebimento: new Date().toISOString().split("T")[0],
         }),
       });
+
+      const data = await resp.json().catch(() => ({}));
+
+      if (!resp.ok) {
+        mostrarMensagem("erro", data.erro || "Erro ao marcar como recebido.");
+        return;
+      }
+
+      mostrarMensagem("sucesso", "Conta marcada como recebida!");
       carregar();
     } catch (e) {
       console.error(e);
@@ -821,16 +857,26 @@ function ContasReceber() {
 
   /* ── Colunas da tabela ───────────────────────────── */
   const COL = {
-    descricao: { flex: "2", minWidth: "180px" },
-    paciente:  { flex: "1.2", minWidth: "120px" },
-    valor:     { width: "120px", textAlign: "right" },
-    vencimento:{ width: "110px" },
-    status:    { width: "120px" },
-    acoes:     { width: "130px", justifyContent: "flex-end" },
+    descricao:  { flex: "2", minWidth: "180px" },
+    paciente:   { flex: "1.2", minWidth: "120px" },
+    valor:      { width: "120px", textAlign: "right" },
+    vencimento: { width: "110px" },
+    status:     { width: "120px" },
+    acoes:      { width: "130px", justifyContent: "flex-end" },
   };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+
+      {/* ══════════════════════════════════════════════
+          MENSAGEM DE SUCESSO / ERRO
+          ══════════════════════════════════════════════ */}
+      {mensagem && (
+        <div style={mensagem.tipo === "sucesso" ? S.successMsg : S.errorMsg}>
+          {mensagem.tipo === "sucesso" ? Icons.check : Icons.alertTriangle}
+          {mensagem.texto}
+        </div>
+      )}
 
       {/* ══════════════════════════════════════════════
           STATS GRID
@@ -900,13 +946,11 @@ function ContasReceber() {
           onClick={abrirNovo}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = "translateY(-1px)";
-            e.currentTarget.style.boxShadow =
-              "0 6px 20px rgba(37,99,235,0.3)";
+            e.currentTarget.style.boxShadow = "0 6px 20px rgba(37,99,235,0.3)";
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.transform = "translateY(0)";
-            e.currentTarget.style.boxShadow =
-              "0 1px 3px rgba(37,99,235,0.2)";
+            e.currentTarget.style.boxShadow = "0 1px 3px rgba(37,99,235,0.2)";
           }}
         >
           {Icons.plus}
@@ -998,7 +1042,7 @@ function ContasReceber() {
                       justifyContent: "flex-end",
                     }}
                   >
-                    {/* ✅ CORRIGIDO: aceita "pago" e "recebido" como já recebido */}
+                    {/* Marcar como recebido (só se não foi recebido/pago/cancelado) */}
                     {c.status !== "recebido" && c.status !== "pago" && c.status !== "cancelado" && (
                       <button
                         title="Marcar como recebido"
@@ -1007,9 +1051,7 @@ function ContasReceber() {
                           "#16a34a"
                         )}
                         onClick={() => marcarRecebido(c.id)}
-                        onMouseEnter={() =>
-                          setHoveredAction(`check-${c.id}`)
-                        }
+                        onMouseEnter={() => setHoveredAction(`check-${c.id}`)}
                         onMouseLeave={() => setHoveredAction(null)}
                       >
                         {Icons.check}
@@ -1024,9 +1066,7 @@ function ContasReceber() {
                         "#2563eb"
                       )}
                       onClick={() => abrirEditar(c)}
-                      onMouseEnter={() =>
-                        setHoveredAction(`edit-${c.id}`)
-                      }
+                      onMouseEnter={() => setHoveredAction(`edit-${c.id}`)}
                       onMouseLeave={() => setHoveredAction(null)}
                     >
                       {Icons.edit}
@@ -1040,9 +1080,7 @@ function ContasReceber() {
                         "#dc2626"
                       )}
                       onClick={() => excluir(c.id)}
-                      onMouseEnter={() =>
-                        setHoveredAction(`del-${c.id}`)
-                      }
+                      onMouseEnter={() => setHoveredAction(`del-${c.id}`)}
                       onMouseLeave={() => setHoveredAction(null)}
                     >
                       {Icons.trash}
@@ -1082,12 +1120,8 @@ function ContasReceber() {
               <button
                 style={S.modalCloseBtn}
                 onClick={() => setModal(null)}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.background = "#f1f5f9")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.background = "transparent")
-                }
+                onMouseEnter={(e) => (e.currentTarget.style.background = "#f1f5f9")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
               >
                 {Icons.x}
               </button>
@@ -1130,9 +1164,7 @@ function ContasReceber() {
                     type="date"
                     style={S.formInput}
                     value={form.data_vencimento || ""}
-                    onChange={(e) =>
-                      setField("data_vencimento", e.target.value)
-                    }
+                    onChange={(e) => setField("data_vencimento", e.target.value)}
                     onFocus={handleInputFocus}
                     onBlur={handleInputBlur}
                   />
@@ -1146,9 +1178,7 @@ function ContasReceber() {
                   <input
                     style={S.formInput}
                     value={form.paciente_nome || ""}
-                    onChange={(e) =>
-                      setField("paciente_nome", e.target.value)
-                    }
+                    onChange={(e) => setField("paciente_nome", e.target.value)}
                     onFocus={handleInputFocus}
                     onBlur={handleInputBlur}
                     placeholder="Nome do paciente"
@@ -1191,12 +1221,8 @@ function ContasReceber() {
               <button
                 style={S.btnSecondary}
                 onClick={() => setModal(null)}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.background = "#f8fafc")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.background = "#fff")
-                }
+                onMouseEnter={(e) => (e.currentTarget.style.background = "#f8fafc")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
               >
                 Cancelar
               </button>
@@ -1205,13 +1231,11 @@ function ContasReceber() {
                 onClick={salvar}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = "translateY(-1px)";
-                  e.currentTarget.style.boxShadow =
-                    "0 6px 20px rgba(37,99,235,0.3)";
+                  e.currentTarget.style.boxShadow = "0 6px 20px rgba(37,99,235,0.3)";
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.boxShadow =
-                    "0 1px 3px rgba(37,99,235,0.2)";
+                  e.currentTarget.style.boxShadow = "0 1px 3px rgba(37,99,235,0.2)";
                 }}
               >
                 {modal === "novo" ? "Criar conta" : "Salvar alterações"}
