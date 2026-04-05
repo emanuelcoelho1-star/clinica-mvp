@@ -11,7 +11,8 @@ const pagamentosRoutes = require("./routes/pagamentos");
 const evolucoesRoutes = require("./routes/evolucoes");
 const tratamentosRoutes = require("./routes/tratamentos");
 const authRoutes = require("./routes/auth");
-const financeiroRoutes = require("./routes/financeiro"); // ← NOVO
+const financeiroRoutes = require("./routes/financeiro");
+const rbacRoutes = require("./routes/rbac"); // ← NOVO
 
 require("./database");
 
@@ -35,7 +36,8 @@ app.use("/pagamentos", pagamentosRoutes);
 app.use("/evolucoes", evolucoesRoutes);
 app.use("/tratamentos", tratamentosRoutes);
 app.use("/auth", authRoutes);
-app.use("/financeiro", financeiroRoutes); // ← NOVO
+app.use("/financeiro", financeiroRoutes);
+app.use("/rbac", rbacRoutes); // ← NOVO
 
 app.listen(PORT, () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);

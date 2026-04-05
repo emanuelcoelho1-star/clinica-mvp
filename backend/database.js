@@ -89,6 +89,7 @@ db.serialize(() => {
       nome TEXT NOT NULL DEFAULT 'Administrador',
       email TEXT UNIQUE NOT NULL,
       senha TEXT NOT NULL,
+      role_id INTEGER DEFAULT 1,
       created_at TEXT DEFAULT (datetime('now','localtime'))
     )
   `);
@@ -235,7 +236,6 @@ db.serialize(() => {
      NOVAS TABELAS — MÓDULO FINANCEIRO
      ══════════════════════════════════════════════════════════ */
 
-  /* ── Profissionais (dentistas/colaboradores) ───────────── */
   db.run(`
     CREATE TABLE IF NOT EXISTS profissionais (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -255,7 +255,6 @@ db.serialize(() => {
     )
   `);
 
-  /* ── Categorias de despesa ─────────────────────────────── */
   db.run(`
     CREATE TABLE IF NOT EXISTS categorias_financeiras (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -268,7 +267,6 @@ db.serialize(() => {
     )
   `);
 
-  /* ── Contas a pagar ────────────────────────────────────── */
   db.run(`
     CREATE TABLE IF NOT EXISTS contas_pagar (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -295,7 +293,6 @@ db.serialize(() => {
     )
   `);
 
-  /* ── Contas a receber ──────────────────────────────────── */
   db.run(`
     CREATE TABLE IF NOT EXISTS contas_receber (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -325,7 +322,6 @@ db.serialize(() => {
     )
   `);
 
-  /* ── Comissões ─────────────────────────────────────────── */
   db.run(`
     CREATE TABLE IF NOT EXISTS comissoes (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -347,7 +343,6 @@ db.serialize(() => {
     )
   `);
 
-  /* ── Fluxo de caixa (movimentações) ────────────────────── */
   db.run(`
     CREATE TABLE IF NOT EXISTS fluxo_caixa (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -368,7 +363,6 @@ db.serialize(() => {
     )
   `);
 
-  /* ── Centro de custos ──────────────────────────────────── */
   db.run(`
     CREATE TABLE IF NOT EXISTS centros_custo (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -379,7 +373,6 @@ db.serialize(() => {
     )
   `);
 
-  /* ── Formas de pagamento configuráveis ─────────────────── */
   db.run(`
     CREATE TABLE IF NOT EXISTS formas_pagamento_config (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -394,7 +387,6 @@ db.serialize(() => {
     )
   `);
 
-  /* ── Metas financeiras ─────────────────────────────────── */
   db.run(`
     CREATE TABLE IF NOT EXISTS metas_financeiras (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -410,13 +402,54 @@ db.serialize(() => {
   `);
 
   /* ══════════════════════════════════════════════════════════
+     NOVAS TABELAS — SISTEMA RBAC
+     ══════════════════════════════════════════════════════════ */
+
+  /* ── Perfis (roles) ─────────────────────────────────────── */
+  db.run(`
+    CREATE TABLE IF NOT EXISTS roles (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nome TEXT NOT NULL UNIQUE,
+      descricao TEXT,
+      cor TEXT DEFAULT '#64748b',
+      protegido INTEGER NOT NULL DEFAULT 0,
+      ativo INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT DEFAULT (datetime('now','localtime'))
+    )
+  `);
+
+  /* ── Permissões ─────────────────────────────────────────── */
+  db.run(`
+    CREATE TABLE IF NOT EXISTS permissoes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      modulo TEXT NOT NULL,
+      acao TEXT NOT NULL,
+      descricao TEXT,
+      created_at TEXT DEFAULT (datetime('now','localtime')),
+      UNIQUE(modulo, acao)
+    )
+  `);
+
+  /* ── Relação role ↔ permissão ───────────────────────────── */
+  db.run(`
+    CREATE TABLE IF NOT EXISTS role_permissoes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      role_id INTEGER NOT NULL,
+      permissao_id INTEGER NOT NULL,
+      created_at TEXT DEFAULT (datetime('now','localtime')),
+      FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
+      FOREIGN KEY (permissao_id) REFERENCES permissoes(id) ON DELETE CASCADE,
+      UNIQUE(role_id, permissao_id)
+    )
+  `);
+
+  /* ══════════════════════════════════════════════════════════
      SEED — Categorias financeiras padrão
      ══════════════════════════════════════════════════════════ */
   db.get("SELECT COUNT(*) as total FROM categorias_financeiras", [], (err, row) => {
     if (err) return;
     if (row && row.total === 0) {
       const categorias = [
-        // Despesas
         ["Aluguel", "despesa", "#ef4444", "building"],
         ["Materiais Odontológicos", "despesa", "#f97316", "package"],
         ["Salários e Encargos", "despesa", "#8b5cf6", "users"],
@@ -429,7 +462,6 @@ db.serialize(() => {
         ["Contabilidade", "despesa", "#a855f7", "calculator"],
         ["Software e Assinaturas", "despesa", "#6366f1", "monitor"],
         ["Outras Despesas", "despesa", "#94a3b8", "more-horizontal"],
-        // Receitas
         ["Consultas", "receita", "#22c55e", "stethoscope"],
         ["Procedimentos", "receita", "#10b981", "activity"],
         ["Convênios", "receita", "#2563eb", "credit-card"],
@@ -474,6 +506,91 @@ db.serialize(() => {
   });
 
   /* ══════════════════════════════════════════════════════════
+     SEED — Perfil Administrador (RBAC)
+     ══════════════════════════════════════════════════════════ */
+  db.get("SELECT COUNT(*) as total FROM roles", [], (err, row) => {
+    if (err) return;
+    if (row && row.total === 0) {
+      db.run(
+        `INSERT INTO roles (nome, descricao, cor, protegido) VALUES (?, ?, ?, ?)`,
+        ["Administrador", "Acesso total ao sistema", "#2563eb", 1],
+        function (err) {
+          if (!err) console.log("Perfil Administrador (protegido) criado.");
+        }
+      );
+
+      // Perfis extras de exemplo
+      db.run(
+        `INSERT INTO roles (nome, descricao, cor, protegido) VALUES (?, ?, ?, ?)`,
+        ["Dentista", "Acesso clínico completo", "#10b981", 0]
+      );
+      db.run(
+        `INSERT INTO roles (nome, descricao, cor, protegido) VALUES (?, ?, ?, ?)`,
+        ["Recepcionista", "Agenda e cadastro de pacientes", "#f59e0b", 0]
+      );
+      db.run(
+        `INSERT INTO roles (nome, descricao, cor, protegido) VALUES (?, ?, ?, ?)`,
+        ["Auxiliar", "Acesso limitado", "#8b5cf6", 0]
+      );
+      console.log("Perfis RBAC padrão inseridos.");
+    }
+  });
+
+  /* ══════════════════════════════════════════════════════════
+     SEED — Permissões padrão (RBAC)
+     ══════════════════════════════════════════════════════════ */
+  db.get("SELECT COUNT(*) as total FROM permissoes", [], (err, row) => {
+    if (err) return;
+    if (row && row.total === 0) {
+      const perms = [
+        // Pacientes
+        ["pacientes", "listar", "Listar pacientes"],
+        ["pacientes", "criar", "Cadastrar pacientes"],
+        ["pacientes", "editar", "Editar pacientes"],
+        ["pacientes", "excluir", "Excluir pacientes"],
+        ["pacientes", "ver_prontuario", "Ver prontuário do paciente"],
+        // Agenda
+        ["agenda", "listar", "Ver agenda"],
+        ["agenda", "criar", "Agendar consultas"],
+        ["agenda", "editar", "Editar agendamentos"],
+        ["agenda", "excluir", "Cancelar agendamentos"],
+        // Financeiro
+        ["financeiro", "listar", "Ver financeiro"],
+        ["financeiro", "criar", "Criar lançamentos"],
+        ["financeiro", "editar", "Editar lançamentos"],
+        ["financeiro", "excluir", "Excluir lançamentos"],
+        ["financeiro", "exportar", "Exportar relatórios"],
+        // Orçamentos
+        ["orcamentos", "listar", "Ver orçamentos"],
+        ["orcamentos", "criar", "Criar orçamentos"],
+        ["orcamentos", "editar", "Editar orçamentos"],
+        ["orcamentos", "excluir", "Excluir orçamentos"],
+        // Documentos
+        ["documentos", "listar", "Ver documentos"],
+        ["documentos", "criar", "Criar documentos"],
+        ["documentos", "editar", "Editar documentos"],
+        ["documentos", "excluir", "Excluir documentos"],
+        // Tratamentos
+        ["tratamentos", "listar", "Ver tratamentos"],
+        ["tratamentos", "criar", "Criar tratamentos"],
+        ["tratamentos", "editar", "Editar tratamentos"],
+        ["tratamentos", "excluir", "Excluir tratamentos"],
+        // Configurações
+        ["configuracoes", "gerenciar_usuarios", "Gerenciar usuários"],
+        ["configuracoes", "gerenciar_roles", "Gerenciar perfis de acesso"],
+        ["configuracoes", "gerenciar_permissoes", "Gerenciar permissões"],
+      ];
+
+      const stmt = db.prepare(
+        "INSERT INTO permissoes (modulo, acao, descricao) VALUES (?, ?, ?)"
+      );
+      perms.forEach((p) => stmt.run(p));
+      stmt.finalize();
+      console.log("Permissões padrão inseridas.");
+    }
+  });
+
+  /* ══════════════════════════════════════════════════════════
      MIGRAÇÕES — Tabelas existentes (pacientes, usuarios)
      ══════════════════════════════════════════════════════════ */
   adicionarColunaSeNaoExistir("pacientes", "telefone", "TEXT");
@@ -498,6 +615,7 @@ db.serialize(() => {
 
   adicionarColunaSeNaoExistir("usuarios", "nome", "TEXT DEFAULT 'Administrador'");
   adicionarColunaSeNaoExistir("usuarios", "created_at", "TEXT");
+  adicionarColunaSeNaoExistir("usuarios", "role_id", "INTEGER DEFAULT 1"); // ← NOVO: RBAC
 });
 
 module.exports = db;
