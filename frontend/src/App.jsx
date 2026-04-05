@@ -128,7 +128,7 @@ const MoonIcon = (
   </svg>
 );
 
-/* ════════════════════════════════════���══════════════════════
+/* ═══════════════════════════════════════════════════════════
    HELPER: pegar iniciais do nome
    ═══════════════════════════════════════════════════════════ */
 function getInitials(nome) {
@@ -266,7 +266,7 @@ function AvatarDropdown() {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   TOP BAR — COM RESPONSIVIDADE
+   TOP BAR — COM RESPONSIVIDADE CORRIGIDA
    ═══════════════════════════════════════════════════════════ */
 function TopBar() {
   const location = useLocation();
@@ -292,29 +292,29 @@ function TopBar() {
 
   return (
     <header style={S.topBar}>
-      {/* ── CSS responsivo da TopBar ────────────── */}
       <style>{`
         @media (max-width: 600px) {
           .topbar-inner {
             padding: 0 12px !important;
           }
           .topbar-divider {
-            margin: 0 10px !important;
+            margin: 0 8px !important;
           }
           .topbar-brand-name {
             display: none !important;
-          }
-          .topbar-nav {
-            gap: 0 !important;
           }
           .topbar-nav-label {
             display: none !important;
           }
           .topbar-nav-link {
             padding: 7px 10px !important;
+            gap: 0 !important;
           }
         }
         @media (max-width: 400px) {
+          .topbar-inner {
+            padding: 0 8px !important;
+          }
           .topbar-nav-link {
             padding: 7px 8px !important;
           }
@@ -326,55 +326,58 @@ function TopBar() {
 
       <div className="topbar-inner" style={S.topBarInner}>
 
+        {/* 1. Logo */}
         <Link to="/" style={S.brand}>
           <div style={S.brandIcon}>{LogoIcon}</div>
           <span className="topbar-brand-name" style={S.brandName}>OdontoPro</span>
         </Link>
 
+        {/* 2. Divider */}
         <div className="topbar-divider" style={S.divider} />
 
-        <nav className="topbar-nav" style={S.nav}>
-          {NAV_ITEMS.map((item) => {
-            const ativo = isActive(item.path);
-            const hovered = hoveredPath === item.path && !ativo;
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className="topbar-nav-link"
-                style={{
-                  ...S.navLink,
-                  ...(ativo ? S.navLinkActive : {}),
-                  ...(hovered ? S.navLinkHover : {}),
-                }}
-                onMouseEnter={() => setHoveredPath(item.path)}
-                onMouseLeave={() => setHoveredPath(null)}
-              >
-                <span style={{ ...S.navIcon, color: ativo ? "var(--accent)" : hovered ? "var(--text-secondary)" : "var(--text-muted)" }}>
-                  {item.icon}
-                </span>
-                <span className="topbar-nav-label">{item.label}</span>
-                {ativo && <span style={S.navIndicator} />}
-              </Link>
-            );
-          })}
-        </nav>
+        {/* 3. Nav links — INLINE, sem wrapper flex:1 */}
+        {NAV_ITEMS.map((item) => {
+          const ativo = isActive(item.path);
+          const hovered = hoveredPath === item.path && !ativo;
+          return (
+            <Link
+              key={item.path}
+              to={item.path}
+              className="topbar-nav-link"
+              style={{
+                ...S.navLink,
+                ...(ativo ? S.navLinkActive : {}),
+                ...(hovered ? S.navLinkHover : {}),
+              }}
+              onMouseEnter={() => setHoveredPath(item.path)}
+              onMouseLeave={() => setHoveredPath(null)}
+            >
+              <span style={{ ...S.navIcon, color: ativo ? "var(--accent)" : hovered ? "var(--text-secondary)" : "var(--text-muted)" }}>
+                {item.icon}
+              </span>
+              <span className="topbar-nav-label">{item.label}</span>
+              {ativo && <span style={S.navIndicator} />}
+            </Link>
+          );
+        })}
 
-        <div style={S.topBarRight}>
-          <AvatarDropdown />
-        </div>
+        {/* 4. Spacer — empurra avatar para a direita */}
+        <div style={{ flex: 1 }} />
+
+        {/* 5. Avatar — sempre no canto direito */}
+        <AvatarDropdown />
 
       </div>
     </header>
   );
 }
+
 /* ═══════════════════════════════════════════════════════════
    LAYOUT
    ═══════════════════════════════════════════════════════════ */
 function Layout() {
   return (
     <div style={S.app}>
-      {/* ── CSS responsivo do Layout ───────────── */}
       <style>{`
         @media (max-width: 768px) {
           .app-main {
@@ -435,7 +438,7 @@ function App() {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   STYLES — CSS Variables para suportar Dark Mode
+   STYLES
    ═══════════════════════════════════════════════════════════ */
 const S = {
   app: {
@@ -459,7 +462,7 @@ const S = {
   topBarInner: {
     display: "flex",
     alignItems: "center",
-    gap: "0",
+    gap: "2px",
     maxWidth: "1400px",
     margin: "0 auto",
     padding: "0 24px",
@@ -480,6 +483,7 @@ const S = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
+    flexShrink: 0,
   },
   brandName: {
     fontWeight: "700",
@@ -493,13 +497,6 @@ const S = {
     background: "var(--border-primary)",
     margin: "0 20px",
     flexShrink: 0,
-  },
-  nav: {
-    display: "flex",
-    alignItems: "center",
-    gap: "2px",
-    flex: 1,
-    overflow: "hidden",
   },
   navLink: {
     position: "relative",
@@ -531,6 +528,7 @@ const S = {
     display: "flex",
     alignItems: "center",
     transition: "color 0.15s ease",
+    flexShrink: 0,
   },
   navIndicator: {
     position: "absolute",
@@ -542,15 +540,9 @@ const S = {
     background: "var(--accent)",
     borderRadius: "999px",
   },
-  topBarRight: {
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-    marginLeft: "auto",
-    flexShrink: 0,
-  },
   avatarContainer: {
     position: "relative",
+    flexShrink: 0,
   },
   avatarBtn: {
     position: "relative",
