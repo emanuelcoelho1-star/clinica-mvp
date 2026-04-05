@@ -33,6 +33,7 @@ const globalLimiter = rateLimit({
   message: { erro: "Muitas requisições. Aguarde um momento e tente novamente." },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { ip: false },
 });
 
 app.use(globalLimiter);
