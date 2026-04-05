@@ -1,0 +1,452 @@
+/* ═══════════════════════════════════════════════════════════
+   TEMA CLARO (padrão)
+   ═══════════════════════════════════════════════════════════ */
+:root,
+[data-theme="light"] {
+  --bg-page: #f0f4fa;
+  --bg-card: #ffffff;
+  --bg-card-hover: #fafbfd;
+  --bg-input: #ffffff;
+  --bg-input-alt: #fafbfc;
+  --bg-header: rgba(255, 255, 255, 0.85);
+  --bg-table-header: #fafbfc;
+  --bg-table-stripe: #f8fafc;
+  --bg-badge: #f1f5f9;
+  --bg-overlay: rgba(15, 23, 42, 0.4);
+  --bg-dropdown: #ffffff;
+
+  --border-primary: #f1f5f9;
+  --border-input: #e2e8f0;
+  --border-hover: #cbd5e1;
+
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --text-link: #2563eb;
+
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-bg: #eff6ff;
+  --accent-border: #bfdbfe;
+
+  --success: #16a34a;
+  --success-bg: #f0fdf4;
+  --success-border: #bbf7d0;
+
+  --danger: #dc2626;
+  --danger-bg: #fef2f2;
+  --danger-border: #fecaca;
+
+  --warning: #ca8a04;
+  --warning-bg: #fefce8;
+  --warning-border: #fde68a;
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 20px 50px rgba(15, 23, 42, 0.15);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TEMA ESCURO
+   ═══════════════════════════════════════════════════════════ */
+[data-theme="dark"] {
+  --bg-page: #0f172a;
+  --bg-card: #1e293b;
+  --bg-card-hover: #253347;
+  --bg-input: #1e293b;
+  --bg-input-alt: #172033;
+  --bg-header: rgba(30, 41, 59, 0.9);
+  --bg-table-header: #172033;
+  --bg-table-stripe: #1a2537;
+  --bg-badge: #334155;
+  --bg-overlay: rgba(0, 0, 0, 0.6);
+  --bg-dropdown: #1e293b;
+
+  --border-primary: #334155;
+  --border-input: #475569;
+  --border-hover: #64748b;
+
+  --text-primary: #f1f5f9;
+  --text-secondary: #cbd5e1;
+  --text-muted: #64748b;
+  --text-link: #60a5fa;
+
+  --accent: #3b82f6;
+  --accent-hover: #2563eb;
+  --accent-bg: rgba(59, 130, 246, 0.15);
+  --accent-border: rgba(59, 130, 246, 0.3);
+
+  --success: #4ade80;
+  --success-bg: rgba(74, 222, 128, 0.1);
+  --success-border: rgba(74, 222, 128, 0.25);
+
+  --danger: #f87171;
+  --danger-bg: rgba(248, 113, 113, 0.1);
+  --danger-border: rgba(248, 113, 113, 0.25);
+
+  --warning: #fbbf24;
+  --warning-bg: rgba(251, 191, 36, 0.1);
+  --warning-border: rgba(251, 191, 36, 0.25);
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.5);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DARK MODE — OVERRIDE NUCLEAR
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── 1. TODAS AS BORDAS ──────────────────────────────── */
+[data-theme="dark"] div,
+[data-theme="dark"] section,
+[data-theme="dark"] main,
+[data-theme="dark"] li,
+[data-theme="dark"] ul,
+[data-theme="dark"] form,
+[data-theme="dark"] fieldset {
+  border-color: var(--border-primary) !important;
+}
+
+/* ── 2. TODOS OS TEXTOS ──────────────────────────────── */
+[data-theme="dark"] h1,
+[data-theme="dark"] h2,
+[data-theme="dark"] h3,
+[data-theme="dark"] h4,
+[data-theme="dark"] h5,
+[data-theme="dark"] h6,
+[data-theme="dark"] strong,
+[data-theme="dark"] b {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] p,
+[data-theme="dark"] label,
+[data-theme="dark"] legend {
+  color: var(--text-secondary) !important;
+}
+
+/* ── 3. INPUTS GLOBAIS ───────────────────────────────── */
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+  background: var(--bg-input) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-input) !important;
+  color-scheme: dark !important;
+}
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder {
+  color: var(--text-muted) !important;
+}
+[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) !important;
+}
+
+/* ── 4. FIELDSET / LEGEND ────────────────────────────── */
+[data-theme="dark"] fieldset {
+  background: var(--bg-card) !important;
+}
+
+/* ── 5. TODOS OS BOTÕES ──────────────────────────────── */
+/* Reset: todos os botões ficam escuros */
+[data-theme="dark"] button {
+  border-color: var(--border-input) !important;
+}
+
+/* Botões com fundo branco → card escuro */
+[data-theme="dark"] button[style*="background: #fff"],
+[data-theme="dark"] button[style*="background: rgb(255"],
+[data-theme="dark"] button[style*="background: white"],
+[data-theme="dark"] button[style*="background: #fafbfc"],
+[data-theme="dark"] button[style*="background: rgb(250, 251"],
+[data-theme="dark"] button[style*="background: #f8fafc"],
+[data-theme="dark"] button[style*="background: rgb(248, 250"] {
+  background: var(--bg-card) !important;
+  color: var(--text-secondary) !important;
+  border-color: var(--border-input) !important;
+}
+
+/* Botões primários (azul) — preservar */
+[data-theme="dark"] button[style*="background: #2563eb"],
+[data-theme="dark"] button[style*="background: rgb(37, 99, 235)"],
+[data-theme="dark"] button[style*="background: #3b82f6"],
+[data-theme="dark"] button[style*="background: rgb(59, 130, 246)"] {
+  color: #ffffff !important;
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+}
+
+/* Botão danger — preservar */
+[data-theme="dark"] button[style*="background: #ef4444"],
+[data-theme="dark"] button[style*="background: rgb(239, 68, 68)"] {
+  color: #ffffff !important;
+  background: #ef4444 !important;
+  border-color: #ef4444 !important;
+}
+
+/* Botão accent light (Hoje, Novo paciente link) */
+[data-theme="dark"] button[style*="background: #eff6ff"],
+[data-theme="dark"] button[style*="background: rgb(239, 246, 255)"] {
+  background: var(--accent-bg) !important;
+  border-color: var(--accent-border) !important;
+  color: var(--accent) !important;
+}
+
+/* Botão fechar (X) nos modais */
+[data-theme="dark"] button[style*="background: #fafbfc"][style*="border-radius: 8px"],
+[data-theme="dark"] button[style*="background: rgb(250, 251, 252)"] {
+  background: var(--bg-badge) !important;
+  border-color: var(--border-primary) !important;
+  color: var(--text-muted) !important;
+}
+
+/* Botão "transparent" (ações, nome paciente, etc) */
+[data-theme="dark"] button[style*="background: transparent"],
+[data-theme="dark"] button[style*="background: none"] {
+  background: transparent !important;
+  border-color: transparent !important;
+  color: var(--text-primary) !important;
+}
+
+/* ── 6. SPANS — cores inline ─────────────────────────── */
+[data-theme="dark"] span[style*="color: #0f172a"],
+[data-theme="dark"] span[style*="color: rgb(15, 23, 42)"] {
+  color: var(--text-primary) !important;
+}
+[data-theme="dark"] span[style*="color: #475569"],
+[data-theme="dark"] span[style*="color: rgb(71, 85, 105)"],
+[data-theme="dark"] span[style*="color: #334155"],
+[data-theme="dark"] span[style*="color: rgb(51, 65, 85)"] {
+  color: var(--text-secondary) !important;
+}
+[data-theme="dark"] span[style*="color: #94a3b8"],
+[data-theme="dark"] span[style*="color: rgb(148, 163, 184)"],
+[data-theme="dark"] span[style*="color: #64748b"],
+[data-theme="dark"] span[style*="color: rgb(100, 116, 139)"],
+[data-theme="dark"] span[style*="color: #c1c9d4"],
+[data-theme="dark"] span[style*="color: #d1d5db"] {
+  color: var(--text-muted) !important;
+}
+/* Valores grandes */
+[data-theme="dark"] span[style*="font-size: 28px"],
+[data-theme="dark"] span[style*="font-size: 24px"],
+[data-theme="dark"] span[style*="font-size: 18px"][style*="font-weight: 700"] {
+  color: var(--text-primary) !important;
+}
+/* Labels uppercase */
+[data-theme="dark"] span[style*="text-transform: uppercase"] {
+  color: var(--text-muted) !important;
+}
+
+/* ── 7. DIVS — cores de texto inline ─────────────────── */
+[data-theme="dark"] div[style*="color: #0f172a"],
+[data-theme="dark"] div[style*="color: rgb(15, 23, 42)"] {
+  color: var(--text-primary) !important;
+}
+[data-theme="dark"] div[style*="color: #475569"],
+[data-theme="dark"] div[style*="color: #334155"] {
+  color: var(--text-secondary) !important;
+}
+[data-theme="dark"] div[style*="color: #94a3b8"],
+[data-theme="dark"] div[style*="color: #64748b"] {
+  color: var(--text-muted) !important;
+}
+
+/* ── 8. LINKS ────────────────────────────────────────── */
+[data-theme="dark"] a {
+  color: var(--text-link) !important;
+}
+[data-theme="dark"] a[style*="text-decoration: none"] {
+  color: inherit !important;
+}
+
+/* ── 9. BACKGROUNDS BRANCOS → ESCURO ─────────────────── */
+[data-theme="dark"] div[style*="background: #fff"],
+[data-theme="dark"] div[style*="background: rgb(255, 255, 255)"],
+[data-theme="dark"] div[style*="background: white"],
+[data-theme="dark"] div[style*="background:#fff"] {
+  background: var(--bg-card) !important;
+}
+
+/* ── 10. BACKGROUNDS CLAROS → TABLE HEADER ───────────── */
+[data-theme="dark"] div[style*="background: #fafbfc"],
+[data-theme="dark"] div[style*="background: rgb(250, 251, 252)"],
+[data-theme="dark"] div[style*="background: #f8fafc"],
+[data-theme="dark"] div[style*="background: rgb(248, 250, 252)"],
+[data-theme="dark"] div[style*="background: #f0f4fa"],
+[data-theme="dark"] div[style*="background: #f1f5f9"],
+[data-theme="dark"] div[style*="background: rgb(241, 245, 249)"],
+[data-theme="dark"] div[style*="background: #fafcff"] {
+  background: var(--bg-table-header) !important;
+}
+
+/* ── 11. BADGES / PILLS ──────────────────────────────── */
+[data-theme="dark"] span[style*="background: #f1f5f9"],
+[data-theme="dark"] span[style*="background: rgb(241, 245, 249)"] {
+  background: var(--bg-badge) !important;
+  color: var(--text-secondary) !important;
+}
+[data-theme="dark"] span[style*="background: #eff6ff"],
+[data-theme="dark"] span[style*="background: rgb(239, 246, 255)"],
+[data-theme="dark"] div[style*="background: #eff6ff"],
+[data-theme="dark"] div[style*="background: rgb(239, 246, 255)"] {
+  background: var(--accent-bg) !important;
+}
+[data-theme="dark"] div[style*="background: #f0fdf4"],
+[data-theme="dark"] span[style*="background: #f0fdf4"] {
+  background: var(--success-bg) !important;
+}
+[data-theme="dark"] div[style*="background: #fef2f2"],
+[data-theme="dark"] span[style*="background: #fef2f2"] {
+  background: var(--danger-bg) !important;
+}
+[data-theme="dark"] div[style*="background: #faf5ff"],
+[data-theme="dark"] span[style*="background: #faf5ff"] {
+  background: rgba(147, 51, 234, 0.1) !important;
+}
+[data-theme="dark"] div[style*="background: #fefce8"],
+[data-theme="dark"] span[style*="background: #fefce8"] {
+  background: var(--warning-bg) !important;
+}
+
+/* ── 12. STAT BAR track ──────────────────────────────── */
+[data-theme="dark"] div[style*="height: 4px"][style*="border-radius: 999px"] {
+  background: var(--bg-badge) !important;
+}
+
+/* ── 13. MODAIS ──────────────────────────────────────── */
+[data-theme="dark"] div[style*="position: fixed"][style*="inset: 0"] {
+  background: var(--bg-overlay) !important;
+}
+
+/* ── 14. AGENDA — células ────────────────────────────── */
+[data-theme="dark"] div[style*="min-height: 68px"][style*="cursor: pointer"] {
+  background: var(--bg-card) !important;
+}
+[data-theme="dark"] div[style*="min-height: 68px"][style*="cursor: not-allowed"] {
+  background: var(--bg-card-hover) !important;
+}
+
+/* Slot vazio dashed */
+[data-theme="dark"] div[style*="border: 1px dashed"] {
+  border-color: var(--border-primary) !important;
+}
+
+/* Slot blocked inner */
+[data-theme="dark"] div[style*="min-height: 58px"][style*="opacity: 0.4"] {
+  background: var(--bg-card-hover) !important;
+}
+
+/* ── 15. AGENDA — nav buttons (< >) ────────────��─────── */
+[data-theme="dark"] button[style*="width: 36px"][style*="height: 36px"][style*="border-radius: 8px"] {
+  background: var(--bg-card) !important;
+  border-color: var(--border-input) !important;
+  color: var(--text-secondary) !important;
+}
+
+/* ── 16. AGENDA — stat pills ─────────────────────────── */
+[data-theme="dark"] div[style*="padding: 8px 16px"][style*="border-radius: 10px"][style*="border: 1px solid"] {
+  background: var(--bg-card) !important;
+}
+
+/* ── 17. DROPDOWNS ───────────────────────────────────── */
+[data-theme="dark"] div[style*="overflow-y: auto"][style*="border-radius: 12px"] {
+  background: var(--bg-dropdown) !important;
+  border-color: var(--border-primary) !important;
+}
+[data-theme="dark"] button[style*="border-bottom: 1px solid #f8fafc"],
+[data-theme="dark"] button[style*="border-bottom: 1px solid rgb(248"] {
+  background: var(--bg-dropdown) !important;
+  border-bottom-color: var(--border-primary) !important;
+  color: var(--text-primary) !important;
+}
+/* Option active */
+[data-theme="dark"] button[style*="background: #eff6ff"][style*="color: #2563eb"] {
+  background: var(--accent-bg) !important;
+  color: var(--accent) !important;
+}
+/* Option disabled */
+[data-theme="dark"] button[style*="color: #d1d5db"][style*="cursor: not-allowed"] {
+  background: var(--bg-card-hover) !important;
+  color: var(--text-muted) !important;
+}
+
+/* ── 18. FINANCEIRO TABS ─────────────────────────────── */
+[data-theme="dark"] button[style*="border-bottom: 2px solid transparent"] {
+  color: var(--text-muted) !important;
+}
+[data-theme="dark"] button[style*="border-bottom: 2px solid #2563eb"],
+[data-theme="dark"] button[style*="border-bottom: 2px solid rgb(37"] {
+  color: var(--accent) !important;
+}
+
+/* ── 19. SEARCH WRAP com borda ───────────────────────── */
+[data-theme="dark"] div[style*="border: 1px solid"][style*="border-radius: 10px"][style*="padding: 0"] {
+  background: var(--bg-input) !important;
+  border-color: var(--border-input) !important;
+}
+
+/* ── 20. TABLE ROWS hover ────────────────────────────── */
+[data-theme="dark"] li:hover {
+  background: var(--bg-card-hover) !important;
+}
+
+/* ── 21. ACTION BUTTONS (ícones) ─────────────────────── */
+[data-theme="dark"] a[style*="color: #64748b"],
+[data-theme="dark"] button[style*="color: #64748b"] {
+  color: var(--text-muted) !important;
+}
+
+/* ── 22. PATIENT SEARCH dropdown ─────────────────────── */
+[data-theme="dark"] div[style*="position: absolute"][style*="border-radius: 12px"][style*="background: #fff"] {
+  background: var(--bg-dropdown) !important;
+}
+
+/* ── 23. EMPTY STATE SVG ─────────────────────────────── */
+[data-theme="dark"] rect[fill="#f1f5f9"] {
+  fill: var(--bg-badge) !important;
+}
+[data-theme="dark"] rect[fill="#e2e8f0"] {
+  fill: var(--border-primary) !important;
+}
+
+/* ── 24. SCROLLBAR ───────────────────────────────────── */
+[data-theme="dark"] ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+[data-theme="dark"] ::-webkit-scrollbar-track {
+  background: var(--bg-page);
+}
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: var(--border-input);
+  border-radius: 4px;
+}
+
+/* ── 25. HOVER STATES ────────────────────────────────── */
+[data-theme="dark"] button:hover {
+  filter: brightness(1.1);
+}
+[data-theme="dark"] button[style*="background: #2563eb"]:hover,
+[data-theme="dark"] button[style*="background: rgb(37, 99, 235)"]:hover {
+  filter: brightness(1.15);
+  /* ── 26. AGENDA — cabeçalho do dia atual (DOM/05) ────── */
+[data-theme="dark"] div[style*="background: #fafcff"],
+[data-theme="dark"] div[style*="background: rgb(250, 252, 255)"] {
+  background: rgba(59, 130, 246, 0.08) !important;
+}
+
+/* Coluna inteira do dia de hoje */
+[data-theme="dark"] div[style*="background: #fafcff"][style*="min-height"] {
+  background: rgba(59, 130, 246, 0.04) !important;
+}
+/* Nuclear — qualquer div dentro do calendar head */
+[data-theme="dark"] div[style*="grid-template-columns: 68px"] > div {
+  background: var(--bg-card) !important;
+}
+[data-theme="dark"] div[style*="grid-template-columns: 68px"] > div[style*="fafcff"],
+[data-theme="dark"] div[style*="grid-template-columns: 68px"] > div[style*="252, 255"] {
+  background: rgba(59, 130, 246, 0.1) !important;
+}
+}

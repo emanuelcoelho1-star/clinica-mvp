@@ -1,0 +1,95 @@
+/* ═══════════════════════════════════════════════════════════
+   RESPONSIVIDADE — Mobile < 768px
+   ═══════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  header {
+    padding: 0 12px !important;
+  }
+  header > div {
+    height: auto !important;
+    min-height: 56px;
+    flex-wrap: wrap !important;
+    padding: 8px 0 !important;
+    gap: 8px !important;
+  }
+  header nav {
+    order: 3;
+    width: 100%;
+    justify-content: center !important;
+    gap: 0 !important;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+  }
+  header nav a {
+    font-size: 12px !important;
+    padding: 6px 10px !important;
+    flex-shrink: 0;
+  }
+  main {
+    padding: 16px 12px !important;
+  }
+  h1 {
+    font-size: 22px !important;
+  }
+
+  /* Stats grids */
+  div[style*="grid-template-columns: repeat(3"] {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  /* Tabela header esconder */
+  div[style*="background: #fafbfc"][style*="height: 44px"] {
+    display: none !important;
+  }
+
+  /* Rows viram cards */
+  li[style*="display: flex"][style*="padding: 12px 24px"] {
+    flex-wrap: wrap !important;
+    padding: 14px 16px !important;
+    gap: 8px !important;
+  }
+
+  /* Agenda — scroll horizontal */
+  div[style*="grid-template-columns: 68px repeat(6"] {
+    grid-template-columns: 50px repeat(6, 120px) !important;
+  }
+  div[style*="border-radius: 16px"][style*="overflow: hidden"] {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Modais */
+  div[style*="position: fixed"][style*="padding: 20px"] {
+    padding: 12px !important;
+  }
+
+  /* Form grid 2 → 1 coluna */
+  div[style*="grid-template-columns: 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Financeiro grids */
+  div[style*="grid-template-columns: repeat(4"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  button[style*="padding: 10px 20px"] {
+    padding: 8px 14px !important;
+    font-size: 13px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TELAS MUITO PEQUENAS — < 480px
+   ═══════════════════════════════════════════════════════════ */
+@media (max-width: 480px) {
+  h1 {
+    font-size: 20px !important;
+  }
+  div[style*="grid-template-columns: repeat(2"] {
+    grid-template-columns: 1fr !important;
+  }
+}

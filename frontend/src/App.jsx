@@ -8,10 +8,10 @@ import CadastroPaciente from "./pages/CadastroPaciente";
 import ProntuarioPaciente from "./pages/ProntuarioPaciente";
 import Configuracoes from "./pages/Configuracoes";
 import Financeiro from "./pages/Financeiro";
+import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
 
 /* ═══════════════════════════════════════════════════════════
    HELPER: Validar token JWT sem dependência externa
-   Decodifica o payload base64 e checa o campo "exp"
    ═══════════════════════════════════════════════════════════ */
 function isTokenValid(token) {
   if (!token) return false;
@@ -20,7 +20,6 @@ function isTokenValid(token) {
     if (parts.length !== 3) return false;
     const payload = JSON.parse(atob(parts[1]));
     if (!payload.exp) return false;
-    // exp é em segundos, Date.now() em milissegundos
     return payload.exp * 1000 > Date.now();
   } catch {
     return false;
@@ -28,8 +27,8 @@ function isTokenValid(token) {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   HELPER: Limpar sessão expirada e redirecionar
-   ═════════════════════════════════════════════���═════════════ */
+   HELPER: Limpar sessão expirada
+   ═══════════════════════════════════════════════════════════ */
 function clearSession() {
   localStorage.removeItem("token");
   localStorage.removeItem("usuario");
@@ -37,14 +36,12 @@ function clearSession() {
 
 /* ═══════════════════════════════════════════════════════════
    INTERCEPTOR: Escuta respostas 401 de qualquer fetch
-   Se o backend rejeitar o token, faz logout automático
    ═══════════════════════════════════════════════════════════ */
 const originalFetch = window.fetch;
 window.fetch = async (...args) => {
   const response = await originalFetch(...args);
   if (response.status === 401) {
     const token = localStorage.getItem("token");
-    // Só faz logout se havia um token (evita loop na tela de login)
     if (token) {
       clearSession();
       window.location.href = "/";
@@ -115,16 +112,25 @@ const LogoutIcon = (
   </svg>
 );
 
-const UserIcon = (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-    <circle cx="12" cy="7" r="4" />
+const SunIcon = (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="4" />
+    <path d="M12 2v2" /><path d="M12 20v2" />
+    <path d="m4.93 4.93 1.41 1.41" /><path d="m17.66 17.66 1.41 1.41" />
+    <path d="M2 12h2" /><path d="M20 12h2" />
+    <path d="m6.34 17.66-1.41 1.41" /><path d="m19.07 4.93-1.41 1.41" />
+  </svg>
+);
+
+const MoonIcon = (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
   </svg>
 );
 
 /* ═══════════════════════════════════════════════════════════
    HELPER: pegar iniciais do nome
-   ═══════════════════════════════════════════════════════════ */
+   ════════════���══════════════════════════════════════════════ */
 function getInitials(nome) {
   if (!nome) return "U";
   const parts = nome.trim().split(" ").filter(Boolean);
@@ -133,14 +139,16 @@ function getInitials(nome) {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   AVATAR DROPDOWN
+   AVATAR DROPDOWN (com toggle de tema)
    ═══════════════════════════════════════════════════════════ */
 function AvatarDropdown() {
   const [aberto, setAberto] = useState(false);
   const [hoverConfig, setHoverConfig] = useState(false);
   const [hoverLogout, setHoverLogout] = useState(false);
+  const [hoverTema, setHoverTema] = useState(false);
   const ref = useRef(null);
   const navigate = useNavigate();
+  const { tema, alternarTema } = useTheme();
 
   const usuario = (() => {
     try {
@@ -169,6 +177,8 @@ function AvatarDropdown() {
     clearSession();
     window.location.href = "/";
   };
+
+  const isDark = tema === "dark";
 
   return (
     <div ref={ref} style={S.avatarContainer}>
@@ -205,6 +215,22 @@ function AvatarDropdown() {
           </div>
 
           <div style={S.dropdownDivider} />
+
+          {/* ── Toggle de Tema ──────────────────── */}
+          <button
+            style={{
+              ...S.dropdownItem,
+              ...(hoverTema ? S.dropdownItemHover : {}),
+            }}
+            onClick={alternarTema}
+            onMouseEnter={() => setHoverTema(true)}
+            onMouseLeave={() => setHoverTema(false)}
+          >
+            <span style={S.dropdownItemIcon}>
+              {isDark ? SunIcon : MoonIcon}
+            </span>
+            <span>{isDark ? "Modo claro" : "Modo escuro"}</span>
+          </button>
 
           <button
             style={{
@@ -292,7 +318,7 @@ function TopBar() {
                 onMouseEnter={() => setHoveredPath(item.path)}
                 onMouseLeave={() => setHoveredPath(null)}
               >
-                <span style={{ ...S.navIcon, color: ativo ? "#2563eb" : hovered ? "#475569" : "#94a3b8" }}>
+                <span style={{ ...S.navIcon, color: ativo ? "var(--accent)" : hovered ? "var(--text-secondary)" : "var(--text-muted)" }}>
                   {item.icon}
                 </span>
                 <span>{item.label}</span>
@@ -343,45 +369,48 @@ function App() {
   const token = localStorage.getItem("token");
   const autenticado = isTokenValid(token);
 
-  // Se tinha token mas expirou, limpa os dados
   if (token && !autenticado) {
     clearSession();
   }
 
   return (
-    <BrowserRouter>
-      {!autenticado ? (
-        <Routes>
-          <Route path="*" element={<Login />} />
-        </Routes>
-      ) : (
-        <Routes>
-          <Route path="/*" element={<Layout />} />
-        </Routes>
-      )}
-    </BrowserRouter>
+    <ThemeProvider>
+      <BrowserRouter>
+        {!autenticado ? (
+          <Routes>
+            <Route path="*" element={<Login />} />
+          </Routes>
+        ) : (
+          <Routes>
+            <Route path="/*" element={<Layout />} />
+          </Routes>
+        )}
+      </BrowserRouter>
+    </ThemeProvider>
   );
 }
 
 /* ═══════════════════════════════════════════════════════════
-   STYLES — Ultra Premium Minimal SaaS
+   STYLES — CSS Variables para suportar Dark Mode
    ═══════════════════════════════════════════════════════════ */
 const S = {
   app: {
     display: "flex",
     flexDirection: "column",
     minHeight: "100vh",
-    background: "#f0f4fa",
+    background: "var(--bg-page)",
     fontFamily: "'Inter', 'DM Sans', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+    transition: "background 0.3s ease",
   },
   topBar: {
     position: "sticky",
     top: 0,
     zIndex: 100,
-    background: "rgba(255,255,255,0.85)",
+    background: "var(--bg-header)",
     backdropFilter: "blur(16px)",
     WebkitBackdropFilter: "blur(16px)",
-    borderBottom: "1px solid #f1f5f9",
+    borderBottom: "1px solid var(--border-primary)",
+    transition: "background 0.3s ease, border-color 0.3s ease",
   },
   topBarInner: {
     display: "flex",
@@ -403,7 +432,7 @@ const S = {
     width: "32px",
     height: "32px",
     borderRadius: "9px",
-    background: "#2563eb",
+    background: "var(--accent)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -411,13 +440,13 @@ const S = {
   brandName: {
     fontWeight: "700",
     fontSize: "16px",
-    color: "#0f172a",
+    color: "var(--text-primary)",
     letterSpacing: "-0.025em",
   },
   divider: {
     width: "1px",
     height: "20px",
-    background: "#e8eef5",
+    background: "var(--border-primary)",
     margin: "0 20px",
     flexShrink: 0,
   },
@@ -437,19 +466,19 @@ const S = {
     textDecoration: "none",
     fontSize: "13px",
     fontWeight: "500",
-    color: "#64748b",
+    color: "var(--text-muted)",
     transition: "all 0.15s ease",
     border: "none",
     background: "transparent",
   },
   navLinkActive: {
-    color: "#0f172a",
-    background: "#f1f5f9",
+    color: "var(--text-primary)",
+    background: "var(--bg-badge)",
     fontWeight: "600",
   },
   navLinkHover: {
-    color: "#475569",
-    background: "#f8fafc",
+    color: "var(--text-secondary)",
+    background: "var(--bg-table-stripe)",
   },
   navIcon: {
     display: "flex",
@@ -463,7 +492,7 @@ const S = {
     transform: "translateX(-50%)",
     width: "16px",
     height: "2px",
-    background: "#2563eb",
+    background: "var(--accent)",
     borderRadius: "999px",
   },
   topBarRight: {
@@ -481,7 +510,7 @@ const S = {
     width: "36px",
     height: "36px",
     borderRadius: "50%",
-    border: "2px solid #e2e8f0",
+    border: "2px solid var(--border-input)",
     background: "transparent",
     padding: 0,
     cursor: "pointer",
@@ -519,7 +548,7 @@ const S = {
     height: "9px",
     borderRadius: "50%",
     background: "#22c55e",
-    border: "2px solid #fff",
+    border: "2px solid var(--bg-card)",
     boxSizing: "border-box",
   },
   dropdown: {
@@ -527,12 +556,11 @@ const S = {
     top: "calc(100% + 8px)",
     right: 0,
     width: "280px",
-    background: "#fff",
+    background: "var(--bg-dropdown)",
     borderRadius: "16px",
-    boxShadow: "0 20px 50px rgba(15, 23, 42, 0.15), 0 0 0 1px rgba(15, 23, 42, 0.05)",
+    boxShadow: "var(--shadow-lg), 0 0 0 1px var(--border-primary)",
     padding: "6px",
     zIndex: 200,
-    animation: "fadeIn 0.15s ease",
   },
   dropdownHeader: {
     display: "flex",
@@ -569,14 +597,14 @@ const S = {
   dropdownNome: {
     fontSize: "14px",
     fontWeight: "600",
-    color: "#0f172a",
+    color: "var(--text-primary)",
     whiteSpace: "nowrap",
     overflow: "hidden",
     textOverflow: "ellipsis",
   },
   dropdownEmail: {
     fontSize: "12px",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     fontWeight: "500",
     whiteSpace: "nowrap",
     overflow: "hidden",
@@ -598,11 +626,11 @@ const S = {
   dropdownStatusText: {
     fontSize: "12px",
     fontWeight: "500",
-    color: "#16a34a",
+    color: "var(--success)",
   },
   dropdownDivider: {
     height: "1px",
-    background: "#f1f5f9",
+    background: "var(--border-primary)",
     margin: "2px 8px",
   },
   dropdownItem: {
@@ -617,26 +645,26 @@ const S = {
     cursor: "pointer",
     fontSize: "13px",
     fontWeight: "500",
-    color: "#334155",
+    color: "var(--text-secondary)",
     transition: "all 0.15s ease",
     boxSizing: "border-box",
     textAlign: "left",
   },
   dropdownItemHover: {
-    background: "#f8fafc",
-    color: "#0f172a",
+    background: "var(--bg-table-stripe)",
+    color: "var(--text-primary)",
   },
   dropdownItemIcon: {
     display: "flex",
     alignItems: "center",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
   },
   dropdownItemLogout: {
-    color: "#94a3b8",
+    color: "var(--text-muted)",
   },
   dropdownItemLogoutHover: {
-    background: "#fef2f2",
-    color: "#ef4444",
+    background: "var(--danger-bg)",
+    color: "var(--danger)",
   },
   main: {
     flex: 1,
