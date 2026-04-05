@@ -19,11 +19,6 @@ const loginLimiter = rateLimit({
   message: { erro: "Muitas tentativas de login. Tente novamente em 15 minutos." },
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => {
-    const ip = req.ip || req.socket.remoteAddress || "unknown";
-    return ip + ":" + (req.body.email || "").toLowerCase().trim();
-  },
-  validate: { ip: false, trustProxy: false },
 });
 
 /* ── Registro: máximo 3 contas por IP a cada hora ───────── */
