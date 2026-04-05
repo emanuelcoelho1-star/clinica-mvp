@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import API_URL from "../api";
 
 /* ═══════════════════════════════════════════════════════════
    HELPERS
@@ -237,7 +238,7 @@ function AbaArquivos({ pacienteId }) {
       setCarregando(true);
       setErro("");
       const tk = localStorage.getItem("token");
-      const r = await fetch(`http://localhost:3001/arquivos/paciente/${pacienteId}`, {
+      const r = await fetch(`${API_URL}/arquivos/paciente/${pacienteId}`, {
         headers: { Authorization: tk || "" },
       });
       if (!r.ok) throw new Error();
@@ -305,7 +306,7 @@ function AbaArquivos({ pacienteId }) {
         formData.append("categoria", categoria);
         formData.append("descricao", descricao);
 
-        const r = await fetch("http://localhost:3001/arquivos", {
+        const r = await fetch(`${API_URL}/arquivos`, {
           method: "POST",
           headers: { Authorization: tk || "" },
           body: formData,
@@ -338,7 +339,7 @@ function AbaArquivos({ pacienteId }) {
   /* ── Baixar ──────────────────────────────── */
   function baixarArquivo(arquivo) {
     const tk = localStorage.getItem("token");
-    const url = `http://localhost:3001/arquivos/${arquivo.id}/download?token=${encodeURIComponent(tk || "")}`;
+    const url = `${API_URL}/arquivos/${arquivo.id}/download?token=${encodeURIComponent(tk || "")}`;
     window.open(url, "_blank");
   }
 
@@ -348,7 +349,7 @@ function AbaArquivos({ pacienteId }) {
     try {
       setExcluindo(true);
       const tk = localStorage.getItem("token");
-      const r = await fetch(`http://localhost:3001/arquivos/${confirmarExclusao.id}`, {
+      const r = await fetch(`${API_URL}/arquivos/${confirmarExclusao.id}`, {
         method: "DELETE",
         headers: { Authorization: tk || "" },
       });
@@ -785,7 +786,7 @@ function AbaArquivos({ pacienteId }) {
      ═══════════════════════════════════════════ */
   if (tela === "preview" && preview) {
     const tk = localStorage.getItem("token");
-    const imgUrl = `http://localhost:3001/arquivos/${preview.id}/download?token=${encodeURIComponent(tk || "")}`;
+    const imgUrl = `${API_URL}/arquivos/${preview.id}/download?token=${encodeURIComponent(tk || "")}`;
 
     return (
       <div style={S.wrapper}>

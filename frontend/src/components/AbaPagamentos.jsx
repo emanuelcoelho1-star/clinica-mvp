@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
+import API_URL from "../api";
 
 /* ═══════════════════════════════════════════════════════════
    HELPERS
@@ -182,7 +183,7 @@ function AbaPagamentos({ pacienteId }) {
       setCarregando(true);
       setErro("");
       const tk = localStorage.getItem("token");
-      const r = await fetch(`http://localhost:3001/pagamentos/paciente/${pacienteId}`, {
+      const r = await fetch(`${API_URL}/pagamentos/paciente/${pacienteId}`, {
         headers: { Authorization: tk || "" },
       });
       if (!r.ok) throw new Error();
@@ -198,7 +199,7 @@ function AbaPagamentos({ pacienteId }) {
   async function carregarOrcamentos() {
     try {
       const tk = localStorage.getItem("token");
-      const r = await fetch(`http://localhost:3001/orcamentos/paciente/${pacienteId}`, {
+      const r = await fetch(`${API_URL}/orcamentos/paciente/${pacienteId}`, {
         headers: { Authorization: tk || "" },
       });
       if (!r.ok) throw new Error();
@@ -274,7 +275,7 @@ function AbaPagamentos({ pacienteId }) {
       };
 
       const r = await fetch(
-        ed ? `http://localhost:3001/pagamentos/${editando.id}` : "http://localhost:3001/pagamentos",
+        ed ? `${API_URL}/pagamentos/${editando.id}` : `${API_URL}/pagamentos`,
         {
           method: ed ? "PUT" : "POST",
           headers: { "Content-Type": "application/json", Authorization: tk || "" },
@@ -297,7 +298,7 @@ function AbaPagamentos({ pacienteId }) {
     try {
       setExcluindo(true);
       const tk = localStorage.getItem("token");
-      const r = await fetch(`http://localhost:3001/pagamentos/${confirmarExclusao.id}`, {
+      const r = await fetch(`${API_URL}/pagamentos/${confirmarExclusao.id}`, {
         method: "DELETE",
         headers: { Authorization: tk || "" },
       });

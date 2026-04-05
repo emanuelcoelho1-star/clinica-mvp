@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import API_URL from "../api";
 
 /* ═══════════════════════════════════════════════════════════
    HELPERS
@@ -155,7 +156,7 @@ function AbaEvolucoes({ pacienteId }) {
       setCarregando(true);
       setErro("");
       const tk = localStorage.getItem("token");
-      const r = await fetch(`http://localhost:3001/evolucoes/paciente/${pacienteId}`, {
+      const r = await fetch(`${API_URL}/evolucoes/paciente/${pacienteId}`, {
         headers: { Authorization: tk || "" },
       });
       if (!r.ok) throw new Error();
@@ -220,7 +221,7 @@ function AbaEvolucoes({ pacienteId }) {
       const body = { ...formData, paciente_id: Number(pacienteId) };
 
       const r = await fetch(
-        ed ? `http://localhost:3001/evolucoes/${editando.id}` : "http://localhost:3001/evolucoes",
+        ed ? `${API_URL}/evolucoes/${editando.id}` : `${API_URL}/evolucoes`,
         {
           method: ed ? "PUT" : "POST",
           headers: { "Content-Type": "application/json", Authorization: tk || "" },
@@ -243,7 +244,7 @@ function AbaEvolucoes({ pacienteId }) {
     try {
       setExcluindo(true);
       const tk = localStorage.getItem("token");
-      const r = await fetch(`http://localhost:3001/evolucoes/${confirmarExclusao.id}`, {
+      const r = await fetch(`${API_URL}/evolucoes/${confirmarExclusao.id}`, {
         method: "DELETE",
         headers: { Authorization: tk || "" },
       });

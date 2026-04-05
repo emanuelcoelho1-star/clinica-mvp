@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import API_URL from "../api";
 
 /* ═══════════════════════════════════════════════════════════
    HELPERS
@@ -168,7 +169,7 @@ function AbaDocumentos({ pacienteId }) {
       setCarregando(true);
       setErro("");
       const tk = localStorage.getItem("token");
-      const r = await fetch(`http://localhost:3001/documentos/paciente/${pacienteId}`, {
+      const r = await fetch(`${API_URL}/documentos/paciente/${pacienteId}`, {
         headers: { Authorization: tk || "" },
       });
       if (!r.ok) throw new Error();
@@ -234,7 +235,7 @@ function AbaDocumentos({ pacienteId }) {
       const body = { ...formData, paciente_id: Number(pacienteId) };
 
       const r = await fetch(
-        ed ? `http://localhost:3001/documentos/${editando.id}` : "http://localhost:3001/documentos",
+        ed ? `${API_URL}/documentos/${editando.id}` : `${API_URL}/documentos`,
         {
           method: ed ? "PUT" : "POST",
           headers: { "Content-Type": "application/json", Authorization: tk || "" },
@@ -257,7 +258,7 @@ function AbaDocumentos({ pacienteId }) {
     try {
       setExcluindo(true);
       const tk = localStorage.getItem("token");
-      const r = await fetch(`http://localhost:3001/documentos/${confirmarExclusao.id}`, {
+      const r = await fetch(`${API_URL}/documentos/${confirmarExclusao.id}`, {
         method: "DELETE",
         headers: { Authorization: tk || "" },
       });

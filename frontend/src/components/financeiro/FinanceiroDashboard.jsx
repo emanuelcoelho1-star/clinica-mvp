@@ -3,7 +3,8 @@ import { useEffect, useState, useMemo } from "react";
 /* ═══════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════ */
-const API = "http://localhost:3001";
+import API_URL from "../../api";
+const API = API_URL;
 
 function headers() {
   return {

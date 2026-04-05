@@ -3,7 +3,8 @@
    Padrão: Ultra Premium Minimal SaaS (igual Dashboard/Pacientes)
    ═══════════════════════════════════════════════════════════ */
 
-export const API = "http://localhost:3001";
+import API_URL from "../../api";
+export const API = API_URL;
 
 export function headers() {
   return { Authorization: localStorage.getItem("token"), "Content-Type": "application/json" };

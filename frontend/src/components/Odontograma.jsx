@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import API_URL from "../api";
 
 /* ═══════════════════════════════════════════════════════════════
    ODONTOGRAMA PROFISSIONAL — FDI (Permanente + Decíduo)
@@ -888,7 +889,7 @@ export default function Odontograma({ pacienteId }) {
     if (!pacienteId) return;
     const token = localStorage.getItem("token");
     setCarregando(true);
-    fetch(`http://localhost:3001/pacientes/${pacienteId}/odontograma`, {
+    fetch(`${API_URL}/pacientes/${pacienteId}/odontograma`, {
       headers: { Authorization: token },
     })
       .then((r) => {
@@ -918,7 +919,7 @@ export default function Odontograma({ pacienteId }) {
     setErro(null);
     try {
       const payload = { ...mapa, notas };
-      const r = await fetch(`http://localhost:3001/pacientes/${pacienteId}/odontograma`, {
+      const r = await fetch(`${API_URL}/pacientes/${pacienteId}/odontograma`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: token },
         body: JSON.stringify({ mapa: payload }),

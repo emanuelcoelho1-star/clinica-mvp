@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import API_URL from "../api";
 
 /* ═══════════════════════════════════════════════════════════
    HELPERS
@@ -192,7 +193,7 @@ function AbaTratamentos({ pacienteId }) {
       setCarregando(true);
       setErro("");
       const tk = localStorage.getItem("token");
-      const r = await fetch(`http://localhost:3001/tratamentos/paciente/${pacienteId}`, {
+      const r = await fetch(`${API_URL}/tratamentos/paciente/${pacienteId}`, {
         headers: { Authorization: tk || "" },
       });
       if (!r.ok) throw new Error();
@@ -265,7 +266,7 @@ function AbaTratamentos({ pacienteId }) {
       };
 
       const r = await fetch(
-        ed ? `http://localhost:3001/tratamentos/${editando.id}` : "http://localhost:3001/tratamentos",
+        ed ? `${API_URL}/tratamentos/${editando.id}` : `${API_URL}/tratamentos`,
         {
           method: ed ? "PUT" : "POST",
           headers: { "Content-Type": "application/json", Authorization: tk || "" },
@@ -288,7 +289,7 @@ function AbaTratamentos({ pacienteId }) {
     try {
       setExcluindo(true);
       const tk = localStorage.getItem("token");
-      const r = await fetch(`http://localhost:3001/tratamentos/${confirmarExclusao.id}`, {
+      const r = await fetch(`${API_URL}/tratamentos/${confirmarExclusao.id}`, {
         method: "DELETE",
         headers: { Authorization: tk || "" },
       });
