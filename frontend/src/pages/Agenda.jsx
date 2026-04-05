@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import API_URL from "../api";
 
 /* ═══════════════════════════════════════════════════════════
    CONSTANTES
@@ -207,7 +208,7 @@ function Agenda() {
 
   async function carregarConsultas() {
     try { setCarregando(true); setErro(""); const tk = localStorage.getItem("token");
-      const r = await fetch("http://localhost:3001/consultas", { headers: { Authorization: tk || "" } });
+      const r = await fetch(`${API_URL}/consultas`, { headers: { Authorization: tk || "" } });
       if (!r.ok) throw new Error(); const d = await r.json();
       setConsultas(Array.isArray(d) ? d.map(normalizarConsulta) : []);
     } catch { setErro("Erro ao carregar consultas."); setConsultas([]); }
@@ -215,7 +216,7 @@ function Agenda() {
   }
   async function carregarPacientes() {
     try { const tk = localStorage.getItem("token");
-      const r = await fetch("http://localhost:3001/pacientes", { headers: { Authorization: tk || "" } });
+      const r = await fetch(`${API_URL}/pacientes`, { headers: { Authorization: tk || "" } });
       if (!r.ok) throw new Error(); const d = await r.json();
       setPacientes(Array.isArray(d) ? d : Array.isArray(d.pacientes) ? d.pacientes : []);
     } catch { setPacientes([]); }
@@ -307,7 +308,7 @@ function Agenda() {
     if (!formData.paciente_id || !formData.data || !formData.horario) { setErroFormulario("Preencha paciente, data e horário."); return; }
     if (!agendamentoEditando && horarioPassado(formData.data, formData.horario)) { setErroFormulario("Não é possível agendar em horários passados."); return; }
     try { setSalvando(true); setErroFormulario(""); const tk = localStorage.getItem("token"); const ed = Boolean(agendamentoEditando);
-      const r = await fetch(ed ? `http://localhost:3001/consultas/${agendamentoEditando.id}` : "http://localhost:3001/consultas", {
+      const r = await fetch(ed ? `${API_URL}/consultas/${agendamentoEditando.id}` : `${API_URL}/consultas`, {
         method: ed ? "PUT" : "POST", headers: { "Content-Type": "application/json", Authorization: tk || "" },
         body: JSON.stringify({ paciente_id: Number(formData.paciente_id), data: formData.data, horario: formData.horario, procedimento: formData.procedimento, status: formData.status }),
       });
@@ -320,7 +321,7 @@ function Agenda() {
   async function handleExcluir() {
     if (!agendamentoEditando?.id) return;
     try { setExcluindo(true); setErroFormulario(""); const tk = localStorage.getItem("token");
-      const r = await fetch(`http://localhost:3001/consultas/${agendamentoEditando.id}`, { method: "DELETE", headers: { Authorization: tk || "" } });
+      const r = await fetch(`${API_URL}/consultas/${agendamentoEditando.id}`, { method: "DELETE", headers: { Authorization: tk || "" } });
       if (!r.ok) throw new Error(); setConfirmarExclusaoAberto(false); await carregarConsultas(); fecharModal();
     } catch { setErroFormulario("Não foi possível excluir."); }
     finally { setExcluindo(false); }
@@ -333,7 +334,7 @@ function Agenda() {
     e.preventDefault();
     if (!formPaciente.nome.trim()) { setErroPaciente("Digite o nome do paciente."); return; }
     try { setSalvandoPaciente(true); setErroPaciente(""); const tk = localStorage.getItem("token");
-      const r = await fetch("http://localhost:3001/pacientes", {
+      const r = await fetch(`${API_URL}/pacientes`, {
         method: "POST", headers: { "Content-Type": "application/json", Authorization: tk || "" },
         body: JSON.stringify({ nome: formPaciente.nome, telefone: formPaciente.telefone, observacoes: formPaciente.observacoes }),
       });

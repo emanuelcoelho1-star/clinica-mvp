@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import API_URL from "../api";
 
 /* ═══════════════════════════════════════════════════════════
    HELPERS
@@ -133,7 +134,7 @@ const Icons = {
 
 /* ═══════════════════════════════════════════════════════════
    SUB-COMPONENTES
-   ═══════════════════════════════════════════════════════════ */
+   ══════════════════════════���════════════════════════════════ */
 function StatCard({ label, value, icon, accent, sub }) {
   return (
     <div style={S.statCard}>
@@ -204,8 +205,8 @@ function Dashboard() {
     const headers = { Authorization: token };
 
     Promise.all([
-      fetch("http://localhost:3001/pacientes", { headers }).then((r) => r.json()),
-      fetch("http://localhost:3001/consultas", { headers }).then((r) => r.json()),
+      fetch(`${API_URL}/pacientes`, { headers }).then((r) => r.json()),
+      fetch(`${API_URL}/consultas`, { headers }).then((r) => r.json()),
     ])
       .then(([p, c]) => {
         setPacientes(Array.isArray(p) ? p : []);
@@ -317,7 +318,7 @@ function Dashboard() {
       {/* ── Stats Grid ───────────────────────────── */}
       <div style={S.statsGrid}>
         <StatCard label="Total de pacientes" value={pacientes.length} icon={Icons.users} accent="#2563eb" sub="cadastrados no sistema" />
-        <StatCard label="Consultas hoje" value={consultasHoje.length} icon={Icons.calendarCheck} accent="#0ea5e9" sub={consultasHoje.length > 0 ? `Próx. às ${consultasHoje[0].horario}` : "Nenhuma consulta"} />
+        <StatCard label="Consultas hoje" value={consultasHoje.length} icon={Icons.calendarCheck} accent="#0ea5e9" sub={consultasHoje.length > 0 ? `Próx. às ${consultasHoje[0].horario}` : "Nenhuma agendada"} />
         <StatCard label="Esta semana" value={consultasSemana} icon={Icons.clock} accent="#8b5cf6" sub="próximos 7 dias" />
         <StatCard label="Total de consultas" value={consultas.length} icon={Icons.activity} accent="#10b981" sub="registradas no sistema" />
       </div>

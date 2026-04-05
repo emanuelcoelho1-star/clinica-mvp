@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import API_URL from "../api";
 
 function Consultas() {
   const [pacientes, setPacientes] = useState([]);
@@ -13,7 +14,7 @@ function Consultas() {
   const carregarPacientes = () => {
     const token = localStorage.getItem("token");
 
-    fetch("http://localhost:3001/pacientes", {
+    fetch(`${API_URL}/pacientes`, {
       headers: {
         Authorization: token,
       },
@@ -26,7 +27,7 @@ function Consultas() {
   const carregarConsultas = () => {
     const token = localStorage.getItem("token");
 
-    fetch("http://localhost:3001/consultas", {
+    fetch(`${API_URL}/consultas`, {
       headers: {
         Authorization: token,
       },
@@ -74,8 +75,8 @@ function Consultas() {
 
     try {
       const url = editandoId
-        ? `http://localhost:3001/consultas/${editandoId}`
-        : "http://localhost:3001/consultas";
+        ? `${API_URL}/consultas/${editandoId}`
+        : `${API_URL}/consultas`;
 
       const metodo = editandoId ? "PUT" : "POST";
 
@@ -114,7 +115,7 @@ function Consultas() {
     const token = localStorage.getItem("token");
 
     try {
-      const resposta = await fetch(`http://localhost:3001/consultas/${id}`, {
+      const resposta = await fetch(`${API_URL}/consultas/${id}`, {
         method: "DELETE",
         headers: {
           Authorization: token,

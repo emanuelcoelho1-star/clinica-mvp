@@ -2,7 +2,9 @@
    RBAC — Constantes e Helpers compartilhados
    ══════════════════════════════════════════════════════════════ */
 
-export const API = "http://localhost:3001";
+import API_URL from "../../api";
+
+export const API = API_URL;
 
 export const MODULOS_LABELS = {
   pacientes: "Pacientes",

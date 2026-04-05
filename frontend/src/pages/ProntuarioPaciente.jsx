@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import API_URL from "../api";
 import AbaAnamneses from "../components/AbaAnamneses";
 import AbaOrcamentos from "../components/AbaOrcamentos";
 import AbaDocumentos from "../components/AbaDocumentos";
@@ -209,7 +210,7 @@ function ProntuarioPaciente() {
     const carregarDados = async () => {
       const token = localStorage.getItem("token");
       try {
-        const resPaciente = await fetch(`http://localhost:3001/pacientes/${id}`, {
+        const resPaciente = await fetch(`${API_URL}/pacientes/${id}`, {
           headers: { Authorization: token },
         });
         if (!resPaciente.ok) throw new Error("Paciente não encontrado");
@@ -445,7 +446,7 @@ function ProntuarioPaciente() {
             <InfoCard title="Endereço" icon={Icons.mapPin} items={dadosEndereco} />
             <InfoCard title="Responsável" icon={Icons.users} items={dadosResponsavel} />
 
-            {/* Observaç��es */}
+            {/* Observações */}
             <div style={s.card}>
               <div style={s.cardHeader}>
                 <div style={s.cardTitleRow}>
@@ -720,7 +721,7 @@ const s = {
   },
   obsEmpty: { color: "#c1c9d4", fontStyle: "italic" },
 
-  /* ── Odontograma Card ────────────────────────��─────── */
+  /* ── Odontograma Card ─────────────────────────────── */
   odontogramaCard: {
     background: "#fff",
     borderRadius: "16px",
