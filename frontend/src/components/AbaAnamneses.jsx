@@ -1,3 +1,4 @@
+import API_URL from "../api";
 import { useEffect, useState } from "react";
 
 /* ═══════════════════════════════════════════════════════════
@@ -253,7 +254,7 @@ function AbaAnamneses({ pacienteId }) {
       const body = { ...formData, paciente_id: Number(pacienteId) };
 
       const r = await fetch(
-        ed ? `http://localhost:3001/anamneses/${editando.id}` : "http://localhost:3001/anamneses",
+        ed ? `${API_URL}/anamneses/${editando.id}` : `${API_URL}/anamneses`,
         {
           method: ed ? "PUT" : "POST",
           headers: { "Content-Type": "application/json", Authorization: tk || "" },
@@ -276,7 +277,7 @@ function AbaAnamneses({ pacienteId }) {
     try {
       setExcluindo(true);
       const tk = localStorage.getItem("token");
-      const r = await fetch(`http://localhost:3001/anamneses/${confirmarExclusao.id}`, {
+      const r = await fetch(`${API_URL}/anamneses/${confirmarExclusao.id}`, {
         method: "DELETE",
         headers: { Authorization: tk || "" },
       });
