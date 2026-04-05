@@ -20,8 +20,10 @@ const loginLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req) => {
-    return req.ip + ":" + (req.body.email || "").toLowerCase().trim();
+    const ip = req.ip || req.socket.remoteAddress || "unknown";
+    return ip + ":" + (req.body.email || "").toLowerCase().trim();
   },
+  validate: { ip: false },
 });
 
 /* ── Registro: máximo 3 contas por IP a cada hora ───────── */
