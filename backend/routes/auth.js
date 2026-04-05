@@ -23,7 +23,7 @@ const loginLimiter = rateLimit({
     const ip = req.ip || req.socket.remoteAddress || "unknown";
     return ip + ":" + (req.body.email || "").toLowerCase().trim();
   },
-  validate: { ip: false },
+  validate: { ip: false, trustProxy: false },
 });
 
 /* ── Registro: máximo 3 contas por IP a cada hora ───────── */
@@ -33,6 +33,7 @@ const registerLimiter = rateLimit({
   message: { erro: "Muitas contas criadas. Tente novamente em 1 hora." },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { ip: false, trustProxy: false },
 });
 
 /* ── Geral (me, perfil, senha): 30 req por minuto ───────── */
@@ -42,6 +43,7 @@ const authGeneralLimiter = rateLimit({
   message: { erro: "Muitas requisições. Aguarde um momento." },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { ip: false, trustProxy: false },
 });
 
 /* ── Cadastro ─────────────────────────────────── */
@@ -49,7 +51,6 @@ router.post("/register", registerLimiter, async (req, res) => {
   try {
     const { nome, email, senha } = req.body;
 
-    // Validações
     if (!email || !senha) {
       return res.status(400).json({ erro: "E-mail e senha são obrigatórios." });
     }
@@ -58,7 +59,6 @@ router.post("/register", registerLimiter, async (req, res) => {
       return res.status(400).json({ erro: "A senha deve ter no mínimo 6 caracteres." });
     }
 
-    // Verificar se o e-mail já existe
     db.get("SELECT id FROM usuarios WHERE email = ?", [email.toLowerCase().trim()], async (err, existing) => {
       if (err) {
         return res.status(500).json({ erro: "Erro interno ao verificar e-mail." });
@@ -68,7 +68,6 @@ router.post("/register", registerLimiter, async (req, res) => {
         return res.status(409).json({ erro: "Este e-mail já está cadastrado." });
       }
 
-      // Criar hash da senha
       const hash = await bcrypt.hash(senha, 10);
 
       db.run(
