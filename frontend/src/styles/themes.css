@@ -94,21 +94,25 @@
 }
 
 /* ═══════════════════════════════════════════════════════════
-   DARK MODE — OVERRIDE NUCLEAR
+   DARK MODE — NUCLEAR OVERRIDE
    ═══════════════════════════════════════════════════════════ */
 
-/* ── 1. TODAS AS BORDAS ──────────────────────────────── */
+/* ── 1. BORDAS — todos os elementos ──────────────────── */
 [data-theme="dark"] div,
 [data-theme="dark"] section,
 [data-theme="dark"] main,
 [data-theme="dark"] li,
 [data-theme="dark"] ul,
 [data-theme="dark"] form,
-[data-theme="dark"] fieldset {
+[data-theme="dark"] fieldset,
+[data-theme="dark"] table,
+[data-theme="dark"] th,
+[data-theme="dark"] td,
+[data-theme="dark"] tr {
   border-color: var(--border-primary) !important;
 }
 
-/* ── 2. TODOS OS TEXTOS ──────────────────────────────── */
+/* ── 2. TEXTOS ───────────────────────────────────────── */
 [data-theme="dark"] h1,
 [data-theme="dark"] h2,
 [data-theme="dark"] h3,
@@ -126,11 +130,12 @@
   color: var(--text-secondary) !important;
 }
 
-/* ── 3. INPUTS GLOBAIS ───────────────────────────────── */
+/* ── 3. INPUTS ───────────────────────────────────────── */
 [data-theme="dark"] input,
 [data-theme="dark"] select,
 [data-theme="dark"] textarea {
   background: var(--bg-input) !important;
+  background-color: var(--bg-input) !important;
   color: var(--text-primary) !important;
   border-color: var(--border-input) !important;
   color-scheme: dark !important;
@@ -142,50 +147,74 @@
 [data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator {
   filter: invert(1) !important;
 }
+[data-theme="dark"] option {
+  background: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+}
 
-/* ── 4. FIELDSET / LEGEND ────────────────────────────── */
+/* ── 4. FIELDSET ─────────────────────────────────────── */
 [data-theme="dark"] fieldset {
   background: var(--bg-card) !important;
 }
 
-/* ── 5. TODOS OS BOTÕES ──────────────────────────────── */
-/* Reset: todos os botões ficam escuros */
+/* ── 5. BOTÕES — reset global ────────────────────────── */
 [data-theme="dark"] button {
   border-color: var(--border-input) !important;
 }
 
-/* Botões com fundo branco → card escuro */
+/* Botão fundo branco (#fff, #ffffff, white, rgb(255...)) */
 [data-theme="dark"] button[style*="background: #fff"],
 [data-theme="dark"] button[style*="background: rgb(255"],
 [data-theme="dark"] button[style*="background: white"],
-[data-theme="dark"] button[style*="background: #fafbfc"],
-[data-theme="dark"] button[style*="background: rgb(250, 251"],
-[data-theme="dark"] button[style*="background: #f8fafc"],
-[data-theme="dark"] button[style*="background: rgb(248, 250"] {
+[data-theme="dark"] button[style*="background-color: #fff"],
+[data-theme="dark"] button[style*="background-color: rgb(255"],
+[data-theme="dark"] button[style*="background-color: white"] {
   background: var(--bg-card) !important;
+  background-color: var(--bg-card) !important;
   color: var(--text-secondary) !important;
   border-color: var(--border-input) !important;
 }
 
-/* Botões primários (azul) — preservar */
+/* Botão fundo claro (#fafbfc, #f8fafc, #fafcff) */
+[data-theme="dark"] button[style*="background: #fafbfc"],
+[data-theme="dark"] button[style*="background: rgb(250, 251"],
+[data-theme="dark"] button[style*="background: #f8fafc"],
+[data-theme="dark"] button[style*="background: rgb(248, 250"],
+[data-theme="dark"] button[style*="background: #fafcff"] {
+  background: var(--bg-badge) !important;
+  color: var(--text-secondary) !important;
+  border-color: var(--border-primary) !important;
+}
+
+/* Botão cinza claro (#e2e8f0) — Cancelar no CadastroPaciente */
+[data-theme="dark"] button[style*="background-color: #e2e8f0"],
+[data-theme="dark"] button[style*="background-color: rgb(226, 232, 240)"],
+[data-theme="dark"] button[style*="background: #e2e8f0"] {
+  background: var(--bg-badge) !important;
+  background-color: var(--bg-badge) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-input) !important;
+}
+
+/* Botão primário (azul) */
 [data-theme="dark"] button[style*="background: #2563eb"],
 [data-theme="dark"] button[style*="background: rgb(37, 99, 235)"],
 [data-theme="dark"] button[style*="background: #3b82f6"],
-[data-theme="dark"] button[style*="background: rgb(59, 130, 246)"] {
+[data-theme="dark"] button[style*="background: rgb(59, 130, 246)"],
+[data-theme="dark"] button[style*="background: linear-gradient(135deg, #2563eb"],
+[data-theme="dark"] button[style*="background: linear-gradient(135deg, rgb(37"] {
   color: #ffffff !important;
-  background: var(--accent) !important;
   border-color: var(--accent) !important;
 }
 
-/* Botão danger — preservar */
+/* Botão danger */
 [data-theme="dark"] button[style*="background: #ef4444"],
-[data-theme="dark"] button[style*="background: rgb(239, 68, 68)"] {
+[data-theme="dark"] button[style*="background: rgb(239, 68, 68)"],
+[data-theme="dark"] button[style*="background-color: #fee2e2"] {
   color: #ffffff !important;
-  background: #ef4444 !important;
-  border-color: #ef4444 !important;
 }
 
-/* Botão accent light (Hoje, Novo paciente link) */
+/* Botão accent light (Hoje) */
 [data-theme="dark"] button[style*="background: #eff6ff"],
 [data-theme="dark"] button[style*="background: rgb(239, 246, 255)"] {
   background: var(--accent-bg) !important;
@@ -193,18 +222,12 @@
   color: var(--accent) !important;
 }
 
-/* Botão fechar (X) nos modais */
-[data-theme="dark"] button[style*="background: #fafbfc"][style*="border-radius: 8px"],
-[data-theme="dark"] button[style*="background: rgb(250, 251, 252)"] {
-  background: var(--bg-badge) !important;
-  border-color: var(--border-primary) !important;
-  color: var(--text-muted) !important;
-}
-
-/* Botão "transparent" (ações, nome paciente, etc) */
+/* Botão transparent */
 [data-theme="dark"] button[style*="background: transparent"],
-[data-theme="dark"] button[style*="background: none"] {
+[data-theme="dark"] button[style*="background: none"],
+[data-theme="dark"] button[style*="background-color: transparent"] {
   background: transparent !important;
+  background-color: transparent !important;
   border-color: transparent !important;
   color: var(--text-primary) !important;
 }
@@ -228,18 +251,16 @@
 [data-theme="dark"] span[style*="color: #d1d5db"] {
   color: var(--text-muted) !important;
 }
-/* Valores grandes */
 [data-theme="dark"] span[style*="font-size: 28px"],
 [data-theme="dark"] span[style*="font-size: 24px"],
 [data-theme="dark"] span[style*="font-size: 18px"][style*="font-weight: 700"] {
   color: var(--text-primary) !important;
 }
-/* Labels uppercase */
 [data-theme="dark"] span[style*="text-transform: uppercase"] {
   color: var(--text-muted) !important;
 }
 
-/* ── 7. DIVS — cores de texto inline ─────────────────── */
+/* ── 7. DIVS — cores de texto ────────────────────────── */
 [data-theme="dark"] div[style*="color: #0f172a"],
 [data-theme="dark"] div[style*="color: rgb(15, 23, 42)"] {
   color: var(--text-primary) !important;
@@ -261,12 +282,21 @@
   color: inherit !important;
 }
 
-/* ── 9. BACKGROUNDS BRANCOS → ESCURO ─────────────────── */
+/* ── 9. BACKGROUNDS #fff → CARD ──────────────────────── */
 [data-theme="dark"] div[style*="background: #fff"],
 [data-theme="dark"] div[style*="background: rgb(255, 255, 255)"],
 [data-theme="dark"] div[style*="background: white"],
-[data-theme="dark"] div[style*="background:#fff"] {
+[data-theme="dark"] div[style*="background:#fff"],
+[data-theme="dark"] div[style*="background-color: #fff"],
+[data-theme="dark"] div[style*="background-color: rgb(255"],
+[data-theme="dark"] div[style*="background-color: white"],
+[data-theme="dark"] div[style*="background-color: #ffffff"],
+[data-theme="dark"] form[style*="background-color: #ffffff"],
+[data-theme="dark"] form[style*="background-color: #fff"],
+[data-theme="dark"] form[style*="background-color: rgb(255"],
+[data-theme="dark"] form[style*="background-color: white"] {
   background: var(--bg-card) !important;
+  background-color: var(--bg-card) !important;
 }
 
 /* ── 10. BACKGROUNDS CLAROS → TABLE HEADER ───────────── */
@@ -277,8 +307,14 @@
 [data-theme="dark"] div[style*="background: #f0f4fa"],
 [data-theme="dark"] div[style*="background: #f1f5f9"],
 [data-theme="dark"] div[style*="background: rgb(241, 245, 249)"],
-[data-theme="dark"] div[style*="background: #fafcff"] {
-  background: var(--bg-table-header) !important;
+[data-theme="dark"] div[style*="background: #fafcff"],
+[data-theme="dark"] div[style*="background: rgb(250, 252, 255)"],
+[data-theme="dark"] div[style*="background-color: #f8fafc"],
+[data-theme="dark"] div[style*="background-color: rgb(248, 250, 252)"],
+[data-theme="dark"] div[style*="background-color: #fafbfc"],
+[data-theme="dark"] div[style*="background-color: #fafcff"] {
+  background: var(--bg-card) !important;
+  background-color: var(--bg-card) !important;
 }
 
 /* ── 11. BADGES / PILLS ──────────────────────────────── */
@@ -309,18 +345,46 @@
 [data-theme="dark"] span[style*="background: #fefce8"] {
   background: var(--warning-bg) !important;
 }
+[data-theme="dark"] div[style*="background: #fee2e2"],
+[data-theme="dark"] span[style*="background-color: #fee2e2"],
+[data-theme="dark"] button[style*="background-color: #fee2e2"] {
+  background: var(--danger-bg) !important;
+  background-color: var(--danger-bg) !important;
+}
 
 /* ── 12. STAT BAR track ──────────────────────────────── */
 [data-theme="dark"] div[style*="height: 4px"][style*="border-radius: 999px"] {
   background: var(--bg-badge) !important;
 }
 
-/* ── 13. MODAIS ──────────────────────────────────────── */
-[data-theme="dark"] div[style*="position: fixed"][style*="inset: 0"] {
+/* ── 13. MODAIS overlay ──────────────────────────────── */
+[data-theme="dark"] div[style*="position: fixed"][style*="inset: 0"],
+[data-theme="dark"] div[style*="position: fixed"][style*="background-color: rgba(15"] {
   background: var(--bg-overlay) !important;
+  background-color: var(--bg-overlay) !important;
 }
 
-/* ── 14. AGENDA — células ────────────────────────────── */
+/* Modal box (CadastroPaciente e outros) */
+[data-theme="dark"] div[style*="max-width: 420px"][style*="background-color: #fff"],
+[data-theme="dark"] div[style*="max-width: 520px"][style*="background: #fff"],
+[data-theme="dark"] div[style*="max-width: 480px"][style*="background: #fff"],
+[data-theme="dark"] div[style*="max-width: 600px"][style*="background: #fff"] {
+  background: var(--bg-card) !important;
+  background-color: var(--bg-card) !important;
+}
+
+/* ── 14. AGENDA — dia atual (cabeçalho branco) ───────── */
+[data-theme="dark"] div[style*="grid-template-columns: 68px"] > div {
+  background: var(--bg-card) !important;
+}
+
+/* Dia atual — tom azul sutil */
+[data-theme="dark"] div[style*="grid-template-columns: 68px"] > div[style*="fafcff"],
+[data-theme="dark"] div[style*="grid-template-columns: 68px"] > div[style*="250, 252, 255"] {
+  background: rgba(59, 130, 246, 0.1) !important;
+}
+
+/* Células do calendário */
 [data-theme="dark"] div[style*="min-height: 68px"][style*="cursor: pointer"] {
   background: var(--bg-card) !important;
 }
@@ -328,18 +392,13 @@
   background: var(--bg-card-hover) !important;
 }
 
-/* Slot vazio dashed */
+/* Slot dashed */
 [data-theme="dark"] div[style*="border: 1px dashed"] {
   border-color: var(--border-primary) !important;
 }
 
-/* Slot blocked inner */
-[data-theme="dark"] div[style*="min-height: 58px"][style*="opacity: 0.4"] {
-  background: var(--bg-card-hover) !important;
-}
-
-/* ── 15. AGENDA — nav buttons (< >) ────────────��─────── */
-[data-theme="dark"] button[style*="width: 36px"][style*="height: 36px"][style*="border-radius: 8px"] {
+/* ── 15. AGENDA — nav buttons ────────────────────────── */
+[data-theme="dark"] button[style*="width: 36px"][style*="height: 36px"] {
   background: var(--bg-card) !important;
   border-color: var(--border-input) !important;
   color: var(--text-secondary) !important;
@@ -361,18 +420,16 @@
   border-bottom-color: var(--border-primary) !important;
   color: var(--text-primary) !important;
 }
-/* Option active */
 [data-theme="dark"] button[style*="background: #eff6ff"][style*="color: #2563eb"] {
   background: var(--accent-bg) !important;
   color: var(--accent) !important;
 }
-/* Option disabled */
 [data-theme="dark"] button[style*="color: #d1d5db"][style*="cursor: not-allowed"] {
   background: var(--bg-card-hover) !important;
   color: var(--text-muted) !important;
 }
 
-/* ── 18. FINANCEIRO TABS ─────────────────────────────── */
+/* ── 18. FINANCEIRO — tabs ───────────────────────────── */
 [data-theme="dark"] button[style*="border-bottom: 2px solid transparent"] {
   color: var(--text-muted) !important;
 }
@@ -381,18 +438,23 @@
   color: var(--accent) !important;
 }
 
-/* ── 19. SEARCH WRAP com borda ───────────────────────── */
+/* Tab hover/ativa com background fafbfc */
+[data-theme="dark"] button[style*="background: rgba(37, 99, 235"] {
+  background: var(--accent-bg) !important;
+}
+
+/* ── 19. SEARCH WRAP ─────────────────────────────────── */
 [data-theme="dark"] div[style*="border: 1px solid"][style*="border-radius: 10px"][style*="padding: 0"] {
   background: var(--bg-input) !important;
   border-color: var(--border-input) !important;
 }
 
-/* ── 20. TABLE ROWS hover ────────────────────────────── */
+/* ── 20. TABLE ROWS ──────────────────────────────────── */
 [data-theme="dark"] li:hover {
   background: var(--bg-card-hover) !important;
 }
 
-/* ── 21. ACTION BUTTONS (ícones) ─────────────────────── */
+/* ── 21. ÍCONES de ação ──────────────────────────────── */
 [data-theme="dark"] a[style*="color: #64748b"],
 [data-theme="dark"] button[style*="color: #64748b"] {
   color: var(--text-muted) !important;
@@ -431,22 +493,119 @@
 [data-theme="dark"] button[style*="background: #2563eb"]:hover,
 [data-theme="dark"] button[style*="background: rgb(37, 99, 235)"]:hover {
   filter: brightness(1.15);
-  /* ── 26. AGENDA — cabeçalho do dia atual (DOM/05) ────── */
-[data-theme="dark"] div[style*="background: #fafcff"],
-[data-theme="dark"] div[style*="background: rgb(250, 252, 255)"] {
-  background: rgba(59, 130, 246, 0.08) !important;
 }
 
-/* Coluna inteira do dia de hoje */
-[data-theme="dark"] div[style*="background: #fafcff"][style*="min-height"] {
-  background: rgba(59, 130, 246, 0.04) !important;
+/* ── 26. CADASTRO PACIENTE ───────────────────────────── */
+/* Card form principal (backgroundColor: "#ffffff") */
+[data-theme="dark"] form[style*="background-color"] {
+  background-color: var(--bg-card) !important;
+  border-color: var(--border-primary) !important;
 }
-/* Nuclear — qualquer div dentro do calendar head */
-[data-theme="dark"] div[style*="grid-template-columns: 68px"] > div {
+
+/* Section title color */
+[data-theme="dark"] h2[style*="color: #0f172a"] {
+  color: var(--text-primary) !important;
+}
+
+/* Input com backgroundColor: "#f8fafc" */
+[data-theme="dark"] input[style*="background-color: #f8fafc"],
+[data-theme="dark"] input[style*="background-color: rgb(248"],
+[data-theme="dark"] textarea[style*="background-color: #f8fafc"],
+[data-theme="dark"] textarea[style*="background-color: rgb(248"],
+[data-theme="dark"] select[style*="background-color: #f8fafc"] {
+  background-color: var(--bg-input) !important;
+}
+
+/* Botão Cancelar (backgroundColor: "#e2e8f0") */
+[data-theme="dark"] button[style*="background-color: #e2e8f0"] {
+  background-color: var(--bg-badge) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Modal box (backgroundColor: "#fff") */
+[data-theme="dark"] div[style*="background-color: #fff"],
+[data-theme="dark"] div[style*="background-color: rgb(255"],
+[data-theme="dark"] div[style*="background-color: white"],
+[data-theme="dark"] div[style*="background-color: #ffffff"] {
+  background-color: var(--bg-card) !important;
+}
+
+/* ── 27. CONFIGURAÇÕES ───────────────────────────────── */
+/* Input/Select com backgroundColor: "#fff" */
+[data-theme="dark"] input[style*="background-color: #fff"],
+[data-theme="dark"] input[style*="background-color: rgb(255"],
+[data-theme="dark"] select[style*="background-color: #fff"],
+[data-theme="dark"] select[style*="background-color: rgb(255"],
+[data-theme="dark"] textarea[style*="background-color: #fff"],
+[data-theme="dark"] textarea[style*="background-color: rgb(255"] {
+  background-color: var(--bg-input) !important;
+}
+
+/* Info grid (background: "#fafbfc") */
+[data-theme="dark"] div[style*="background: #f1f5f9"] {
+  background: var(--bg-badge) !important;
+}
+
+/* ── 28. TABELA RBAC ─────────────────────────────────── */
+[data-theme="dark"] table {
   background: var(--bg-card) !important;
 }
-[data-theme="dark"] div[style*="grid-template-columns: 68px"] > div[style*="fafcff"],
-[data-theme="dark"] div[style*="grid-template-columns: 68px"] > div[style*="252, 255"] {
-  background: rgba(59, 130, 246, 0.1) !important;
+[data-theme="dark"] th {
+  background: var(--bg-table-header) !important;
+  color: var(--text-muted) !important;
 }
+[data-theme="dark"] td {
+  background: var(--bg-card) !important;
+  color: var(--text-secondary) !important;
+}
+[data-theme="dark"] tr:hover td {
+  background: var(--bg-card-hover) !important;
+}
+
+/* Role select buttons */
+[data-theme="dark"] button[style*="background: #fff"][style*="border-color"] {
+  background: var(--bg-card) !important;
+}
+
+/* ── 29. CONSULTAS ───────────────────────────────────── */
+/* secondaryButton com background: "#fff" */
+[data-theme="dark"] button[style*="background: #fff"][style*="border: 1px solid #cbd5e1"] {
+  background: var(--bg-card) !important;
+  border-color: var(--border-input) !important;
+  color: var(--text-primary) !important;
+}
+
+/* listItem active */
+[data-theme="dark"] div[style*="background-color: #eff6ff"] {
+  background-color: var(--accent-bg) !important;
+  border-color: var(--accent-border) !important;
+}
+
+/* ── 30. DASHBOARD — cards com border-left ───────────── */
+[data-theme="dark"] div[style*="border-left: 4px solid"] {
+  background: var(--bg-card) !important;
+}
+
+/* ── 31. ALERTAS ─────────────────────────────────────── */
+[data-theme="dark"] div[style*="background: #fef2f2"][style*="border: 1px solid #fecaca"] {
+  background: var(--danger-bg) !important;
+  border-color: var(--danger-border) !important;
+}
+[data-theme="dark"] div[style*="background: #f0fdf4"][style*="border: 1px solid #dcfce7"] {
+  background: var(--success-bg) !important;
+  border-color: var(--success-border) !important;
+}
+
+/* ── 32. FINANCEIRO — border #eef2f7 ────────────────── */
+[data-theme="dark"] div[style*="border: 1px solid #eef2f7"],
+[data-theme="dark"] form[style*="border: 1px solid #eef2f7"] {
+  border-color: var(--border-primary) !important;
+}
+
+/* ── 33. PRONTUÁRIO ──────────────────────────────────── */
+[data-theme="dark"] div[style*="border: 1px solid #dbe3ee"],
+[data-theme="dark"] form[style*="border: 1px solid #dbe3ee"],
+[data-theme="dark"] input[style*="border: 1px solid #dbe3ee"],
+[data-theme="dark"] textarea[style*="border: 1px solid #dbe3ee"] {
+  border-color: var(--border-input) !important;
 }
