@@ -10,6 +10,50 @@ import Configuracoes from "./pages/Configuracoes";
 import Financeiro from "./pages/Financeiro";
 
 /* ═══════════════════════════════════════════════════════════
+   HELPER: Validar token JWT sem dependência externa
+   Decodifica o payload base64 e checa o campo "exp"
+   ═══════════════════════════════════════════════════════════ */
+function isTokenValid(token) {
+  if (!token) return false;
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return false;
+    const payload = JSON.parse(atob(parts[1]));
+    if (!payload.exp) return false;
+    // exp é em segundos, Date.now() em milissegundos
+    return payload.exp * 1000 > Date.now();
+  } catch {
+    return false;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   HELPER: Limpar sessão expirada e redirecionar
+   ═════════════════════════════════════════════���═════════════ */
+function clearSession() {
+  localStorage.removeItem("token");
+  localStorage.removeItem("usuario");
+}
+
+/* ═══════════════════════════════════════════════════════════
+   INTERCEPTOR: Escuta respostas 401 de qualquer fetch
+   Se o backend rejeitar o token, faz logout automático
+   ═══════════════════════════════════════════════════════════ */
+const originalFetch = window.fetch;
+window.fetch = async (...args) => {
+  const response = await originalFetch(...args);
+  if (response.status === 401) {
+    const token = localStorage.getItem("token");
+    // Só faz logout se havia um token (evita loop na tela de login)
+    if (token) {
+      clearSession();
+      window.location.href = "/";
+    }
+  }
+  return response;
+};
+
+/* ═══════════════════════════════════════════════════════════
    NAV CONFIG
    ═══════════════════════════════════════════════════════════ */
 const NAV_ITEMS = [
@@ -122,8 +166,7 @@ function AvatarDropdown() {
   }, []);
 
   const fazerLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("usuario");
+    clearSession();
     window.location.href = "/";
   };
 
@@ -298,10 +341,16 @@ function Layout() {
    ═══════════════════════════════════════════════════════════ */
 function App() {
   const token = localStorage.getItem("token");
+  const autenticado = isTokenValid(token);
+
+  // Se tinha token mas expirou, limpa os dados
+  if (token && !autenticado) {
+    clearSession();
+  }
 
   return (
     <BrowserRouter>
-      {!token ? (
+      {!autenticado ? (
         <Routes>
           <Route path="*" element={<Login />} />
         </Routes>
