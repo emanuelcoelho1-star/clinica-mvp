@@ -182,7 +182,7 @@ function AbaAnamneses({ pacienteId }) {
       setCarregando(true);
       setErro("");
       const tk = localStorage.getItem("token");
-      const r = await fetch(`http://localhost:3001/anamneses/paciente/${pacienteId}`, {
+      const r = await fetch(`${API_URL}/anamneses/paciente/${pacienteId}`, {
         headers: { Authorization: tk || "" },
       });
       if (!r.ok) throw new Error();

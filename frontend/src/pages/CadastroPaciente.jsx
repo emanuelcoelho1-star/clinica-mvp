@@ -41,7 +41,7 @@ function CadastroPaciente() {
 
     const token = localStorage.getItem("token");
 
-    fetch("http://localhost:3001/pacientes", {
+    fetch(`${API_URL}/pacientes`, {
       headers: {
         Authorization: token,
       },
