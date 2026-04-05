@@ -1,8 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../database");
+const auth = require("../middleware/auth");
 
-router.get("/", (req, res) => {
+router.get("/", auth, (req, res) => {
   const sql = `
     SELECT consultas.*, pacientes.nome AS paciente_nome
     FROM consultas
@@ -19,7 +20,7 @@ router.get("/", (req, res) => {
   });
 });
 
-router.post("/", (req, res) => {
+router.post("/", auth, (req, res) => {
   const { paciente_id, data, horario, procedimento, status } = req.body;
 
   if (!paciente_id || !data || !horario) {
@@ -49,7 +50,7 @@ router.post("/", (req, res) => {
   );
 });
 
-router.put("/:id", (req, res) => {
+router.put("/:id", auth, (req, res) => {
   const { id } = req.params;
   const { paciente_id, data, horario, procedimento, status } = req.body;
 
@@ -82,7 +83,7 @@ router.put("/:id", (req, res) => {
   );
 });
 
-router.delete("/:id", (req, res) => {
+router.delete("/:id", auth, (req, res) => {
   const { id } = req.params;
 
   db.run("DELETE FROM consultas WHERE id = ?", [id], function (err) {

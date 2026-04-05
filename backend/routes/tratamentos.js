@@ -1,9 +1,10 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../database");
+const auth = require("../middleware/auth");
 
 /* ── Listar todos os tratamentos ─────────────── */
-router.get("/", (req, res) => {
+router.get("/", auth, (req, res) => {
   const sql = `
     SELECT tratamentos.*, pacientes.nome AS paciente_nome
     FROM tratamentos
@@ -17,7 +18,7 @@ router.get("/", (req, res) => {
 });
 
 /* ── Listar tratamentos de um paciente ────────── */
-router.get("/paciente/:pacienteId", (req, res) => {
+router.get("/paciente/:pacienteId", auth, (req, res) => {
   const { pacienteId } = req.params;
   db.all(
     "SELECT * FROM tratamentos WHERE paciente_id = ? ORDER BY data_inicio DESC, id DESC",
@@ -30,7 +31,7 @@ router.get("/paciente/:pacienteId", (req, res) => {
 });
 
 /* ── Buscar tratamento por ID ─────────────────── */
-router.get("/:id", (req, res) => {
+router.get("/:id", auth, (req, res) => {
   const { id } = req.params;
   db.get("SELECT * FROM tratamentos WHERE id = ?", [id], (err, row) => {
     if (err) return res.status(500).json({ error: "Erro ao buscar tratamento." });
@@ -40,7 +41,7 @@ router.get("/:id", (req, res) => {
 });
 
 /* ── Criar tratamento ─────────────────────────── */
-router.post("/", (req, res) => {
+router.post("/", auth, (req, res) => {
   const {
     paciente_id, data_inicio, data_fim, procedimento,
     dente, status, valor, profissional, descricao, observacoes
@@ -74,7 +75,7 @@ router.post("/", (req, res) => {
 });
 
 /* ── Atualizar tratamento ─────────────────────── */
-router.put("/:id", (req, res) => {
+router.put("/:id", auth, (req, res) => {
   const { id } = req.params;
   const {
     paciente_id, data_inicio, data_fim, procedimento,
@@ -112,7 +113,7 @@ router.put("/:id", (req, res) => {
 });
 
 /* ── Excluir tratamento ───────────────────────── */
-router.delete("/:id", (req, res) => {
+router.delete("/:id", auth, (req, res) => {
   const { id } = req.params;
   db.run("DELETE FROM tratamentos WHERE id = ?", [id], function (err) {
     if (err) return res.status(500).json({ error: "Erro ao excluir tratamento." });

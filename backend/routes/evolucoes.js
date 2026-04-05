@@ -1,9 +1,10 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../database");
+const auth = require("../middleware/auth");
 
 /* ── Listar evoluções de um paciente ─────────── */
-router.get("/paciente/:pacienteId", (req, res) => {
+router.get("/paciente/:pacienteId", auth, (req, res) => {
   const { pacienteId } = req.params;
   db.all(
     "SELECT * FROM evolucoes WHERE paciente_id = ? ORDER BY data DESC, id DESC",
@@ -16,7 +17,7 @@ router.get("/paciente/:pacienteId", (req, res) => {
 });
 
 /* ── Buscar evolução por ID ──────────────────── */
-router.get("/:id", (req, res) => {
+router.get("/:id", auth, (req, res) => {
   const { id } = req.params;
   db.get("SELECT * FROM evolucoes WHERE id = ?", [id], (err, row) => {
     if (err) return res.status(500).json({ error: "Erro ao buscar evolução." });
@@ -26,7 +27,7 @@ router.get("/:id", (req, res) => {
 });
 
 /* ── Criar evolução ──────────────────────────── */
-router.post("/", (req, res) => {
+router.post("/", auth, (req, res) => {
   const { paciente_id, data, procedimento, dente, descricao, observacoes, profissional } = req.body;
   if (!paciente_id || !data) {
     return res.status(400).json({ error: "paciente_id e data são obrigatórios." });
@@ -43,7 +44,7 @@ router.post("/", (req, res) => {
 });
 
 /* ── Atualizar evolução ──────────────────────── */
-router.put("/:id", (req, res) => {
+router.put("/:id", auth, (req, res) => {
   const { id } = req.params;
   const { data, procedimento, dente, descricao, observacoes, profissional } = req.body;
   if (!data) {
@@ -61,7 +62,7 @@ router.put("/:id", (req, res) => {
 });
 
 /* ── Excluir evolução ────────────────────────── */
-router.delete("/:id", (req, res) => {
+router.delete("/:id", auth, (req, res) => {
   const { id } = req.params;
   db.run("DELETE FROM evolucoes WHERE id = ?", [id], function (err) {
     if (err) return res.status(500).json({ error: "Erro ao excluir evolução." });
