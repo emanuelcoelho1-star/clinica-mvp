@@ -191,8 +191,117 @@ function Pacientes() {
   /* ── Render ─────────────────────────────────────────────── */
   return (
     <div style={s.page}>
+      {/* ── Responsive CSS ─────────────────────────────── */}
+      <style>{`
+        @keyframes pulse-dot {
+          0%, 80%, 100% { transform: scale(0); opacity: 0.5; }
+          40% { transform: scale(1); opacity: 1; }
+        }
+
+        /* ── Mobile: até 768px ──────────────────────── */
+        @media (max-width: 768px) {
+          .pac-header {
+            flex-direction: column !important;
+            align-items: stretch !important;
+          }
+          .pac-header-btn {
+            align-self: stretch !important;
+            justify-content: center !important;
+          }
+          .pac-stats-row {
+            grid-template-columns: 1fr !important;
+          }
+          .pac-search-bar {
+            flex-direction: column !important;
+          }
+          .pac-search-bar > * {
+            width: 100% !important;
+          }
+          .pac-search-bar button {
+            justify-content: center !important;
+          }
+
+          /* Esconder cabeçalho tabela em mobile */
+          .pac-table-header {
+            display: none !important;
+          }
+
+          /* Card layout para cada paciente */
+          .pac-row {
+            flex-wrap: wrap !important;
+            padding: 16px !important;
+            gap: 10px !important;
+            border-bottom: 1px solid #f1f5f9 !important;
+          }
+
+          /* Avatar + Nome ocupa linha inteira */
+          .pac-cell-name {
+            flex: 1 1 100% !important;
+            min-width: 0 !important;
+          }
+
+          /* CPF, Telefone, Email empilham em coluna */
+          .pac-cell-cpf,
+          .pac-cell-tel,
+          .pac-cell-email {
+            width: auto !important;
+            flex: 1 1 auto !important;
+            min-width: 0 !important;
+          }
+          .pac-cell-cpf::before {
+            content: "CPF: ";
+            font-weight: 600;
+            color: #94a3b8;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-right: 4px;
+          }
+          .pac-cell-tel::before {
+            content: "Tel: ";
+            font-weight: 600;
+            color: #94a3b8;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-right: 4px;
+          }
+          .pac-cell-email::before {
+            content: "E-mail: ";
+            font-weight: 600;
+            color: #94a3b8;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-right: 4px;
+          }
+
+          /* Ações sempre visíveis em mobile */
+          .pac-cell-actions {
+            width: auto !important;
+            flex: 1 1 100% !important;
+            justify-content: flex-start !important;
+            opacity: 1 !important;
+            padding-top: 4px;
+            border-top: 1px solid #f8fafc;
+          }
+        }
+
+        /* ── Muito pequeno: até 480px ───────────────── */
+        @media (max-width: 480px) {
+          .pac-row {
+            padding: 14px 12px !important;
+          }
+          .pac-cell-cpf,
+          .pac-cell-tel,
+          .pac-cell-email {
+            flex: 1 1 100% !important;
+          }
+        }
+      `}</style>
+
       {/* ── Header ──────────────────────────────────────── */}
-      <div style={s.header}>
+      <div className="pac-header" style={s.header}>
         <div style={s.headerLeft}>
           <div style={s.headerTitleRow}>
             <h1 style={s.headerTitle}>Pacientes</h1>
@@ -203,6 +312,7 @@ function Pacientes() {
           </p>
         </div>
         <button
+          className="pac-header-btn"
           style={s.btnPrimary}
           onClick={() => navigate("/pacientes/novo")}
           onMouseEnter={(e) => {
@@ -220,7 +330,7 @@ function Pacientes() {
       </div>
 
       {/* ── Stats ───────────────────────────────────────── */}
-      <div style={s.statsRow}>
+      <div className="pac-stats-row" style={s.statsRow}>
         {[
           { label: "Total", value: stats.total, accent: "#2563eb", bg: "#eff6ff" },
           { label: "Com telefone", value: stats.comTel, accent: "#16a34a", bg: "#f0fdf4" },
@@ -243,7 +353,7 @@ function Pacientes() {
       </div>
 
       {/* ── Search & Filter Bar ──────────────────────────── */}
-      <div style={s.searchBar}>
+      <div className="pac-search-bar" style={s.searchBar}>
         <div
           style={{
             ...s.searchInputWrap,
@@ -284,7 +394,7 @@ function Pacientes() {
       {/* ── Tabela / Lista ──────────────────────────────── */}
       <div style={s.tableCard}>
         {/* Table header */}
-        <div style={s.tableHeader}>
+        <div className="pac-table-header" style={s.tableHeader}>
           <span style={{ ...s.thCell, flex: 1 }}>Paciente</span>
           <span style={{ ...s.thCell, width: "150px" }}>CPF</span>
           <span style={{ ...s.thCell, width: "140px" }}>Telefone</span>
@@ -322,6 +432,7 @@ function Pacientes() {
               return (
                 <li
                   key={p.id}
+                  className="pac-row"
                   style={{
                     ...s.row,
                     background: isHovered ? "#fafbfd" : "transparent",
@@ -330,7 +441,7 @@ function Pacientes() {
                   onMouseLeave={() => setHoveredId(null)}
                 >
                   {/* Avatar + Nome */}
-                  <div style={{ ...s.rowCell, flex: 1, gap: "14px" }}>
+                  <div className="pac-cell-name" style={{ ...s.rowCell, flex: 1, gap: "14px" }}>
                     <div
                       style={{
                         ...s.avatar,
@@ -357,12 +468,12 @@ function Pacientes() {
                   </div>
 
                   {/* CPF */}
-                  <div style={{ ...s.rowCell, width: "150px" }}>
+                  <div className="pac-cell-cpf" style={{ ...s.rowCell, width: "150px" }}>
                     <span style={s.cellText}>{formatCpf(p.cpf)}</span>
                   </div>
 
                   {/* Telefone */}
-                  <div style={{ ...s.rowCell, width: "140px" }}>
+                  <div className="pac-cell-tel" style={{ ...s.rowCell, width: "140px" }}>
                     {p.telefone ? (
                       <span style={{ ...s.cellText, display: "flex", alignItems: "center", gap: "6px" }}>
                         <span style={{ color: "#94a3b8", display: "flex" }}>{Icons.phone}</span>
@@ -374,7 +485,7 @@ function Pacientes() {
                   </div>
 
                   {/* Email */}
-                  <div style={{ ...s.rowCell, width: "180px" }}>
+                  <div className="pac-cell-email" style={{ ...s.rowCell, width: "180px" }}>
                     {p.email ? (
                       <span style={{ ...s.cellText, display: "flex", alignItems: "center", gap: "6px" }}>
                         <span style={{ color: "#94a3b8", display: "flex" }}>{Icons.mail}</span>
@@ -387,8 +498,9 @@ function Pacientes() {
                     )}
                   </div>
 
-                  {/* Actions — apenas WhatsApp, Editar e Excluir */}
+                  {/* Actions */}
                   <div
+                    className="pac-cell-actions"
                     style={{
                       ...s.rowCell,
                       width: "120px",
@@ -472,14 +584,6 @@ function Pacientes() {
           </div>
         )}
       </div>
-
-      {/* Keyframes para loading */}
-      <style>{`
-        @keyframes pulse-dot {
-          0%, 80%, 100% { transform: scale(0); opacity: 0.5; }
-          40% { transform: scale(1); opacity: 1; }
-        }
-      `}</style>
     </div>
   );
 }
@@ -734,7 +838,7 @@ const s = {
     letterSpacing: "0.06em",
   },
 
-  /* ── Row ──────────────────────────────────────────── */
+  /* ── Row ���─────────────────────────────────────────── */
   list: {
     listStyle: "none",
     padding: 0,

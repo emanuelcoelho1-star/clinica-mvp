@@ -99,7 +99,7 @@ const LogoIcon = (
 
 const SettingsIcon = (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+    <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73v.18a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
     <circle cx="12" cy="12" r="3" />
   </svg>
 );
@@ -128,9 +128,9 @@ const MoonIcon = (
   </svg>
 );
 
-/* ═══════════════════════════════════════════════════════════
+/* ════════════════════════════════════���══════════════════════
    HELPER: pegar iniciais do nome
-   ════════════���══════════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════ */
 function getInitials(nome) {
   if (!nome) return "U";
   const parts = nome.trim().split(" ").filter(Boolean);
@@ -216,7 +216,6 @@ function AvatarDropdown() {
 
           <div style={S.dropdownDivider} />
 
-          {/* ── Toggle de Tema ──────────────────── */}
           <button
             style={{
               ...S.dropdownItem,
@@ -267,7 +266,7 @@ function AvatarDropdown() {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   TOP BAR
+   TOP BAR — COM RESPONSIVIDADE
    ═══════════════════════════════════════════════════════════ */
 function TopBar() {
   const location = useLocation();
@@ -293,16 +292,48 @@ function TopBar() {
 
   return (
     <header style={S.topBar}>
-      <div style={S.topBarInner}>
+      {/* ── CSS responsivo da TopBar ────────────── */}
+      <style>{`
+        @media (max-width: 600px) {
+          .topbar-inner {
+            padding: 0 12px !important;
+          }
+          .topbar-divider {
+            margin: 0 10px !important;
+          }
+          .topbar-brand-name {
+            display: none !important;
+          }
+          .topbar-nav {
+            gap: 0 !important;
+          }
+          .topbar-nav-label {
+            display: none !important;
+          }
+          .topbar-nav-link {
+            padding: 7px 10px !important;
+          }
+        }
+        @media (max-width: 400px) {
+          .topbar-nav-link {
+            padding: 7px 8px !important;
+          }
+          .topbar-divider {
+            margin: 0 6px !important;
+          }
+        }
+      `}</style>
+
+      <div className="topbar-inner" style={S.topBarInner}>
 
         <Link to="/" style={S.brand}>
           <div style={S.brandIcon}>{LogoIcon}</div>
-          <span style={S.brandName}>OdontoPro</span>
+          <span className="topbar-brand-name" style={S.brandName}>OdontoPro</span>
         </Link>
 
-        <div style={S.divider} />
+        <div className="topbar-divider" style={S.divider} />
 
-        <nav style={S.nav}>
+        <nav className="topbar-nav" style={S.nav}>
           {NAV_ITEMS.map((item) => {
             const ativo = isActive(item.path);
             const hovered = hoveredPath === item.path && !ativo;
@@ -310,6 +341,7 @@ function TopBar() {
               <Link
                 key={item.path}
                 to={item.path}
+                className="topbar-nav-link"
                 style={{
                   ...S.navLink,
                   ...(ativo ? S.navLinkActive : {}),
@@ -321,7 +353,7 @@ function TopBar() {
                 <span style={{ ...S.navIcon, color: ativo ? "var(--accent)" : hovered ? "var(--text-secondary)" : "var(--text-muted)" }}>
                   {item.icon}
                 </span>
-                <span>{item.label}</span>
+                <span className="topbar-nav-label">{item.label}</span>
                 {ativo && <span style={S.navIndicator} />}
               </Link>
             );
@@ -336,15 +368,27 @@ function TopBar() {
     </header>
   );
 }
-
 /* ═══════════════════════════════════════════════════════════
    LAYOUT
    ═══════════════════════════════════════════════════════════ */
 function Layout() {
   return (
     <div style={S.app}>
+      {/* ── CSS responsivo do Layout ───────────── */}
+      <style>{`
+        @media (max-width: 768px) {
+          .app-main {
+            padding: 16px 12px !important;
+          }
+        }
+        @media (max-width: 480px) {
+          .app-main {
+            padding: 12px 8px !important;
+          }
+        }
+      `}</style>
       <TopBar />
-      <main style={S.main}>
+      <main className="app-main" style={S.main}>
         <div style={S.contentWrapper}>
           <Routes>
             <Route path="/" element={<Dashboard />} />
@@ -455,6 +499,7 @@ const S = {
     alignItems: "center",
     gap: "2px",
     flex: 1,
+    overflow: "hidden",
   },
   navLink: {
     position: "relative",
@@ -470,6 +515,8 @@ const S = {
     transition: "all 0.15s ease",
     border: "none",
     background: "transparent",
+    whiteSpace: "nowrap",
+    flexShrink: 0,
   },
   navLinkActive: {
     color: "var(--text-primary)",
