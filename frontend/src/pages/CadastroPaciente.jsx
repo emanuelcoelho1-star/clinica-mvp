@@ -1,3 +1,4 @@
+import API_URL from "../api";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -218,8 +219,8 @@ function CadastroPaciente() {
     try {
       const resposta = await fetch(
         id
-          ? `http://localhost:3001/pacientes/${id}`
-          : "http://localhost:3001/pacientes",
+          ? `${API_URL}/pacientes/${id}`
+          : `${API_URL}/pacientes`,
         {
           method: id ? "PUT" : "POST",
           headers: {

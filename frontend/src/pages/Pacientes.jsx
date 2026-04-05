@@ -1,3 +1,4 @@
+import API_URL from "../api";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -114,7 +115,7 @@ function Pacientes() {
   const carregarPacientes = () => {
     const token = localStorage.getItem("token");
     setCarregando(true);
-    fetch("http://localhost:3001/pacientes", {
+    fetch(`${API_URL}/pacientes`, {
       headers: { Authorization: token },
     })
       .then((res) => res.json())
@@ -161,7 +162,7 @@ function Pacientes() {
     if (!confirm("Tem certeza que deseja excluir este paciente?")) return;
     const token = localStorage.getItem("token");
     try {
-      const resposta = await fetch(`http://localhost:3001/pacientes/${id}`, {
+      const resposta = await fetch(`${API_URL}/pacientes/${id}`, {
         method: "DELETE",
         headers: { Authorization: token },
       });
