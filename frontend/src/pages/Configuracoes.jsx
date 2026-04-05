@@ -1,5 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import RbacSubTabs from "./configuracoes/RbacSubTabs";
+import RbacUsuarios from "./configuracoes/RbacUsuarios";
+import RbacRoles from "./configuracoes/RbacRoles";
+import RbacPermissoes from "./configuracoes/RbacPermissoes";
+import { API } from "./configuracoes/rbacHelpers";
 
 /* ── Icons (mesmos SVGs do prontuário) ────────────────────── */
 const Icons = {
@@ -43,9 +48,17 @@ const Icons = {
       <line x1="9" x2="15" y1="9" y2="15" />
     </svg>
   ),
+  usersGroup: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  ),
 };
 
-/* ── Helpers ────────────────────────────────────────���─────── */
+/* ── Helpers ──────────────────────────────────────────────── */
 function getInitials(nome) {
   if (!nome) return "U";
   const parts = nome.trim().split(" ").filter(Boolean);
@@ -53,7 +66,7 @@ function getInitials(nome) {
   return parts[0][0].toUpperCase();
 }
 
-/* ── Componente InfoItem (reutilizável, como no prontuário) ── */
+/* ── Componente InfoItem (reutilizável) ──────────────────── */
 function InfoItem({ label, value, icon }) {
   return (
     <div style={S.infoItem}>
@@ -82,13 +95,21 @@ function Configuracoes() {
   const [abaAtiva, setAbaAtiva] = useState("perfil");
   const [hoveredTab, setHoveredTab] = useState(null);
 
+  /* ── RBAC state ──────────────────────────────── */
+  const [rbacSubTab, setRbacSubTab] = useState("usuarios");
+  const [roles, setRoles] = useState([]);
+  const [permissoes, setPermissoes] = useState([]);
+  const [usuarios, setUsuarios] = useState([]);
+  const [rbacMsg, setRbacMsg] = useState("");
+  const [rbacErro, setRbacErro] = useState("");
+
   const token = localStorage.getItem("token");
 
-  /* ── Carregar dados ─────────────────────────────── */
+  /* ── Carregar dados do usuário ───────────────── */
   useEffect(() => {
     const loadUser = async () => {
       try {
-        const res = await fetch("http://localhost:3001/auth/me", {
+        const res = await fetch(`${API}/auth/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
@@ -103,7 +124,52 @@ function Configuracoes() {
     loadUser();
   }, [token]);
 
-  /* ── Salvar perfil ──────────────────────────────── */
+  /* ── Carregar dados RBAC quando a aba ativar ─── */
+  useEffect(() => {
+    if (abaAtiva === "rbac") {
+      carregarDadosRbac();
+    }
+  }, [abaAtiva]);
+
+  const carregarDadosRbac = async () => {
+    try {
+      const headers = { Authorization: `Bearer ${token}` };
+
+      const [resRoles, resPerms, resUsers] = await Promise.all([
+        fetch(`${API}/rbac/roles`, { headers }),
+        fetch(`${API}/rbac/permissoes`, { headers }),
+        fetch(`${API}/rbac/usuarios`, { headers }),
+      ]);
+
+      const [dataRoles, dataPerms, dataUsers] = await Promise.all([
+        resRoles.json(),
+        resPerms.json(),
+        resUsers.json(),
+      ]);
+
+      if (resRoles.ok) setRoles(dataRoles);
+      if (resPerms.ok) setPermissoes(dataPerms);
+      if (resUsers.ok) setUsuarios(dataUsers);
+    } catch (err) {
+      console.error("Erro ao carregar dados RBAC:", err);
+      setRbacErro("Erro ao carregar dados de permissões.");
+    }
+  };
+
+  /* ── Helpers RBAC mensagens ──────────────────── */
+  const handleRbacMsg = (msg) => {
+    setRbacErro("");
+    setRbacMsg(msg);
+    setTimeout(() => setRbacMsg(""), 4000);
+  };
+
+  const handleRbacErro = (msg) => {
+    setRbacMsg("");
+    setRbacErro(msg);
+    setTimeout(() => setRbacErro(""), 5000);
+  };
+
+  /* ── Salvar perfil ──────────────────────────── */
   const salvarPerfil = async (e) => {
     e.preventDefault();
     setErroPerfil("");
@@ -111,7 +177,7 @@ function Configuracoes() {
     setSalvando(true);
 
     try {
-      const res = await fetch("http://localhost:3001/auth/perfil", {
+      const res = await fetch(`${API}/auth/perfil`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -135,7 +201,7 @@ function Configuracoes() {
     setSalvando(false);
   };
 
-  /* ── Alterar senha ──────────────────────────────── */
+  /* ── Alterar senha ──────────────────────────── */
   const alterarSenha = async (e) => {
     e.preventDefault();
     setErro("");
@@ -153,7 +219,7 @@ function Configuracoes() {
     setSalvandoSenha(true);
 
     try {
-      const res = await fetch("http://localhost:3001/auth/alterar-senha", {
+      const res = await fetch(`${API}/auth/alterar-senha`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -178,17 +244,18 @@ function Configuracoes() {
     setSalvandoSenha(false);
   };
 
-  /* ── Tab config ─────────────────────────────────── */
+  /* ── Tab config ─────────────────────────────── */
   const ABAS = [
     { id: "perfil", label: "Perfil" },
     { id: "seguranca", label: "Segurança" },
+    { id: "rbac", label: "Permissões & Acessos" },
   ];
 
-  /* ── Render ─────────────────────────────────────── */
+  /* ── Render ─────────────────────────────────── */
   return (
     <div style={S.page}>
 
-      {/* ── Breadcrumb (igual ao prontuário) ─────── */}
+      {/* ── Breadcrumb ─────────────────────────── */}
       <div style={S.topBar}>
         <button
           style={S.backBtn}
@@ -203,15 +270,12 @@ function Configuracoes() {
         <span style={S.breadcrumbCurrent}>Configurações</span>
       </div>
 
-      {/* ── Profile Card (igual ao prontuário) ───── */}
+      {/* ── Profile Card ───────────────────────── */}
       <div style={S.profileCard}>
         <div style={S.profileTop}>
-          {/* Avatar */}
           <div style={S.avatar}>
             {getInitials(usuario.nome)}
           </div>
-
-          {/* Info */}
           <div style={S.profileInfo}>
             <div style={S.profileNameRow}>
               <h1 style={S.profileName}>{usuario.nome || "Administrador"}</h1>
@@ -229,7 +293,7 @@ function Configuracoes() {
           </div>
         </div>
 
-        {/* ── Tabs (igual ao prontuário) ──────────── */}
+        {/* ── Tabs ─────────────────────────────── */}
         <div style={S.tabsBar}>
           {ABAS.map((aba) => {
             const ativa = abaAtiva === aba.id;
@@ -424,6 +488,63 @@ function Configuracoes() {
           </div>
         </div>
       )}
+
+      {/* ═══ Aba: RBAC — Permissões & Acessos ══════ */}
+      {abaAtiva === "rbac" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+
+          {/* Mensagens RBAC */}
+          {rbacMsg && (
+            <div style={S.alertaSucesso}>
+              <span style={{ display: "flex" }}>{Icons.check}</span>
+              <span>{rbacMsg}</span>
+            </div>
+          )}
+          {rbacErro && (
+            <div style={S.alertaErro}>
+              <span style={{ display: "flex" }}>{Icons.x}</span>
+              <span>{rbacErro}</span>
+            </div>
+          )}
+
+          {/* Sub-navegação */}
+          <RbacSubTabs activeTab={rbacSubTab} onChangeTab={setRbacSubTab} />
+
+          {/* Sub-tab: Usuários */}
+          {rbacSubTab === "usuarios" && (
+            <RbacUsuarios
+              usuarios={usuarios}
+              roles={roles}
+              token={token}
+              onReload={carregarDadosRbac}
+              onMsg={handleRbacMsg}
+              onErro={handleRbacErro}
+            />
+          )}
+
+          {/* Sub-tab: Perfis (Roles) */}
+          {rbacSubTab === "roles" && (
+            <RbacRoles
+              roles={roles}
+              token={token}
+              onReload={carregarDadosRbac}
+              onMsg={handleRbacMsg}
+              onErro={handleRbacErro}
+            />
+          )}
+
+          {/* Sub-tab: Permissões */}
+          {rbacSubTab === "permissoes" && (
+            <RbacPermissoes
+              roles={roles}
+              permissoes={permissoes}
+              token={token}
+              onMsg={handleRbacMsg}
+              onErro={handleRbacErro}
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -438,7 +559,7 @@ const S = {
     gap: "24px",
   },
 
-  /* ── Breadcrumb (idêntico ao prontuário) ───────── */
+  /* ── Breadcrumb ──────────────────────────────── */
   topBar: {
     display: "flex",
     alignItems: "center",
@@ -466,7 +587,7 @@ const S = {
     color: "#0f172a",
   },
 
-  /* ── Profile Card (idêntico ao prontuário) ─────── */
+  /* ── Profile Card ────────────────────────────── */
   profileCard: {
     background: "#fff",
     borderRadius: "16px",
@@ -538,7 +659,7 @@ const S = {
     color: "#94a3b8",
   },
 
-  /* ── Tabs (idêntico ao prontuário) ──────────────── */
+  /* ── Tabs ─────────────────────────────────────── */
   tabsBar: {
     display: "flex",
     gap: "0",
@@ -558,14 +679,14 @@ const S = {
     whiteSpace: "nowrap",
   },
 
-  /* ── Grid ───────────────────────────────────────── */
+  /* ── Grid ─────────────────────────────────────── */
   grid: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))",
     gap: "20px",
   },
 
-  /* ── Card (idêntico ao prontuário) ──────────────── */
+  /* ── Card ─────────────────────────────────────── */
   card: {
     background: "#fff",
     borderRadius: "16px",
@@ -595,7 +716,7 @@ const S = {
     letterSpacing: "-0.01em",
   },
 
-  /* ── Info Grid (idêntico ao prontuário) ──────────── */
+  /* ── Info Grid ───────────────────────────────── */
   infoGrid: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
@@ -633,7 +754,7 @@ const S = {
     lineHeight: 1.4,
   },
 
-  /* ── Form ───────────────────────────────────────── */
+  /* ── Form ─────────────────────────────────────── */
   form: {
     display: "flex",
     flexDirection: "column",
@@ -671,7 +792,7 @@ const S = {
     fontWeight: "500",
   },
 
-  /* ── Alertas (mesmo padrão do prontuário) ────────── */
+  /* ── Alertas ──────────────────────────────────── */
   alertaErro: {
     display: "flex",
     alignItems: "center",
@@ -697,7 +818,7 @@ const S = {
     color: "#15803d",
   },
 
-  /* ── Botão (mesmo padrão do prontuário) ──────────── */
+  /* ── Botão ────────────────────────────────────── */
   btnPrimary: {
     display: "inline-flex",
     alignItems: "center",

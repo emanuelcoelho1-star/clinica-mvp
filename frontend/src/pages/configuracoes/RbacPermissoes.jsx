@@ -17,7 +17,6 @@ function RbacPermissoes({ roles, permissoes, token, onMsg, onErro }) {
   /* ── Selecionar role ─────────────────────────── */
   useEffect(() => {
     if (!roleSelecionada) {
-      /* Selecionar a primeira role não-protegida, ou a primeira */
       const primeira = roles.find((r) => !r.protegido) || roles[0];
       if (primeira) setRoleSelecionada(primeira);
     }
@@ -69,6 +68,19 @@ function RbacPermissoes({ roles, permissoes, token, onMsg, onErro }) {
     }
   };
 
+  /* ── Marcar / Desmarcar tudo ─────────────────── */
+  const marcarTudo = () => {
+    if (roleSelecionada?.protegido) return;
+    const todasIds = permissoes.map((p) => p.id);
+    const todasAtivas = todasIds.every((id) => permissoesDaRole.includes(id));
+
+    if (todasAtivas) {
+      setPermissoesDaRole([]);
+    } else {
+      setPermissoesDaRole([...todasIds]);
+    }
+  };
+
   /* ── Salvar permissões ───────────────────────── */
   const salvar = async () => {
     if (!roleSelecionada || roleSelecionada.protegido) return;
@@ -97,23 +109,52 @@ function RbacPermissoes({ roles, permissoes, token, onMsg, onErro }) {
   /* ── Agrupar permissões por módulo ───────────── */
   const modulos = [...new Set(permissoes.map((p) => p.modulo))];
 
+  /* ── Colunas de ações que realmente existem ──── */
+  const acoesExistentes = [...new Set(permissoes.map((p) => p.acao))];
+
+  /* ── Contadores ──────────────────────────────── */
+  const totalPerms = permissoes.length;
+  const totalAtivas = permissoesDaRole.length;
+
   return (
     <div style={S.card}>
       <div style={S.cardHeader}>
         <div style={S.cardTitleRow}>
           <span style={S.cardIcon}>{Icons.key}</span>
           <h2 style={S.cardTitle}>Matriz de Permissões</h2>
+          {roleSelecionada && (
+            <span
+              style={{
+                fontSize: "12px",
+                fontWeight: "600",
+                padding: "3px 10px",
+                borderRadius: "6px",
+                background: "#f1f5f9",
+                color: "#64748b",
+                marginLeft: "8px",
+              }}
+            >
+              {totalAtivas}/{totalPerms} ativas
+            </span>
+          )}
         </div>
-        {roleSelecionada && !roleSelecionada.protegido && (
-          <button
-            style={{ ...S.btnPrimary, opacity: salvando ? 0.7 : 1 }}
-            onClick={salvar}
-            disabled={salvando}
-          >
-            {Icons.check}
-            <span>{salvando ? "Salvando..." : "Salvar Alterações"}</span>
-          </button>
-        )}
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+          {roleSelecionada && !roleSelecionada.protegido && (
+            <>
+              <button style={S.btnSecondary} onClick={marcarTudo}>
+                {totalAtivas === totalPerms ? "Desmarcar tudo" : "Marcar tudo"}
+              </button>
+              <button
+                style={{ ...S.btnPrimary, opacity: salvando ? 0.7 : 1 }}
+                onClick={salvar}
+                disabled={salvando}
+              >
+                {Icons.check}
+                <span>{salvando ? "Salvando..." : "Salvar Alterações"}</span>
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* ── Seletor de Role ─────────────────────── */}
@@ -165,9 +206,9 @@ function RbacPermissoes({ roles, permissoes, token, onMsg, onErro }) {
             <thead>
               <tr>
                 <th style={{ ...S.th, width: "200px" }}>Módulo</th>
-                {Object.entries(ACOES_LABELS).map(([key, label]) => (
-                  <th key={key} style={{ ...S.th, textAlign: "center", width: "90px" }}>
-                    {label}
+                {acoesExistentes.map((acao) => (
+                  <th key={acao} style={{ ...S.th, textAlign: "center", width: "90px" }}>
+                    {ACOES_LABELS[acao] || acao}
                   </th>
                 ))}
               </tr>
@@ -178,6 +219,8 @@ function RbacPermissoes({ roles, permissoes, token, onMsg, onErro }) {
                 const todasAtivas = permsDoModulo.every((p) =>
                   permissoesDaRole.includes(p.id)
                 );
+                const algumasAtivas =
+                  !todasAtivas && permsDoModulo.some((p) => permissoesDaRole.includes(p.id));
 
                 return (
                   <tr key={modulo} style={S.tr}>
@@ -214,9 +257,24 @@ function RbacPermissoes({ roles, permissoes, token, onMsg, onErro }) {
                             TOTAL
                           </span>
                         )}
+                        {algumasAtivas && !todasAtivas && (
+                          <span
+                            style={{
+                              fontSize: "10px",
+                              fontWeight: "700",
+                              color: "#b45309",
+                              background: "#fffbeb",
+                              padding: "2px 6px",
+                              borderRadius: "4px",
+                              border: "1px solid #fef3c7",
+                            }}
+                          >
+                            PARCIAL
+                          </span>
+                        )}
                       </button>
                     </td>
-                    {Object.keys(ACOES_LABELS).map((acao) => {
+                    {acoesExistentes.map((acao) => {
                       const perm = permsDoModulo.find((p) => p.acao === acao);
                       if (!perm) {
                         return (
@@ -235,6 +293,7 @@ function RbacPermissoes({ roles, permissoes, token, onMsg, onErro }) {
                             type="button"
                             onClick={() => togglePermissao(perm.id)}
                             disabled={protegido}
+                            title={perm.descricao || `${MODULOS_LABELS[modulo] || modulo} - ${ACOES_LABELS[acao] || acao}`}
                             style={{
                               ...S.permCheckbox,
                               background: ativa ? "#2563eb" : "#fff",
@@ -254,7 +313,7 @@ function RbacPermissoes({ roles, permissoes, token, onMsg, onErro }) {
               {modulos.length === 0 && (
                 <tr>
                   <td
-                    colSpan={1 + Object.keys(ACOES_LABELS).length}
+                    colSpan={1 + acoesExistentes.length}
                     style={{ ...S.td, textAlign: "center", color: "#94a3b8", padding: "40px" }}
                   >
                     Nenhuma permissão encontrada.
