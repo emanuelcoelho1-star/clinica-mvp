@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const rateLimit = require("express-rate-limit");
 
 const pacientesRoutes = require("./routes/pacientes");
 const consultasRoutes = require("./routes/consultas");
@@ -12,7 +13,7 @@ const evolucoesRoutes = require("./routes/evolucoes");
 const tratamentosRoutes = require("./routes/tratamentos");
 const authRoutes = require("./routes/auth");
 const financeiroRoutes = require("./routes/financeiro");
-const rbacRoutes = require("./routes/rbac"); // ← NOVO
+const rbacRoutes = require("./routes/rbac");
 
 require("./database");
 
@@ -21,6 +22,20 @@ const PORT = 3001;
 
 app.use(cors());
 app.use(express.json());
+
+/* ═══════════════════════════════════════════════════════════
+   RATE LIMIT GLOBAL — 100 requisições por IP a cada 1 minuto
+   Protege toda a API contra abuso / DDoS básico
+   ═══════════════════════════════════════════════════════════ */
+const globalLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 100,
+  message: { erro: "Muitas requisições. Aguarde um momento e tente novamente." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use(globalLimiter);
 
 app.get("/", (req, res) => {
   res.json({ mensagem: "API da clínica rodando." });
@@ -37,7 +52,7 @@ app.use("/evolucoes", evolucoesRoutes);
 app.use("/tratamentos", tratamentosRoutes);
 app.use("/auth", authRoutes);
 app.use("/financeiro", financeiroRoutes);
-app.use("/rbac", rbacRoutes); // ← NOVO
+app.use("/rbac", rbacRoutes);
 
 app.listen(PORT, () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);

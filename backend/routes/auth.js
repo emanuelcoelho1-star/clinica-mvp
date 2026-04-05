@@ -3,12 +3,47 @@ const router = express.Router();
 const db = require("../database");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const rateLimit = require("express-rate-limit");
 
 /* ── SECRET centralizado ──────────────────────── */
 const SECRET = process.env.JWT_SECRET || "segredo_super_secreto_clinica_2025";
 
+/* ═══════════════════════════════════════════════════════════
+   RATE LIMITERS — Proteção contra brute force
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Login: máximo 5 tentativas por IP a cada 15 minutos ── */
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: { erro: "Muitas tentativas de login. Tente novamente em 15 minutos." },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    return req.ip + ":" + (req.body.email || "").toLowerCase().trim();
+  },
+});
+
+/* ── Registro: máximo 3 contas por IP a cada hora ───────── */
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 3,
+  message: { erro: "Muitas contas criadas. Tente novamente em 1 hora." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+/* ── Geral (me, perfil, senha): 30 req por minuto ───────── */
+const authGeneralLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  message: { erro: "Muitas requisições. Aguarde um momento." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 /* ── Cadastro ─────────────────────────────────── */
-router.post("/register", async (req, res) => {
+router.post("/register", registerLimiter, async (req, res) => {
   try {
     const { nome, email, senha } = req.body;
 
@@ -54,7 +89,7 @@ router.post("/register", async (req, res) => {
 });
 
 /* ── Login ────────────────────────────────────── */
-router.post("/login", (req, res) => {
+router.post("/login", loginLimiter, (req, res) => {
   try {
     const { email, senha } = req.body;
 
@@ -102,7 +137,7 @@ router.post("/login", (req, res) => {
 });
 
 /* ── Verificar token (me) ─────────────────────── */
-router.get("/me", (req, res) => {
+router.get("/me", authGeneralLimiter, (req, res) => {
   const authHeader = req.headers["authorization"];
 
   if (!authHeader) {
@@ -132,7 +167,7 @@ router.get("/me", (req, res) => {
 });
 
 /* ── Atualizar perfil ─────────────────────────── */
-router.put("/perfil", (req, res) => {
+router.put("/perfil", authGeneralLimiter, (req, res) => {
   const authHeader = req.headers["authorization"];
 
   if (!authHeader) {
@@ -166,7 +201,7 @@ router.put("/perfil", (req, res) => {
 });
 
 /* ── Alterar senha ────────────────────────────── */
-router.put("/alterar-senha", (req, res) => {
+router.put("/alterar-senha", authGeneralLimiter, (req, res) => {
   const authHeader = req.headers["authorization"];
 
   if (!authHeader) {
