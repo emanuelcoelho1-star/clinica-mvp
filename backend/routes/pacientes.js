@@ -5,15 +5,64 @@ const auth = require("../middleware/auth");
 
 
 // =========================
-// LISTAR PACIENTES
+// LISTAR PACIENTES (COM PAGINAÇÃO + BUSCA)
 // =========================
 router.get("/", auth, (req, res) => {
-  db.all("SELECT * FROM pacientes ORDER BY id DESC", [], (err, rows) => {
+  const page = Math.max(1, parseInt(req.query.page) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
+  const busca = (req.query.busca || "").trim();
+  const offset = (page - 1) * limit;
+
+  let whereClause = "";
+  let params = [];
+
+  if (busca) {
+    whereClause = `
+      WHERE nome LIKE ? 
+         OR cpf LIKE ? 
+         OR telefone LIKE ? 
+         OR email LIKE ?
+    `;
+    const termo = `%${busca}%`;
+    params = [termo, termo, termo, termo];
+  }
+
+  // 1) Conta o total de registros (com ou sem filtro)
+  const countSql = `SELECT COUNT(*) as total FROM pacientes ${whereClause}`;
+
+  db.get(countSql, params, (err, countRow) => {
     if (err) {
       return res.status(500).json({ erro: err.message });
     }
 
-    res.json(rows);
+    const total = countRow.total;
+    const totalPages = Math.ceil(total / limit) || 1;
+
+    // 2) Busca a página solicitada
+    const dataSql = `
+      SELECT * FROM pacientes 
+      ${whereClause} 
+      ORDER BY id DESC 
+      LIMIT ? OFFSET ?
+    `;
+
+    db.all(dataSql, [...params, limit, offset], (err, rows) => {
+      if (err) {
+        return res.status(500).json({ erro: err.message });
+      }
+
+      res.json({
+        dados: rows,
+        paginacao: {
+          page,
+          limit,
+          total,
+          totalPages,
+          hasNext: page < totalPages,
+          hasPrev: page > 1,
+        },
+      });
+    });
   });
 });
 

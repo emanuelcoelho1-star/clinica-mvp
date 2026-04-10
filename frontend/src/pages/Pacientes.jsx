@@ -1,5 +1,5 @@
 import API_URL from "../api";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
 /* ── helpers ─────────────────────────────────────────────── */
@@ -40,6 +40,10 @@ function getInitials(name) {
   return parts[0][0].toUpperCase();
 }
 
+/* ── Constantes de paginação ──────────────────────────────── */
+const ITEMS_PER_PAGE = 20;
+const DEBOUNCE_MS = 400;
+
 /* ── SVG Icons (inline, sem dependências) ────────────────── */
 const Icons = {
   search: (
@@ -75,7 +79,7 @@ const Icons = {
   ),
   whatsapp: (
     <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z" />
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
     </svg>
   ),
   edit: (
@@ -89,6 +93,28 @@ const Icons = {
       <path d="M3 6h18" />
       <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
       <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+    </svg>
+  ),
+  chevronLeft: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m15 18-6-6 6-6" />
+    </svg>
+  ),
+  chevronRight: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m9 18 6-6-6-6" />
+    </svg>
+  ),
+  chevronsLeft: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m11 17-5-5 5-5" />
+      <path d="m18 17-5-5 5-5" />
+    </svg>
+  ),
+  chevronsRight: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m6 17 5-5-5-5" />
+      <path d="m13 17 5-5-5-5" />
     </svg>
   ),
   emptyState: (
@@ -106,51 +132,84 @@ const Icons = {
 /* ── Componente Principal ────────────────────────────────── */
 function Pacientes() {
   const navigate = useNavigate();
+
+  /* ── Estado de dados ────────────────────────────────── */
   const [pacientes, setPacientes] = useState([]);
-  const [busca, setBusca] = useState("");
   const [carregando, setCarregando] = useState(true);
+
+  /* ── Estado de paginação ────────────────────────────── */
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+
+  /* ── Estado de busca (com debounce) ─────────────────── */
+  const [busca, setBusca] = useState("");
+  const [buscaDebounced, setBuscaDebounced] = useState("");
+  const debounceRef = useRef(null);
+
+  /* ── Estado de UI ───────────────────────────────────── */
   const [hoveredId, setHoveredId] = useState(null);
   const [searchFocused, setSearchFocused] = useState(false);
 
-  const carregarPacientes = () => {
+  /* ── Debounce da busca ─────────────────────────────── */
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setBuscaDebounced(busca);
+      setPage(1);
+    }, DEBOUNCE_MS);
+    return () => clearTimeout(debounceRef.current);
+  }, [busca]);
+
+  /* ── Fetch paginado ────────────────────────────────── */
+  const carregarPacientes = useCallback(() => {
     const token = localStorage.getItem("token");
     setCarregando(true);
-    fetch(`${API_URL}/pacientes`, {
+
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(ITEMS_PER_PAGE),
+    });
+
+    if (buscaDebounced) {
+      params.set("busca", buscaDebounced);
+    }
+
+    fetch(`${API_URL}/pacientes?${params.toString()}`, {
       headers: { Authorization: token },
     })
       .then((res) => res.json())
       .then((data) => {
-        setPacientes(Array.isArray(data) ? data : []);
+        // Compatibilidade: se backend ainda retorna array (deploy gradual)
+        if (Array.isArray(data)) {
+          setPacientes(data);
+          setTotal(data.length);
+          setTotalPages(1);
+        } else {
+          setPacientes(Array.isArray(data.dados) ? data.dados : []);
+          setTotal(data.paginacao?.total ?? 0);
+          setTotalPages(data.paginacao?.totalPages ?? 1);
+        }
         setCarregando(false);
       })
       .catch((err) => {
         console.error("Erro ao carregar pacientes:", err);
         setCarregando(false);
       });
-  };
+  }, [page, buscaDebounced]);
 
   useEffect(() => {
     carregarPacientes();
-  }, []);
+  }, [carregarPacientes]);
 
-  const pacientesFiltrados = useMemo(() => {
-    const termo = busca.trim().toLowerCase();
-    if (!termo) return pacientes;
-    return pacientes.filter(
-      (p) =>
-        (p.nome || "").toLowerCase().includes(termo) ||
-        String(p.cpf || "").toLowerCase().includes(termo) ||
-        String(p.telefone || "").toLowerCase().includes(termo) ||
-        String(p.email || "").toLowerCase().includes(termo)
-    );
-  }, [pacientes, busca]);
-
+  /* ── Stats ─────────────────────────────────────────── */
   const stats = useMemo(() => {
     const comTel = pacientes.filter((p) => p.telefone).length;
     const comEmail = pacientes.filter((p) => p.email).length;
-    return { total: pacientes.length, comTel, comEmail };
-  }, [pacientes]);
+    return { total, comTel, comEmail };
+  }, [pacientes, total]);
 
+  /* ── Helpers ───────────────────────────────────────── */
   const gerarLinkWhatsApp = (telefone) => {
     if (!telefone) return "#";
     let numero = String(telefone).replace(/\D/g, "");
@@ -174,10 +233,59 @@ function Pacientes() {
     }
   };
 
-  /* ── Loading State ──────────────────────────────────────── */
-  if (carregando) {
+  /* ── Navegação de páginas ──────────────────────────── */
+  const irParaPagina = (p) => {
+    const novaPagina = Math.max(1, Math.min(p, totalPages));
+    if (novaPagina !== page) {
+      setPage(novaPagina);
+    }
+  };
+
+  /* Gera números de página visíveis (máx 7 botões) */
+  const getPageNumbers = () => {
+    const maxVisible = 7;
+
+    if (totalPages <= maxVisible) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+
+    const pages = [];
+    const left = Math.max(2, page - 1);
+    const right = Math.min(totalPages - 1, page + 1);
+
+    pages.push(1);
+
+    if (left > 2) {
+      pages.push("...");
+    }
+
+    for (let i = left; i <= right; i++) {
+      pages.push(i);
+    }
+
+    if (right < totalPages - 1) {
+      pages.push("...");
+    }
+
+    pages.push(totalPages);
+
+    return pages;
+  };
+
+  /* Cálculo "Exibindo X–Y de Z" */
+  const startItem = total === 0 ? 0 : (page - 1) * ITEMS_PER_PAGE + 1;
+  const endItem = Math.min(page * ITEMS_PER_PAGE, total);
+
+  /* ── Loading State ──────────────────────────────────── */
+  if (carregando && pacientes.length === 0) {
     return (
       <div style={s.loadingWrap}>
+        <style>{`
+          @keyframes pulse-dot {
+            0%, 80%, 100% { transform: scale(0); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+          }
+        `}</style>
         <div style={s.loadingPulse}>
           <div style={s.loadingDot1} />
           <div style={s.loadingDot2} />
@@ -188,7 +296,7 @@ function Pacientes() {
     );
   }
 
-  /* ── Render ─────────────────────────────────────────────── */
+  /* ── Render ─────────────────────────────────────────── */
   return (
     <div style={s.page}>
       {/* ── Responsive CSS ─────────────────────────────── */}
@@ -285,6 +393,18 @@ function Pacientes() {
             padding-top: 4px;
             border-top: 1px solid #f8fafc;
           }
+
+          /* Paginação responsiva */
+          .pac-pagination {
+            flex-wrap: wrap !important;
+            justify-content: center !important;
+          }
+          .pac-pagination-numbers {
+            order: 3 !important;
+            flex: 1 1 100% !important;
+            justify-content: center !important;
+            margin-top: 8px !important;
+          }
         }
 
         /* ── Muito pequeno: até 480px ───────────────── */
@@ -305,7 +425,7 @@ function Pacientes() {
         <div style={s.headerLeft}>
           <div style={s.headerTitleRow}>
             <h1 style={s.headerTitle}>Pacientes</h1>
-            <span style={s.headerCount}>{stats.total}</span>
+            <span style={s.headerCount}>{total}</span>
           </div>
           <p style={s.headerSub}>
             Gerencie os pacientes cadastrados na clínica
@@ -329,7 +449,7 @@ function Pacientes() {
         </button>
       </div>
 
-      {/* ── Stats ───────────────────────────────────────── */}
+      {/* ── Stats ─────────────────────────────────���─────── */}
       <div className="pac-stats-row" style={s.statsRow}>
         {[
           { label: "Total", value: stats.total, accent: "#2563eb", bg: "#eff6ff" },
@@ -375,7 +495,14 @@ function Pacientes() {
             style={s.searchInput}
           />
           {busca && (
-            <button style={s.searchClear} onClick={() => setBusca("")}>
+            <button
+              style={s.searchClear}
+              onClick={() => {
+                setBusca("");
+                setBuscaDebounced("");
+                setPage(1);
+              }}
+            >
               ✕
             </button>
           )}
@@ -392,7 +519,11 @@ function Pacientes() {
       </div>
 
       {/* ── Tabela / Lista ──────────────────────────────── */}
-      <div style={s.tableCard}>
+      <div style={{
+        ...s.tableCard,
+        opacity: carregando ? 0.6 : 1,
+        transition: "opacity 0.2s ease",
+      }}>
         {/* Table header */}
         <div className="pac-table-header" style={s.tableHeader}>
           <span style={{ ...s.thCell, flex: 1 }}>Paciente</span>
@@ -403,18 +534,18 @@ function Pacientes() {
         </div>
 
         {/* Conteúdo */}
-        {pacientesFiltrados.length === 0 ? (
+        {pacientes.length === 0 ? (
           <div style={s.emptyState}>
             {Icons.emptyState}
             <h3 style={s.emptyTitle}>
-              {busca ? "Nenhum resultado" : "Nenhum paciente"}
+              {buscaDebounced ? "Nenhum resultado" : "Nenhum paciente"}
             </h3>
             <p style={s.emptyText}>
-              {busca
-                ? `Não encontramos pacientes com "${busca}". Tente outro termo.`
+              {buscaDebounced
+                ? `Não encontramos pacientes com "${buscaDebounced}". Tente outro termo.`
                 : "Comece cadastrando o primeiro paciente da sua clínica."}
             </p>
-            {!busca && (
+            {!buscaDebounced && (
               <button
                 style={{ ...s.btnPrimary, marginTop: "4px" }}
                 onClick={() => navigate("/pacientes/novo")}
@@ -426,7 +557,7 @@ function Pacientes() {
           </div>
         ) : (
           <ul style={s.list}>
-            {pacientesFiltrados.map((p) => {
+            {pacientes.map((p) => {
               const isHovered = hoveredId === p.id;
               const palette = getAvatarColor(p.nome);
               return (
@@ -572,15 +703,93 @@ function Pacientes() {
           </ul>
         )}
 
-        {/* Footer */}
-        {pacientesFiltrados.length > 0 && (
-          <div style={s.tableFooter}>
+        {/* ── Footer com Paginação ─────────────────────── */}
+        {total > 0 && (
+          <div className="pac-pagination" style={s.tableFooter}>
+            {/* Info de itens */}
             <span style={s.footerText}>
               Exibindo{" "}
-              <strong>{pacientesFiltrados.length}</strong> de{" "}
-              <strong>{pacientes.length}</strong> paciente
-              {pacientes.length !== 1 ? "s" : ""}
+              <strong>{startItem}–{endItem}</strong> de{" "}
+              <strong>{total}</strong> paciente
+              {total !== 1 ? "s" : ""}
             </span>
+
+            {/* Controles de paginação */}
+            {totalPages > 1 && (
+              <div className="pac-pagination-numbers" style={s.paginationWrap}>
+                {/* Primeira página */}
+                <button
+                  style={{
+                    ...s.pageBtn,
+                    ...(page === 1 ? s.pageBtnDisabled : {}),
+                  }}
+                  onClick={() => irParaPagina(1)}
+                  disabled={page === 1}
+                  title="Primeira página"
+                >
+                  {Icons.chevronsLeft}
+                </button>
+
+                {/* Anterior */}
+                <button
+                  style={{
+                    ...s.pageBtn,
+                    ...(page === 1 ? s.pageBtnDisabled : {}),
+                  }}
+                  onClick={() => irParaPagina(page - 1)}
+                  disabled={page === 1}
+                  title="Página anterior"
+                >
+                  {Icons.chevronLeft}
+                </button>
+
+                {/* Números */}
+                {getPageNumbers().map((p, idx) =>
+                  p === "..." ? (
+                    <span key={`ellipsis-${idx}`} style={s.pageEllipsis}>
+                      …
+                    </span>
+                  ) : (
+                    <button
+                      key={p}
+                      style={{
+                        ...s.pageBtn,
+                        ...(p === page ? s.pageBtnActive : {}),
+                      }}
+                      onClick={() => irParaPagina(p)}
+                    >
+                      {p}
+                    </button>
+                  )
+                )}
+
+                {/* Próxima */}
+                <button
+                  style={{
+                    ...s.pageBtn,
+                    ...(page === totalPages ? s.pageBtnDisabled : {}),
+                  }}
+                  onClick={() => irParaPagina(page + 1)}
+                  disabled={page === totalPages}
+                  title="Próxima página"
+                >
+                  {Icons.chevronRight}
+                </button>
+
+                {/* Última página */}
+                <button
+                  style={{
+                    ...s.pageBtn,
+                    ...(page === totalPages ? s.pageBtnDisabled : {}),
+                  }}
+                  onClick={() => irParaPagina(totalPages)}
+                  disabled={page === totalPages}
+                  title="Última página"
+                >
+                  {Icons.chevronsRight}
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -763,7 +972,7 @@ const s = {
     transition: "width 0.6s ease",
   },
 
-  /* ── Search Bar ──────────────────────────────────── */
+  /* ── Search Bar ─────��────────────────────────────── */
   searchBar: {
     display: "flex",
     alignItems: "center",
@@ -838,7 +1047,7 @@ const s = {
     letterSpacing: "0.06em",
   },
 
-  /* ── Row ���─────────────────────────────────────────── */
+  /* ── Row ────────────────────────────────────────── */
   list: {
     listStyle: "none",
     padding: 0,
@@ -961,11 +1170,58 @@ const s = {
     padding: "12px 24px",
     borderTop: "1px solid #f1f5f9",
     background: "#fafbfc",
+    gap: "16px",
+    flexWrap: "wrap",
   },
   footerText: {
     fontSize: "13px",
     color: "#94a3b8",
     fontWeight: "400",
+  },
+
+  /* ── Paginação ───────────────────────────────────── */
+  paginationWrap: {
+    display: "flex",
+    alignItems: "center",
+    gap: "4px",
+  },
+  pageBtn: {
+    minWidth: "34px",
+    height: "34px",
+    borderRadius: "8px",
+    border: "1px solid #e2e8f0",
+    background: "#fff",
+    color: "#475569",
+    fontSize: "13px",
+    fontWeight: "500",
+    cursor: "pointer",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    transition: "all 0.15s ease",
+    padding: "0 8px",
+  },
+  pageBtnActive: {
+    background: "#2563eb",
+    color: "#fff",
+    borderColor: "#2563eb",
+    fontWeight: "600",
+  },
+  pageBtnDisabled: {
+    opacity: 0.4,
+    cursor: "not-allowed",
+    pointerEvents: "none",
+  },
+  pageEllipsis: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "34px",
+    height: "34px",
+    fontSize: "14px",
+    color: "#94a3b8",
+    fontWeight: "500",
+    userSelect: "none",
   },
 };
 
