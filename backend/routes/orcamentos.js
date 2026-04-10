@@ -244,20 +244,137 @@ router.patch("/:id/status", auth, (req, res) => {
     });
   }
 
-  db.run(
-    "UPDATE orcamentos SET status = ? WHERE id = ?",
-    [status, id],
-    function (err) {
-      if (err) {
-        return res.status(500).json({ erro: err.message });
+  // 1) Busca o orçamento atual (precisa saber o status anterior)
+  db.get("SELECT * FROM orcamentos WHERE id = ?", [id], (err, orcamento) => {
+    if (err) {
+      return res.status(500).json({ erro: err.message });
+    }
+    if (!orcamento) {
+      return res.status(404).json({ erro: "Orçamento não encontrado." });
+    }
+
+    // 2) Atualiza o status
+    db.run(
+      "UPDATE orcamentos SET status = ? WHERE id = ?",
+      [status, id],
+      function (errUpdate) {
+        if (errUpdate) {
+          return res.status(500).json({ erro: errUpdate.message });
+        }
+        if (this.changes === 0) {
+          return res.status(404).json({ erro: "Orçamento não encontrado." });
+        }
+
+        // 3) Se está sendo APROVADO (e não estava aprovado antes), gera contas a receber
+        if (status === "aprovado" && orcamento.status !== "aprovado") {
+          gerarContasReceber(id, orcamento.paciente_id, (erroFinanceiro) => {
+            if (erroFinanceiro) {
+              console.error("Erro ao gerar contas a receber:", erroFinanceiro);
+              // Retorna sucesso no status, mas avisa sobre o erro financeiro
+              return res.json({
+                mensagem: "Status atualizado, mas houve erro ao gerar contas a receber.",
+                aviso: erroFinanceiro,
+              });
+            }
+            res.json({
+              mensagem: "Status atualizado e contas a receber geradas com sucesso.",
+              financeiro_gerado: true,
+            });
+          });
+        } else {
+          res.json({ mensagem: "Status atualizado com sucesso." });
+        }
       }
-      if (this.changes === 0) {
-        return res.status(404).json({ erro: "Orçamento não encontrado." });
-      }
-      res.json({ mensagem: "Status atualizado com sucesso." });
+    );
+  });
+});
+
+
+// =========================
+// FUNÇÃO: GERAR CONTAS A RECEBER A PARTIR DO ORÇAMENTO
+// =========================
+function gerarContasReceber(orcamentoId, pacienteId, callback) {
+  // Busca os itens do orçamento
+  db.all(
+    "SELECT * FROM orcamento_itens WHERE orcamento_id = ? ORDER BY id ASC",
+    [orcamentoId],
+    (err, itens) => {
+      if (err) return callback(err.message);
+      if (!itens || itens.length === 0) return callback("Orçamento sem itens.");
+
+      // Busca o orçamento para pegar o desconto
+      db.get(
+        "SELECT * FROM orcamentos WHERE id = ?",
+        [orcamentoId],
+        (errOrc, orcamento) => {
+          if (errOrc) return callback(errOrc.message);
+          if (!orcamento) return callback("Orçamento não encontrado.");
+
+          // Verifica se já existem contas vinculadas a este orçamento (evita duplicatas)
+          db.get(
+            "SELECT COUNT(*) as total FROM contas_receber WHERE orcamento_id = ?",
+            [orcamentoId],
+            (errCheck, row) => {
+              if (errCheck) return callback(errCheck.message);
+
+              if (row && row.total > 0) {
+                // Já existem contas geradas para este orçamento, pula
+                return callback(null);
+              }
+
+              // Calcula o total bruto dos itens
+              const totalBruto = itens.reduce(
+                (acc, item) => acc + (Number(item.valor) || 0) * (Number(item.quantidade) || 1),
+                0
+              );
+              const desconto = Number(orcamento.desconto) || 0;
+              const totalLiquido = Math.max(0, totalBruto - desconto);
+
+              // Data de hoje para emissão e vencimento (30 dias padrão)
+              const hoje = new Date();
+              const hojeStr = hoje.toISOString().split("T")[0];
+              const vencimento = new Date(hoje);
+              vencimento.setDate(vencimento.getDate() + 30);
+              const vencimentoStr = vencimento.toISOString().split("T")[0];
+
+              // Monta a descrição com os procedimentos
+              const procedimentos = itens
+                .map((i) => i.procedimento)
+                .filter(Boolean)
+                .join(", ");
+
+              const descricao = `Orçamento #${orcamentoId} — ${procedimentos || "Procedimentos"}`;
+
+              // Insere a conta a receber
+              db.run(
+                `INSERT INTO contas_receber
+                   (paciente_id, orcamento_id, descricao, procedimento, valor,
+                    desconto, data_emissao, data_vencimento, forma_pagamento,
+                    status, parcela_atual, total_parcelas, observacoes)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'dinheiro', 'pendente', 1, 1, ?)`,
+                [
+                  pacienteId,
+                  orcamentoId,
+                  descricao,
+                  procedimentos || null,
+                  totalLiquido,
+                  desconto,
+                  hojeStr,
+                  vencimentoStr,
+                  `Gerado automaticamente ao aprovar orçamento #${orcamentoId}`,
+                ],
+                function (errInsert) {
+                  if (errInsert) return callback(errInsert.message);
+                  callback(null);
+                }
+              );
+            }
+          );
+        }
+      );
     }
   );
-});
+}
 
 
 // =========================
