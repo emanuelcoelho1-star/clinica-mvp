@@ -3,4 +3,5 @@ node_modules/
 *.log
 dist/
 build/
-database.db
+database.dbnode_modules/
+*.db
