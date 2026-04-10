@@ -1679,11 +1679,50 @@ const S = {
     letterSpacing: "0.06em",
     borderBottom: "1px solid #f1f5f9",
   },
-  td: {
+    td: {
     padding: "12px 16px",
     color: "#334155",
     borderBottom: "1px solid #fafbfc",
     fontWeight: "500",
+  },
+  /* ── Botões de Status Rápido ─────────────────── */
+  btnStatusApprove: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "4px",
+    border: "1px solid #dcfce7",
+    borderRadius: "8px",
+    padding: "6px 14px",
+    background: "#f0fdf4",
+    color: "#15803d",
+    fontWeight: "600",
+    fontSize: "12px",
+    cursor: "pointer",
+    transition: "all 0.15s ease",
+    whiteSpace: "nowrap",
+  },
+  btnStatusApproveHover: {
+    background: "#dcfce7",
+    borderColor: "#bbf7d0",
+  },
+  btnStatusReject: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "4px",
+    border: "1px solid #fecaca",
+    borderRadius: "8px",
+    padding: "6px 14px",
+    background: "#fef2f2",
+    color: "#b91c1c",
+    fontWeight: "600",
+    fontSize: "12px",
+    cursor: "pointer",
+    transition: "all 0.15s ease",
+    whiteSpace: "nowrap",
+  },
+  btnStatusRejectHover: {
+    background: "#fecaca",
+    borderColor: "#fca5a5",
   },
 };
 
