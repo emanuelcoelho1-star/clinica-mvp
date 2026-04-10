@@ -326,27 +326,7 @@ function AbaOrcamentos({ pacienteId }) {
       setSalvando(false);
     }
   }
-    /* ── Alterar Status (com feedback financeiro) ── */
-  async function handleMudarStatus(orcamentoId, novoStatus) {
-    try {
-      const tk = localStorage.getItem("token");
-      const r = await fetch(`${API_URL}/orcamentos/${orcamentoId}/status`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json", Authorization: tk || "" },
-        body: JSON.stringify({ status: novoStatus }),
-      });
-
-      if (!r.ok) throw new Error();
-
-      const data = await r.json();
-
-      // Se foi aprovado e gerou financeiro, mostra feedback
-      if (novoStatus === "aprovado" && data.financeiro_gerado) {
-        alert("✅ Orçamento aprovado!\n\nConta a receber gerada automaticamente no módulo Financeiro.");
-      } else if (data.aviso) {
-        alert(`⚠️ Status atualizado, mas houve um aviso:\n${data.aviso}`);
-      }
- /* ── Mudar Status (com integração financeiro) ── */
+     /* ── Mudar Status (com integração financeiro) ── */
   async function handleMudarStatus(orcamentoId, novoStatus) {
     try {
       const tk = localStorage.getItem("token");
@@ -365,15 +345,9 @@ function AbaOrcamentos({ pacienteId }) {
       }
 
       await carregarOrcamentos();
-      // Atualiza detalhes se estiver na tela de detalhes
       if (tela === "detalhes" && detalhes?.id === orcamentoId) {
         setDetalhes((prev) => prev ? { ...prev, status: novoStatus } : prev);
       }
-    } catch {
-      setErro("Erro ao atualizar status.");
-    }
-  }
-      await carregarOrcamentos();
     } catch {
       setErro("Erro ao atualizar status.");
     }
