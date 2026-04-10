@@ -908,9 +908,51 @@ function AbaOrcamentos({ pacienteId }) {
             <span style={S.formCardTitle}>Informações gerais</span>
           </div>
           <div style={S.detailItems}>
-            <div style={S.detailItem}>
+                        <div style={S.detailItem}>
               <span style={S.detailLabel}>Status</span>
-              <StatusBadge status={detalhes.status} />
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+                <StatusBadge status={detalhes.status} />
+                {detalhes.status === "pendente" && (
+                  <>
+                    <button
+                      style={{ ...S.btnStatusApprove, ...(hoveredBtn === "aprovar-det" ? S.btnStatusApproveHover : {}) }}
+                      onMouseEnter={() => setHoveredBtn("aprovar-det")}
+                      onMouseLeave={() => setHoveredBtn(null)}
+                      onClick={() => handleMudarStatus(detalhes.id, "aprovado")}
+                    >
+                      ✓ Aprovar
+                    </button>
+                    <button
+                      style={{ ...S.btnStatusReject, ...(hoveredBtn === "recusar-det" ? S.btnStatusRejectHover : {}) }}
+                      onMouseEnter={() => setHoveredBtn("recusar-det")}
+                      onMouseLeave={() => setHoveredBtn(null)}
+                      onClick={() => handleMudarStatus(detalhes.id, "recusado")}
+                    >
+                      ✕ Recusar
+                    </button>
+                  </>
+                )}
+                {detalhes.status === "aprovado" && (
+                  <button
+                    style={{ ...S.btnStatusApprove, background: "#eff6ff", color: "#1d4ed8", border: "1px solid #dbeafe", ...(hoveredBtn === "andamento-det" ? { background: "#dbeafe" } : {}) }}
+                    onMouseEnter={() => setHoveredBtn("andamento-det")}
+                    onMouseLeave={() => setHoveredBtn(null)}
+                    onClick={() => handleMudarStatus(detalhes.id, "em_andamento")}
+                  >
+                    ▶ Iniciar tratamento
+                  </button>
+                )}
+                {detalhes.status === "em_andamento" && (
+                  <button
+                    style={{ ...S.btnStatusApprove, ...(hoveredBtn === "concluir-det" ? S.btnStatusApproveHover : {}) }}
+                    onMouseEnter={() => setHoveredBtn("concluir-det")}
+                    onMouseLeave={() => setHoveredBtn(null)}
+                    onClick={() => handleMudarStatus(detalhes.id, "concluido")}
+                  >
+                    ✓ Concluir
+                  </button>
+                )}
+              </div>
             </div>
             <div style={S.detailItem}>
               <span style={S.detailLabel}>Data</span>
