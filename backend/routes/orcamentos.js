@@ -383,16 +383,39 @@ function gerarContasReceber(orcamentoId, pacienteId, callback) {
 router.delete("/:id", auth, (req, res) => {
   const { id } = req.params;
 
-  // Itens são deletados automaticamente pelo ON DELETE CASCADE
-  db.run("DELETE FROM orcamentos WHERE id = ?", [id], function (err) {
-    if (err) {
-      return res.status(500).json({ erro: err.message });
+  // 1) Remove lançamentos do fluxo de caixa vinculados às contas deste orçamento
+  db.run(
+    `DELETE FROM fluxo_caixa WHERE conta_receber_id IN
+       (SELECT id FROM contas_receber WHERE orcamento_id = ?)`,
+    [id],
+    function () {
+      // 2) Remove comissões vinculadas às contas deste orçamento
+      db.run(
+        `DELETE FROM comissoes WHERE conta_receber_id IN
+           (SELECT id FROM contas_receber WHERE orcamento_id = ?)`,
+        [id],
+        function () {
+          // 3) Remove as contas a receber vinculadas ao orçamento
+          db.run(
+            "DELETE FROM contas_receber WHERE orcamento_id = ?",
+            [id],
+            function () {
+              // 4) Remove o orçamento (itens saem por CASCADE)
+              db.run("DELETE FROM orcamentos WHERE id = ?", [id], function (err) {
+                if (err) {
+                  return res.status(500).json({ erro: err.message });
+                }
+                if (this.changes === 0) {
+                  return res.status(404).json({ erro: "Orçamento não encontrado." });
+                }
+                res.json({ mensagem: "Orçamento e registros financeiros excluídos com sucesso." });
+              });
+            }
+          );
+        }
+      );
     }
-    if (this.changes === 0) {
-      return res.status(404).json({ erro: "Orçamento não encontrado." });
-    }
-    res.json({ mensagem: "Orçamento excluído com sucesso." });
-  });
+  );
 });
 
 
