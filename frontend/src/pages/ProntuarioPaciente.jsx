@@ -496,7 +496,7 @@ function ProntuarioPaciente() {
 
       {/* ── Tab: Documentos ──────────────────────────────── */}
       {abaAtiva === "documentos" && (
-        <AbaDocumentos pacienteId={paciente.id} />
+        <AbaDocumentos pacienteId={paciente.id} paciente={paciente} />
       )}
 
       {/* ── Tab: Arquivos ────────────────────────────────── */}

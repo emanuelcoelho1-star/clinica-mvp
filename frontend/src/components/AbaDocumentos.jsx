@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import API_URL from "../api";
+import ModalAtestado from "./ModalAtestado";
 
 /* ═══════════════════════════════════════════════════════════
    HELPERS
@@ -140,7 +141,7 @@ const Icons = {
 /* ═══════════════════════════════════════════════════════════
    COMPONENTE
    ═══════════════════════════════════════════════════════════ */
-function AbaDocumentos({ pacienteId }) {
+function AbaDocumentos({ pacienteId, paciente }) {
   const [documentos, setDocumentos] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
@@ -158,6 +159,8 @@ function AbaDocumentos({ pacienteId }) {
 
   const [hoveredCardId, setHoveredCardId] = useState(null);
   const [hoveredBtn, setHoveredBtn] = useState(null);
+
+  const [modalAtestado, setModalAtestado] = useState(false);
 
   /* ── Carregar ────────────────────────────── */
   useEffect(() => {
@@ -340,19 +343,17 @@ function AbaDocumentos({ pacienteId }) {
           </div>
         )}
 
-        {/* Vazio — Atalhos rápidos */}
-        {!carregando && !erro && documentos.length === 0 && (
-          <div style={S.emptyBox}>
-            {Icons.clipboard}
-            <h3 style={S.emptyTitle}>Nenhum documento registrado</h3>
-            <p style={S.emptyText}>Escolha um tipo para criar rapidamente:</p>
+        {/* Atalhos rápidos — sempre visíveis */}
+        {!carregando && !erro && (
+          <div style={S.quickSection}>
+            <span style={S.quickSectionTitle}>Acesso rápido</span>
             <div style={S.quickGrid}>
-              {/* Atestado */}
+              {/* Atestado — abre modal */}
               <button
                 style={{ ...S.quickCard, ...(hoveredBtn === "quick-atestado" ? S.quickCardHover : {}) }}
                 onMouseEnter={() => setHoveredBtn("quick-atestado")}
                 onMouseLeave={() => setHoveredBtn(null)}
-                onClick={() => abrirFormComTipo("atestado")}
+                onClick={() => setModalAtestado(true)}
               >
                 <div style={{ ...S.quickIcon, background: "#eff6ff", color: "#2563eb" }}>
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -368,7 +369,7 @@ function AbaDocumentos({ pacienteId }) {
                 style={{ ...S.quickCard, ...(hoveredBtn === "quick-receita" ? S.quickCardHover : {}) }}
                 onMouseEnter={() => setHoveredBtn("quick-receita")}
                 onMouseLeave={() => setHoveredBtn(null)}
-                onClick={() => abrirFormComTipo("receita")}
+                onClick={() => alert("Modal de Receituário em breve!")}
               >
                 <div style={{ ...S.quickIcon, background: "#f0fdf4", color: "#16a34a" }}>
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -384,7 +385,7 @@ function AbaDocumentos({ pacienteId }) {
                 style={{ ...S.quickCard, ...(hoveredBtn === "quick-termo" ? S.quickCardHover : {}) }}
                 onMouseEnter={() => setHoveredBtn("quick-termo")}
                 onMouseLeave={() => setHoveredBtn(null)}
-                onClick={() => abrirFormComTipo("termo")}
+                onClick={() => alert("Modal de Termos em breve!")}
               >
                 <div style={{ ...S.quickIcon, background: "#faf5ff", color: "#9333ea" }}>
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -399,7 +400,7 @@ function AbaDocumentos({ pacienteId }) {
                 style={{ ...S.quickCard, ...(hoveredBtn === "quick-contrato" ? S.quickCardHover : {}) }}
                 onMouseEnter={() => setHoveredBtn("quick-contrato")}
                 onMouseLeave={() => setHoveredBtn(null)}
-                onClick={() => abrirFormComTipo("declaracao")}
+                onClick={() => alert("Modal de Contratos em breve!")}
               >
                 <div style={{ ...S.quickIcon, background: "#fff7ed", color: "#ea580c" }}>
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -411,6 +412,15 @@ function AbaDocumentos({ pacienteId }) {
                 <span style={S.quickLabel}>Contratos</span>
               </button>
             </div>
+          </div>
+        )}
+
+        {/* Vazio */}
+        {!carregando && !erro && documentos.length === 0 && (
+          <div style={S.emptyBox}>
+            {Icons.clipboard}
+            <h3 style={S.emptyTitle}>Nenhum documento registrado</h3>
+            <p style={S.emptyText}>Use os atalhos acima para criar documentos rapidamente.</p>
           </div>
         )}
 
@@ -540,6 +550,15 @@ function AbaDocumentos({ pacienteId }) {
             </div>
           </div>
         )}
+
+        {/* Modal Atestado */}
+        <ModalAtestado
+          aberto={modalAtestado}
+          onFechar={() => setModalAtestado(false)}
+          paciente={paciente}
+          pacienteId={pacienteId}
+          onDocumentoCriado={carregarDocumentos}
+        />
 
         {/* Keyframes */}
         <style>{`
@@ -1035,14 +1054,25 @@ const S = {
     maxWidth: "360px",
   },
 
+  /* ── Quick Access Section ──────────────────────── */
+  quickSection: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "12px",
+  },
+  quickSectionTitle: {
+    fontSize: "12px",
+    fontWeight: "600",
+    color: "#94a3b8",
+    textTransform: "uppercase",
+    letterSpacing: "0.06em",
+  },
+
   /* ── Quick Access Cards ────────────────────────── */
   quickGrid: {
     display: "grid",
     gridTemplateColumns: "repeat(4, 1fr)",
     gap: "12px",
-    marginTop: "8px",
-    width: "100%",
-    maxWidth: "480px",
   },
   quickCard: {
     display: "flex",
