@@ -474,9 +474,49 @@ function AbaOrcamentos({ pacienteId }) {
                     <span style={S.cardId}>#{o.id}</span>
                   </div>
 
-                  {/* Status */}
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                    {/* Status + Ações rápidas */}
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
                     <StatusBadge status={o.status} />
+                    {o.status === "pendente" && (
+                      <>
+                        <button
+                          style={{ ...S.btnStatusApprove, ...(hoveredBtn === `aprovar-${o.id}` ? S.btnStatusApproveHover : {}) }}
+                          onMouseEnter={() => setHoveredBtn(`aprovar-${o.id}`)}
+                          onMouseLeave={() => setHoveredBtn(null)}
+                          onClick={(e) => { e.stopPropagation(); handleMudarStatus(o.id, "aprovado"); }}
+                        >
+                          ✓ Aprovar
+                        </button>
+                        <button
+                          style={{ ...S.btnStatusReject, ...(hoveredBtn === `recusar-${o.id}` ? S.btnStatusRejectHover : {}) }}
+                          onMouseEnter={() => setHoveredBtn(`recusar-${o.id}`)}
+                          onMouseLeave={() => setHoveredBtn(null)}
+                          onClick={(e) => { e.stopPropagation(); handleMudarStatus(o.id, "recusado"); }}
+                        >
+                          ✕ Recusar
+                        </button>
+                      </>
+                    )}
+                    {o.status === "aprovado" && (
+                      <button
+                        style={{ ...S.btnStatusApprove, background: "#eff6ff", color: "#1d4ed8", border: "1px solid #dbeafe", ...(hoveredBtn === `andamento-${o.id}` ? { background: "#dbeafe" } : {}) }}
+                        onMouseEnter={() => setHoveredBtn(`andamento-${o.id}`)}
+                        onMouseLeave={() => setHoveredBtn(null)}
+                        onClick={(e) => { e.stopPropagation(); handleMudarStatus(o.id, "em_andamento"); }}
+                      >
+                        ▶ Iniciar
+                      </button>
+                    )}
+                    {o.status === "em_andamento" && (
+                      <button
+                        style={{ ...S.btnStatusApprove, ...(hoveredBtn === `concluir-${o.id}` ? S.btnStatusApproveHover : {}) }}
+                        onMouseEnter={() => setHoveredBtn(`concluir-${o.id}`)}
+                        onMouseLeave={() => setHoveredBtn(null)}
+                        onClick={(e) => { e.stopPropagation(); handleMudarStatus(o.id, "concluido"); }}
+                      >
+                        ✓ Concluir
+                      </button>
+                    )}
                   </div>
 
                   {/* Procedimentos resumidos */}
