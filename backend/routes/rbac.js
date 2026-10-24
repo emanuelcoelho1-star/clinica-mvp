@@ -3,6 +3,29 @@ const router = express.Router();
 const db = require("../database");
 const auth = require("../middleware/auth");
 
+// Protege todas as rotas de gestão de acessos: token válido não basta.
+// Somente usuários vinculados ao perfil protegido de Administrador podem entrar.
+router.use(auth, (req, res, next) => {
+  db.get(
+    `SELECT r.protegido
+     FROM usuarios u
+     LEFT JOIN roles r ON r.id = u.role_id
+     WHERE u.id = ?`,
+    [req.user.id],
+    (err, row) => {
+      if (err) {
+        return res.status(500).json({ erro: "Erro ao verificar permissões do usuário." });
+      }
+
+      if (!row || Number(row.protegido) !== 1) {
+        return res.status(403).json({ erro: "Acesso restrito ao administrador." });
+      }
+
+      next();
+    }
+  );
+});
+
 /* ══════════════════════════════════════════════════════════════
    RBAC — Rotas de Permissões & Acessos
    ══════════════════════════════════════════════════════════════ */
