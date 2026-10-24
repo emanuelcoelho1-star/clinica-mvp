@@ -1,7 +1,11 @@
 const jwt = require("jsonwebtoken");
 
 /* ── SECRET centralizado (mesmo do routes/auth.js) ── */
-const SECRET = process.env.JWT_SECRET || "segredo_super_secreto_clinica_2025";
+const SECRET = process.env.JWT_SECRET;
+
+if (!SECRET) {
+  throw new Error("JWT_SECRET não configurado. Defina a variável de ambiente antes de iniciar a API.");
+}
 
 module.exports = (req, res, next) => {
   const authHeader = req.headers["authorization"];
