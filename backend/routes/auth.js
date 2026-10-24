@@ -58,13 +58,13 @@ router.post("/register", registerLimiter, async (req, res) => {
       return res.status(400).json({ erro: "A senha deve ter no mínimo 6 caracteres." });
     }
 
-    db.get("SELECT id FROM usuarios WHERE email = ?", [email.toLowerCase().trim()], async (err, existing) => {
+    db.get("SELECT id FROM usuarios WHERE email = ? OR EXISTS (SELECT 1 FROM usuarios) LIMIT 1", [email.toLowerCase().trim()], async (err, existing) => {
       if (err) {
         return res.status(500).json({ erro: "Erro interno ao verificar e-mail." });
       }
 
       if (existing) {
-        return res.status(409).json({ erro: "Este e-mail já está cadastrado." });
+        return res.status(403).json({ erro: "Cadastro público desativado ou e-mail já cadastrado. Solicite acesso ao administrador." });
       }
 
       const hash = await bcrypt.hash(senha, 10);
