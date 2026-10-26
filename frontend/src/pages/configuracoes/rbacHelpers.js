@@ -9,6 +9,10 @@ export const API = API_URL;
 export const MODULOS_LABELS = {
   pacientes: "Pacientes",
   agenda: "Agenda",
+  anamneses: "Anamneses",
+  arquivos: "Arquivos de pacientes",
+  pagamentos: "Pagamentos",
+  evolucoes: "Evoluções clínicas",
   financeiro: "Financeiro",
   orcamentos: "Orçamentos",
   documentos: "Documentos",
