@@ -51,7 +51,9 @@ const upload = multer({
     const mime = String(file.mimetype || "").toLowerCase().split(";")[0].trim();
 
     if (!allowedMimes || !allowedMimes.has(mime)) {
-      return cb(new Error("Tipo de arquivo não permitido. Envie PDF, imagem comum, documento Office ou TXT."));
+      const error = new Error("Tipo de arquivo não permitido. Envie PDF, imagem comum, documento Office ou TXT.");
+      error.status = 400;
+      return cb(error);
     }
     cb(null, true);
   },
