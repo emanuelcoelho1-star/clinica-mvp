@@ -1,7 +1,20 @@
 const express = require("express");
 const router = express.Router();
+
+// A autorização é validada na API, não apenas na interface.
+router.use(auth, requirePermission("pacientes", (req) => {
+  if (req.method === "GET" && req.path === "/") return "listar";
+  if (req.method === "GET" && req.path.includes("/odontograma")) return "ver_prontuario";
+  if (req.method === "GET") return "ver_prontuario";
+  if (req.method === "PUT" && req.path.includes("/odontograma")) return "editar";
+  if (req.method === "POST") return "criar";
+  if (req.method === "PUT" || req.method === "PATCH") return "editar";
+  if (req.method === "DELETE") return "excluir";
+  return null;
+}));
 const db = require("../database");
 const auth = require("../middleware/auth");
+const requirePermission = require("../middleware/requirePermission");
 
 
 // =========================
