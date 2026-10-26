@@ -5,8 +5,12 @@ const fs = require("fs");
 const jwt = require("jsonwebtoken");
 const db = require("../database");
 const auth = require("../middleware/auth");
+const requirePermission = require("../middleware/requirePermission");
 
 const router = express.Router();
+
+// A autorização é validada na API, não apenas na interface.
+router.use(auth, requirePermission("arquivos"));
 
 /* ═══════════════════════════════════════════════════════════
    CONFIGURAÇÃO DO MULTER (upload de arquivos)
