@@ -47,7 +47,7 @@ module.exports = (req, res, next) => {
           return res.status(401).json({ erro: "Sessão inválida. Faça login novamente." });
         }
 
-        if (user.role_ativo === 0) {
+        if (Number(user.role_ativo) !== 1) {
           return res.status(403).json({ erro: "Este perfil está desativado. Contate o administrador." });
         }
 
