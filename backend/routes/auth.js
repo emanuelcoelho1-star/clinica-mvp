@@ -98,7 +98,7 @@ router.post("/login", loginLimiter, (req, res) => {
     }
 
     db.get(
-      "SELECT * FROM usuarios WHERE email = ?",
+      `SELECT u.*, r.ativo AS role_ativo\n       FROM usuarios u LEFT JOIN roles r ON r.id = u.role_id\n       WHERE u.email = ?`,
       [email.toLowerCase().trim()],
       async (err, user) => {
         if (err) {
@@ -113,6 +113,10 @@ router.post("/login", loginLimiter, (req, res) => {
 
         if (!valido) {
           return res.status(401).json({ erro: "E-mail ou senha inválidos." });
+        }
+
+        if (!user.role_id || Number(user.role_ativo) !== 1) {
+          return res.status(403).json({ erro: "Seu perfil está indisponível. Contate o administrador." });
         }
 
         const token = jwt.sign(
