@@ -4,6 +4,7 @@ const db = require("../database");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const rateLimit = require("express-rate-limit");
+const auth = require("../middleware/auth");
 
 /* ── SECRET centralizado ──────────────────────── */
 const SECRET = process.env.JWT_SECRET;
@@ -155,7 +156,7 @@ router.post("/login", loginLimiter, (req, res) => {
 });
 
 /* ── Verificar token (me) ─────────────────────── */
-router.get("/me", authGeneralLimiter, (req, res) => {
+router.get("/me", authGeneralLimiter, auth, (req, res) => {
   const authHeader = req.headers["authorization"];
 
   if (!authHeader) {
@@ -185,7 +186,7 @@ router.get("/me", authGeneralLimiter, (req, res) => {
 });
 
 /* ── Atualizar perfil ─────────────────────────── */
-router.put("/perfil", authGeneralLimiter, (req, res) => {
+router.put("/perfil", authGeneralLimiter, auth, (req, res) => {
   const authHeader = req.headers["authorization"];
 
   if (!authHeader) {
@@ -219,7 +220,7 @@ router.put("/perfil", authGeneralLimiter, (req, res) => {
 });
 
 /* ── Alterar senha ────────────────────────────── */
-router.put("/alterar-senha", authGeneralLimiter, (req, res) => {
+router.put("/alterar-senha", authGeneralLimiter, auth, (req, res) => {
   const authHeader = req.headers["authorization"];
 
   if (!authHeader) {
