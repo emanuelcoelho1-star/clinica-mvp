@@ -103,13 +103,21 @@ router.post("/", auth, upload.single("arquivo"), (req, res) => {
    (token via query string para poder abrir em nova aba)
    ═══════════════════════════════════════════════════════════ */
 router.get("/:id/download", (req, res) => {
-  const token = req.query.token || req.headers["authorization"];
-  if (!token) return res.status(401).json({ erro: "Token não fornecido" });
+  const authHeader = req.headers["authorization"];
+  const token = req.query.token || (
+    authHeader && authHeader.startsWith("Bearer ")
+      ? authHeader.slice(7)
+      : authHeader
+  );
+  const secret = process.env.JWT_SECRET;
+
+  if (!token) return res.status(401).json({ erro: "Token não fornecido." });
+  if (!secret) return res.status(500).json({ erro: "Autenticação indisponível." });
 
   try {
-    jwt.verify(token, "segredo_super_secreto");
+    jwt.verify(token, secret);
   } catch {
-    return res.status(401).json({ erro: "Token inválido" });
+    return res.status(401).json({ erro: "Token inválido ou expirado." });
   }
 
   const { id } = req.params;
