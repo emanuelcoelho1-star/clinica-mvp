@@ -33,7 +33,10 @@ module.exports = (req, res, next) => {
 
     // Confere se a conta ainda existe antes de autorizar qualquer rota protegida.
     db.get(
-      "SELECT id, nome, email FROM usuarios WHERE id = ?",
+      `SELECT u.id, u.nome, u.email, r.ativo AS role_ativo
+       FROM usuarios u
+       LEFT JOIN roles r ON r.id = u.role_id
+       WHERE u.id = ?`,
       [decoded.id],
       (err, user) => {
         if (err) {
@@ -42,6 +45,10 @@ module.exports = (req, res, next) => {
 
         if (!user) {
           return res.status(401).json({ erro: "Sessão inválida. Faça login novamente." });
+        }
+
+        if (user.role_ativo === 0) {
+          return res.status(403).json({ erro: "Este perfil está desativado. Contate o administrador." });
         }
 
         req.user = { ...decoded, nome: user.nome, email: user.email };
