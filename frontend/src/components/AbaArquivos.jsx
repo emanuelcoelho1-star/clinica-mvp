@@ -26,7 +26,7 @@ function getExtensao(nome) {
 
 function isImagem(nome) {
   const ext = getExtensao(nome);
-  return ["jpg", "jpeg", "png", "gif", "webp", "svg", "bmp"].includes(ext);
+  return ["jpg", "jpeg", "png", "gif", "webp"].includes(ext);
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -206,6 +206,7 @@ function AbaArquivos({ pacienteId }) {
 
   const [tela, setTela] = useState("lista"); // "lista" | "upload" | "preview"
   const [preview, setPreview] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState("");
 
   // Upload
   const [selectedFiles, setSelectedFiles] = useState([]);
@@ -232,6 +233,42 @@ function AbaArquivos({ pacienteId }) {
   useEffect(() => {
     carregarArquivos();
   }, [pacienteId]);
+
+  useEffect(() => {
+    if (!preview || tela !== "preview") {
+      setPreviewUrl("");
+      return undefined;
+    }
+
+    let cancelled = false;
+    let objectUrl = "";
+    const tk = localStorage.getItem("token");
+    setPreviewUrl("");
+
+    fetch(`${API_URL}/arquivos/${preview.id}/download`, {
+      headers: { Authorization: tk || "" },
+    })
+      .then((response) => {
+        if (!response.ok) throw new Error("Não foi possível carregar o arquivo.");
+        return response.blob();
+      })
+      .then((blob) => {
+        objectUrl = URL.createObjectURL(blob);
+        if (cancelled) {
+          URL.revokeObjectURL(objectUrl);
+        } else {
+          setPreviewUrl(objectUrl);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setErro("Não foi possível carregar o arquivo.");
+      });
+
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [preview, tela]);
 
   async function carregarArquivos() {
     try {
@@ -337,10 +374,29 @@ function AbaArquivos({ pacienteId }) {
   }
 
   /* ── Baixar ──────────────────────────────── */
-  function baixarArquivo(arquivo) {
-    const tk = localStorage.getItem("token");
-    const url = `${API_URL}/arquivos/${arquivo.id}/download?token=${encodeURIComponent(tk || "")}`;
-    window.open(url, "_blank");
+  async function baixarArquivo(arquivo) {
+    const tab = window.open("about:blank", "_blank");
+    try {
+      const tk = localStorage.getItem("token");
+      const response = await fetch(`${API_URL}/arquivos/${arquivo.id}/download`, {
+        headers: { Authorization: tk || "" },
+      });
+      if (!response.ok) throw new Error("Não foi possível baixar o arquivo.");
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      if (tab) {
+        tab.location.href = url;
+      } else {
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = arquivo.nome_original || "arquivo";
+        link.click();
+      }
+      window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch {
+      if (tab) tab.close();
+      setErro("Não foi possível baixar o arquivo. Tente novamente.");
+    }
   }
 
   /* ── Excluir ─────────────────────────────── */
@@ -785,8 +841,7 @@ function AbaArquivos({ pacienteId }) {
      RENDER — PREVIEW
      ═══════════════════════════════════════════ */
   if (tela === "preview" && preview) {
-    const tk = localStorage.getItem("token");
-    const imgUrl = `${API_URL}/arquivos/${preview.id}/download?token=${encodeURIComponent(tk || "")}`;
+    const imgUrl = previewUrl;
 
     return (
       <div style={S.wrapper}>
