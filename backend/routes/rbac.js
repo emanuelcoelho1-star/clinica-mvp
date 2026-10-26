@@ -107,12 +107,17 @@ router.delete("/roles/:id", auth, (req, res) => {
     if (!role) return res.status(404).json({ erro: "Perfil não encontrado." });
     if (role.protegido) return res.status(403).json({ erro: "Este perfil é protegido e não pode ser excluído." });
 
-    // Mover usuários deste perfil para o perfil padrão (id=1 Administrador)
-    db.run("UPDATE usuarios SET role_id = 1 WHERE role_id = ?", [id], (err) => {
-      if (err) return res.status(500).json({ erro: "Erro ao reatribuir usuários." });
+    db.get("SELECT COUNT(*) AS total FROM usuarios WHERE role_id = ?", [id], (countErr, usage) => {
+      if (countErr) return res.status(500).json({ erro: "Erro ao verificar usuários vinculados ao perfil." });
+      if (usage && usage.total > 0) {
+        return res.status(409).json({
+          erro: "Este perfil possui usuários vinculados. Reatribua-os a outro perfil antes de excluí-lo.",
+          usuarios_vinculados: usage.total,
+        });
+      }
 
-      db.run("DELETE FROM roles WHERE id = ?", [id], function (err) {
-        if (err) return res.status(500).json({ erro: "Erro ao excluir perfil." });
+      db.run("DELETE FROM roles WHERE id = ?", [id], function (deleteErr) {
+        if (deleteErr) return res.status(500).json({ erro: "Erro ao excluir perfil." });
         res.json({ mensagem: "Perfil excluído com sucesso." });
       });
     });
