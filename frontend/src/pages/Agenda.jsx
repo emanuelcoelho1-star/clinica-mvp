@@ -216,9 +216,16 @@ function Agenda() {
   }
   async function carregarPacientes() {
     try { const tk = localStorage.getItem("token");
-      const r = await fetch(`${API_URL}/pacientes`, { headers: { Authorization: tk || "" } });
-      if (!r.ok) throw new Error(); const d = await r.json();
-      setPacientes(Array.isArray(d) ? d : Array.isArray(d.pacientes) ? d.pacientes : []);
+      const r = await fetch(`${API_URL}/pacientes?limit=100`, { headers: { Authorization: tk || "" } });
+      if (!r.ok) throw new Error();
+      const d = await r.json();
+      // A API de pacientes usa paginação e retorna { dados, paginacao }.
+      // Também aceitamos os formatos antigos para manter compatibilidade.
+      const lista = Array.isArray(d) ? d
+        : Array.isArray(d.dados) ? d.dados
+        : Array.isArray(d.pacientes) ? d.pacientes
+        : [];
+      setPacientes(lista);
     } catch { setPacientes([]); }
   }
 
