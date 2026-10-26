@@ -42,8 +42,30 @@ require("./database");
 const app = express();
 const PORT = 3001;
 
-app.use(cors());
-app.use(express.json());
+// Em desenvolvimento, aceita as origens locais mais comuns do Vite/React.
+// Em produção, defina CORS_ORIGINS com a lista de origens confiáveis separadas por vírgula.
+const defaultOrigins = [
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "http://localhost:4173",
+  "http://127.0.0.1:4173",
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+];
+const allowedOrigins = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(",").map((origin) => origin.trim()).filter(Boolean)
+  : defaultOrigins;
+
+app.use(cors({
+  origin(origin, callback) {
+    // Permite ferramentas locais/servidor a servidor sem cabeçalho Origin.
+    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(null, false);
+  },
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+}));
+app.use(express.json({ limit: "1mb" }));
 
 /* ═══════════════════════════════════════════════════════════
    RATE LIMIT GLOBAL — 100 requisições por IP a cada 1 minuto
