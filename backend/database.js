@@ -538,57 +538,60 @@ db.serialize(() => {
 
   /* ══════════════════════════════════════════════════════════
      SEED — Permissões padrão (RBAC)
+     INSERT OR IGNORE também inclui novas permissões em bancos já existentes.
      ══════════════════════════════════════════════════════════ */
-  db.get("SELECT COUNT(*) as total FROM permissoes", [], (err, row) => {
-    if (err) return;
-    if (row && row.total === 0) {
-      const perms = [
-        // Pacientes
-        ["pacientes", "listar", "Listar pacientes"],
-        ["pacientes", "criar", "Cadastrar pacientes"],
-        ["pacientes", "editar", "Editar pacientes"],
-        ["pacientes", "excluir", "Excluir pacientes"],
-        ["pacientes", "ver_prontuario", "Ver prontuário do paciente"],
-        // Agenda
-        ["agenda", "listar", "Ver agenda"],
-        ["agenda", "criar", "Agendar consultas"],
-        ["agenda", "editar", "Editar agendamentos"],
-        ["agenda", "excluir", "Cancelar agendamentos"],
-        // Financeiro
-        ["financeiro", "listar", "Ver financeiro"],
-        ["financeiro", "criar", "Criar lançamentos"],
-        ["financeiro", "editar", "Editar lançamentos"],
-        ["financeiro", "excluir", "Excluir lançamentos"],
-        ["financeiro", "exportar", "Exportar relatórios"],
-        // Orçamentos
-        ["orcamentos", "listar", "Ver orçamentos"],
-        ["orcamentos", "criar", "Criar orçamentos"],
-        ["orcamentos", "editar", "Editar orçamentos"],
-        ["orcamentos", "excluir", "Excluir orçamentos"],
-        // Documentos
-        ["documentos", "listar", "Ver documentos"],
-        ["documentos", "criar", "Criar documentos"],
-        ["documentos", "editar", "Editar documentos"],
-        ["documentos", "excluir", "Excluir documentos"],
-        // Tratamentos
-        ["tratamentos", "listar", "Ver tratamentos"],
-        ["tratamentos", "criar", "Criar tratamentos"],
-        ["tratamentos", "editar", "Editar tratamentos"],
-        ["tratamentos", "excluir", "Excluir tratamentos"],
-        // Configurações
-        ["configuracoes", "gerenciar_usuarios", "Gerenciar usuários"],
-        ["configuracoes", "gerenciar_roles", "Gerenciar perfis de acesso"],
-        ["configuracoes", "gerenciar_permissoes", "Gerenciar permissões"],
-      ];
+  const perms = [
+    ["pacientes", "listar", "Listar pacientes"],
+    ["pacientes", "criar", "Cadastrar pacientes"],
+    ["pacientes", "editar", "Editar pacientes"],
+    ["pacientes", "excluir", "Excluir pacientes"],
+    ["pacientes", "ver_prontuario", "Ver prontuário do paciente"],
+    ["agenda", "listar", "Ver agenda"],
+    ["agenda", "criar", "Agendar consultas"],
+    ["agenda", "editar", "Editar agendamentos"],
+    ["agenda", "excluir", "Cancelar agendamentos"],
+    ["anamneses", "listar", "Ver anamneses"],
+    ["anamneses", "criar", "Criar anamneses"],
+    ["anamneses", "editar", "Editar anamneses"],
+    ["anamneses", "excluir", "Excluir anamneses"],
+    ["orcamentos", "listar", "Ver orçamentos"],
+    ["orcamentos", "criar", "Criar orçamentos"],
+    ["orcamentos", "editar", "Editar orçamentos"],
+    ["orcamentos", "excluir", "Excluir orçamentos"],
+    ["documentos", "listar", "Ver documentos"],
+    ["documentos", "criar", "Criar documentos"],
+    ["documentos", "editar", "Editar documentos"],
+    ["documentos", "excluir", "Excluir documentos"],
+    ["arquivos", "listar", "Ver e baixar arquivos"],
+    ["arquivos", "criar", "Enviar arquivos"],
+    ["arquivos", "excluir", "Excluir arquivos"],
+    ["pagamentos", "listar", "Ver pagamentos"],
+    ["pagamentos", "criar", "Registrar pagamentos"],
+    ["pagamentos", "editar", "Editar pagamentos"],
+    ["pagamentos", "excluir", "Excluir pagamentos"],
+    ["evolucoes", "listar", "Ver evoluções clínicas"],
+    ["evolucoes", "criar", "Registrar evoluções clínicas"],
+    ["evolucoes", "editar", "Editar evoluções clínicas"],
+    ["evolucoes", "excluir", "Excluir evoluções clínicas"],
+    ["tratamentos", "listar", "Ver tratamentos"],
+    ["tratamentos", "criar", "Criar tratamentos"],
+    ["tratamentos", "editar", "Editar tratamentos"],
+    ["tratamentos", "excluir", "Excluir tratamentos"],
+    ["financeiro", "listar", "Ver informações financeiras"],
+    ["financeiro", "criar", "Criar lançamentos financeiros"],
+    ["financeiro", "editar", "Editar lançamentos financeiros"],
+    ["financeiro", "excluir", "Excluir lançamentos financeiros"],
+    ["financeiro", "exportar", "Exportar relatórios financeiros"],
+    ["configuracoes", "gerenciar_usuarios", "Gerenciar usuários"],
+    ["configuracoes", "gerenciar_roles", "Gerenciar perfis de acesso"],
+    ["configuracoes", "gerenciar_permissoes", "Gerenciar permissões"],
+  ];
 
-      const stmt = db.prepare(
-        "INSERT INTO permissoes (modulo, acao, descricao) VALUES (?, ?, ?)"
-      );
-      perms.forEach((p) => stmt.run(p));
-      stmt.finalize();
-      console.log("Permissões padrão inseridas.");
-    }
-  });
+  const permissaoStmt = db.prepare(
+    "INSERT OR IGNORE INTO permissoes (modulo, acao, descricao) VALUES (?, ?, ?)"
+  );
+  perms.forEach((permissao) => permissaoStmt.run(permissao));
+  permissaoStmt.finalize();
 
   /* ══════════════════════════════════════════════════════════
      MIGRAÇÕES — Tabelas existentes (pacientes, usuarios)
