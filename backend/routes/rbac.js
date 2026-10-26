@@ -232,15 +232,51 @@ router.put("/usuarios/:id/role", auth, (req, res) => {
     return res.status(400).json({ erro: "role_id é obrigatório." });
   }
 
-  db.get("SELECT id FROM roles WHERE id = ?", [role_id], (err, role) => {
+  db.get("SELECT id, protegido, ativo FROM roles WHERE id = ?", [role_id], (err, role) => {
     if (err) return res.status(500).json({ erro: "Erro interno." });
     if (!role) return res.status(404).json({ erro: "Perfil não encontrado." });
+    if (role.ativo === 0) return res.status(400).json({ erro: "Não é possível atribuir um perfil desativado." });
 
-    db.run("UPDATE usuarios SET role_id = ? WHERE id = ?", [role_id, id], function (err) {
-      if (err) return res.status(500).json({ erro: "Erro ao atualizar perfil do usuário." });
-      if (this.changes === 0) return res.status(404).json({ erro: "Usuário não encontrado." });
-      res.json({ mensagem: "Perfil do usuário atualizado." });
-    });
+    db.get(
+      `SELECT u.id, r.protegido AS role_protegido
+       FROM usuarios u LEFT JOIN roles r ON r.id = u.role_id
+       WHERE u.id = ?`,
+      [id],
+      (userErr, target) => {
+        if (userErr) return res.status(500).json({ erro: "Erro ao verificar usuário." });
+        if (!target) return res.status(404).json({ erro: "Usuário não encontrado." });
+
+        if (Number(id) === Number(req.user.id) && Number(role.protegido) !== 1) {
+          return res.status(409).json({ erro: "Não é possível remover o perfil de administrador da própria sessão." });
+        }
+
+        const updateRole = () => {
+          db.run("UPDATE usuarios SET role_id = ? WHERE id = ?", [role_id, id], function (updateErr) {
+            if (updateErr) return res.status(500).json({ erro: "Erro ao atualizar perfil do usuário." });
+            if (this.changes === 0) return res.status(404).json({ erro: "Usuário não encontrado." });
+            res.json({ mensagem: "Perfil do usuário atualizado." });
+          });
+        };
+
+        if (Number(target.role_protegido) !== 1 || Number(role.protegido) === 1) {
+          return updateRole();
+        }
+
+        db.get(
+          `SELECT COUNT(*) AS total FROM usuarios u
+           INNER JOIN roles r ON r.id = u.role_id
+           WHERE r.protegido = 1`,
+          [],
+          (countErr, row) => {
+            if (countErr) return res.status(500).json({ erro: "Erro ao verificar administradores." });
+            if (!row || row.total <= 1) {
+              return res.status(409).json({ erro: "O sistema precisa manter pelo menos um administrador." });
+            }
+            updateRole();
+          }
+        );
+      }
+    );
   });
 });
 
@@ -253,11 +289,40 @@ router.delete("/usuarios/:id", auth, (req, res) => {
     return res.status(403).json({ erro: "Você não pode excluir sua própria conta." });
   }
 
-  db.run("DELETE FROM usuarios WHERE id = ?", [id], function (err) {
-    if (err) return res.status(500).json({ erro: "Erro ao excluir usuário." });
-    if (this.changes === 0) return res.status(404).json({ erro: "Usuário não encontrado." });
-    res.json({ mensagem: "Usuário excluído com sucesso." });
-  });
+  db.get(
+    `SELECT u.id, r.protegido AS role_protegido
+     FROM usuarios u LEFT JOIN roles r ON r.id = u.role_id
+     WHERE u.id = ?`,
+    [id],
+    (userErr, target) => {
+      if (userErr) return res.status(500).json({ erro: "Erro ao verificar usuário." });
+      if (!target) return res.status(404).json({ erro: "Usuário não encontrado." });
+
+      const excluirUsuario = () => {
+        db.run("DELETE FROM usuarios WHERE id = ?", [id], function (err) {
+          if (err) return res.status(500).json({ erro: "Erro ao excluir usuário." });
+          if (this.changes === 0) return res.status(404).json({ erro: "Usuário não encontrado." });
+          res.json({ mensagem: "Usuário excluído com sucesso." });
+        });
+      };
+
+      if (Number(target.role_protegido) !== 1) return excluirUsuario();
+
+      db.get(
+        `SELECT COUNT(*) AS total FROM usuarios u
+         INNER JOIN roles r ON r.id = u.role_id
+         WHERE r.protegido = 1`,
+        [],
+        (countErr, row) => {
+          if (countErr) return res.status(500).json({ erro: "Erro ao verificar administradores." });
+          if (!row || row.total <= 1) {
+            return res.status(409).json({ erro: "O sistema precisa manter pelo menos um administrador." });
+          }
+          excluirUsuario();
+        }
+      );
+    }
+  );
 });
 
 module.exports = router;
