@@ -158,37 +158,60 @@ router.get("/roles/:id/permissoes", auth, (req, res) => {
 /* ── PUT /rbac/roles/:id/permissoes — Salvar permissões ──── */
 router.put("/roles/:id/permissoes", auth, (req, res) => {
   const { id } = req.params;
-  const { permissao_ids } = req.body; // Array de IDs
+  const permissaoIdsRaw = req.body?.permissao_ids;
+
+  if (!Array.isArray(permissaoIdsRaw)) {
+    return res.status(400).json({ erro: "permissao_ids deve ser uma lista de IDs." });
+  }
+
+  const permissaoIds = [...new Set(permissaoIdsRaw.map(Number))];
+  if (permissaoIds.some((permId) => !Number.isInteger(permId) || permId <= 0)) {
+    return res.status(400).json({ erro: "A lista contém IDs de permissões inválidos." });
+  }
 
   db.get("SELECT protegido FROM roles WHERE id = ?", [id], (err, role) => {
     if (err) return res.status(500).json({ erro: "Erro interno." });
     if (!role) return res.status(404).json({ erro: "Perfil não encontrado." });
     if (role.protegido) return res.status(403).json({ erro: "Permissões do Administrador não podem ser alteradas." });
 
-    // Limpar permissões anteriores
-    db.run("DELETE FROM role_permissoes WHERE role_id = ?", [id], (err) => {
-      if (err) return res.status(500).json({ erro: "Erro ao limpar permissões." });
+    const salvarPermissoes = () => {
+      db.run("DELETE FROM role_permissoes WHERE role_id = ?", [id], (deleteErr) => {
+        if (deleteErr) return res.status(500).json({ erro: "Erro ao limpar permissões." });
+        if (permissaoIds.length === 0) {
+          return res.json({ mensagem: "Permissões atualizadas (todas removidas)." });
+        }
 
-      if (!permissao_ids || permissao_ids.length === 0) {
-        return res.json({ mensagem: "Permissões atualizadas (todas removidas)." });
-      }
+        const stmt = db.prepare("INSERT INTO role_permissoes (role_id, permissao_id) VALUES (?, ?)");
+        let erroInserir = false;
+        permissaoIds.forEach((permId) => {
+          stmt.run([id, permId], (insertErr) => {
+            if (insertErr) erroInserir = true;
+          });
+        });
 
-      const stmt = db.prepare("INSERT INTO role_permissoes (role_id, permissao_id) VALUES (?, ?)");
-      let erroInserir = false;
-
-      permissao_ids.forEach((permId) => {
-        stmt.run([id, permId], (err) => {
-          if (err) erroInserir = true;
+        stmt.finalize((finalizeErr) => {
+          if (finalizeErr || erroInserir) {
+            return res.status(500).json({ erro: "Erro ao salvar algumas permissões." });
+          }
+          res.json({ mensagem: "Permissões atualizadas com sucesso." });
         });
       });
+    };
 
-      stmt.finalize((err) => {
-        if (err || erroInserir) {
-          return res.status(500).json({ erro: "Erro ao salvar algumas permissões." });
+    if (permissaoIds.length === 0) return salvarPermissoes();
+
+    const placeholders = permissaoIds.map(() => "?").join(",");
+    db.get(
+      `SELECT COUNT(*) AS total FROM permissoes WHERE id IN (${placeholders})`,
+      permissaoIds,
+      (countErr, row) => {
+        if (countErr) return res.status(500).json({ erro: "Erro ao validar permissões." });
+        if (!row || row.total !== permissaoIds.length) {
+          return res.status(400).json({ erro: "Uma ou mais permissões não existem." });
         }
-        res.json({ mensagem: "Permissões atualizadas com sucesso." });
-      });
-    });
+        salvarPermissoes();
+      }
+    );
   });
 });
 
