@@ -58,31 +58,45 @@ router.post("/register", registerLimiter, async (req, res) => {
       return res.status(400).json({ erro: "A senha deve ter no mínimo 6 caracteres." });
     }
 
-    db.get("SELECT id FROM usuarios WHERE email = ? OR EXISTS (SELECT 1 FROM usuarios) LIMIT 1", [email.toLowerCase().trim()], async (err, existing) => {
-      if (err) {
-        return res.status(500).json({ erro: "Erro interno ao verificar e-mail." });
-      }
+    const emailNormalizado = email.toLowerCase().trim();
+    const nomeNormalizado = String(nome || "Administrador").trim().slice(0, 120);
+    if (!nomeNormalizado) {
+      return res.status(400).json({ erro: "Nome é obrigatório." });
+    }
 
-      if (existing) {
-        return res.status(403).json({ erro: "Cadastro público desativado ou e-mail já cadastrado. Solicite acesso ao administrador." });
-      }
+    const hash = await bcrypt.hash(senha, 12);
 
-      const hash = await bcrypt.hash(senha, 10);
-
-      db.run(
-        "INSERT INTO usuarios (nome, email, senha) VALUES (?, ?, ?)",
-        [nome || "Administrador", email.toLowerCase().trim(), hash],
-        function (err) {
-          if (err) {
-            return res.status(500).json({ erro: "Erro ao criar usuário." });
+    // Uma única instrução atômica evita duas primeiras contas concorrentes
+    // e associa a primeira conta ao perfil protegido de Administrador.
+    db.run(
+      `INSERT INTO usuarios (nome, email, senha, role_id)
+       SELECT ?, ?, ?, r.id
+       FROM roles r
+       WHERE r.protegido = 1 AND r.ativo = 1
+         AND NOT EXISTS (SELECT 1 FROM usuarios)
+         AND NOT EXISTS (SELECT 1 FROM usuarios WHERE email = ?)
+       LIMIT 1`,
+      [nomeNormalizado, emailNormalizado, hash, emailNormalizado],
+      function (err) {
+        if (err) {
+          if (err.message.includes("UNIQUE")) {
+            return res.status(409).json({ erro: "E-mail já cadastrado." });
           }
-          res.status(201).json({
-            mensagem: "Usuário criado com sucesso.",
-            id: this.lastID,
+          return res.status(500).json({ erro: "Erro ao criar usuário." });
+        }
+
+        if (this.changes === 0) {
+          return res.status(403).json({
+            erro: "Cadastro público desativado ou perfil Administrador indisponível. Solicite acesso ao administrador.",
           });
         }
-      );
-    });
+
+        res.status(201).json({
+          mensagem: "Usuário administrador criado com sucesso.",
+          id: this.lastID,
+        });
+      }
+    );;
   } catch (error) {
     res.status(500).json({ erro: "Erro interno no servidor." });
   }
