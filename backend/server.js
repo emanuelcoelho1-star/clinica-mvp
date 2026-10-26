@@ -6,7 +6,7 @@ const envPath = path.join(__dirname, ".env");
 
 if (fs.existsSync(envPath)) {
   const envContent = fs.readFileSync(envPath, "utf8");
-  for (const line of envContent.split(/\\r?\\n/)) {
+  for (const line of envContent.split(String.fromCharCode(10))) {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith("#")) continue;
     const separator = trimmed.indexOf("=");
