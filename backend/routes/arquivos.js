@@ -28,9 +28,33 @@ const storage = multer.diskStorage({
   },
 });
 
+const TIPOS_PERMITIDOS = new Map([
+  [".pdf", new Set(["application/pdf"])],
+  [".jpg", new Set(["image/jpeg"])],
+  [".jpeg", new Set(["image/jpeg"])],
+  [".png", new Set(["image/png"])],
+  [".gif", new Set(["image/gif"])],
+  [".webp", new Set(["image/webp"])],
+  [".doc", new Set(["application/msword", "application/octet-stream"])],
+  [".docx", new Set(["application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/zip", "application/octet-stream"])],
+  [".xls", new Set(["application/vnd.ms-excel", "application/octet-stream"])],
+  [".xlsx", new Set(["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/zip", "application/octet-stream"])],
+  [".txt", new Set(["text/plain", "application/octet-stream"])],
+]);
+
 const upload = multer({
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
+  limits: { fileSize: 10 * 1024 * 1024, files: 5 },
+  fileFilter: (req, file, cb) => {
+    const extension = path.extname(file.originalname || "").toLowerCase();
+    const allowedMimes = TIPOS_PERMITIDOS.get(extension);
+    const mime = String(file.mimetype || "").toLowerCase().split(";")[0].trim();
+
+    if (!allowedMimes || !allowedMimes.has(mime)) {
+      return cb(new Error("Tipo de arquivo não permitido. Envie PDF, imagem comum, documento Office ou TXT."));
+    }
+    cb(null, true);
+  },
 });
 
 /* ═══════════════════════════════════════════════════════════
@@ -75,7 +99,7 @@ router.post("/", auth, upload.single("arquivo"), (req, res) => {
     sql,
     [
       paciente_id,
-      req.file.originalname,
+      path.basename(req.file.originalname || "arquivo").replace(/[\\r\\n\\0]/g, "").slice(0, 180),
       req.file.filename,
       req.file.size,
       req.file.mimetype,
@@ -89,7 +113,7 @@ router.post("/", auth, upload.single("arquivo"), (req, res) => {
       }
       res.status(201).json({
         id: this.lastID,
-        nome_original: req.file.originalname,
+        nome_original: path.basename(req.file.originalname || "arquivo").replace(/[\\r\\n\\0]/g, "").slice(0, 180),
         nome_salvo: req.file.filename,
         tamanho: req.file.size,
         mimetype: req.file.mimetype,
