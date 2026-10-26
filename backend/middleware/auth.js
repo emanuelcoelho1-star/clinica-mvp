@@ -1,4 +1,5 @@
 const jwt = require("jsonwebtoken");
+const db = require("../database");
 
 /* ── SECRET centralizado (mesmo do routes/auth.js) ── */
 const SECRET = process.env.JWT_SECRET;
@@ -25,8 +26,28 @@ module.exports = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, SECRET);
-    req.user = decoded; // { id, nome, email }
-    next();
+
+    if (!decoded.id) {
+      return res.status(401).json({ erro: "Token inválido." });
+    }
+
+    // Confere se a conta ainda existe antes de autorizar qualquer rota protegida.
+    db.get(
+      "SELECT id, nome, email FROM usuarios WHERE id = ?",
+      [decoded.id],
+      (err, user) => {
+        if (err) {
+          return res.status(500).json({ erro: "Não foi possível validar a sessão." });
+        }
+
+        if (!user) {
+          return res.status(401).json({ erro: "Sessão inválida. Faça login novamente." });
+        }
+
+        req.user = { ...decoded, nome: user.nome, email: user.email };
+        next();
+      }
+    );
   } catch (error) {
     if (error.name === "TokenExpiredError") {
       return res.status(401).json({ erro: "Token expirado. Faça login novamente." });
