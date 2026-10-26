@@ -1,7 +1,11 @@
 const express = require("express");
 const router = express.Router();
+
+// A autorização é validada na API, não apenas na interface.
+router.use(auth, requirePermission("evolucoes"));
 const db = require("../database");
 const auth = require("../middleware/auth");
+const requirePermission = require("../middleware/requirePermission");
 
 /* ── Listar evoluções de um paciente ─────────── */
 router.get("/paciente/:pacienteId", auth, (req, res) => {
