@@ -67,6 +67,15 @@ app.use(cors({
 }));
 app.use(express.json({ limit: "1mb" }));
 
+// Cabeçalhos básicos de segurança para todas as respostas da API.
+app.use((req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("Referrer-Policy", "no-referrer");
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  next();
+});
+
 /* ═══════════════════════════════════════════════════════════
    RATE LIMIT GLOBAL — 100 requisições por IP a cada 1 minuto
    Protege toda a API contra abuso / DDoS básico
