@@ -129,16 +129,14 @@ router.post("/", auth, upload.single("arquivo"), (req, res) => {
 
 /* ═══════════════════════════════════════════════════════════
    DOWNLOAD / VISUALIZAR ARQUIVO
-   GET /arquivos/:id/download?token=xxx
-   (token via query string para poder abrir em nova aba)
+   GET /arquivos/:id/download
+   O token deve ser enviado no cabeçalho Authorization, nunca na URL.
    ═══════════════════════════════════════════════════════════ */
 router.get("/:id/download", (req, res) => {
   const authHeader = req.headers["authorization"];
-  const token = req.query.token || (
-    authHeader && authHeader.startsWith("Bearer ")
-      ? authHeader.slice(7)
-      : authHeader
-  );
+  const token = authHeader && authHeader.startsWith("Bearer ")
+    ? authHeader.slice(7)
+    : authHeader;
   const secret = process.env.JWT_SECRET;
 
   if (!token) return res.status(401).json({ erro: "Token não fornecido." });
@@ -165,7 +163,7 @@ router.get("/:id/download", (req, res) => {
     (userErr, user) => {
       if (userErr) return res.status(500).json({ erro: "Não foi possível validar a sessão." });
       if (!user) return res.status(401).json({ erro: "Sessão inválida. Faça login novamente." });
-      if (user.role_ativo === 0) {
+      if (Number(user.role_ativo) !== 1) {
         return res.status(403).json({ erro: "Este perfil está desativado. Contate o administrador." });
       }
 
