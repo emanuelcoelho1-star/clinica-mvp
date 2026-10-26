@@ -108,6 +108,31 @@ app.use("/auth", authRoutes);
 app.use("/financeiro", financeiroRoutes);
 app.use("/rbac", rbacRoutes);
 
+// Respostas consistentes para rotas inexistentes e erros inesperados.
+// Não expõe stack traces, caminhos locais ou detalhes internos da API.
+app.use((req, res) => {
+  res.status(404).json({ erro: "Rota não encontrada." });
+});
+
+app.use((err, req, res, next) => {
+  if (res.headersSent) return next(err);
+
+  if (err && err.code === "LIMIT_FILE_SIZE") {
+    return res.status(413).json({ erro: "O arquivo excede o limite de 10 MB." });
+  }
+  if (err && err.code === "LIMIT_FILE_COUNT") {
+    return res.status(400).json({ erro: "Envie no máximo 5 arquivos por vez." });
+  }
+
+  const status = Number(err && (err.status || err.statusCode));
+  if (status >= 400 && status < 500) {
+    return res.status(status).json({ erro: err.message || "Requisição inválida." });
+  }
+
+  console.error("Erro inesperado na API:", req.method, req.path);
+  return res.status(500).json({ erro: "Erro interno do servidor." });
+});
+
 app.listen(PORT, () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);
 });
