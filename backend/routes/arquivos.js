@@ -114,26 +114,60 @@ router.get("/:id/download", (req, res) => {
   if (!token) return res.status(401).json({ erro: "Token não fornecido." });
   if (!secret) return res.status(500).json({ erro: "Autenticação indisponível." });
 
+  let decoded;
   try {
-    jwt.verify(token, secret);
+    decoded = jwt.verify(token, secret);
   } catch {
     return res.status(401).json({ erro: "Token inválido ou expirado." });
   }
 
-  const { id } = req.params;
-  db.get("SELECT * FROM arquivos WHERE id = ?", [id], (err, row) => {
-    if (err) return res.status(500).json({ erro: err.message });
-    if (!row) return res.status(404).json({ erro: "Arquivo não encontrado." });
+  if (!decoded || !decoded.id) {
+    return res.status(401).json({ erro: "Token inválido ou expirado." });
+  }
 
-    const filePath = path.join(uploadDir, row.nome_salvo);
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ erro: "Arquivo não encontrado no disco." });
+  // Downloads abertos em nova aba também precisam validar a conta no banco.
+  db.get(
+    `SELECT u.id, r.ativo AS role_ativo
+     FROM usuarios u
+     LEFT JOIN roles r ON r.id = u.role_id
+     WHERE u.id = ?`,
+    [decoded.id],
+    (userErr, user) => {
+      if (userErr) return res.status(500).json({ erro: "Não foi possível validar a sessão." });
+      if (!user) return res.status(401).json({ erro: "Sessão inválida. Faça login novamente." });
+      if (user.role_ativo === 0) {
+        return res.status(403).json({ erro: "Este perfil está desativado. Contate o administrador." });
+      }
+
+      const { id } = req.params;
+      db.get("SELECT * FROM arquivos WHERE id = ?", [id], (err, row) => {
+        if (err) return res.status(500).json({ erro: "Erro ao buscar arquivo." });
+        if (!row) return res.status(404).json({ erro: "Arquivo não encontrado." });
+
+        const filePath = path.join(uploadDir, path.basename(row.nome_salvo));
+        if (!fs.existsSync(filePath)) {
+          return res.status(404).json({ erro: "Arquivo não encontrado no disco." });
+        }
+
+        // Apenas formatos seguros para visualização inline; demais tipos são baixados.
+        const inlineTypes = new Set(["application/pdf", "image/jpeg", "image/png", "image/gif", "image/webp"]);
+        const storedType = String(row.mimetype || "").toLowerCase().split(";")[0].trim();
+        const contentType = inlineTypes.has(storedType) ? storedType : "application/octet-stream";
+        const disposition = inlineTypes.has(storedType) ? "inline" : "attachment";
+        const originalName = String(row.nome_original || "arquivo").replace(/[\\r\\n\\0]/g, "").slice(0, 180);
+        const fallbackName = originalName.replace(/[^\\x20-\\x7E]/g, "_").replace(/["\\\\]/g, "_") || "arquivo";
+
+        res.setHeader("X-Content-Type-Options", "nosniff");
+        res.setHeader("Cache-Control", "private, no-store");
+        res.setHeader("Content-Type", contentType);
+        res.setHeader(
+          "Content-Disposition",
+          `${disposition}; filename="${fallbackName}"; filename*=UTF-8''${encodeURIComponent(originalName || "arquivo")}`
+        );
+        res.sendFile(filePath);
+      });
     }
-
-    res.setHeader("Content-Type", row.mimetype || "application/octet-stream");
-    res.setHeader("Content-Disposition", `inline; filename="${row.nome_original}"`);
-    res.sendFile(filePath);
-  });
+  );
 });
 
 /* ═══════════════════════════════════════════════════════════
