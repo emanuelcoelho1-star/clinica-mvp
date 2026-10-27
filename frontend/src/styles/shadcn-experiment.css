@@ -1,116 +1,139 @@
-/* Camada visual experimental inspirada no shadcn/ui.
-   Escopo intencional: conteúdo das páginas; não altera menus, rotas ou navegação. */
-:root,
-[data-theme="light"] {
-  --ui-radius: 0.625rem;
-  --ui-ring: rgba(37, 99, 235, 0.25);
-  --ui-control-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-  --ui-surface-border: #e5e7eb;
-  --ui-surface-hover: #f9fafb;
+/* Camada visual shadcn-inspired para OdontoPro.
+   Mantém a estrutura, menus, rotas e comportamentos existentes. */
+:root {
+  --ui-radius: 10px;
+  --ui-border: #e4e4e7;
+  --ui-surface: #ffffff;
+  --ui-surface-muted: #fafafa;
+  --ui-hover: #f4f4f5;
+  --ui-shadow: 0 1px 2px rgba(0,0,0,.035);
+  --ui-shadow-card: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.03);
+  --ui-ring: rgba(37,99,235,.22);
 }
-[data-theme="dark"] {
-  --ui-ring: rgba(96, 165, 250, 0.3);
-  --ui-control-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
-  --ui-surface-border: #334155;
-  --ui-surface-hover: #253347;
+:root[data-theme="dark"] {
+  --ui-border: #303744;
+  --ui-surface: #171b24;
+  --ui-surface-muted: #1c2230;
+  --ui-hover: #252c39;
+  --ui-shadow: 0 1px 2px rgba(0,0,0,.2);
+  --ui-shadow-card: 0 1px 3px rgba(0,0,0,.22);
+  --ui-ring: rgba(96,165,250,.32);
 }
 
-/* Base tipográfica e superfícies das páginas. */
+/* Área de conteúdo: acabamento mais limpo e consistente. */
 .app-main {
   color: var(--text-primary);
   transition: background-color 160ms ease, color 160ms ease;
 }
-.app-main h1,
-.app-main h2,
-.app-main h3,
-.app-main h4 {
-  letter-spacing: -0.025em;
+.app-main h1, .app-main h2, .app-main h3, .app-main h4 {
+  letter-spacing: -.035em;
 }
 .app-main h1 { font-weight: 650; }
-.app-main h2,
-.app-main h3 { font-weight: 600; }
+.app-main h2, .app-main h3 { font-weight: 600; }
 
-/* Campos e controles com o acabamento discreto do shadcn/ui. */
-.app-main button,
-.app-main input,
-.app-main select,
-.app-main textarea {
-  transition: border-color 140ms ease, box-shadow 140ms ease, background-color 140ms ease, opacity 140ms ease;
-}
-.app-main input,
-.app-main select,
-.app-main textarea {
+/* Cartões e painéis com fundos inline comuns no projeto.
+   Seletores limitados a superfícies neutras para preservar cores de status. */
+.app-main div[style*="background: #fff"],
+.app-main div[style*="background:#fff"],
+.app-main div[style*="background: #ffffff"],
+.app-main div[style*="background-color: #fff"],
+.app-main div[style*="background-color: #ffffff"],
+.app-main div[style*="background: white"],
+.app-main form[style*="background: #fff"],
+.app-main form[style*="background-color: #fff"],
+.app-main form[style*="background-color: #ffffff"] {
+  border-color: var(--ui-border) !important;
   border-radius: var(--ui-radius) !important;
-  box-shadow: var(--ui-control-shadow);
+  box-shadow: var(--ui-shadow-card);
 }
-.app-main input:focus,
-.app-main select:focus,
-.app-main textarea:focus {
+:root[data-theme="light"] .app-main div[style*="background: #fff"],
+:root[data-theme="light"] .app-main div[style*="background:#fff"],
+:root[data-theme="light"] .app-main div[style*="background: #ffffff"],
+:root[data-theme="light"] .app-main div[style*="background-color: #fff"],
+:root[data-theme="light"] .app-main div[style*="background-color: #ffffff"],
+:root[data-theme="light"] .app-main div[style*="background: white"],
+:root[data-theme="light"] .app-main form[style*="background: #fff"],
+:root[data-theme="light"] .app-main form[style*="background-color: #fff"],
+:root[data-theme="light"] .app-main form[style*="background-color: #ffffff"] {
+  background-color: var(--ui-surface) !important;
+}
+:root[data-theme="dark"] .app-main div[style*="background: #fff"],
+:root[data-theme="dark"] .app-main div[style*="background:#fff"],
+:root[data-theme="dark"] .app-main div[style*="background: #ffffff"],
+:root[data-theme="dark"] .app-main div[style*="background-color: #fff"],
+:root[data-theme="dark"] .app-main div[style*="background-color: #ffffff"],
+:root[data-theme="dark"] .app-main div[style*="background: white"],
+:root[data-theme="dark"] .app-main form[style*="background: #fff"],
+:root[data-theme="dark"] .app-main form[style*="background-color: #fff"],
+:root[data-theme="dark"] .app-main form[style*="background-color: #ffffff"] {
+  background-color: var(--ui-surface) !important;
+  color: var(--text-primary);
+}
+
+/* Inputs: aparência consistente, foco evidente e acessível. */
+.app-main input, .app-main select, .app-main textarea {
+  border-radius: 8px !important;
+  border-color: var(--border-input) !important;
+  box-shadow: var(--ui-shadow);
+  transition: border-color 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
+}
+.app-main input:focus, .app-main select:focus, .app-main textarea:focus {
   outline: none !important;
   border-color: var(--accent) !important;
   box-shadow: 0 0 0 3px var(--ui-ring) !important;
 }
-.app-main input::placeholder,
-.app-main textarea::placeholder {
+.app-main input::placeholder, .app-main textarea::placeholder {
   color: var(--text-muted);
   opacity: 1;
 }
-.app-main button:focus-visible,
-.app-main a:focus-visible {
+.app-main button {
+  border-radius: 8px;
+  transition: box-shadow 140ms ease, filter 140ms ease, border-color 140ms ease;
+}
+.app-main button:focus-visible, .app-main a:focus-visible {
   outline: 2px solid var(--accent) !important;
   outline-offset: 2px;
 }
-.app-main button:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
+.app-main button:disabled { cursor: not-allowed; opacity: .55; }
+
+/* Neutraliza superfícies cinza muito claras sem afetar cores semânticas. */
+:root[data-theme="light"] .app-main div[style*="background: #fafbfc"],
+:root[data-theme="light"] .app-main div[style*="background: #f8fafc"],
+:root[data-theme="light"] .app-main div[style*="background-color: #fafbfc"],
+:root[data-theme="light"] .app-main div[style*="background-color: #f8fafc"] {
+  border-color: var(--ui-border);
+}
+:root[data-theme="dark"] .app-main div[style*="background: #fafbfc"],
+:root[data-theme="dark"] .app-main div[style*="background: #f8fafc"],
+:root[data-theme="dark"] .app-main div[style*="background-color: #fafbfc"],
+:root[data-theme="dark"] .app-main div[style*="background-color: #f8fafc"] {
+  background: var(--ui-surface-muted) !important;
+  background-color: var(--ui-surface-muted) !important;
+  border-color: var(--ui-border) !important;
 }
 
-/* Padronização sutil de cartões já existentes, sem alterar seu conteúdo/layout. */
-.app-main div[style*="background: #fff"],
-.app-main div[style*="background: #ffffff"],
-.app-main div[style*="background-color: #fff"],
-.app-main div[style*="background-color: #ffffff"],
-.app-main div[style*="background: white"] {
-  border-color: var(--ui-surface-border);
-}
-.app-main div[style*="border-radius: 16px"],
-.app-main div[style*="border-radius: 14px"],
-.app-main div[style*="border-radius: 12px"] {
-  transition: border-color 140ms ease, box-shadow 140ms ease;
-}
-.app-main div[style*="border: 1px solid"] {
-  border-color: var(--ui-surface-border);
-}
-
-/* Tabelas: separação clara entre cabeçalho, linhas e estados de foco. */
-.app-main table {
-  border-collapse: separate;
-  border-spacing: 0;
-  overflow: hidden;
-}
+/* Tabelas mais próximas do padrão shadcn: cabeçalho discreto e linhas suaves. */
+.app-main table { border-collapse: separate; border-spacing: 0; }
 .app-main th {
   font-weight: 600;
-  letter-spacing: 0.01em;
+  letter-spacing: .01em;
 }
-.app-main td,
-.app-main th {
-  border-color: var(--ui-surface-border);
-}
-.app-main tbody tr:hover {
-  background-color: var(--ui-surface-hover);
-}
+.app-main th, .app-main td { border-color: var(--ui-border); }
+.app-main tbody tr:hover { background-color: var(--ui-hover); }
+:root[data-theme="dark"] .app-main table { border-color: var(--ui-border); }
+:root[data-theme="dark"] .app-main th { background-color: var(--ui-surface-muted); }
+:root[data-theme="dark"] .app-main td { border-color: var(--ui-border); }
 
-/* Seleção e acessibilidade sem impor cores às etiquetas de status. */
-.app-main ::selection {
-  background: var(--accent-bg);
-  color: var(--text-primary);
+/* Divisores e superfícies com bordas inline. */
+.app-main div[style*="border: 1px solid"],
+.app-main section[style*="border: 1px solid"],
+.app-main form[style*="border: 1px solid"] {
+  border-color: var(--ui-border);
 }
+.app-main ::selection { background: var(--accent-bg); color: var(--text-primary); }
+
 @media (prefers-reduced-motion: reduce) {
-  .app-main button,
-  .app-main input,
-  .app-main select,
-  .app-main textarea,
-  .app-main [style*="border-radius"] {
+  .app-main button, .app-main input, .app-main select, .app-main textarea {
     transition: none !important;
   }
 }
