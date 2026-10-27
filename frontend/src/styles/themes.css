@@ -609,3 +609,99 @@
 [data-theme="dark"] textarea[style*="border: 1px solid #dbe3ee"] {
   border-color: var(--border-input) !important;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   COBERTURA GLOBAL DO TEMA ESCURO
+   Corrige componentes com estilos inline que não eram
+   alcançados pelos seletores específicos acima.
+   ═══════════════════════════════════════════════════════════ */
+
+[data-theme="dark"] body,
+[data-theme="dark"] #root {
+  background-color: var(--bg-page) !important;
+  color: var(--text-primary);
+  color-scheme: dark;
+}
+
+/* Fundos neutros claros em qualquer componente, não só divs */
+[data-theme="dark"] [style*="background: #fff"],
+[data-theme="dark"] [style*="background:#fff"],
+[data-theme="dark"] [style*="background: #ffffff"],
+[data-theme="dark"] [style*="background:#ffffff"],
+[data-theme="dark"] [style*="background: white"],
+[data-theme="dark"] [style*="background-color: #fff"],
+[data-theme="dark"] [style*="background-color:#fff"],
+[data-theme="dark"] [style*="background-color: #ffffff"],
+[data-theme="dark"] [style*="background-color:#ffffff"],
+[data-theme="dark"] [style*="background-color: white"],
+[data-theme="dark"] [style*="background: rgb(255, 255, 255)"],
+[data-theme="dark"] [style*="background-color: rgb(255, 255, 255)"] {
+  background-color: var(--bg-card) !important;
+}
+
+/* Cinzas muito claros usados em cabeçalhos, linhas e painéis */
+[data-theme="dark"] [style*="background: #f8fafc"],
+[data-theme="dark"] [style*="background:#f8fafc"],
+[data-theme="dark"] [style*="background-color: #f8fafc"],
+[data-theme="dark"] [style*="background: #fafbfc"],
+[data-theme="dark"] [style*="background:#fafbfc"],
+[data-theme="dark"] [style*="background-color: #fafbfc"],
+[data-theme="dark"] [style*="background: #f0f4fa"],
+[data-theme="dark"] [style*="background-color: #f0f4fa"],
+[data-theme="dark"] [style*="background: #f1f5f9"],
+[data-theme="dark"] [style*="background-color: #f1f5f9"],
+[data-theme="dark"] [style*="background: rgb(248, 250, 252)"],
+[data-theme="dark"] [style*="background-color: rgb(248, 250, 252)"],
+[data-theme="dark"] [style*="background: rgb(250, 251, 252)"],
+[data-theme="dark"] [style*="background-color: rgb(250, 251, 252)"] {
+  background-color: var(--bg-card) !important;
+}
+
+/* Textos inline escuros em qualquer tipo de elemento */
+[data-theme="dark"] [style*="color: #0f172a"],
+[data-theme="dark"] [style*="color:#0f172a"],
+[data-theme="dark"] [style*="color: rgb(15, 23, 42)"],
+[data-theme="dark"] [style*="color: #1e293b"],
+[data-theme="dark"] [style*="color:#1e293b"],
+[data-theme="dark"] [style*="color: rgb(30, 41, 59)"] {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] [style*="color: #475569"],
+[data-theme="dark"] [style*="color:#475569"],
+[data-theme="dark"] [style*="color: rgb(71, 85, 105)"],
+[data-theme="dark"] [style*="color: #334155"],
+[data-theme="dark"] [style*="color:#334155"],
+[data-theme="dark"] [style*="color: rgb(51, 65, 85)"] {
+  color: var(--text-secondary) !important;
+}
+
+/* Campos de formulário e seletores nativos */
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+  accent-color: var(--accent);
+}
+
+[data-theme="dark"] input:disabled,
+[data-theme="dark"] select:disabled,
+[data-theme="dark"] textarea:disabled {
+  background-color: var(--bg-input-alt) !important;
+  color: var(--text-muted) !important;
+  opacity: 1;
+}
+
+/* Separadores e bordas de componentes que usam cinzas fixos */
+[data-theme="dark"] [style*="border-color: #e2e8f0"],
+[data-theme="dark"] [style*="border-color:#e2e8f0"],
+[data-theme="dark"] [style*="border: 1px solid #e2e8f0"],
+[data-theme="dark"] [style*="border: 1px solid #f1f5f9"],
+[data-theme="dark"] [style*="border-bottom: 1px solid #f1f5f9"],
+[data-theme="dark"] [style*="border-top: 1px solid #f1f5f9"] {
+  border-color: var(--border-primary) !important;
+}
+
+/* Preferência de cor dos controles nativos do navegador */
+[data-theme="dark"] {
+  color-scheme: dark;
+}
