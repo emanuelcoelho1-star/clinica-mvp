@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import './styles/reset.css'
 import './styles/themes.css'
 import './styles/responsive.css'
+import './styles/shadcn-experiment.css'
 import App from './App.jsx'
 
 createRoot(document.getElementById('root')).render(
