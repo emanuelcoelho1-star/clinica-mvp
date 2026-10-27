@@ -19,7 +19,7 @@ router.get("/paciente/:paciente_id", auth, (req, res) => {
     [paciente_id],
     (err, orcamentos) => {
       if (err) {
-        return res.status(500).json({ erro: err.message });
+        return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
       }
 
       if (orcamentos.length === 0) {
@@ -34,7 +34,7 @@ router.get("/paciente/:paciente_id", auth, (req, res) => {
         ids,
         (errItens, itens) => {
           if (errItens) {
-            return res.status(500).json({ erro: errItens.message });
+            return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
           }
 
           const resultado = orcamentos.map((o) => ({
@@ -58,7 +58,7 @@ router.get("/:id", auth, (req, res) => {
 
   db.get("SELECT * FROM orcamentos WHERE id = ?", [id], (err, orcamento) => {
     if (err) {
-      return res.status(500).json({ erro: err.message });
+      return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
     }
     if (!orcamento) {
       return res.status(404).json({ erro: "Orçamento não encontrado." });
@@ -69,7 +69,7 @@ router.get("/:id", auth, (req, res) => {
       [id],
       (errItens, itens) => {
         if (errItens) {
-          return res.status(500).json({ erro: errItens.message });
+          return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
         }
 
         res.json({ ...orcamento, itens: itens || [] });
@@ -103,7 +103,7 @@ router.post("/", auth, (req, res) => {
     [paciente_id, data, status || "pendente", desconto || 0, observacoes || ""],
     function (err) {
       if (err) {
-        return res.status(500).json({ erro: err.message });
+        return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
       }
 
       const orcamentoId = this.lastID;
@@ -131,7 +131,7 @@ router.post("/", auth, (req, res) => {
           function (errItem) {
             if (errItem) {
               erroInsercao = true;
-              return res.status(500).json({ erro: errItem.message });
+              return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
             }
 
             inseridos += 1;
@@ -176,7 +176,7 @@ router.put("/:id", auth, (req, res) => {
     [paciente_id, data, status || "pendente", desconto || 0, observacoes || "", id],
     function (err) {
       if (err) {
-        return res.status(500).json({ erro: err.message });
+        return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
       }
 
       if (this.changes === 0) {
@@ -189,7 +189,7 @@ router.put("/:id", auth, (req, res) => {
         [id],
         function (errDel) {
           if (errDel) {
-            return res.status(500).json({ erro: errDel.message });
+            return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
           }
 
           const sqlItem = `
@@ -215,7 +215,7 @@ router.put("/:id", auth, (req, res) => {
               function (errItem) {
                 if (errItem) {
                   erroInsercao = true;
-                  return res.status(500).json({ erro: errItem.message });
+                  return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
                 }
 
                 inseridos += 1;
@@ -251,7 +251,7 @@ router.patch("/:id/status", auth, (req, res) => {
   // 1) Busca o orçamento atual (precisa saber o status anterior)
   db.get("SELECT * FROM orcamentos WHERE id = ?", [id], (err, orcamento) => {
     if (err) {
-      return res.status(500).json({ erro: err.message });
+      return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
     }
     if (!orcamento) {
       return res.status(404).json({ erro: "Orçamento não encontrado." });
@@ -263,7 +263,7 @@ router.patch("/:id/status", auth, (req, res) => {
       [status, id],
       function (errUpdate) {
         if (errUpdate) {
-          return res.status(500).json({ erro: errUpdate.message });
+          return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
         }
         if (this.changes === 0) {
           return res.status(404).json({ erro: "Orçamento não encontrado." });
@@ -407,7 +407,7 @@ router.delete("/:id", auth, (req, res) => {
               // 4) Remove o orçamento (itens saem por CASCADE)
               db.run("DELETE FROM orcamentos WHERE id = ?", [id], function (err) {
                 if (err) {
-                  return res.status(500).json({ erro: err.message });
+                  return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
                 }
                 if (this.changes === 0) {
                   return res.status(404).json({ erro: "Orçamento não encontrado." });
