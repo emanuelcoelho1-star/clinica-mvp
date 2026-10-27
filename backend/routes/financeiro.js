@@ -205,8 +205,8 @@ router.get("/dashboard", auth, async (req, res) => {
 router.get("/categorias", auth, async (req, res) => {
   try {
     const { tipo } = req.query;
-    let sql = "SELECT * FROM categorias_financeiras WHERE ativo = 1";
-    const params = [];
+    let sql = "SELECT * FROM categorias_financeiras WHERE ativo = 1 AND clinica_id = ?";
+    const params = [req.user.clinica_id];
 
     if (tipo) {
       sql += " AND tipo = ?";
@@ -230,8 +230,8 @@ router.post("/categorias", auth, async (req, res) => {
     }
 
     const result = await dbRun(
-      "INSERT INTO categorias_financeiras (nome, tipo, cor, icone) VALUES (?, ?, ?, ?)",
-      [nome, tipo, cor || "#64748b", icone || "tag"]
+      "INSERT INTO categorias_financeiras (nome, tipo, cor, icone, clinica_id) VALUES (?, ?, ?, ?, ?)",
+      [nome, tipo, cor || "#64748b", icone || "tag", req.user.clinica_id]
     );
 
     res.status(201).json({ id: result.lastID, mensagem: "Categoria criada." });
@@ -247,8 +247,8 @@ router.put("/categorias/:id", auth, async (req, res) => {
     await dbRun(
       `UPDATE categorias_financeiras
        SET nome = ?, tipo = ?, cor = ?, icone = ?, ativo = ?
-       WHERE id = ?`,
-      [nome, tipo, cor, icone, ativo !== undefined ? ativo : 1, req.params.id]
+       WHERE id = ? AND clinica_id = ?`,
+      [nome, tipo, cor, icone, ativo !== undefined ? ativo : 1, req.params.id, req.user.clinica_id]
     );
     res.json({ mensagem: "Categoria atualizada." });
   } catch (error) {
@@ -259,7 +259,7 @@ router.put("/categorias/:id", auth, async (req, res) => {
 // DELETE /financeiro/categorias/:id
 router.delete("/categorias/:id", auth, async (req, res) => {
   try {
-    await dbRun("UPDATE categorias_financeiras SET ativo = 0 WHERE id = ?", [req.params.id]);
+    await dbRun("UPDATE categorias_financeiras SET ativo = 0 WHERE id = ? AND clinica_id = ?", [req.params.id, req.user.clinica_id]);
     res.json({ mensagem: "Categoria desativada." });
   } catch (error) {
     res.status(500).json({ erro: "Erro ao desativar categoria." });
