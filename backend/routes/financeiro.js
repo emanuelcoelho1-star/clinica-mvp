@@ -1102,7 +1102,7 @@ router.put("/comissoes/pagar-lote", auth, async (req, res) => {
       if (comissao) {
         await dbRun("UPDATE comissoes SET status = 'pago', data_pagamento = ? WHERE id = ? AND clinica_id = ?", [dataPgto, id, req.user.clinica_id]);
         await dbRun(
-          `INSERT INTO fluxo_caixa (tipo, descricao, valor, data, forma_pagamento)
+          `INSERT INTO fluxo_caixa (tipo, descricao, valor, data, forma_pagamento, clinica_id)
            VALUES ('saida', ?, ?, ?, 'transferencia', ?)`,
           [`Comissão: ${comissao.procedimento || "Procedimento"}`, comissao.valor_comissao, dataPgto, req.user.clinica_id]
         );
