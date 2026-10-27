@@ -1390,8 +1390,8 @@ router.get("/kpis", auth, async (req, res) => {
     const pacientesNovos = await dbGet(
       `SELECT COUNT(*) as total
        FROM pacientes
-       WHERE strftime('%Y-%m', COALESCE(data_nascimento, '')) != ?`,
-      [periodo]
+       WHERE clinica_id = ? AND strftime('%Y-%m', COALESCE(data_nascimento, '')) != ?`,
+      [req.user.clinica_id, periodo]
     );
 
     // Comparativo com mês anterior
