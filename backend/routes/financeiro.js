@@ -464,7 +464,7 @@ router.put("/contas-pagar/:id/pagar", auth, async (req, res) => {
 // DELETE /financeiro/contas-pagar/:id
 router.delete("/contas-pagar/:id", auth, async (req, res) => {
   try {
-    const conta = await dbGet("SELECT * FROM contas_pagar WHERE id = ?", [req.params.id]);
+    const conta = await dbGet("SELECT * FROM contas_pagar WHERE id = ? AND clinica_id = ?", [req.params.id, req.user.clinica_id]);
     if (!conta) return res.status(404).json({ erro: "Conta não encontrada." });
 
     // Remove lançamentos do fluxo de caixa vinculados
@@ -681,7 +681,7 @@ router.put("/contas-receber/:id/receber", auth, async (req, res) => {
 // DELETE /financeiro/contas-receber/:id
 router.delete("/contas-receber/:id", auth, async (req, res) => {
   try {
-    const conta = await dbGet("SELECT * FROM contas_receber WHERE id = ?", [req.params.id]);
+    const conta = await dbGet("SELECT * FROM contas_receber WHERE id = ? AND clinica_id = ?", [req.params.id, req.user.clinica_id]);
     if (!conta) return res.status(404).json({ erro: "Conta não encontrada." });
 
     // Remove comissões vinculadas a esta conta (se houver)
@@ -1063,22 +1063,23 @@ router.get("/comissoes", auth, async (req, res) => {
 router.put("/comissoes/:id/pagar", auth, async (req, res) => {
   try {
     const { data_pagamento } = req.body;
-    const comissao = await dbGet("SELECT * FROM comissoes WHERE id = ?", [req.params.id]);
+    const comissao = await dbGet("SELECT * FROM comissoes WHERE id = ? AND clinica_id = ?", [req.params.id, req.user.clinica_id]);
     if (!comissao) return res.status(404).json({ erro: "Comissão não encontrada." });
 
     await dbRun(
-      "UPDATE comissoes SET status = 'pago', data_pagamento = ? WHERE id = ?",
-      [data_pagamento || new Date().toISOString().split("T")[0], req.params.id]
+      "UPDATE comissoes SET status = 'pago', data_pagamento = ? WHERE id = ? AND clinica_id = ?",
+      [data_pagamento || new Date().toISOString().split("T")[0], req.params.id, req.user.clinica_id]
     );
 
     // Registrar saída no fluxo
     await dbRun(
-      `INSERT INTO fluxo_caixa (tipo, descricao, valor, data, forma_pagamento)
-       VALUES ('saida', ?, ?, ?, 'transferencia')`,
+      `INSERT INTO fluxo_caixa (tipo, descricao, valor, data, forma_pagamento, clinica_id)
+       VALUES ('saida', ?, ?, ?, 'transferencia', ?)`,
       [
         `Comissão: ${comissao.procedimento || "Procedimento"}`,
         comissao.valor_comissao,
         data_pagamento || new Date().toISOString().split("T")[0],
+        req.user.clinica_id,
       ]
     );
 
@@ -1097,13 +1098,13 @@ router.put("/comissoes/pagar-lote", auth, async (req, res) => {
     const dataPgto = data_pagamento || new Date().toISOString().split("T")[0];
 
     for (const id of ids) {
-      const comissao = await dbGet("SELECT * FROM comissoes WHERE id = ? AND status = 'pendente'", [id]);
+      const comissao = await dbGet("SELECT * FROM comissoes WHERE id = ? AND status = 'pendente' AND clinica_id = ?", [id, req.user.clinica_id]);
       if (comissao) {
-        await dbRun("UPDATE comissoes SET status = 'pago', data_pagamento = ? WHERE id = ?", [dataPgto, id]);
+        await dbRun("UPDATE comissoes SET status = 'pago', data_pagamento = ? WHERE id = ? AND clinica_id = ?", [dataPgto, id, req.user.clinica_id]);
         await dbRun(
           `INSERT INTO fluxo_caixa (tipo, descricao, valor, data, forma_pagamento)
-           VALUES ('saida', ?, ?, ?, 'transferencia')`,
-          [`Comissão: ${comissao.procedimento || "Procedimento"}`, comissao.valor_comissao, dataPgto]
+           VALUES ('saida', ?, ?, ?, 'transferencia', ?)`,
+          [`Comissão: ${comissao.procedimento || "Procedimento"}`, comissao.valor_comissao, dataPgto, req.user.clinica_id]
         );
       }
     }
