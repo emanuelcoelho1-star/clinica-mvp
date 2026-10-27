@@ -51,15 +51,62 @@ function Login() {
   const { tema, alternarTema } = useTheme();
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
+  const [nome, setNome] = useState("");
+  const [confirmarSenha, setConfirmarSenha] = useState("");
+  const [modoCadastro, setModoCadastro] = useState(false);
   const [erro, setErro] = useState("");
+  const [sucesso, setSucesso] = useState("");
   const [carregando, setCarregando] = useState(false);
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [focusEmail, setFocusEmail] = useState(false);
   const [focusSenha, setFocusSenha] = useState(false);
 
+  const cadastrar = async (e) => {
+    e.preventDefault();
+    setErro("");
+    setSucesso("");
+
+    if (senha.length < 6) {
+      setErro("A senha deve ter no mínimo 6 caracteres.");
+      return;
+    }
+    if (senha !== confirmarSenha) {
+      setErro("As senhas não coincidem.");
+      return;
+    }
+
+    setCarregando(true);
+    try {
+      const response = await fetch(`${API_URL}/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nome: nome.trim(), email, senha }),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        setErro(data.erro || "Não foi possível criar a conta.");
+        setCarregando(false);
+        return;
+      }
+
+      setModoCadastro(false);
+      setSenha("");
+      setConfirmarSenha("");
+      setNome("");
+      setErro("");
+      setSucesso("Cadastro realizado! Entre com seu e-mail e senha.");
+      setCarregando(false);
+    } catch (error) {
+      setErro("Não foi possível conectar ao servidor.");
+      setCarregando(false);
+    }
+  };
+
   const fazerLogin = async (e) => {
     e.preventDefault();
     setErro("");
+    setSucesso("");
     setCarregando(true);
 
     try {
@@ -119,11 +166,54 @@ function Login() {
             <div style={S.cardIconWrap}>
               <span style={S.cardIconCircle}>{LockIcon}</span>
             </div>
-            <h2 style={S.cardTitle}>Acesse sua conta</h2>
-            <p style={S.cardDesc}>Entre com suas credenciais para continuar</p>
+            <h2 style={S.cardTitle}>{modoCadastro ? "Crie sua conta" : "Acesse sua conta"}</h2>
+            <p style={S.cardDesc}>{modoCadastro ? "Preencha os dados para começar" : "Entre com suas credenciais para continuar"}</p>
           </div>
 
-          <form onSubmit={fazerLogin} style={S.form}>
+          <div className="login-tabs" role="tablist" aria-label="Acesso à conta">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={!modoCadastro}
+              className={!modoCadastro ? "login-tab active" : "login-tab"}
+              onClick={() => { setModoCadastro(false); setErro(""); setSucesso(""); }}
+            >
+              Entrar
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={modoCadastro}
+              className={modoCadastro ? "login-tab active" : "login-tab"}
+              onClick={() => { setModoCadastro(true); setErro(""); setSucesso(""); }}
+            >
+              Criar conta
+            </button>
+          </div>
+
+          {sucesso && !modoCadastro && (
+            <div className="login-success" role="status">{sucesso}</div>
+          )}
+
+          <form onSubmit={modoCadastro ? cadastrar : fazerLogin} style={S.form}>
+            {modoCadastro && (
+              <div style={S.inputGroup}>
+                <label style={S.label}>Nome completo</label>
+                <div style={S.inputWrapper}>
+                  <input
+                    type="text"
+                    placeholder="Seu nome completo"
+                    value={nome}
+                    onChange={(e) => setNome(e.target.value)}
+                    style={S.input}
+                    required
+                    autoComplete="name"
+                    maxLength={120}
+                  />
+                </div>
+              </div>
+            )}
+
             {/* E-mail */}
             <div style={S.inputGroup}>
               <label style={S.label}>E-mail</label>
@@ -143,6 +233,7 @@ function Login() {
                   style={S.input}
                   required
                   autoComplete="email"
+                  required
                 />
               </div>
             </div>
@@ -165,7 +256,8 @@ function Login() {
                   onBlur={() => setFocusSenha(false)}
                   style={S.input}
                   required
-                  autoComplete="current-password"
+                  autoComplete={modoCadastro ? "new-password" : "current-password"}
+                  minLength={modoCadastro ? 6 : undefined}
                 />
                 <button
                   type="button"
@@ -177,6 +269,24 @@ function Login() {
                 </button>
               </div>
             </div>
+
+            {modoCadastro && (
+              <div style={S.inputGroup}>
+                <label style={S.label}>Confirmar senha</label>
+                <div style={S.inputWrapper}>
+                  <input
+                    type="password"
+                    placeholder="Digite a senha novamente"
+                    value={confirmarSenha}
+                    onChange={(e) => setConfirmarSenha(e.target.value)}
+                    style={S.input}
+                    required
+                    autoComplete="new-password"
+                    minLength={6}
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Erro */}
             {erro && (
@@ -203,10 +313,10 @@ function Login() {
               {carregando ? (
                 <>
                   <span style={S.spinner} />
-                  <span>Entrando...</span>
+                  <span>{modoCadastro ? "Criando conta..." : "Entrando..."}</span>
                 </>
               ) : (
-                <span>Entrar</span>
+                <span>{modoCadastro ? "Criar conta" : "Entrar"}</span>
               )}
             </button>
           </form>
