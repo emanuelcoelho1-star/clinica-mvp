@@ -157,7 +157,15 @@ router.put("/:id", auth, (req, res) => {
       paciente_id = ?, orcamento_id = ?, data = ?, valor = ?,
       forma_pagamento = ?, status = ?, parcela_atual = ?,
       total_parcelas = ?, descricao = ?, observacoes = ?
-    WHERE id = ?
+    WHERE id = ? AND clinica_id = ?
+      AND EXISTS (
+        SELECT 1 FROM pacientes p
+        WHERE p.id = ? AND p.clinica_id = ?
+      )
+      AND (? IS NULL OR EXISTS (
+        SELECT 1 FROM orcamentos o
+        WHERE o.id = ? AND o.clinica_id = ? AND o.paciente_id = ?
+      ))
   `;
 
   db.run(
