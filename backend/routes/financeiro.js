@@ -54,24 +54,24 @@ router.get("/dashboard", auth, async (req, res) => {
     const receitas = await dbGet(
       `SELECT COALESCE(SUM(valor_recebido), 0) as total
        FROM contas_receber
-       WHERE status = 'pago' AND strftime('%Y-%m', data_recebimento) = ?`,
-      [periodo]
+       WHERE clinica_id = ? AND status = 'pago' AND strftime('%Y-%m', data_recebimento) = ?`,
+      [req.user.clinica_id, periodo]
     );
 
     // Receitas dos pagamentos legados
     const receitasLegado = await dbGet(
       `SELECT COALESCE(SUM(valor), 0) as total
        FROM pagamentos
-       WHERE status = 'confirmado' AND strftime('%Y-%m', data) = ?`,
-      [periodo]
+       WHERE clinica_id = ? AND status = 'confirmado' AND strftime('%Y-%m', data) = ?`,
+      [req.user.clinica_id, periodo]
     );
 
     // Despesas do mês (contas_pagar pagas)
     const despesas = await dbGet(
       `SELECT COALESCE(SUM(valor_pago), 0) as total
        FROM contas_pagar
-       WHERE status = 'pago' AND strftime('%Y-%m', data_pagamento) = ?`,
-      [periodo]
+       WHERE clinica_id = ? AND status = 'pago' AND strftime('%Y-%m', data_pagamento) = ?`,
+      [req.user.clinica_id, periodo]
     );
 
     // Contas a receber pendentes
@@ -79,15 +79,14 @@ router.get("/dashboard", auth, async (req, res) => {
       `SELECT COALESCE(SUM(valor - valor_recebido), 0) as total,
               COUNT(*) as quantidade
        FROM contas_receber
-       WHERE status IN ('pendente', 'parcial')`
-    );
+       WHERE clinica_id = ? AND status IN ('pendente', 'parcial')`, [req.user.clinica_id]);
 
     // Contas a pagar pendentes
     const pagarPendente = await dbGet(
       `SELECT COALESCE(SUM(valor - valor_pago), 0) as total,
               COUNT(*) as quantidade
        FROM contas_pagar
-       WHERE status IN ('pendente', 'parcial')`
+       WHERE clinica_id = ? AND status IN ('pendente', 'parcial')`
     );
 
     // Contas vencidas (a pagar)
@@ -118,19 +117,19 @@ router.get("/dashboard", auth, async (req, res) => {
         `SELECT COALESCE(SUM(valor_recebido), 0) as total
          FROM contas_receber
          WHERE status = 'pago' AND strftime('%Y-%m', data_recebimento) = ?`,
-        [p]
+        [req.user.clinica_id, p]
       );
       const recLeg = await dbGet(
         `SELECT COALESCE(SUM(valor), 0) as total
          FROM pagamentos
          WHERE status = 'confirmado' AND strftime('%Y-%m', data) = ?`,
-        [p]
+        [req.user.clinica_id, p]
       );
       const desp = await dbGet(
         `SELECT COALESCE(SUM(valor_pago), 0) as total
          FROM contas_pagar
          WHERE status = 'pago' AND strftime('%Y-%m', data_pagamento) = ?`,
-        [p]
+        [req.user.clinica_id, p]
       );
 
       ultimos6Meses.push({
@@ -152,7 +151,7 @@ router.get("/dashboard", auth, async (req, res) => {
        FROM pagamentos
        WHERE status = 'confirmado' AND strftime('%Y-%m', data) = ?
        GROUP BY forma_pagamento`,
-      [periodo, periodo]
+      [req.user.clinica_id, periodo, req.user.clinica_id, periodo]
     );
 
     // Agrupar formas de pagamento
@@ -164,8 +163,8 @@ router.get("/dashboard", auth, async (req, res) => {
 
     // Meta do mês
     const meta = await dbGet(
-      `SELECT * FROM metas_financeiras WHERE mes = ? AND ano = ? AND tipo = 'receita'`,
-      [mes, ano]
+      `SELECT * FROM metas_financeiras WHERE clinica_id = ? AND mes = ? AND ano = ? AND tipo = 'receita'`,
+      [req.user.clinica_id, mes, ano]
     );
 
     const totalReceitas = (receitas?.total || 0) + (receitasLegado?.total || 0);
