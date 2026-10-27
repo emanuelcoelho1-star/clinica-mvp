@@ -45,7 +45,7 @@ router.get("/", auth, (req, res) => {
 
   db.get(countSql, params, (err, countRow) => {
     if (err) {
-      return res.status(500).json({ erro: err.message });
+      return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
     }
 
     const total = countRow.total;
@@ -61,7 +61,7 @@ router.get("/", auth, (req, res) => {
 
     db.all(dataSql, [...params, limit, offset], (err, rows) => {
       if (err) {
-        return res.status(500).json({ erro: err.message });
+        return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
       }
 
       res.json({
@@ -88,7 +88,7 @@ router.get("/:id", auth, (req, res) => {
 
   db.get("SELECT * FROM pacientes WHERE id = ?", [id], (err, row) => {
     if (err) {
-      return res.status(500).json({ erro: err.message });
+      return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
     }
 
     if (!row) {
@@ -111,7 +111,7 @@ router.get("/:id/odontograma", auth, (req, res) => {
     [id],
     (err, row) => {
       if (err) {
-        return res.status(500).json({ erro: err.message });
+        return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
       }
 
       if (!row || !row.mapa) {
@@ -142,7 +142,7 @@ router.put("/:id/odontograma", auth, (req, res) => {
     [id],
     (err, row) => {
       if (err) {
-        return res.status(500).json({ erro: err.message });
+        return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
       }
 
       if (row) {
@@ -266,7 +266,7 @@ router.post("/", auth, (req, res) => {
     ],
     function (err) {
       if (err) {
-        return res.status(500).json({ erro: err.message });
+        return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
       }
 
       res.status(201).json({
@@ -372,7 +372,7 @@ router.put("/:id", auth, (req, res) => {
     ],
     function (err) {
       if (err) {
-        return res.status(500).json({ erro: err.message });
+        return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
       }
 
       res.json({ message: "Paciente atualizado com sucesso" });
@@ -389,7 +389,7 @@ router.delete("/:id", auth, (req, res) => {
 
   db.run("DELETE FROM pacientes WHERE id = ?", [id], function (err) {
     if (err) {
-      return res.status(500).json({ erro: err.message });
+      return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
     }
 
     res.json({ message: "Paciente deletado com sucesso" });
