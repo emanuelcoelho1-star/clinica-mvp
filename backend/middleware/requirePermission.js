@@ -31,8 +31,8 @@ module.exports = function requirePermission(modulo, resolverAcao) {
       `SELECT r.protegido
        FROM usuarios u
        INNER JOIN roles r ON r.id = u.role_id
-       WHERE u.id = ? AND r.ativo = 1`,
-      [req.user.id],
+       WHERE u.id = ? AND u.clinica_id = ? AND r.ativo = 1`,
+      [req.user.id, req.user.clinica_id],
       (roleErr, role) => {
         if (roleErr) {
           return res.status(500).json({ erro: "Não foi possível verificar as permissões." });
