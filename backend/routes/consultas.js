@@ -37,13 +37,17 @@ router.post("/", auth, (req, res) => {
   const statusConsulta = status || "agendado";
   const inserirConsulta = () => {
     const sql = `
-      INSERT INTO consultas (paciente_id, data, horario, procedimento, status)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO consultas (paciente_id, data, horario, procedimento, status, clinica_id)
+      SELECT p.id, ?, ?, ?, ?, ? FROM pacientes p WHERE p.id = ? AND p.clinica_id = ?
     `;
 
-    db.run(sql, [paciente_id, data, horario, procedimento || "", statusConsulta], function (err) {
+    db.run(sql, [data, horario, procedimento || "", statusConsulta, req.user.clinica_id, paciente_id, req.user.clinica_id], function (err) {
       if (err) {
         return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
+      }
+
+      if (this.changes === 0) {
+        return res.status(404).json({ erro: "Paciente não encontrado nesta clínica." });
       }
 
       res.status(201).json({
@@ -55,8 +59,8 @@ router.post("/", auth, (req, res) => {
 
   if (statusConsulta === "cancelado") return inserirConsulta();
   db.get(
-    "SELECT paciente_id, horario FROM consultas WHERE data = ? AND horario = ? AND status != 'cancelado' LIMIT 1",
-    [data, horario],
+    "SELECT paciente_id, horario FROM consultas WHERE clinica_id = ? AND data = ? AND horario = ? AND status != 'cancelado' LIMIT 1",
+    [req.user.clinica_id, data, horario],
     (err, conflito) => {
       if (err) return res.status(500).json({ erro: "Não foi possível validar a disponibilidade do horário." });
       if (conflito) return res.status(409).json({ erro: "Este horário já está ocupado por outra consulta. Escolha outro horário." });
@@ -80,10 +84,11 @@ router.put("/:id", auth, (req, res) => {
     const sql = `
       UPDATE consultas
       SET paciente_id = ?, data = ?, horario = ?, procedimento = ?, status = ?
-      WHERE id = ?
+      WHERE id = ? AND clinica_id = ?
+        AND EXISTS (SELECT 1 FROM pacientes p WHERE p.id = ? AND p.clinica_id = ?)
     `;
 
-    db.run(sql, [paciente_id, data, horario, procedimento || "", statusConsulta, id], function (err) {
+    db.run(sql, [paciente_id, data, horario, procedimento || "", statusConsulta, id, req.user.clinica_id, paciente_id, req.user.clinica_id], function (err) {
       if (err) {
         return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
       }
@@ -98,8 +103,8 @@ router.put("/:id", auth, (req, res) => {
 
   if (statusConsulta === "cancelado") return atualizarConsulta();
   db.get(
-    "SELECT id FROM consultas WHERE data = ? AND horario = ? AND status != 'cancelado' AND id != ? LIMIT 1",
-    [data, horario, id],
+    "SELECT id FROM consultas WHERE clinica_id = ? AND data = ? AND horario = ? AND status != 'cancelado' AND id != ? LIMIT 1",
+    [req.user.clinica_id, data, horario, id],
     (err, conflito) => {
       if (err) return res.status(500).json({ erro: "Não foi possível validar a disponibilidade do horário." });
       if (conflito) return res.status(409).json({ erro: "Este horário já está ocupado por outra consulta. Escolha outro horário." });
@@ -111,7 +116,7 @@ router.put("/:id", auth, (req, res) => {
 router.delete("/:id", auth, (req, res) => {
   const { id } = req.params;
 
-  db.run("DELETE FROM consultas WHERE id = ?", [id], function (err) {
+  db.run("DELETE FROM consultas WHERE id = ? AND clinica_id = ?", [id, req.user.clinica_id], function (err) {
     if (err) {
       return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
     }
