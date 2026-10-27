@@ -1185,7 +1185,7 @@ router.delete("/formas-pagamento/:id", auth, async (req, res) => {
 router.get("/metas", auth, async (req, res) => {
   try {
     const ano = parseInt(req.query.ano) || new Date().getFullYear();
-    const metas = await dbAll("SELECT * FROM metas_financeiras WHERE ano = ? ORDER BY mes", [ano]);
+    const metas = await dbAll("SELECT * FROM metas_financeiras WHERE ano = ? AND clinica_id = ? ORDER BY mes", [ano, req.user.clinica_id]);
     res.json(metas);
   } catch (error) {
     res.status(500).json({ erro: "Erro ao listar metas." });
