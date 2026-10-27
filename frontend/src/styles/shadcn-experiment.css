@@ -1,83 +1,116 @@
 /* Camada visual experimental inspirada no shadcn/ui.
-   Escopo intencional: conteúdo das páginas; não altera menus nem navegação. */
+   Escopo intencional: conteúdo das páginas; não altera menus, rotas ou navegação. */
 :root,
 [data-theme="light"] {
   --ui-radius: 0.625rem;
-  --ui-ring: rgba(37, 99, 235, 0.28);
+  --ui-ring: rgba(37, 99, 235, 0.25);
   --ui-control-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --ui-surface-border: #e5e7eb;
+  --ui-surface-hover: #f9fafb;
 }
 [data-theme="dark"] {
   --ui-ring: rgba(96, 165, 250, 0.3);
   --ui-control-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  --ui-surface-border: #334155;
+  --ui-surface-hover: #253347;
 }
 
-/* Transições discretas e foco acessível nos controles do conteúdo. */
-main button,
-main input,
-main select,
-main textarea {
+/* Base tipográfica e superfícies das páginas. */
+.app-main {
+  color: var(--text-primary);
+  transition: background-color 160ms ease, color 160ms ease;
+}
+.app-main h1,
+.app-main h2,
+.app-main h3,
+.app-main h4 {
+  letter-spacing: -0.025em;
+}
+.app-main h1 { font-weight: 650; }
+.app-main h2,
+.app-main h3 { font-weight: 600; }
+
+/* Campos e controles com o acabamento discreto do shadcn/ui. */
+.app-main button,
+.app-main input,
+.app-main select,
+.app-main textarea {
   transition: border-color 140ms ease, box-shadow 140ms ease, background-color 140ms ease, opacity 140ms ease;
 }
-main input,
-main select,
-main textarea {
+.app-main input,
+.app-main select,
+.app-main textarea {
   border-radius: var(--ui-radius) !important;
   box-shadow: var(--ui-control-shadow);
 }
-main input:focus,
-main select:focus,
-main textarea:focus {
+.app-main input:focus,
+.app-main select:focus,
+.app-main textarea:focus {
   outline: none !important;
   border-color: var(--accent) !important;
   box-shadow: 0 0 0 3px var(--ui-ring) !important;
 }
-main button {
-  border-radius: var(--ui-radius);
+.app-main input::placeholder,
+.app-main textarea::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
 }
-main button:focus-visible {
+.app-main button:focus-visible,
+.app-main a:focus-visible {
   outline: 2px solid var(--accent) !important;
   outline-offset: 2px;
 }
-main button:disabled {
+.app-main button:disabled {
   cursor: not-allowed;
   opacity: 0.55;
 }
 
-/* Aparência consistente para tabelas e linhas de dados existentes. */
-main table {
+/* Padronização sutil de cartões já existentes, sem alterar seu conteúdo/layout. */
+.app-main div[style*="background: #fff"],
+.app-main div[style*="background: #ffffff"],
+.app-main div[style*="background-color: #fff"],
+.app-main div[style*="background-color: #ffffff"],
+.app-main div[style*="background: white"] {
+  border-color: var(--ui-surface-border);
+}
+.app-main div[style*="border-radius: 16px"],
+.app-main div[style*="border-radius: 14px"],
+.app-main div[style*="border-radius: 12px"] {
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+.app-main div[style*="border: 1px solid"] {
+  border-color: var(--ui-surface-border);
+}
+
+/* Tabelas: separação clara entre cabeçalho, linhas e estados de foco. */
+.app-main table {
   border-collapse: separate;
   border-spacing: 0;
   overflow: hidden;
 }
-main th {
+.app-main th {
   font-weight: 600;
   letter-spacing: 0.01em;
 }
-main td,
-main th {
-  border-color: var(--border-primary);
+.app-main td,
+.app-main th {
+  border-color: var(--ui-surface-border);
 }
-main tr:last-child td {
-  border-bottom-color: transparent;
+.app-main tbody tr:hover {
+  background-color: var(--ui-surface-hover);
 }
 
-/* Mantém a paleta atual e suaviza superfícies sem tocar na estrutura da aplicação. */
-main [style*="border-radius: 16px"],
-main [style*="border-radius: 14px"],
-main [style*="border-radius: 12px"] {
-  transition: border-color 140ms ease, box-shadow 140ms ease;
-}
-main input::placeholder,
-main textarea::placeholder {
-  color: var(--text-muted);
-  opacity: 1;
+/* Seleção e acessibilidade sem impor cores às etiquetas de status. */
+.app-main ::selection {
+  background: var(--accent-bg);
+  color: var(--text-primary);
 }
 @media (prefers-reduced-motion: reduce) {
-  main button,
-  main input,
-  main select,
-  main textarea,
-  main [style*="border-radius"] {
+  .app-main button,
+  .app-main input,
+  .app-main select,
+  .app-main textarea,
+  .app-main [style*="border-radius"] {
     transition: none !important;
   }
 }
