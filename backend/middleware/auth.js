@@ -33,8 +33,9 @@ module.exports = (req, res, next) => {
 
     // Confere se a conta ainda existe antes de autorizar qualquer rota protegida.
     db.get(
-      `SELECT u.id, u.nome, u.email, u.clinica_id, r.ativo AS role_ativo,
-              c.status AS clinica_status
+      `SELECT u.id, u.nome, u.email, u.clinica_id,
+              r.ativo AS role_ativo, r.clinica_id AS role_clinica_id,
+              r.protegido AS role_protegido, c.status AS clinica_status
        FROM usuarios u
        LEFT JOIN roles r ON r.id = u.role_id
        LEFT JOIN clinicas c ON c.id = u.clinica_id
@@ -59,6 +60,11 @@ module.exports = (req, res, next) => {
 
         if (user.clinica_status !== "ativa") {
           return res.status(403).json({ erro: "A clínica não está ativa. Contate o administrador." });
+        }
+
+        // O perfil protegido pode ser global; perfis personalizados devem ser da clínica do usuário.
+        if (Number(user.role_protegido) !== 1 && Number(user.role_clinica_id) !== Number(user.clinica_id)) {
+          return res.status(403).json({ erro: "O perfil de acesso não pertence a esta clínica." });
         }
 
         req.user = { ...decoded, nome: user.nome, email: user.email, clinica_id: user.clinica_id };
