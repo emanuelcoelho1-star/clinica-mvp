@@ -1,0 +1,83 @@
+/* Camada visual experimental inspirada no shadcn/ui.
+   Escopo intencional: conteúdo das páginas; não altera menus nem navegação. */
+:root,
+[data-theme="light"] {
+  --ui-radius: 0.625rem;
+  --ui-ring: rgba(37, 99, 235, 0.28);
+  --ui-control-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+[data-theme="dark"] {
+  --ui-ring: rgba(96, 165, 250, 0.3);
+  --ui-control-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+/* Transições discretas e foco acessível nos controles do conteúdo. */
+main button,
+main input,
+main select,
+main textarea {
+  transition: border-color 140ms ease, box-shadow 140ms ease, background-color 140ms ease, opacity 140ms ease;
+}
+main input,
+main select,
+main textarea {
+  border-radius: var(--ui-radius) !important;
+  box-shadow: var(--ui-control-shadow);
+}
+main input:focus,
+main select:focus,
+main textarea:focus {
+  outline: none !important;
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px var(--ui-ring) !important;
+}
+main button {
+  border-radius: var(--ui-radius);
+}
+main button:focus-visible {
+  outline: 2px solid var(--accent) !important;
+  outline-offset: 2px;
+}
+main button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* Aparência consistente para tabelas e linhas de dados existentes. */
+main table {
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+}
+main th {
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+main td,
+main th {
+  border-color: var(--border-primary);
+}
+main tr:last-child td {
+  border-bottom-color: transparent;
+}
+
+/* Mantém a paleta atual e suaviza superfícies sem tocar na estrutura da aplicação. */
+main [style*="border-radius: 16px"],
+main [style*="border-radius: 14px"],
+main [style*="border-radius: 12px"] {
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+main input::placeholder,
+main textarea::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  main button,
+  main input,
+  main select,
+  main textarea,
+  main [style*="border-radius"] {
+    transition: none !important;
+  }
+}
