@@ -436,6 +436,7 @@ router.put("/contas-pagar/:id/pagar", auth, async (req, res) => {
         forma_pagamento || conta.forma_pagamento,
         novoStatus,
         req.params.id,
+        req.user.clinica_id,
       ]
     );
 
@@ -489,11 +490,11 @@ router.get("/contas-receber", auth, async (req, res) => {
     let sql = `
       SELECT cr.*, p.nome as paciente_nome, prof.nome as profissional_nome
       FROM contas_receber cr
-      LEFT JOIN pacientes p ON cr.paciente_id = p.id
-      LEFT JOIN profissionais prof ON cr.profissional_id = prof.id
-      WHERE 1=1
+      LEFT JOIN pacientes p ON cr.paciente_id = p.id AND p.clinica_id = cr.clinica_id
+      LEFT JOIN profissionais prof ON cr.profissional_id = prof.id AND prof.clinica_id = cr.clinica_id
+      WHERE cr.clinica_id = ?
     `;
-    const params = [];
+    const params = [req.user.clinica_id];
 
     if (status) { sql += " AND cr.status = ?"; params.push(status); }
     if (paciente_id) { sql += " AND cr.paciente_id = ?"; params.push(paciente_id); }
@@ -515,7 +516,8 @@ router.get("/contas-receber", auth, async (req, res) => {
         COALESCE(SUM(CASE WHEN status IN ('pendente','parcial') AND data_vencimento < date('now') THEN valor - valor_recebido ELSE 0 END), 0) as total_vencido,
         COUNT(CASE WHEN status IN ('pendente','parcial') AND data_vencimento < date('now') THEN 1 END) as qtd_vencidas
       FROM contas_receber
-    `);
+      WHERE clinica_id = ?
+    `, [req.user.clinica_id]);
 
     res.json({ contas, resumo });
   } catch (error) {
@@ -585,11 +587,15 @@ router.put("/contas-receber/:id", auth, async (req, res) => {
        SET descricao = ?, procedimento = ?, valor = ?, desconto = ?,
            data_emissao = ?, data_vencimento = ?, forma_pagamento = ?,
            numero_nota = ?, observacoes = ?, paciente_id = ?, profissional_id = ?
-       WHERE id = ?`,
+       WHERE id = ? AND clinica_id = ?
+         AND EXISTS (SELECT 1 FROM pacientes p WHERE p.id = ? AND p.clinica_id = ?)
+         AND ( ? IS NULL OR EXISTS (SELECT 1 FROM profissionais pr WHERE pr.id = ? AND pr.clinica_id = ?) )`,
       [
         descricao, procedimento, valor, desconto, data_emissao,
         data_vencimento, forma_pagamento, numero_nota, observacoes,
-        paciente_id, profissional_id, req.params.id,
+        paciente_id, profissional_id, req.params.id, req.user.clinica_id,
+        paciente_id, req.user.clinica_id,
+        profissional_id || null, profissional_id || null, req.user.clinica_id,
       ]
     );
 
@@ -603,7 +609,7 @@ router.put("/contas-receber/:id", auth, async (req, res) => {
 router.put("/contas-receber/:id/receber", auth, async (req, res) => {
   try {
     const { valor_recebido, data_recebimento, forma_pagamento } = req.body;
-    const conta = await dbGet("SELECT * FROM contas_receber WHERE id = ?", [req.params.id]);
+    const conta = await dbGet("SELECT * FROM contas_receber WHERE id = ? AND clinica_id = ?", [req.params.id, req.user.clinica_id]);
     if (!conta) return res.status(404).json({ erro: "Conta não encontrada." });
 
     const novoValorRecebido = (conta.valor_recebido || 0) + (valor_recebido || conta.valor);
@@ -612,7 +618,7 @@ router.put("/contas-receber/:id/receber", auth, async (req, res) => {
     await dbRun(
       `UPDATE contas_receber
        SET valor_recebido = ?, data_recebimento = ?, forma_pagamento = ?, status = ?
-       WHERE id = ?`,
+       WHERE id = ? AND clinica_id = ?`,
       [
         novoValorRecebido,
         data_recebimento || new Date().toISOString().split("T")[0],
@@ -624,20 +630,21 @@ router.put("/contas-receber/:id/receber", auth, async (req, res) => {
 
     // Registrar no fluxo de caixa
     await dbRun(
-      `INSERT INTO fluxo_caixa (tipo, conta_receber_id, descricao, valor, data, forma_pagamento)
-       VALUES ('entrada', ?, ?, ?, ?, ?)`,
+      `INSERT INTO fluxo_caixa (tipo, conta_receber_id, descricao, valor, data, forma_pagamento, clinica_id)
+       VALUES ('entrada', ?, ?, ?, ?, ?, ?)`,
       [
         conta.id,
         `Receb: ${conta.descricao}`,
         valor_recebido || conta.valor,
         data_recebimento || new Date().toISOString().split("T")[0],
         forma_pagamento || conta.forma_pagamento,
+        req.user.clinica_id,
       ]
     );
 
     // Gerar comissão automaticamente se houver profissional
     if (conta.profissional_id && novoStatus === "pago") {
-      const prof = await dbGet("SELECT * FROM profissionais WHERE id = ?", [conta.profissional_id]);
+      const prof = await dbGet("SELECT * FROM profissionais WHERE id = ? AND clinica_id = ?", [conta.profissional_id, req.user.clinica_id]);
       if (prof && prof.ativo) {
         let valorComissao = 0;
         if (prof.tipo_comissao === "percentual") {
@@ -650,12 +657,13 @@ router.put("/contas-receber/:id/receber", auth, async (req, res) => {
           await dbRun(
             `INSERT INTO comissoes
                (profissional_id, conta_receber_id, paciente_id, procedimento,
-                valor_procedimento, percentual, valor_comissao, data_referencia, status)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pendente')`,
+                valor_procedimento, percentual, valor_comissao, data_referencia, status, clinica_id)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pendente', ?)`,
             [
               prof.id, conta.id, conta.paciente_id, conta.procedimento,
               conta.valor, prof.percentual_comissao, valorComissao,
               data_recebimento || new Date().toISOString().split("T")[0],
+              req.user.clinica_id,
             ]
           );
         }
@@ -675,13 +683,13 @@ router.delete("/contas-receber/:id", auth, async (req, res) => {
     if (!conta) return res.status(404).json({ erro: "Conta não encontrada." });
 
     // Remove comissões vinculadas a esta conta (se houver)
-    await dbRun("DELETE FROM comissoes WHERE conta_receber_id = ?", [req.params.id]);
+    await dbRun("DELETE FROM comissoes WHERE conta_receber_id = ? AND clinica_id = ?", [req.params.id, req.user.clinica_id]);
 
     // Remove lançamentos do fluxo de caixa vinculados
-    await dbRun("DELETE FROM fluxo_caixa WHERE conta_receber_id = ?", [req.params.id]);
+    await dbRun("DELETE FROM fluxo_caixa WHERE conta_receber_id = ? AND clinica_id = ?", [req.params.id, req.user.clinica_id]);
 
     // Remove a conta
-    await dbRun("DELETE FROM contas_receber WHERE id = ?", [req.params.id]);
+    await dbRun("DELETE FROM contas_receber WHERE id = ? AND clinica_id = ?", [req.params.id, req.user.clinica_id]);
 
     res.json({ mensagem: "Conta excluída com sucesso." });
   } catch (error) {
