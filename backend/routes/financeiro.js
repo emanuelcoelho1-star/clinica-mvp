@@ -144,7 +144,7 @@ router.get("/dashboard", auth, async (req, res) => {
     const porFormaPagamento = await dbAll(
       `SELECT forma_pagamento, COALESCE(SUM(valor_recebido), 0) as total
        FROM contas_receber
-       WHERE status = 'pago' AND strftime('%Y-%m', data_recebimento) = ?
+       WHERE clinica_id = ? AND status = 'pago' AND strftime('%Y-%m', data_recebimento) = ?
        GROUP BY forma_pagamento
        UNION ALL
        SELECT forma_pagamento, COALESCE(SUM(valor), 0) as total
@@ -1343,7 +1343,7 @@ router.get("/kpis", auth, async (req, res) => {
          COUNT(*) as total_recebimentos,
          COALESCE(AVG(valor_recebido), 0) as ticket_medio
        FROM contas_receber
-       WHERE status = 'pago' AND strftime('%Y-%m', data_recebimento) = ?`,
+       WHERE clinica_id = ? AND status = 'pago' AND strftime('%Y-%m', data_recebimento) = ?`,
       [periodo]
     );
 
@@ -1365,7 +1365,7 @@ router.get("/kpis", auth, async (req, res) => {
          COALESCE(SUM(valor_recebido), 0) as receita_total,
          COALESCE(AVG(valor_recebido), 0) as valor_medio
        FROM contas_receber
-       WHERE status = 'pago' AND strftime('%Y-%m', data_recebimento) = ?
+       WHERE clinica_id = ? AND status = 'pago' AND strftime('%Y-%m', data_recebimento) = ?
        GROUP BY procedimento
        ORDER BY receita_total DESC
        LIMIT 5`,
@@ -1402,14 +1402,14 @@ router.get("/kpis", auth, async (req, res) => {
     const receitaMesAnterior = await dbGet(
       `SELECT COALESCE(SUM(valor_recebido), 0) as total
        FROM contas_receber
-       WHERE status = 'pago' AND strftime('%Y-%m', data_recebimento) = ?`,
+       WHERE clinica_id = ? AND status = 'pago' AND strftime('%Y-%m', data_recebimento) = ?`,
       [periodoAnterior]
     );
 
     const receitaMesAtual = await dbGet(
       `SELECT COALESCE(SUM(valor_recebido), 0) as total
        FROM contas_receber
-       WHERE status = 'pago' AND strftime('%Y-%m', data_recebimento) = ?`,
+       WHERE clinica_id = ? AND status = 'pago' AND strftime('%Y-%m', data_recebimento) = ?`,
       [periodo]
     );
 
