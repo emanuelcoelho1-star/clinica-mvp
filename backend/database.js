@@ -622,3 +622,153 @@ db.serialize(() => {
 });
 
 module.exports = db;
+
+/* ══════════════════════════════════════════════════════════
+   BASE SAAS — fundação de clínicas, planos e assinaturas.
+   Migração idempotente: preserva os dados existentes e associa
+   os registros antigos a uma clínica legada, sem abrir cadastro
+   público antes de todas as rotas estarem isoladas por clínica.
+   ══════════════════════════════════════════════════════════ */
+function executarMigracaoSaaS() {
+  db.serialize(() => {
+    db.run(`
+      CREATE TABLE IF NOT EXISTS clinicas (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nome TEXT NOT NULL,
+        slug TEXT UNIQUE,
+        email_contato TEXT,
+        telefone TEXT,
+        status TEXT NOT NULL DEFAULT 'ativa'
+          CHECK (status IN ('ativa', 'suspensa', 'cancelada')),
+        plano TEXT NOT NULL DEFAULT 'trial',
+        trial_ate TEXT,
+        created_at TEXT DEFAULT (datetime('now','localtime')),
+        updated_at TEXT DEFAULT (datetime('now','localtime'))
+      )
+    `);
+
+    db.run(`
+      CREATE TABLE IF NOT EXISTS assinaturas (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        clinica_id INTEGER NOT NULL UNIQUE,
+        provedor TEXT,
+        provedor_cliente_id TEXT,
+        provedor_assinatura_id TEXT,
+        plano TEXT NOT NULL DEFAULT 'trial',
+        status TEXT NOT NULL DEFAULT 'trial',
+        periodo_inicio TEXT,
+        periodo_fim TEXT,
+        cancelamento_no_fim INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT DEFAULT (datetime('now','localtime')),
+        updated_at TEXT DEFAULT (datetime('now','localtime')),
+        FOREIGN KEY (clinica_id) REFERENCES clinicas(id)
+      )
+    `);
+
+    db.run(`
+      CREATE TABLE IF NOT EXISTS auditoria (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        clinica_id INTEGER,
+        usuario_id INTEGER,
+        acao TEXT NOT NULL,
+        recurso TEXT,
+        recurso_id TEXT,
+        detalhes TEXT,
+        ip TEXT,
+        created_at TEXT DEFAULT (datetime('now','localtime')),
+        FOREIGN KEY (clinica_id) REFERENCES clinicas(id),
+        FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+      )
+    `);
+
+    db.run(`
+      CREATE TABLE IF NOT EXISTS saas_migracoes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        versao TEXT NOT NULL UNIQUE,
+        executada_em TEXT DEFAULT (datetime('now','localtime'))
+      )
+    `);
+
+    // Cria uma clínica de transição apenas quando já existem dados.
+    // Não atribui os dados existentes a uma nova conta pública.
+    db.get("SELECT COUNT(*) AS total FROM usuarios", [], (userErr, userCount) => {
+      if (userErr || !userCount || userCount.total === 0) return;
+
+      db.get("SELECT id FROM clinicas ORDER BY id LIMIT 1", [], (clinicErr, clinic) => {
+        if (clinicErr || clinic) return;
+        db.run(
+          "INSERT INTO clinicas (nome, slug, plano, status) VALUES (?, ?, 'legacy', 'ativa')",
+          ["Clínica existente", "clinica-legada"],
+          (insertErr) => {
+            if (insertErr) console.error("Migração SaaS: não foi possível criar clínica legada:", insertErr.message);
+          }
+        );
+      });
+    });
+
+    const colunasSaaS = [
+      ["usuarios", "clinica_id", "INTEGER"],
+      ["pacientes", "clinica_id", "INTEGER"],
+      ["consultas", "clinica_id", "INTEGER"],
+      ["odontogramas", "clinica_id", "INTEGER"],
+      ["anamneses", "clinica_id", "INTEGER"],
+      ["orcamentos", "clinica_id", "INTEGER"],
+      ["orcamento_itens", "clinica_id", "INTEGER"],
+      ["arquivos", "clinica_id", "INTEGER"],
+      ["documentos", "clinica_id", "INTEGER"],
+      ["pagamentos", "clinica_id", "INTEGER"],
+      ["evolucoes", "clinica_id", "INTEGER"],
+      ["tratamentos", "clinica_id", "INTEGER"],
+      ["profissionais", "clinica_id", "INTEGER"],
+      ["categorias_financeiras", "clinica_id", "INTEGER"],
+      ["contas_pagar", "clinica_id", "INTEGER"],
+      ["contas_receber", "clinica_id", "INTEGER"],
+      ["comissoes", "clinica_id", "INTEGER"],
+      ["fluxo_caixa", "clinica_id", "INTEGER"],
+      ["centros_custo", "clinica_id", "INTEGER"],
+      ["formas_pagamento_config", "clinica_id", "INTEGER"],
+      ["metas_financeiras", "clinica_id", "INTEGER"],
+      ["roles", "clinica_id", "INTEGER"],
+      ["permissoes", "clinica_id", "INTEGER"],
+      ["role_permissoes", "clinica_id", "INTEGER"]
+    ];
+
+    const garantirColuna = (indice) => {
+      if (indice >= colunasSaaS.length) {
+        db.run(
+          "INSERT OR IGNORE INTO saas_migracoes (versao) VALUES (?)",
+          ["001-saas-foundation"],
+          (err) => {
+            if (err) console.error("Migração SaaS: erro ao registrar versão:", err.message);
+            else console.log("Migração SaaS 001 concluída (fundação de tenant).");
+          }
+        );
+        return;
+      }
+
+      const [tabela, coluna, definicao] = colunasSaaS[indice];
+      db.all(`PRAGMA table_info(${tabela})`, [], (err, columns) => {
+        if (err) {
+          console.error(`Migração SaaS: erro ao verificar ${tabela}:`, err.message);
+          return;
+        }
+        if (columns.some((item) => item.name === coluna)) {
+          garantirColuna(indice + 1);
+          return;
+        }
+        db.run(`ALTER TABLE ${tabela} ADD COLUMN ${coluna} ${definicao}`, (alterErr) => {
+          if (alterErr) {
+            console.error(`Migração SaaS: erro ao adicionar ${tabela}.${coluna}:`, alterErr.message);
+            return;
+          }
+          garantirColuna(indice + 1);
+        });
+      });
+    };
+
+    // Aguarda a criação das tabelas acima antes de inspecionar colunas.
+    db.run("SELECT 1", [], () => garantirColuna(0));
+  });
+}
+
+executarMigracaoSaaS();
