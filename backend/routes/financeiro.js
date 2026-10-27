@@ -353,6 +353,14 @@ router.post("/contas-pagar", auth, async (req, res) => {
       return res.status(400).json({ erro: "Descrição, valor e vencimento são obrigatórios." });
     }
 
+    if (categoria_id) {
+      const categoria = await dbGet(
+        "SELECT id FROM categorias_financeiras WHERE id = ? AND clinica_id = ? AND ativo = 1",
+        [categoria_id, req.user.clinica_id]
+      );
+      if (!categoria) return res.status(400).json({ erro: "Categoria inválida para esta clínica." });
+    }
+
     const parcelas = total_parcelas || 1;
     const valorParcela = valor / parcelas;
 
@@ -396,6 +404,14 @@ router.put("/contas-pagar/:id", auth, async (req, res) => {
       data_vencimento, forma_pagamento, numero_documento,
       codigo_barras, observacoes,
     } = req.body;
+
+    if (categoria_id) {
+      const categoria = await dbGet(
+        "SELECT id FROM categorias_financeiras WHERE id = ? AND clinica_id = ? AND ativo = 1",
+        [categoria_id, req.user.clinica_id]
+      );
+      if (!categoria) return res.status(400).json({ erro: "Categoria inválida para esta clínica." });
+    }
 
     await dbRun(
       `UPDATE contas_pagar
@@ -835,6 +851,14 @@ router.post("/fluxo-caixa", auth, async (req, res) => {
 
     if (!tipo || !descricao || !valor || !data) {
       return res.status(400).json({ erro: "Tipo, descrição, valor e data são obrigatórios." });
+    }
+
+    if (categoria_id) {
+      const categoria = await dbGet(
+        "SELECT id FROM categorias_financeiras WHERE id = ? AND clinica_id = ? AND ativo = 1",
+        [categoria_id, req.user.clinica_id]
+      );
+      if (!categoria) return res.status(400).json({ erro: "Categoria inválida para esta clínica." });
     }
 
     const result = await dbRun(
