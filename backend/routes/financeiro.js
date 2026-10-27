@@ -625,6 +625,7 @@ router.put("/contas-receber/:id/receber", auth, async (req, res) => {
         forma_pagamento || conta.forma_pagamento,
         novoStatus,
         req.params.id,
+        req.user.clinica_id,
       ]
     );
 
