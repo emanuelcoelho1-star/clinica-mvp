@@ -11,11 +11,12 @@ router.get("/", auth, (req, res) => {
   const sql = `
     SELECT consultas.*, pacientes.nome AS paciente_nome
     FROM consultas
-    LEFT JOIN pacientes ON consultas.paciente_id = pacientes.id
+    LEFT JOIN pacientes ON consultas.paciente_id = pacientes.id AND pacientes.clinica_id = consultas.clinica_id
+    WHERE consultas.clinica_id = ?
     ORDER BY consultas.data ASC, consultas.horario ASC
   `;
 
-  db.all(sql, [], (err, rows) => {
+  db.all(sql, [req.user.clinica_id], (err, rows) => {
     if (err) {
       return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
     }
