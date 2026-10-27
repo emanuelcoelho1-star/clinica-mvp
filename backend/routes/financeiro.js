@@ -353,23 +353,6 @@ router.post("/contas-pagar", auth, async (req, res) => {
       return res.status(400).json({ erro: "Descrição, valor e vencimento são obrigatórios." });
     }
 
-    if (paciente_id) {
-      const paciente = await dbGet("SELECT id FROM pacientes WHERE id = ? AND clinica_id = ?", [paciente_id, req.user.clinica_id]);
-      if (!paciente) return res.status(400).json({ erro: "Paciente inválido para esta clínica." });
-    }
-    if (profissional_id) {
-      const profissional = await dbGet("SELECT id FROM profissionais WHERE id = ? AND clinica_id = ?", [profissional_id, req.user.clinica_id]);
-      if (!profissional) return res.status(400).json({ erro: "Profissional inválido para esta clínica." });
-    }
-    if (orcamento_id) {
-      const orcamento = await dbGet("SELECT id FROM orcamentos WHERE id = ? AND clinica_id = ?", [orcamento_id, req.user.clinica_id]);
-      if (!orcamento) return res.status(400).json({ erro: "Orçamento inválido para esta clínica." });
-    }
-    if (tratamento_id) {
-      const tratamento = await dbGet("SELECT id FROM tratamentos WHERE id = ? AND clinica_id = ?", [tratamento_id, req.user.clinica_id]);
-      if (!tratamento) return res.status(400).json({ erro: "Tratamento inválido para esta clínica." });
-    }
-
     const parcelas = total_parcelas || 1;
     const valorParcela = valor / parcelas;
 
@@ -554,6 +537,23 @@ router.post("/contas-receber", auth, async (req, res) => {
 
     if (!descricao || !valor || !data_vencimento) {
       return res.status(400).json({ erro: "Descrição, valor e vencimento são obrigatórios." });
+    }
+
+    if (paciente_id) {
+      const paciente = await dbGet("SELECT id FROM pacientes WHERE id = ? AND clinica_id = ?", [paciente_id, req.user.clinica_id]);
+      if (!paciente) return res.status(400).json({ erro: "Paciente inválido para esta clínica." });
+    }
+    if (profissional_id) {
+      const profissional = await dbGet("SELECT id FROM profissionais WHERE id = ? AND clinica_id = ?", [profissional_id, req.user.clinica_id]);
+      if (!profissional) return res.status(400).json({ erro: "Profissional inválido para esta clínica." });
+    }
+    if (orcamento_id) {
+      const orcamento = await dbGet("SELECT id FROM orcamentos WHERE id = ? AND clinica_id = ?", [orcamento_id, req.user.clinica_id]);
+      if (!orcamento) return res.status(400).json({ erro: "Orçamento inválido para esta clínica." });
+    }
+    if (tratamento_id) {
+      const tratamento = await dbGet("SELECT id FROM tratamentos WHERE id = ? AND clinica_id = ?", [tratamento_id, req.user.clinica_id]);
+      if (!tratamento) return res.status(400).json({ erro: "Tratamento inválido para esta clínica." });
     }
 
     const parcelas = total_parcelas || 1;
