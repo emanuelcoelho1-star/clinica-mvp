@@ -1,5 +1,6 @@
 import { useState } from "react";
 import API_URL from "../api";
+import { useTheme } from "../contexts/ThemeContext";
 
 /* ── Icons ────────────────────────────────────────────────── */
 const LockIcon = (
@@ -47,6 +48,7 @@ const ShieldIcon = (
 );
 
 function Login() {
+  const { tema, alternarTema } = useTheme();
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [erro, setErro] = useState("");
@@ -88,7 +90,10 @@ function Login() {
   };
 
   return (
-    <div style={S.page}>
+    <div className="login-page" style={S.page}>
+      <button type="button" className="login-theme-toggle" onClick={alternarTema} aria-label={tema === "dark" ? "Ativar tema claro" : "Ativar tema escuro"} title={tema === "dark" ? "Ativar tema claro" : "Ativar tema escuro"}>
+        {tema === "dark" ? "☀" : "☾"} <span>{tema === "dark" ? "Modo claro" : "Modo escuro"}</span>
+      </button>
       {/* Background decorations */}
       <div style={S.bgCircle1} />
       <div style={S.bgCircle2} />
@@ -109,7 +114,7 @@ function Login() {
         </div>
 
         {/* ── Card Principal ─────────────────── */}
-        <div style={S.card}>
+        <div className="login-card" style={S.card}>
           <div style={S.cardHeader}>
             <div style={S.cardIconWrap}>
               <span style={S.cardIconCircle}>{LockIcon}</span>
