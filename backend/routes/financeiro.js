@@ -1008,11 +1008,11 @@ router.get("/comissoes", auth, async (req, res) => {
       SELECT c.*, pr.nome as profissional_nome, pr.cro as profissional_cro,
              p.nome as paciente_nome
       FROM comissoes c
-      INNER JOIN profissionais pr ON c.profissional_id = pr.id
-      LEFT JOIN pacientes p ON c.paciente_id = p.id
-      WHERE 1=1
+      INNER JOIN profissionais pr ON c.profissional_id = pr.id AND pr.clinica_id = c.clinica_id
+      LEFT JOIN pacientes p ON c.paciente_id = p.id AND p.clinica_id = c.clinica_id
+      WHERE c.clinica_id = ?
     `;
-    const params = [];
+    const params = [req.user.clinica_id];
 
     if (profissional_id) { sql += " AND c.profissional_id = ?"; params.push(profissional_id); }
     if (status) { sql += " AND c.status = ?"; params.push(status); }
@@ -1476,10 +1476,10 @@ router.get("/exportar/contas-pagar", auth, async (req, res) => {
              cp.data_vencimento, cp.data_pagamento, cp.forma_pagamento,
              cp.status, cf.nome as categoria
       FROM contas_pagar cp
-      LEFT JOIN categorias_financeiras cf ON cp.categoria_id = cf.id
-      WHERE 1=1
+      LEFT JOIN categorias_financeiras cf ON cp.categoria_id = cf.id AND cf.clinica_id = cp.clinica_id
+      WHERE cp.clinica_id = ?
     `;
-    const params = [];
+    const params = [req.user.clinica_id];
 
     if (mes && ano) {
       sql += " AND strftime('%Y-%m', cp.data_vencimento) = ?";
@@ -1512,10 +1512,10 @@ router.get("/exportar/contas-receber", auth, async (req, res) => {
              cr.valor_recebido, cr.desconto, cr.data_vencimento,
              cr.data_recebimento, cr.forma_pagamento, cr.status
       FROM contas_receber cr
-      LEFT JOIN pacientes p ON cr.paciente_id = p.id
-      WHERE 1=1
+      LEFT JOIN pacientes p ON cr.paciente_id = p.id AND p.clinica_id = cr.clinica_id
+      WHERE cr.clinica_id = ?
     `;
-    const params = [];
+    const params = [req.user.clinica_id];
 
     if (mes && ano) {
       sql += " AND strftime('%Y-%m', cr.data_vencimento) = ?";
@@ -1551,9 +1551,9 @@ router.get("/exportar/fluxo-caixa", auth, async (req, res) => {
     const rows = await dbAll(
       `SELECT tipo, descricao, valor, data, forma_pagamento
        FROM fluxo_caixa
-       WHERE strftime('%Y-%m', data) = ?
+       WHERE clinica_id = ? AND strftime('%Y-%m', data) = ?
        ORDER BY data ASC`,
-      [periodo]
+      [req.user.clinica_id, periodo]
     );
 
     const header = "Tipo;Descrição;Valor;Data;Forma Pgto\n";
@@ -1580,11 +1580,11 @@ router.get("/exportar/inadimplencia", auth, async (req, res) => {
         cr.data_vencimento,
         CAST(julianday('now') - julianday(cr.data_vencimento) AS INTEGER) as dias_atraso
       FROM contas_receber cr
-      INNER JOIN pacientes p ON cr.paciente_id = p.id
-      WHERE cr.status IN ('pendente', 'parcial')
+      INNER JOIN pacientes p ON cr.paciente_id = p.id AND p.clinica_id = cr.clinica_id
+      WHERE cr.clinica_id = ? AND cr.status IN ('pendente', 'parcial')
         AND cr.data_vencimento < date('now')
       ORDER BY dias_atraso DESC
-    `);
+    `, [req.user.clinica_id]);
 
     const header = "Paciente;Telefone;Email;Descrição;Valor;Recebido;Restante;Vencimento;Dias Atraso\n";
     const csv = header + rows.map((r) =>
