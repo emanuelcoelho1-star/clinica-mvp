@@ -149,7 +149,7 @@ router.get("/dashboard", auth, async (req, res) => {
        UNION ALL
        SELECT forma_pagamento, COALESCE(SUM(valor), 0) as total
        FROM pagamentos
-       WHERE status = 'confirmado' AND strftime('%Y-%m', data) = ?
+       WHERE clinica_id = ? AND status = 'confirmado' AND strftime('%Y-%m', data) = ?
        GROUP BY forma_pagamento`,
       [req.user.clinica_id, periodo, req.user.clinica_id, periodo]
     );
