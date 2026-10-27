@@ -154,7 +154,7 @@ router.post("/login", loginLimiter, (req, res) => {
     }
 
     db.get(
-      `SELECT u.*, r.ativo AS role_ativo\n       FROM usuarios u LEFT JOIN roles r ON r.id = u.role_id\n       WHERE u.email = ?`,
+      `SELECT u.*, r.ativo AS role_ativo, r.clinica_id AS role_clinica_id,\n              r.protegido AS role_protegido, c.status AS clinica_status\n       FROM usuarios u\n       LEFT JOIN roles r ON r.id = u.role_id\n       LEFT JOIN clinicas c ON c.id = u.clinica_id\n       WHERE u.email = ?`,
       [email.toLowerCase().trim()],
       async (err, user) => {
         if (err) {
@@ -173,6 +173,16 @@ router.post("/login", loginLimiter, (req, res) => {
 
         if (!user.role_id || Number(user.role_ativo) !== 1) {
           return res.status(403).json({ erro: "Seu perfil está indisponível. Contate o administrador." });
+        }
+
+        if (!user.clinica_id || user.clinica_status !== "ativa") {
+          return res.status(403).json({ erro: "A clínica não está ativa ou não está vinculada ao usuário." });
+        }
+
+        // Perfis personalizados devem pertencer à mesma clínica do usuário.
+        // O perfil protegido de Administrador pode ser global (clinica_id NULL).
+        if (Number(user.role_protegido) !== 1 && Number(user.role_clinica_id) !== Number(user.clinica_id)) {
+          return res.status(403).json({ erro: "O perfil de acesso não pertence a esta clínica." });
         }
 
         const token = jwt.sign(
