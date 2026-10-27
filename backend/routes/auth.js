@@ -46,60 +46,96 @@ const authGeneralLimiter = rateLimit({
   validate: { ip: false, trustProxy: false },
 });
 
-/* ── Cadastro ─────────────────────────────────── */
+/* ── Cadastro inicial local ───────────────────── */
 router.post("/register", registerLimiter, async (req, res) => {
   try {
-    const { nome, email, senha } = req.body;
-
+    const { nome, email, senha } = req.body || {};
     if (!email || !senha) {
       return res.status(400).json({ erro: "E-mail e senha são obrigatórios." });
     }
-
-    if (senha.length < 6) {
-      return res.status(400).json({ erro: "A senha deve ter no mínimo 6 caracteres." });
+    if (typeof senha !== "string" || senha.length < 8) {
+      return res.status(400).json({ erro: "A senha deve ter no mínimo 8 caracteres." });
     }
 
-    const emailNormalizado = email.toLowerCase().trim();
-    const nomeNormalizado = String(nome || "Administrador").trim().slice(0, 120);
+    const emailNormalizado = String(email).trim().toLowerCase();
+    const nomeNormalizado = String(nome || "").trim().slice(0, 120);
     if (!nomeNormalizado) {
       return res.status(400).json({ erro: "Nome é obrigatório." });
     }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailNormalizado)) {
+      return res.status(400).json({ erro: "Informe um e-mail válido." });
+    }
 
     const hash = await bcrypt.hash(senha, 12);
+    const slugBase = nomeNormalizado
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
+      .slice(0, 45) || "clinica";
+    const slug = `${slugBase}-${Date.now().toString(36)}`;
 
-    // Uma única instrução atômica evita duas primeiras contas concorrentes
-    // e associa a primeira conta ao perfil protegido de Administrador.
-    db.run(
-      `INSERT INTO usuarios (nome, email, senha, role_id)
-       SELECT ?, ?, ?, r.id
-       FROM roles r
-       WHERE r.protegido = 1 AND r.ativo = 1
-         AND NOT EXISTS (SELECT 1 FROM usuarios)
-         AND NOT EXISTS (SELECT 1 FROM usuarios WHERE email = ?)
-       LIMIT 1`,
-      [nomeNormalizado, emailNormalizado, hash, emailNormalizado],
-      function (err) {
-        if (err) {
-          if (err.message.includes("UNIQUE")) {
-            return res.status(409).json({ erro: "E-mail já cadastrado." });
-          }
-          return res.status(500).json({ erro: "Erro ao criar usuário." });
-        }
+    // O primeiro cadastro cria a clínica e seu administrador numa transação.
+    // O cadastro público continua bloqueado depois da criação da primeira conta.
+    db.serialize(() => {
+      db.run("BEGIN IMMEDIATE TRANSACTION", (beginErr) => {
+        if (beginErr) return res.status(500).json({ erro: "Não foi possível iniciar o cadastro." });
 
-        if (this.changes === 0) {
-          return res.status(403).json({
-            erro: "Cadastro público desativado ou perfil Administrador indisponível. Solicite acesso ao administrador.",
+        const rollback = (status, message) => {
+          db.run("ROLLBACK", () => res.status(status).json({ erro: message }));
+        };
+
+        db.get("SELECT COUNT(*) AS total FROM usuarios", [], (countErr, count) => {
+          if (countErr) return rollback(500, "Erro ao verificar o cadastro inicial.");
+          if (count.total > 0) return rollback(403, "O cadastro inicial já foi realizado. Entre com sua conta.");
+
+          db.get("SELECT id FROM roles WHERE protegido = 1 AND ativo = 1 ORDER BY id LIMIT 1", [], (roleErr, role) => {
+            if (roleErr || !role) return rollback(503, "Perfil Administrador indisponível. Reinicie a API e tente novamente.");
+
+            db.run(
+              "INSERT INTO clinicas (nome, slug, plano, status, trial_ate) VALUES (?, ?, 'trial', 'ativa', date('now', '+14 days'))",
+              [`${nomeNormalizado} - Clínica`, slug],
+              function (clinicErr) {
+                if (clinicErr) {
+                  if (clinicErr.message.includes("UNIQUE")) return rollback(409, "Não foi possível registrar esta clínica. Tente novamente.");
+                  return rollback(500, "Erro ao criar a clínica.");
+                }
+                const clinicaId = this.lastID;
+
+                db.run(
+                  "INSERT INTO usuarios (nome, email, senha, role_id, clinica_id) VALUES (?, ?, ?, ?, ?)",
+                  [nomeNormalizado, emailNormalizado, hash, role.id, clinicaId],
+                  function (userErr) {
+                    if (userErr) {
+                      if (userErr.message.includes("UNIQUE")) return rollback(409, "E-mail já cadastrado.");
+                      return rollback(500, "Erro ao criar o usuário administrador.");
+                    }
+                    const usuarioId = this.lastID;
+
+                    db.run(
+                      "INSERT INTO assinaturas (clinica_id, plano, status, periodo_inicio, periodo_fim) VALUES (?, 'trial', 'trial', date('now'), date('now', '+14 days'))",
+                      [clinicaId],
+                      (subscriptionErr) => {
+                        if (subscriptionErr) return rollback(500, "Erro ao preparar o período de teste.");
+
+                        db.run("COMMIT", (commitErr) => {
+                          if (commitErr) return rollback(500, "Não foi possível concluir o cadastro.");
+                          return res.status(201).json({
+                            mensagem: "Conta criada. Agora entre com seu e-mail e senha.",
+                            id: usuarioId,
+                            clinica_id: clinicaId,
+                          });
+                        });
+                      }
+                    );
+                  }
+                );
+              }
+            );
           });
-        }
-
-        res.status(201).json({
-          mensagem: "Usuário administrador criado com sucesso.",
-          id: this.lastID,
         });
-      }
-    );
+      });
+    });
   } catch (error) {
-    res.status(500).json({ erro: "Erro interno no servidor." });
+    return res.status(500).json({ erro: "Erro interno no servidor." });
   }
 });
 
