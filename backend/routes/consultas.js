@@ -17,7 +17,7 @@ router.get("/", auth, (req, res) => {
 
   db.all(sql, [], (err, rows) => {
     if (err) {
-      return res.status(500).json({ erro: err.message });
+      return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
     }
 
     res.json(rows);
@@ -43,7 +43,7 @@ router.post("/", auth, (req, res) => {
     [paciente_id, data, horario, procedimento || "", status || "agendado"],
     function (err) {
       if (err) {
-        return res.status(500).json({ erro: err.message });
+        return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
       }
 
       res.status(201).json({
@@ -75,7 +75,7 @@ router.put("/:id", auth, (req, res) => {
     [paciente_id, data, horario, procedimento || "", status || "agendado", id],
     function (err) {
       if (err) {
-        return res.status(500).json({ erro: err.message });
+        return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
       }
 
       if (this.changes === 0) {
@@ -92,7 +92,7 @@ router.delete("/:id", auth, (req, res) => {
 
   db.run("DELETE FROM consultas WHERE id = ?", [id], function (err) {
     if (err) {
-      return res.status(500).json({ erro: err.message });
+      return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
     }
 
     if (this.changes === 0) {
