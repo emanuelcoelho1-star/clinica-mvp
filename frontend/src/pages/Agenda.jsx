@@ -173,6 +173,9 @@ function Agenda() {
   const [filtroProfissional, setFiltroProfissional] = useState("Todos");
   const [busca, setBusca] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
+  const [mostrarGerenciador, setMostrarGerenciador] = useState(false);
+  const [buscaGerenciador, setBuscaGerenciador] = useState("");
+  const [statusGerenciador, setStatusGerenciador] = useState("todos");
   const [inicioSemana, setInicioSemana] = useState(obterInicioAgenda(new Date()));
   const [consultas, setConsultas] = useState([]);
   const [pacientes, setPacientes] = useState([]);
@@ -270,6 +273,19 @@ function Agenda() {
     consultas.forEach((a) => { if (s[a.status] !== undefined) s[a.status]++; });
     return s;
   }, [consultas]);
+
+  // Lista de gestão independente da semana exibida no calendário.
+  const consultasGerenciadas = useMemo(() => {
+    const termo = buscaGerenciador.trim().toLocaleLowerCase("pt-BR");
+    return consultas
+      .filter((item) => {
+        const correspondeStatus = statusGerenciador === "todos" || item.status === statusGerenciador;
+        const texto = [item.paciente, item.procedimento, item.dentista, item.data, item.inicio]
+          .filter(Boolean).join(" ").toLocaleLowerCase("pt-BR");
+        return correspondeStatus && (!termo || texto.includes(termo));
+      })
+      .sort((a, b) => String(b.data).localeCompare(String(a.data)) || String(b.inicio).localeCompare(String(a.inicio)));
+  }, [consultas, buscaGerenciador, statusGerenciador]);
 
   const tituloPeriodo = useMemo(() => {
     const p = diasSemana[0]?.data; const u = diasSemana[diasSemana.length-1]?.data;
@@ -506,8 +522,91 @@ function Agenda() {
             onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}>
             {Icons.refresh}<span>Atualizar</span>
           </button>
+          <button type="button" style={mostrarGerenciador ? S.btnManageActive : S.btnRefresh}
+            onClick={() => setMostrarGerenciador((v) => !v)}>
+            <span>{mostrarGerenciador ? "Ocultar consultas" : "Gerenciar consultas"}</span>
+            <span style={S.manageCount}>{consultas.length}</span>
+          </button>
         </div>
       </div>
+
+      {/* ── Gerenciador de consultas: pesquisa em todas as datas ── */}
+      {mostrarGerenciador && (
+        <section style={S.managePanel}>
+          <div style={S.manageHeader}>
+            <div>
+              <h2 style={S.manageTitle}>Todas as consultas</h2>
+              <p style={S.manageSubtitle}>Pesquise por paciente, procedimento, profissional, data ou horário. Edite ou exclua qualquer consulta sem navegar até a semana correspondente.</p>
+            </div>
+            <span style={S.manageTotal}>{consultasGerenciadas.length} resultado(s)</span>
+          </div>
+          <div style={S.manageFilters}>
+            <div style={S.manageSearchWrap}>
+              <span style={{ display: "flex", color: "#94a3b8" }}>{Icons.search}</span>
+              <input
+                type="search"
+                value={buscaGerenciador}
+                onChange={(e) => setBuscaGerenciador(e.target.value)}
+                placeholder="Buscar paciente, procedimento, data..."
+                aria-label="Buscar consultas"
+                style={S.manageSearchInput}
+              />
+              {buscaGerenciador && <button type="button" style={S.searchClear} onClick={() => setBuscaGerenciador("")}>✕</button>}
+            </div>
+            <select value={statusGerenciador} onChange={(e) => setStatusGerenciador(e.target.value)} style={S.manageStatusSelect} aria-label="Filtrar consultas por status">
+              <option value="todos">Todos os status</option>
+              {statusOptions.map((status) => <option key={status.value} value={status.value}>{status.label}</option>)}
+            </select>
+          </div>
+          {consultasGerenciadas.length === 0 ? (
+            <div style={S.manageEmpty}>Nenhuma consulta encontrada com esses filtros.</div>
+          ) : (
+            <div style={S.manageTableWrap}>
+              <table style={S.manageTable}>
+                <thead>
+                  <tr>
+                    <th style={S.manageTh}>Paciente / procedimento</th>
+                    <th style={S.manageTh}>Data e horário</th>
+                    <th style={S.manageTh}>Profissional</th>
+                    <th style={S.manageTh}>Status</th>
+                    <th style={{ ...S.manageTh, textAlign: "right" }}>Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {consultasGerenciadas.map((consulta) => {
+                    const cfg = STATUS_STYLE[consulta.status] || STATUS_STYLE.agendado;
+                    const dataFormatada = consulta.data && /^\d{4}-\d{2}-\d{2}/.test(consulta.data)
+                      ? consulta.data.slice(8, 10) + "/" + consulta.data.slice(5, 7) + "/" + consulta.data.slice(0, 4)
+                      : consulta.data || "—";
+                    return (
+                      <tr key={consulta.id}>
+                        <td style={S.manageTd}>
+                          <div style={S.managePatientName}>{consulta.paciente}</div>
+                          <div style={S.manageMuted}>{consulta.procedimento || "Consulta"}</div>
+                        </td>
+                        <td style={S.manageTd}>
+                          <div style={S.manageDate}>{dataFormatada}</div>
+                          <div style={S.manageMuted}>{consulta.inicio || "—"}</div>
+                        </td>
+                        <td style={S.manageTd}>{consulta.dentista || "—"}</td>
+                        <td style={S.manageTd}>
+                          <span style={{ ...S.manageStatus, background: cfg.bg, color: cfg.color, borderColor: cfg.border }}>
+                            <span style={{ ...S.statDot, width: "6px", height: "6px", background: cfg.dot }} />
+                            {obterLabelStatus(consulta.status)}
+                          </span>
+                        </td>
+                        <td style={{ ...S.manageTd, textAlign: "right", whiteSpace: "nowrap" }}>
+                          <button type="button" style={S.manageEditButton} onClick={() => abrirModal(consulta)}>Editar</button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      )}
 
       {/* ── Loading / Erro ────────────────────────────────── */}
       {carregando && (
@@ -782,6 +881,29 @@ const S = {
   btnSecondary: { display: "inline-flex", alignItems: "center", gap: "6px", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "0 16px", background: "#fff", color: "#475569", fontWeight: "500", fontSize: "13px", cursor: "pointer", transition: "all 0.15s ease", whiteSpace: "nowrap", height: "40px", boxSizing: "border-box" },
   btnDanger: { display: "inline-flex", alignItems: "center", gap: "6px", border: "none", borderRadius: "10px", padding: "0 16px", background: "#ef4444", color: "#fff", fontWeight: "600", fontSize: "13px", cursor: "pointer", height: "40px", boxSizing: "border-box" },
   btnRefresh: { display: "inline-flex", alignItems: "center", gap: "6px", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "0 14px", background: "#fff", color: "#475569", fontWeight: "500", fontSize: "13px", cursor: "pointer", transition: "all 0.15s ease", height: "36px", boxSizing: "border-box" },
+
+  /* ── Consulta management ───────────────────── */
+  btnManageActive: { display: "inline-flex", alignItems: "center", gap: "8px", border: "1px solid #bfdbfe", borderRadius: "10px", padding: "0 14px", background: "#eff6ff", color: "#1d4ed8", fontWeight: "600", fontSize: "13px", cursor: "pointer", height: "36px", boxSizing: "border-box" },
+  manageCount: { display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: "22px", height: "22px", padding: "0 5px", borderRadius: "7px", background: "#dbeafe", color: "#1d4ed8", fontSize: "11px", fontWeight: "700" },
+  managePanel: { background: "#fff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "20px", boxShadow: "0 4px 16px rgba(15,23,42,0.03)", minWidth: 0 },
+  manageHeader: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px", flexWrap: "wrap", marginBottom: "16px" },
+  manageTitle: { margin: 0, color: "#0f172a", fontSize: "17px", fontWeight: "700" },
+  manageSubtitle: { margin: "5px 0 0", color: "#64748b", fontSize: "13px", lineHeight: 1.5, maxWidth: "700px" },
+  manageTotal: { borderRadius: "8px", background: "#f1f5f9", color: "#475569", padding: "6px 9px", fontSize: "12px", fontWeight: "600", whiteSpace: "nowrap" },
+  manageFilters: { display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", marginBottom: "14px" },
+  manageSearchWrap: { display: "flex", alignItems: "center", gap: "8px", height: "40px", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "0 12px", flex: "1 1 260px", minWidth: "180px", boxSizing: "border-box" },
+  manageSearchInput: { flex: 1, minWidth: 0, border: "none", outline: "none", fontSize: "13px", color: "#0f172a", background: "transparent", height: "100%" },
+  manageStatusSelect: { height: "40px", minWidth: "170px", border: "1px solid #e2e8f0", borderRadius: "10px", background: "#fff", color: "#334155", padding: "0 12px", fontSize: "13px", outline: "none" },
+  manageTableWrap: { width: "100%", overflowX: "auto", border: "1px solid #f1f5f9", borderRadius: "12px" },
+  manageTable: { width: "100%", borderCollapse: "collapse", minWidth: "680px", fontSize: "13px" },
+  manageTh: { padding: "12px 14px", background: "#f8fafc", borderBottom: "1px solid #e2e8f0", color: "#64748b", textAlign: "left", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.04em", fontWeight: "700", whiteSpace: "nowrap" },
+  manageTd: { padding: "13px 14px", borderBottom: "1px solid #f1f5f9", color: "#334155", verticalAlign: "middle" },
+  managePatientName: { color: "#0f172a", fontWeight: "700", marginBottom: "3px" },
+  manageMuted: { color: "#94a3b8", fontSize: "12px" },
+  manageDate: { color: "#0f172a", fontWeight: "600" },
+  manageStatus: { display: "inline-flex", alignItems: "center", gap: "6px", border: "1px solid", borderRadius: "7px", padding: "5px 8px", fontSize: "11px", fontWeight: "600", whiteSpace: "nowrap" },
+  manageEditButton: { height: "32px", padding: "0 12px", borderRadius: "8px", border: "1px solid #bfdbfe", background: "#eff6ff", color: "#1d4ed8", fontSize: "12px", fontWeight: "700", cursor: "pointer" },
+  manageEmpty: { padding: "28px 16px", textAlign: "center", color: "#94a3b8", background: "#f8fafc", borderRadius: "12px", fontSize: "13px" },
 
   /* ── Stats ────────────────────────────────── */
   statsRow: { display: "flex", gap: "10px", flexWrap: "wrap" },
