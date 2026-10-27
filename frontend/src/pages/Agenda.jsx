@@ -592,10 +592,15 @@ function Agenda() {
               />
               {buscaGerenciador && <button type="button" style={S.searchClear} onClick={() => setBuscaGerenciador("")}>✕</button>}
             </div>
-            <select value={statusGerenciador} onChange={(e) => setStatusGerenciador(e.target.value)} style={S.manageStatusSelect} aria-label="Filtrar consultas por status">
-              <option value="todos">Todos os status</option>
-              {statusOptions.map((status) => <option key={status.value} value={status.value}>{status.label}</option>)}
-            </select>
+            <CustomDropdown
+              value={statusGerenciador}
+              onChange={setStatusGerenciador}
+              options={[{ value: "todos", label: "Todos os status" }, ...statusOptions]}
+              placeholder="Todos os status"
+              triggerStyle={S.manageStatusTrigger}
+              menuStyle={{ zIndex: 1300 }}
+              maxHeight="240px"
+            />
           </div>
           {consultasGerenciadas.length === 0 ? (
             <div style={S.manageEmpty}>Nenhuma consulta encontrada com esses filtros.</div>
@@ -1012,7 +1017,7 @@ const S = {
   manageFilters: { display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", marginBottom: "14px" },
   manageSearchWrap: { display: "flex", alignItems: "center", gap: "8px", height: "40px", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "0 12px", flex: "1 1 260px", minWidth: "180px", boxSizing: "border-box" },
   manageSearchInput: { flex: 1, minWidth: 0, border: "none", outline: "none", fontSize: "13px", color: "#0f172a", background: "transparent", height: "100%" },
-  manageStatusSelect: { height: "40px", minWidth: "170px", border: "1px solid #e2e8f0", borderRadius: "10px", background: "#fff", color: "#334155", padding: "0 12px", fontSize: "13px", outline: "none" },
+  manageStatusTrigger: { height: "40px", minWidth: "170px", fontSize: "13px", color: "#334155" },
   manageTableWrap: { width: "100%", overflowX: "auto", border: "1px solid #f1f5f9", borderRadius: "12px" },
   manageTable: { width: "100%", borderCollapse: "collapse", minWidth: "680px", fontSize: "13px" },
   manageTh: { padding: "12px 14px", background: "#f8fafc", borderBottom: "1px solid #e2e8f0", color: "#64748b", textAlign: "left", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.04em", fontWeight: "700", whiteSpace: "nowrap" },
