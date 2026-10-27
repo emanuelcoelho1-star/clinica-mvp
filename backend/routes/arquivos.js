@@ -155,7 +155,7 @@ router.get("/:id/download", (req, res) => {
     return res.status(401).json({ erro: "Token inválido ou expirado." });
   }
 
-  if (!decoded || !decoded.id || !Number.isInteger(Number(decoded.clinica_id)) || Number(decoded.clinica_id) <= 0) {
+  if (!decoded || !decoded.id) {
     return res.status(401).json({ erro: "Token inválido ou expirado." });
   }
 
@@ -164,8 +164,8 @@ router.get("/:id/download", (req, res) => {
     `SELECT u.id, r.ativo AS role_ativo, u.clinica_id
      FROM usuarios u
      LEFT JOIN roles r ON r.id = u.role_id
-     WHERE u.id = ? AND u.clinica_id = ?`,
-    [decoded.id, Number(decoded.clinica_id)],
+     WHERE u.id = ?`,
+    [decoded.id],
     (userErr, user) => {
       if (userErr) return res.status(500).json({ erro: "Não foi possível validar a sessão." });
       if (!user) return res.status(401).json({ erro: "Sessão inválida. Faça login novamente." });
@@ -174,7 +174,7 @@ router.get("/:id/download", (req, res) => {
       }
 
       const { id } = req.params;
-      db.get("SELECT * FROM arquivos WHERE id = ? AND clinica_id = ?", [id, Number(decoded.clinica_id)], (err, row) => {
+      db.get("SELECT * FROM arquivos WHERE id = ? AND clinica_id = ?", [id, user.clinica_id], (err, row) => {
         if (err) return res.status(500).json({ erro: "Erro ao buscar arquivo." });
         if (!row) return res.status(404).json({ erro: "Arquivo não encontrado." });
 
