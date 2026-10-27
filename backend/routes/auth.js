@@ -85,7 +85,12 @@ router.post("/register", registerLimiter, async (req, res) => {
 
         db.get("SELECT COUNT(*) AS total FROM usuarios", [], (countErr, count) => {
           if (countErr) return rollback(500, "Erro ao verificar o cadastro inicial.");
-          if (count.total > 0) return rollback(403, "O cadastro inicial já foi realizado. Entre com sua conta.");
+          // Por padrão, somente o primeiro cadastro é permitido.
+          // Para testar múltiplas clínicas localmente, habilite ALLOW_PUBLIC_SIGNUP=true no .env.
+          const cadastroMultiploHabilitado = process.env.ALLOW_PUBLIC_SIGNUP === "true";
+          if (count.total > 0 && !cadastroMultiploHabilitado) {
+            return rollback(403, "O cadastro inicial já foi realizado. Para cadastrar outra clínica em ambiente local, configure ALLOW_PUBLIC_SIGNUP=true no arquivo backend/.env e reinicie a API.");
+          }
 
           db.get("SELECT id FROM roles WHERE protegido = 1 AND ativo = 1 ORDER BY id LIMIT 1", [], (roleErr, role) => {
             if (roleErr || !role) return rollback(503, "Perfil Administrador indisponível. Reinicie a API e tente novamente.");
