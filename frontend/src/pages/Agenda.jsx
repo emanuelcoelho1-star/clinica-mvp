@@ -311,6 +311,13 @@ function Agenda() {
     setFormData((p) => ({ ...p, data: novaData, horario: disp.length === 0 ? "" : disp.includes(p.horario) ? p.horario : disp[0] }));
   }
 
+  // Atalhos para marcar o retorno do paciente sem precisar calcular a data manualmente.
+  function definirRetorno(dias) {
+    const dataRetorno = formatarDataISO(adicionarDias(new Date(), dias));
+    ajustarHorario(dataRetorno);
+    setFormData((p) => ({ ...p, procedimento: p.procedimento.trim() ? p.procedimento : "Retorno" }));
+  }
+
   function abrirModal(ag = null, dataPad = null, horPad = "08:00") {
     setErroFormulario(""); setConfirmarExclusaoAberto(false); setMostrarSugestoesPaciente(false);
     if (ag) {
@@ -730,8 +737,20 @@ function Agenda() {
               </div>
 
               <div style={S.formGrid}>
-                <div style={S.fieldGroup}><label style={S.label}>Data</label>
-                  <input type="date" name="data" value={formData.data} onChange={handleInput} style={S.input} /></div>
+                <div style={S.fieldGroup}><label style={S.label}>Data do atendimento / retorno</label>
+                  <input type="date" name="data" min={formatarDataISO(new Date())} value={formData.data} onChange={handleInput} style={S.input} />
+                  <span style={{ color: "#64748b", fontSize: "12px", marginTop: "2px" }}>Atalhos para agendar o retorno a partir de hoje:</span>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "4px" }}>
+                    {[{ label: "1 semana", dias: 7 }, { label: "2 semanas", dias: 14 }, { label: "3 semanas", dias: 21 }, { label: "1 mês", dias: 30 }].map((opcao) => {
+                      const dataAtalho = formatarDataISO(adicionarDias(new Date(), opcao.dias));
+                      const ativo = formData.data === dataAtalho;
+                      return <button key={opcao.dias} type="button" onClick={() => definirRetorno(opcao.dias)}
+                        style={{ padding: "6px 9px", borderRadius: "8px", border: ativo ? "1px solid #2563eb" : "1px solid #cbd5e1", background: ativo ? "#eff6ff" : "#fff", color: ativo ? "#1d4ed8" : "#475569", fontSize: "12px", fontWeight: ativo ? "700" : "500", cursor: "pointer" }}>
+                        {opcao.label}
+                      </button>;
+                    })}
+                  </div>
+                </div>
                 <div style={S.fieldGroup}><label style={S.label}>Horário</label>
                   <CustomDropdown value={formData.horario} options={horariosOpts}
                     onChange={(h) => setFormData((p) => ({ ...p, horario: h }))}
