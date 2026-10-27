@@ -425,7 +425,6 @@ function Pacientes() {
         <div style={s.headerLeft}>
           <div style={s.headerTitleRow}>
             <h1 style={s.headerTitle}>Pacientes</h1>
-            <span style={s.headerCount}>{total}</span>
           </div>
           <p style={s.headerSub}>
             Gerencie os pacientes cadastrados na clínica
