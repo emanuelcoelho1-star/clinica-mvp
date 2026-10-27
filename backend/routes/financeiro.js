@@ -722,17 +722,17 @@ router.get("/fluxo-caixa", auth, async (req, res) => {
 
       movimentacoes = await dbAll(
         `SELECT * FROM fluxo_caixa
-         WHERE data >= ?
+         WHERE clinica_id = ? AND data >= ?
          ORDER BY data ASC, id ASC`,
-        [dataInicioStr]
+        [req.user.clinica_id, dataInicioStr]
       );
     } else {
       const mesStr = String(mes).padStart(2, "0");
       movimentacoes = await dbAll(
         `SELECT * FROM fluxo_caixa
-         WHERE strftime('%Y-%m', data) = ?
+         WHERE clinica_id = ? AND strftime('%Y-%m', data) = ?
          ORDER BY data ASC, id ASC`,
-        [`${ano}-${mesStr}`]
+        [req.user.clinica_id, `${ano}-${mesStr}`]
       );
     }
 
@@ -775,10 +775,10 @@ router.get("/fluxo-caixa", auth, async (req, res) => {
     const projecaoReceber = await dbGet(
       `SELECT COALESCE(SUM(valor - valor_recebido), 0) as total
        FROM contas_receber
-       WHERE status IN ('pendente','parcial')
+       WHERE clinica_id = ? AND status IN ('pendente','parcial')
          AND strftime('%Y-%m', data_vencimento) = ?
          AND data_vencimento >= ?`,
-      [`${ano}-${mesStr}`, hoje]
+      [req.user.clinica_id, `${ano}-${mesStr}`, hoje]
     );
 
     const projecaoPagar = await dbGet(
@@ -821,9 +821,9 @@ router.post("/fluxo-caixa", auth, async (req, res) => {
     }
 
     const result = await dbRun(
-      `INSERT INTO fluxo_caixa (tipo, categoria_id, descricao, valor, data, forma_pagamento, observacoes)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [tipo, categoria_id || null, descricao, valor, data, forma_pagamento || null, observacoes || null]
+      `INSERT INTO fluxo_caixa (tipo, categoria_id, descricao, valor, data, forma_pagamento, observacoes, clinica_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [tipo, categoria_id || null, descricao, valor, data, forma_pagamento || null, observacoes || null, req.user.clinica_id]
     );
 
     res.status(201).json({ id: result.lastID, mensagem: "Lançamento registrado." });
@@ -835,7 +835,7 @@ router.post("/fluxo-caixa", auth, async (req, res) => {
 // DELETE /financeiro/fluxo-caixa/:id
 router.delete("/fluxo-caixa/:id", auth, async (req, res) => {
   try {
-    await dbRun("DELETE FROM fluxo_caixa WHERE id = ?", [req.params.id]);
+    await dbRun("DELETE FROM fluxo_caixa WHERE id = ? AND clinica_id = ?", [req.params.id, req.user.clinica_id]);
     res.json({ mensagem: "Lançamento excluído." });
   } catch (error) {
     res.status(500).json({ erro: "Erro ao excluir lançamento." });
