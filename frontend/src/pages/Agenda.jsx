@@ -190,7 +190,13 @@ function Agenda() {
   const [modalPacienteAberto, setModalPacienteAberto] = useState(false);
   const [salvandoPaciente, setSalvandoPaciente] = useState(false);
   const [erroPaciente, setErroPaciente] = useState("");
-  const [formPaciente, setFormPaciente] = useState({ nome: "", telefone: "", observacoes: "" });
+  const [formPaciente, setFormPaciente] = useState({
+    nome: "", telefone: "", email: "", comoConheceu: "", profissao: "", genero: "",
+    dataNascimento: "", cpf: "", observacoes: "", cep: "", rua: "", numero: "",
+    complemento: "", bairro: "", cidade: "", estado: "", responsavelNome: "",
+    responsavelCpf: "", responsavelDataNascimento: "", responsavelTelefone: "",
+  });
+  const [buscandoCepPaciente, setBuscandoCepPaciente] = useState(false);
   const [formData, setFormData] = useState({
     paciente_id: "", data: formatarDataISO(new Date()), horario: "08:00", procedimento: "", status: "agendado",
   });
@@ -259,10 +265,11 @@ function Agenda() {
   }, [consultas, filtroProfissional, busca, diasSemana]);
 
   const weekStats = useMemo(() => {
-    const s = { total: agendamentosFiltrados.length, agendado: 0, confirmado: 0, concluido: 0, cancelado: 0 };
-    agendamentosFiltrados.forEach((a) => { if (s[a.status] !== undefined) s[a.status]++; });
+    // Os indicadores mostram o total geral de consultas cadastradas, não apenas a semana visível.
+    const s = { total: consultas.length, agendado: 0, confirmado: 0, concluido: 0, cancelado: 0 };
+    consultas.forEach((a) => { if (s[a.status] !== undefined) s[a.status]++; });
     return s;
-  }, [agendamentosFiltrados]);
+  }, [consultas]);
 
   const tituloPeriodo = useMemo(() => {
     const p = diasSemana[0]?.data; const u = diasSemana[diasSemana.length-1]?.data;
@@ -339,21 +346,81 @@ function Agenda() {
     finally { setExcluindo(false); }
   }
 
-  function abrirModalPaciente() { setErroPaciente(""); setFormPaciente({ nome: "", telefone: "", observacoes: "" }); setModalPacienteAberto(true); }
+  const numeros = (valor) => String(valor || "").replace(/\\D/g, "");
+  function formatarCpfPaciente(valor) {
+    return numeros(valor).slice(0, 11)
+      .replace(/^(\\d{3})(\\d)/, "$1.$2")
+      .replace(/^(\\d{3})\\.(\\d{3})(\\d)/, "$1.$2.$3")
+      .replace(/\\.(\\d{3})(\\d)/, ".$1-$2");
+  }
+  function formatarTelefonePaciente(valor) {
+    const n = numeros(valor).slice(0, 11);
+    if (n.length <= 10) return n.replace(/^(\\d{2})(\\d)/, "($1) $2").replace(/(\\d{4})(\\d)/, "$1-$2");
+    return n.replace(/^(\\d{2})(\\d)/, "($1) $2").replace(/(\\d{5})(\\d)/, "$1-$2");
+  }
+  function atualizarCampoPaciente(campo, valor) {
+    setFormPaciente((p) => ({ ...p, [campo]: valor }));
+  }
+  function abrirModalPaciente() {
+    setErroPaciente("");
+    setFormPaciente({
+      nome: "", telefone: "", email: "", comoConheceu: "", profissao: "", genero: "",
+      dataNascimento: "", cpf: "", observacoes: "", cep: "", rua: "", numero: "",
+      complemento: "", bairro: "", cidade: "", estado: "", responsavelNome: "",
+      responsavelCpf: "", responsavelDataNascimento: "", responsavelTelefone: "",
+    });
+    setModalPacienteAberto(true);
+  }
   function fecharModalPaciente() { if (salvandoPaciente) return; setModalPacienteAberto(false); setErroPaciente(""); }
+
+  async function buscarCepPaciente(valor) {
+    const cep = numeros(valor);
+    if (cep.length !== 8) return;
+    try {
+      setBuscandoCepPaciente(true);
+      const r = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+      const d = await r.json();
+      if (!r.ok || d.erro) { setErroPaciente("CEP não encontrado."); return; }
+      setFormPaciente((p) => ({ ...p, cidade: d.localidade || "", estado: d.uf || "" }));
+    } catch { setErroPaciente("Não foi possível buscar o CEP."); }
+    finally { setBuscandoCepPaciente(false); }
+  }
 
   async function handleSalvarPaciente(e) {
     e.preventDefault();
-    if (!formPaciente.nome.trim()) { setErroPaciente("Digite o nome do paciente."); return; }
-    try { setSalvandoPaciente(true); setErroPaciente(""); const tk = localStorage.getItem("token");
+    if (!formPaciente.nome.trim()) { setErroPaciente("Preencha o Nome Completo."); return; }
+    if (numeros(formPaciente.telefone).length < 10) { setErroPaciente("Preencha o Telefone Celular corretamente."); return; }
+    if (numeros(formPaciente.cpf).length !== 11) { setErroPaciente("Preencha o CPF corretamente."); return; }
+    if (!formPaciente.genero) { setErroPaciente("Selecione o gênero."); return; }
+    if (!formPaciente.dataNascimento) { setErroPaciente("Preencha a data de nascimento."); return; }
+    try {
+      setSalvandoPaciente(true); setErroPaciente("");
+      const tk = localStorage.getItem("token");
+      const payload = {
+        nome: formPaciente.nome.trim(), telefone: numeros(formPaciente.telefone), email: formPaciente.email,
+        comoConheceu: formPaciente.comoConheceu, profissao: formPaciente.profissao,
+        genero: formPaciente.genero, dataNascimento: formPaciente.dataNascimento,
+        cpf: numeros(formPaciente.cpf), observacoes: formPaciente.observacoes,
+        cep: numeros(formPaciente.cep), rua: formPaciente.rua, numero: formPaciente.numero,
+        complemento: formPaciente.complemento, bairro: formPaciente.bairro, cidade: formPaciente.cidade,
+        estado: formPaciente.estado, responsavelNome: formPaciente.responsavelNome,
+        responsavelCpf: numeros(formPaciente.responsavelCpf),
+        responsavelDataNascimento: formPaciente.responsavelDataNascimento,
+        responsavelTelefone: numeros(formPaciente.responsavelTelefone),
+      };
       const r = await fetch(`${API_URL}/pacientes`, {
         method: "POST", headers: { "Content-Type": "application/json", Authorization: tk || "" },
-        body: JSON.stringify({ nome: formPaciente.nome, telefone: formPaciente.telefone, observacoes: formPaciente.observacoes }),
+        body: JSON.stringify(payload),
       });
-      if (!r.ok) throw new Error(); const c = await r.json(); await carregarPacientes();
-      const nid = c?.id || c?.paciente?.id; if (nid) setFormData((p) => ({ ...p, paciente_id: String(nid) }));
-      setBuscaPaciente(formPaciente.nome); setMostrarSugestoesPaciente(false); fecharModalPaciente();
-    } catch { setErroPaciente("Não foi possível cadastrar."); }
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.erro || "Não foi possível cadastrar o paciente.");
+      const nid = d?.id || d?.paciente?.id;
+      await carregarPacientes();
+      if (nid) setFormData((p) => ({ ...p, paciente_id: String(nid) }));
+      setBuscaPaciente(payload.nome);
+      setMostrarSugestoesPaciente(false);
+      setModalPacienteAberto(false);
+    } catch (err) { setErroPaciente(err.message || "Não foi possível cadastrar."); }
     finally { setSalvandoPaciente(false); }
   }
 
@@ -600,27 +667,73 @@ function Agenda() {
 
       {/* ── Modal Novo Paciente ───────────────────────────── */}
       {modalPacienteAberto && (
-        <div style={S.overlay} onClick={fecharModalPaciente}>
-          <div style={S.modal} onClick={(e) => e.stopPropagation()}>
+        <div style={{ ...S.overlay, alignItems: "flex-start", overflowY: "auto" }} onClick={fecharModalPaciente}>
+          <div style={{ ...S.modal, maxWidth: "820px", maxHeight: "calc(100vh - 40px)", overflowY: "auto", margin: "auto" }} onClick={(e) => e.stopPropagation()}>
             <div style={S.modalHeader}>
               <div>
                 <h2 style={S.modalTitle}>Novo paciente</h2>
-                <p style={S.modalSub}>Cadastre sem sair da agenda.</p>
+                <p style={S.modalSub}>Preencha os mesmos dados disponíveis no cadastro de pacientes.</p>
               </div>
-              <button style={S.closeBtn} onClick={fecharModalPaciente}>{Icons.close}</button>
+              <button type="button" style={S.closeBtn} onClick={fecharModalPaciente}>{Icons.close}</button>
             </div>
             <form onSubmit={handleSalvarPaciente} style={S.form}>
-              <div style={S.fieldGroup}><label style={S.label}>Nome</label>
-                <input type="text" value={formPaciente.nome} onChange={(e) => setFormPaciente((p) => ({ ...p, nome: e.target.value }))} placeholder="Nome do paciente" style={S.input} /></div>
-              <div style={S.fieldGroup}><label style={S.label}>Telefone</label>
-                <input type="text" value={formPaciente.telefone} onChange={(e) => setFormPaciente((p) => ({ ...p, telefone: e.target.value }))} placeholder="Telefone" style={S.input} /></div>
-              <div style={S.fieldGroup}><label style={S.label}>Observações</label>
-                <input type="text" value={formPaciente.observacoes} onChange={(e) => setFormPaciente((p) => ({ ...p, observacoes: e.target.value }))} placeholder="Observações" style={S.input} /></div>
+              <h3 style={S.patientSectionTitle}>Dados do paciente</h3>
+              <div style={S.patientFormGrid}>
+                <div style={S.patientFieldFull}><label style={S.label}>Nome Completo *</label>
+                  <input required value={formPaciente.nome} onChange={(e) => atualizarCampoPaciente("nome", e.target.value)} placeholder="Digite o nome completo" style={S.input} /></div>
+                <div style={S.fieldGroup}><label style={S.label}>Telefone Celular *</label>
+                  <input required value={formPaciente.telefone} onChange={(e) => atualizarCampoPaciente("telefone", formatarTelefonePaciente(e.target.value))} placeholder="(00) 00000-0000" style={S.input} /></div>
+                <div style={S.fieldGroup}><label style={S.label}>CPF *</label>
+                  <input required value={formPaciente.cpf} onChange={(e) => atualizarCampoPaciente("cpf", formatarCpfPaciente(e.target.value))} placeholder="000.000.000-00" style={S.input} /></div>
+                <div style={S.fieldGroup}><label style={S.label}>Email</label>
+                  <input type="email" value={formPaciente.email} onChange={(e) => atualizarCampoPaciente("email", e.target.value)} placeholder="email@exemplo.com" style={S.input} /></div>
+                <div style={S.fieldGroup}><label style={S.label}>Como conheceu a clínica</label>
+                  <input value={formPaciente.comoConheceu} onChange={(e) => atualizarCampoPaciente("comoConheceu", e.target.value)} placeholder="Indicação, Instagram, Google..." style={S.input} /></div>
+                <div style={S.fieldGroup}><label style={S.label}>Profissão</label>
+                  <input value={formPaciente.profissao} onChange={(e) => atualizarCampoPaciente("profissao", e.target.value)} placeholder="Digite a profissão" style={S.input} /></div>
+                <div style={S.fieldGroup}><label style={S.label}>Gênero *</label>
+                  <select required value={formPaciente.genero} onChange={(e) => atualizarCampoPaciente("genero", e.target.value)} style={S.input}>
+                    <option value="">Selecione</option><option value="Masculino">Masculino</option><option value="Feminino">Feminino</option><option value="Outro">Outro</option><option value="Prefiro não informar">Prefiro não informar</option>
+                  </select></div>
+                <div style={S.fieldGroup}><label style={S.label}>Data de Nascimento *</label>
+                  <input required type="date" value={formPaciente.dataNascimento} onChange={(e) => atualizarCampoPaciente("dataNascimento", e.target.value)} style={S.input} /></div>
+                <div style={S.patientFieldFull}><label style={S.label}>Observações</label>
+                  <textarea value={formPaciente.observacoes} onChange={(e) => atualizarCampoPaciente("observacoes", e.target.value)} placeholder="Digite observações importantes sobre o paciente" style={S.patientTextarea} /></div>
+              </div>
+              <h3 style={S.patientSectionTitle}>Endereço</h3>
+              <div style={S.patientFormGrid}>
+                <div className="fieldGroup"><label style={S.label}>CEP</label>
+                  <input value={formPaciente.cep} onChange={(e) => atualizarCampoPaciente("cep", numeros(e.target.value).slice(0,8).replace(/^(\\d{5})(\\d)/, "$1-$2"))} onBlur={(e) => buscarCepPaciente(e.target.value)} placeholder="00000-000" style={S.input} />
+                  {buscandoCepPaciente && <span style={S.patientHelper}>Buscando CEP...</span>}</div>
+                <div style={S.patientFieldFull}><label style={S.label}>Rua</label>
+                  <input value={formPaciente.rua} onChange={(e) => atualizarCampoPaciente("rua", e.target.value)} placeholder="Rua / Avenida" style={S.input} /></div>
+                <div style={S.fieldGroup}><label style={S.label}>Número</label>
+                  <input value={formPaciente.numero} onChange={(e) => atualizarCampoPaciente("numero", e.target.value)} placeholder="Número" style={S.input} /></div>
+                <div style={S.fieldGroup}><label style={S.label}>Complemento</label>
+                  <input value={formPaciente.complemento} onChange={(e) => atualizarCampoPaciente("complemento", e.target.value)} placeholder="Apartamento, casa, sala..." style={S.input} /></div>
+                <div style={S.fieldGroup}><label style={S.label}>Bairro</label>
+                  <input value={formPaciente.bairro} onChange={(e) => atualizarCampoPaciente("bairro", e.target.value)} placeholder="Bairro" style={S.input} /></div>
+                <div style={S.fieldGroup}><label style={S.label}>Cidade</label>
+                  <input value={formPaciente.cidade} onChange={(e) => atualizarCampoPaciente("cidade", e.target.value)} placeholder="Cidade" style={S.input} /></div>
+                <div style={S.fieldGroup}><label style={S.label}>Estado</label>
+                  <input value={formPaciente.estado} onChange={(e) => atualizarCampoPaciente("estado", e.target.value.toUpperCase().slice(0,2))} placeholder="UF" style={S.input} /></div>
+              </div>
+              <h3 style={S.patientSectionTitle}>Dados do responsável</h3>
+              <div style={S.patientFormGrid}>
+                <div style={S.patientFieldFull}><label style={S.label}>Nome Completo</label>
+                  <input value={formPaciente.responsavelNome} onChange={(e) => atualizarCampoPaciente("responsavelNome", e.target.value)} placeholder="Digite o nome do responsável" style={S.input} /></div>
+                <div style={S.fieldGroup}><label style={S.label}>CPF</label>
+                  <input value={formPaciente.responsavelCpf} onChange={(e) => atualizarCampoPaciente("responsavelCpf", formatarCpfPaciente(e.target.value))} placeholder="000.000.000-00" style={S.input} /></div>
+                <div style={S.fieldGroup}><label style={S.label}>Data de Nascimento</label>
+                  <input type="date" value={formPaciente.responsavelDataNascimento} onChange={(e) => atualizarCampoPaciente("responsavelDataNascimento", e.target.value)} style={S.input} /></div>
+                <div style={S.fieldGroup}><label style={S.label}>Telefone Celular</label>
+                  <input value={formPaciente.responsavelTelefone} onChange={(e) => atualizarCampoPaciente("responsavelTelefone", formatarTelefonePaciente(e.target.value))} placeholder="(00) 00000-0000" style={S.input} /></div>
+              </div>
               {erroPaciente && <div style={S.formError}>{erroPaciente}</div>}
               <div style={S.formActions}>
                 <div style={{ flex: 1 }} />
                 <button type="button" style={S.btnSecondary} onClick={fecharModalPaciente} disabled={salvandoPaciente}>Cancelar</button>
-                <button type="submit" style={S.btnPrimary} disabled={salvandoPaciente}>{salvandoPaciente ? "Salvando..." : "Cadastrar"}</button>
+                <button type="submit" style={S.btnPrimary} disabled={salvandoPaciente || buscandoCepPaciente}>{salvandoPaciente ? "Salvando..." : "Cadastrar paciente"}</button>
               </div>
             </form>
           </div>
@@ -752,6 +865,12 @@ const S = {
   input: { width: "100%", height: "40px", borderRadius: "10px", border: "1px solid #e2e8f0", padding: "0 12px", outline: "none", fontSize: "14px", background: "#fff", boxSizing: "border-box", color: "#0f172a", transition: "border-color 0.2s, box-shadow 0.2s" },
   formError: { background: "#fef2f2", border: "1px solid #fecaca", color: "#b91c1c", borderRadius: "10px", padding: "10px 14px", fontSize: "13px", fontWeight: "500" },
   formActions: { display: "flex", alignItems: "center", gap: "10px", marginTop: "8px", flexWrap: "wrap" },
+
+  patientSectionTitle: { margin: "8px 0 0", paddingBottom: "8px", borderBottom: "1px solid #f1f5f9", fontSize: "14px", fontWeight: "700", color: "#334155" },
+  patientFormGrid: { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "14px 12px" },
+  patientFieldFull: { gridColumn: "1 / -1", display: "flex", flexDirection: "column", gap: "6px", minWidth: 0 },
+  patientTextarea: { width: "100%", minHeight: "86px", resize: "vertical", borderRadius: "10px", border: "1px solid #e2e8f0", padding: "10px 12px", outline: "none", fontSize: "14px", background: "#fff", boxSizing: "border-box", color: "#0f172a", fontFamily: "inherit" },
+  patientHelper: { color: "#64748b", fontSize: "12px" },
 
   /* ── Patient dropdown ────────────────────── */
   patientLabelRow: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" },
