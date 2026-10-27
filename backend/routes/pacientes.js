@@ -26,18 +26,18 @@ router.get("/", auth, (req, res) => {
   const busca = (req.query.busca || "").trim();
   const offset = (page - 1) * limit;
 
-  let whereClause = "";
-  let params = [];
+  let whereClause = "WHERE clinica_id = ?";
+  let params = [req.user.clinica_id];
 
   if (busca) {
-    whereClause = `
-      WHERE nome LIKE ? 
-         OR cpf LIKE ? 
-         OR telefone LIKE ? 
-         OR email LIKE ?
-    `;
+    whereClause += ` AND (
+      nome LIKE ?
+      OR cpf LIKE ?
+      OR telefone LIKE ?
+      OR email LIKE ?
+    )`;
     const termo = `%${busca}%`;
-    params = [termo, termo, termo, termo];
+    params.push(termo, termo, termo, termo);
   }
 
   // 1) Conta o total de registros (com ou sem filtro)
@@ -86,7 +86,7 @@ router.get("/", auth, (req, res) => {
 router.get("/:id", auth, (req, res) => {
   const { id } = req.params;
 
-  db.get("SELECT * FROM pacientes WHERE id = ?", [id], (err, row) => {
+  db.get("SELECT * FROM pacientes WHERE id = ? AND clinica_id = ?", [id, req.user.clinica_id], (err, row) => {
     if (err) {
       return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
     }
@@ -235,9 +235,10 @@ router.post("/", auth, (req, res) => {
       responsavel_nome,
       responsavel_cpf,
       responsavel_data_nascimento,
-      responsavel_telefone
+      responsavel_telefone,
+      clinica_id
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
   db.run(
@@ -263,6 +264,7 @@ router.post("/", auth, (req, res) => {
       responsavelCpf || "",
       responsavelDataNascimento || "",
       responsavelTelefone || "",
+      req.user.clinica_id,
     ],
     function (err) {
       if (err) {
@@ -342,7 +344,7 @@ router.put("/:id", auth, (req, res) => {
       responsavel_cpf = ?,
       responsavel_data_nascimento = ?,
       responsavel_telefone = ?
-    WHERE id = ?
+    WHERE id = ? AND clinica_id = ?
   `;
 
   db.run(
@@ -369,6 +371,7 @@ router.put("/:id", auth, (req, res) => {
       responsavelDataNascimento || "",
       responsavelTelefone || "",
       id,
+      req.user.clinica_id,
     ],
     function (err) {
       if (err) {
@@ -387,7 +390,7 @@ router.put("/:id", auth, (req, res) => {
 router.delete("/:id", auth, (req, res) => {
   const { id } = req.params;
 
-  db.run("DELETE FROM pacientes WHERE id = ?", [id], function (err) {
+  db.run("DELETE FROM pacientes WHERE id = ? AND clinica_id = ?", [id, req.user.clinica_id], function (err) {
     if (err) {
       return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
     }
