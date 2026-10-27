@@ -116,19 +116,19 @@ router.get("/dashboard", auth, async (req, res) => {
       const rec = await dbGet(
         `SELECT COALESCE(SUM(valor_recebido), 0) as total
          FROM contas_receber
-         WHERE status = 'pago' AND strftime('%Y-%m', data_recebimento) = ?`,
+         WHERE clinica_id = ? AND status = 'pago' AND strftime('%Y-%m', data_recebimento) = ?`,
         [req.user.clinica_id, p]
       );
       const recLeg = await dbGet(
         `SELECT COALESCE(SUM(valor), 0) as total
          FROM pagamentos
-         WHERE status = 'confirmado' AND strftime('%Y-%m', data) = ?`,
+         WHERE clinica_id = ? AND status = 'confirmado' AND strftime('%Y-%m', data) = ?`,
         [req.user.clinica_id, p]
       );
       const desp = await dbGet(
         `SELECT COALESCE(SUM(valor_pago), 0) as total
          FROM contas_pagar
-         WHERE status = 'pago' AND strftime('%Y-%m', data_pagamento) = ?`,
+         WHERE clinica_id = ? AND status = 'pago' AND strftime('%Y-%m', data_pagamento) = ?`,
         [req.user.clinica_id, p]
       );
 
