@@ -282,7 +282,7 @@ function Login() {
                     style={S.input}
                     required
                     autoComplete="new-password"
-                    minLength={6}
+                    minLength={modoCadastro ? 8 : undefined}
                   />
                 </div>
               </div>
