@@ -18,7 +18,7 @@ router.get("/paciente/:paciente_id", auth, (req, res) => {
     "SELECT * FROM documentos WHERE paciente_id = ? ORDER BY data DESC, id DESC",
     [paciente_id],
     (err, rows) => {
-      if (err) return res.status(500).json({ erro: err.message });
+      if (err) return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
       res.json(rows);
     }
   );
@@ -32,7 +32,7 @@ router.get("/:id", auth, (req, res) => {
   const { id } = req.params;
 
   db.get("SELECT * FROM documentos WHERE id = ?", [id], (err, row) => {
-    if (err) return res.status(500).json({ erro: err.message });
+    if (err) return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
     if (!row) return res.status(404).json({ erro: "Documento não encontrado." });
     res.json(row);
   });
@@ -63,7 +63,7 @@ router.post("/", auth, (req, res) => {
     profissional || "",
     observacoes || "",
   ], function (err) {
-    if (err) return res.status(500).json({ erro: err.message });
+    if (err) return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
     res.status(201).json({ id: this.lastID, mensagem: "Documento criado com sucesso." });
   });
 });
@@ -97,7 +97,7 @@ router.put("/:id", auth, (req, res) => {
     observacoes || "",
     id,
   ], function (err) {
-    if (err) return res.status(500).json({ erro: err.message });
+    if (err) return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
     if (this.changes === 0) return res.status(404).json({ erro: "Documento não encontrado." });
     res.json({ mensagem: "Documento atualizado com sucesso." });
   });
@@ -111,7 +111,7 @@ router.delete("/:id", auth, (req, res) => {
   const { id } = req.params;
 
   db.run("DELETE FROM documentos WHERE id = ?", [id], function (err) {
-    if (err) return res.status(500).json({ erro: err.message });
+    if (err) return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
     if (this.changes === 0) return res.status(404).json({ erro: "Documento não encontrado." });
     res.json({ mensagem: "Documento excluído com sucesso." });
   });
