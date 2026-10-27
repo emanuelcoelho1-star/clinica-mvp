@@ -735,14 +735,72 @@ function executarMigracaoSaaS() {
 
     const garantirColuna = (indice) => {
       if (indice >= colunasSaaS.length) {
-        db.run(
-          "INSERT OR IGNORE INTO saas_migracoes (versao) VALUES (?)",
-          ["001-saas-foundation"],
-          (err) => {
-            if (err) console.error("Migração SaaS: erro ao registrar versão:", err.message);
-            else console.log("Migração SaaS 001 concluída (fundação de tenant).");
+        // Só registra a migração depois de atribuir os registros legados
+        // à clínica de transição. O cadastro público continua bloqueado.
+        db.get("SELECT id FROM clinicas ORDER BY id LIMIT 1", [], (findErr, existingClinic) => {
+          if (findErr) {
+            console.error("Migração SaaS: não foi possível consultar clínicas:", findErr.message);
+            return;
           }
-        );
+
+          const prepararDadosLegados = (clinicId) => {
+            const tabelasComTenant = colunasSaaS.map((item) => item[0]);
+            const atualizarTabela = (pos) => {
+              if (pos >= tabelasComTenant.length) {
+                db.run(
+                  "INSERT OR IGNORE INTO saas_migracoes (versao) VALUES (?)",
+                  ["001-saas-foundation"],
+                  (migrationErr) => {
+                    if (migrationErr) console.error("Migração SaaS: erro ao registrar versão:", migrationErr.message);
+                    else console.log("Migração SaaS 001 concluída; dados legados associados à clínica", clinicId);
+                  }
+                );
+                return;
+              }
+
+              const tabela = tabelasComTenant[pos];
+              db.all("PRAGMA table_info(" + tabela + ")", [], (columnsErr, columns) => {
+                if (columnsErr || !columns.some((col) => col.name === "clinica_id")) {
+                  atualizarTabela(pos + 1);
+                  return;
+                }
+                db.run("UPDATE " + tabela + " SET clinica_id = ? WHERE clinica_id IS NULL", [clinicId], (updateErr) => {
+                  if (updateErr) console.error("Migração SaaS: erro ao associar dados de " + tabela + ":", updateErr.message);
+                  atualizarTabela(pos + 1);
+                });
+              });
+            };
+            atualizarTabela(0);
+          };
+
+          if (existingClinic) {
+            prepararDadosLegados(existingClinic.id);
+            return;
+          }
+
+          db.get("SELECT COUNT(*) AS total FROM usuarios", [], (countErr, count) => {
+            if (countErr || !count || count.total === 0) {
+              db.run(
+                "INSERT OR IGNORE INTO saas_migracoes (versao) VALUES (?)",
+                ["001-saas-foundation"],
+                () => console.log("Migração SaaS 001 concluída; aguardando primeira clínica.")
+              );
+              return;
+            }
+
+            db.run(
+              "INSERT INTO clinicas (nome, slug, plano, status) VALUES (?, ?, 'legacy', 'ativa')",
+              ["Clínica existente", "clinica-legada"],
+              function (insertErr) {
+                if (insertErr) {
+                  console.error("Migração SaaS: não foi possível criar clínica legada:", insertErr.message);
+                  return;
+                }
+                prepararDadosLegados(this.lastID);
+              }
+            );
+          });
+        });
         return;
       }
 
