@@ -76,6 +76,9 @@ router.post("/", auth, (req, res) => {
     ],
     function (err) {
       if (err) return res.status(500).json({ error: "Erro ao criar tratamento." });
+      if (this.changes === 0) {
+        return res.status(404).json({ error: "Paciente não encontrado nesta clínica." });
+      }
       res.status(201).json({ id: this.lastID });
     }
   );
