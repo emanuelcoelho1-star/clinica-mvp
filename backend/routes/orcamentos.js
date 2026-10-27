@@ -15,8 +15,8 @@ router.get("/paciente/:paciente_id", auth, (req, res) => {
   const { paciente_id } = req.params;
 
   db.all(
-    "SELECT * FROM orcamentos WHERE paciente_id = ? ORDER BY data DESC, id DESC",
-    [paciente_id],
+    "SELECT * FROM orcamentos WHERE paciente_id = ? AND clinica_id = ? ORDER BY data DESC, id DESC",
+    [paciente_id, req.user.clinica_id],
     (err, orcamentos) => {
       if (err) {
         return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
@@ -56,7 +56,7 @@ router.get("/paciente/:paciente_id", auth, (req, res) => {
 router.get("/:id", auth, (req, res) => {
   const { id } = req.params;
 
-  db.get("SELECT * FROM orcamentos WHERE id = ?", [id], (err, orcamento) => {
+  db.get("SELECT * FROM orcamentos WHERE id = ? AND clinica_id = ?", [id, req.user.clinica_id], (err, orcamento) => {
     if (err) {
       return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
     }
@@ -94,17 +94,19 @@ router.post("/", auth, (req, res) => {
   }
 
   const sqlOrcamento = `
-    INSERT INTO orcamentos (paciente_id, data, status, desconto, observacoes)
-    VALUES (?, ?, ?, ?, ?)
+    INSERT INTO orcamentos (paciente_id, data, status, desconto, observacoes, clinica_id)
+    SELECT p.id, ?, ?, ?, ?, ? FROM pacientes p WHERE p.id = ? AND p.clinica_id = ?
   `;
 
   db.run(
     sqlOrcamento,
-    [paciente_id, data, status || "pendente", desconto || 0, observacoes || ""],
+    [data, status || "pendente", desconto || 0, observacoes || "", req.user.clinica_id, paciente_id, req.user.clinica_id],
     function (err) {
       if (err) {
         return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
       }
+
+      if (this.changes === 0) return res.status(404).json({ erro: "Paciente não encontrado nesta clínica." });
 
       const orcamentoId = this.lastID;
 
@@ -168,12 +170,13 @@ router.put("/:id", auth, (req, res) => {
   const sqlUpdate = `
     UPDATE orcamentos SET
       paciente_id = ?, data = ?, status = ?, desconto = ?, observacoes = ?
-    WHERE id = ?
+    WHERE id = ? AND clinica_id = ?
+      AND EXISTS (SELECT 1 FROM pacientes p WHERE p.id = ? AND p.clinica_id = ?)
   `;
 
   db.run(
     sqlUpdate,
-    [paciente_id, data, status || "pendente", desconto || 0, observacoes || "", id],
+    [paciente_id, data, status || "pendente", desconto || 0, observacoes || "", id, req.user.clinica_id, paciente_id, req.user.clinica_id],
     function (err) {
       if (err) {
         return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
@@ -249,7 +252,7 @@ router.patch("/:id/status", auth, (req, res) => {
   }
 
   // 1) Busca o orçamento atual (precisa saber o status anterior)
-  db.get("SELECT * FROM orcamentos WHERE id = ?", [id], (err, orcamento) => {
+  db.get("SELECT * FROM orcamentos WHERE id = ? AND clinica_id = ?", [id, req.user.clinica_id], (err, orcamento) => {
     if (err) {
       return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
     }
@@ -259,8 +262,8 @@ router.patch("/:id/status", auth, (req, res) => {
 
     // 2) Atualiza o status
     db.run(
-      "UPDATE orcamentos SET status = ? WHERE id = ?",
-      [status, id],
+      "UPDATE orcamentos SET status = ? WHERE id = ? AND clinica_id = ?",
+      [status, id, req.user.clinica_id],
       function (errUpdate) {
         if (errUpdate) {
           return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
