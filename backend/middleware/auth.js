@@ -33,7 +33,7 @@ module.exports = (req, res, next) => {
 
     // Confere se a conta ainda existe antes de autorizar qualquer rota protegida.
     db.get(
-      `SELECT u.id, u.nome, u.email, r.ativo AS role_ativo
+      `SELECT u.id, u.nome, u.email, u.clinica_id, r.ativo AS role_ativo
        FROM usuarios u
        LEFT JOIN roles r ON r.id = u.role_id
        WHERE u.id = ?`,
@@ -51,7 +51,11 @@ module.exports = (req, res, next) => {
           return res.status(403).json({ erro: "Este perfil está desativado. Contate o administrador." });
         }
 
-        req.user = { ...decoded, nome: user.nome, email: user.email };
+        if (!user.clinica_id) {
+          return res.status(403).json({ erro: "Usuário sem clínica vinculada. Contate o administrador." });
+        }
+
+        req.user = { ...decoded, nome: user.nome, email: user.email, clinica_id: user.clinica_id };
         next();
       }
     );
