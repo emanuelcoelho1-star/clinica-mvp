@@ -1344,7 +1344,7 @@ router.get("/kpis", auth, async (req, res) => {
          COALESCE(AVG(valor_recebido), 0) as ticket_medio
        FROM contas_receber
        WHERE clinica_id = ? AND status = 'pago' AND strftime('%Y-%m', data_recebimento) = ?`,
-      [periodo]
+      [req.user.clinica_id, periodo]
     );
 
     // Taxa de conversão (orçamentos aprovados vs total)
@@ -1354,7 +1354,7 @@ router.get("/kpis", auth, async (req, res) => {
          COUNT(CASE WHEN status = 'aprovado' THEN 1 END) as aprovados
        FROM orcamentos
        WHERE clinica_id = ? AND strftime('%Y-%m', data) = ?`,
-      [periodo]
+      [req.user.clinica_id, periodo]
     );
 
     // Receita por procedimento (top 5)
@@ -1403,14 +1403,14 @@ router.get("/kpis", auth, async (req, res) => {
       `SELECT COALESCE(SUM(valor_recebido), 0) as total
        FROM contas_receber
        WHERE clinica_id = ? AND status = 'pago' AND strftime('%Y-%m', data_recebimento) = ?`,
-      [periodoAnterior]
+      [req.user.clinica_id, periodoAnterior]
     );
 
     const receitaMesAtual = await dbGet(
       `SELECT COALESCE(SUM(valor_recebido), 0) as total
        FROM contas_receber
        WHERE clinica_id = ? AND status = 'pago' AND strftime('%Y-%m', data_recebimento) = ?`,
-      [periodo]
+      [req.user.clinica_id, periodo]
     );
 
     const variacaoReceita = receitaMesAnterior?.total > 0
@@ -1420,8 +1420,8 @@ router.get("/kpis", auth, async (req, res) => {
     // Taxa de inadimplência
     const totalFaturado = await dbGet(
       `SELECT COALESCE(SUM(valor), 0) as total FROM contas_receber
-       WHERE strftime('%Y-%m', data_vencimento) = ?`,
-      [periodo]
+       WHERE clinica_id = ? AND strftime('%Y-%m', data_vencimento) = ?`,
+      [req.user.clinica_id, periodo]
     );
 
     const totalInadimplente = await dbGet(
