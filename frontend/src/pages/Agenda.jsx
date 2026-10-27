@@ -377,14 +377,40 @@ function Agenda() {
     e.preventDefault();
     if (!formData.paciente_id || !formData.data || !formData.horario) { setErroFormulario("Preencha paciente, data e horário."); return; }
     if (!agendamentoEditando && horarioPassado(formData.data, formData.horario)) { setErroFormulario("Não é possível agendar em horários passados."); return; }
-    try { setSalvando(true); setErroFormulario(""); const tk = localStorage.getItem("token"); const ed = Boolean(agendamentoEditando);
+
+    const conflito = consultas.find((item) =>
+      item.data === formData.data &&
+      item.inicio === formData.horario &&
+      item.status !== "cancelado" &&
+      String(item.id) !== String(agendamentoEditando?.id || "") &&
+      formData.status !== "cancelado"
+    );
+    if (conflito) {
+      setErroFormulario(`Este horário já está ocupado por ${conflito.paciente}. Escolha outro horário.`);
+      return;
+    }
+
+    try {
+      setSalvando(true);
+      setErroFormulario("");
+      const tk = localStorage.getItem("token");
+      const ed = Boolean(agendamentoEditando);
       const r = await fetch(ed ? `${API_URL}/consultas/${agendamentoEditando.id}` : `${API_URL}/consultas`, {
-        method: ed ? "PUT" : "POST", headers: { "Content-Type": "application/json", Authorization: tk || "" },
+        method: ed ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json", Authorization: tk || "" },
         body: JSON.stringify({ paciente_id: Number(formData.paciente_id), data: formData.data, horario: formData.horario, procedimento: formData.procedimento, status: formData.status }),
       });
-      if (!r.ok) throw new Error(); await carregarConsultas(); fecharModal();
-    } catch { setErroFormulario("Não foi possível salvar o agendamento."); }
-    finally { setSalvando(false); }
+      if (!r.ok) {
+        const resposta = await r.json().catch(() => ({}));
+        throw new Error(resposta.erro || "Não foi possível salvar o agendamento.");
+      }
+      await carregarConsultas();
+      fecharModal();
+    } catch (err) {
+      setErroFormulario(err.message || "Não foi possível salvar o agendamento.");
+    } finally {
+      setSalvando(false);
+    }
   }
 
   async function handleExcluir() {
