@@ -353,6 +353,23 @@ router.post("/contas-pagar", auth, async (req, res) => {
       return res.status(400).json({ erro: "Descrição, valor e vencimento são obrigatórios." });
     }
 
+    if (paciente_id) {
+      const paciente = await dbGet("SELECT id FROM pacientes WHERE id = ? AND clinica_id = ?", [paciente_id, req.user.clinica_id]);
+      if (!paciente) return res.status(400).json({ erro: "Paciente inválido para esta clínica." });
+    }
+    if (profissional_id) {
+      const profissional = await dbGet("SELECT id FROM profissionais WHERE id = ? AND clinica_id = ?", [profissional_id, req.user.clinica_id]);
+      if (!profissional) return res.status(400).json({ erro: "Profissional inválido para esta clínica." });
+    }
+    if (orcamento_id) {
+      const orcamento = await dbGet("SELECT id FROM orcamentos WHERE id = ? AND clinica_id = ?", [orcamento_id, req.user.clinica_id]);
+      if (!orcamento) return res.status(400).json({ erro: "Orçamento inválido para esta clínica." });
+    }
+    if (tratamento_id) {
+      const tratamento = await dbGet("SELECT id FROM tratamentos WHERE id = ? AND clinica_id = ?", [tratamento_id, req.user.clinica_id]);
+      if (!tratamento) return res.status(400).json({ erro: "Tratamento inválido para esta clínica." });
+    }
+
     const parcelas = total_parcelas || 1;
     const valorParcela = valor / parcelas;
 
@@ -553,8 +570,8 @@ router.post("/contas-receber", auth, async (req, res) => {
            (paciente_id, orcamento_id, tratamento_id, profissional_id,
             descricao, procedimento, valor, desconto, data_emissao,
             data_vencimento, forma_pagamento, status,
-            parcela_atual, total_parcelas, numero_nota, observacoes)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendente', ?, ?, ?, ?)`,
+            parcela_atual, total_parcelas, numero_nota, observacoes, clinica_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendente', ?, ?, ?, ?, ?)`,
         [
           paciente_id || null, orcamento_id || null, tratamento_id || null,
           profissional_id || null,
@@ -562,7 +579,7 @@ router.post("/contas-receber", auth, async (req, res) => {
           procedimento || null, valorParcela, i === 0 ? (desconto || 0) : 0,
           data_emissao || new Date().toISOString().split("T")[0],
           vencStr, forma_pagamento || "dinheiro",
-          i + 1, parcelas, numero_nota || null, observacoes || null,
+          i + 1, parcelas, numero_nota || null, observacoes || null, req.user.clinica_id,
         ]
       );
     }
