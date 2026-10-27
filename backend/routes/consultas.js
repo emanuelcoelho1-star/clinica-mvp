@@ -33,15 +33,14 @@ router.post("/", auth, (req, res) => {
       .json({ erro: "Paciente, data e horário são obrigatórios." });
   }
 
-  const sql = `
-    INSERT INTO consultas (paciente_id, data, horario, procedimento, status)
-    VALUES (?, ?, ?, ?, ?)
-  `;
+  const statusConsulta = status || "agendado";
+  const inserirConsulta = () => {
+    const sql = `
+      INSERT INTO consultas (paciente_id, data, horario, procedimento, status)
+      VALUES (?, ?, ?, ?, ?)
+    `;
 
-  db.run(
-    sql,
-    [paciente_id, data, horario, procedimento || "", status || "agendado"],
-    function (err) {
+    db.run(sql, [paciente_id, data, horario, procedimento || "", statusConsulta], function (err) {
       if (err) {
         return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
       }
@@ -50,6 +49,17 @@ router.post("/", auth, (req, res) => {
         mensagem: "Consulta cadastrada com sucesso.",
         id: this.lastID,
       });
+    });
+  };
+
+  if (statusConsulta === "cancelado") return inserirConsulta();
+  db.get(
+    "SELECT paciente_id, horario FROM consultas WHERE data = ? AND horario = ? AND status != 'cancelado' LIMIT 1",
+    [data, horario],
+    (err, conflito) => {
+      if (err) return res.status(500).json({ erro: "Não foi possível validar a disponibilidade do horário." });
+      if (conflito) return res.status(409).json({ erro: "Este horário já está ocupado por outra consulta. Escolha outro horário." });
+      inserirConsulta();
     }
   );
 });
@@ -64,16 +74,15 @@ router.put("/:id", auth, (req, res) => {
       .json({ erro: "Paciente, data e horário são obrigatórios." });
   }
 
-  const sql = `
-    UPDATE consultas
-    SET paciente_id = ?, data = ?, horario = ?, procedimento = ?, status = ?
-    WHERE id = ?
-  `;
+  const statusConsulta = status || "agendado";
+  const atualizarConsulta = () => {
+    const sql = `
+      UPDATE consultas
+      SET paciente_id = ?, data = ?, horario = ?, procedimento = ?, status = ?
+      WHERE id = ?
+    `;
 
-  db.run(
-    sql,
-    [paciente_id, data, horario, procedimento || "", status || "agendado", id],
-    function (err) {
+    db.run(sql, [paciente_id, data, horario, procedimento || "", statusConsulta, id], function (err) {
       if (err) {
         return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
       }
@@ -83,6 +92,17 @@ router.put("/:id", auth, (req, res) => {
       }
 
       res.json({ mensagem: "Consulta atualizada com sucesso." });
+    });
+  };
+
+  if (statusConsulta === "cancelado") return atualizarConsulta();
+  db.get(
+    "SELECT id FROM consultas WHERE data = ? AND horario = ? AND status != 'cancelado' AND id != ? LIMIT 1",
+    [data, horario, id],
+    (err, conflito) => {
+      if (err) return res.status(500).json({ erro: "Não foi possível validar a disponibilidade do horário." });
+      if (conflito) return res.status(409).json({ erro: "Este horário já está ocupado por outra consulta. Escolha outro horário." });
+      atualizarConsulta();
     }
   );
 });
