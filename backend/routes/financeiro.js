@@ -86,7 +86,7 @@ router.get("/dashboard", auth, async (req, res) => {
       `SELECT COALESCE(SUM(valor - valor_pago), 0) as total,
               COUNT(*) as quantidade
        FROM contas_pagar
-       WHERE clinica_id = ? AND status IN ('pendente', 'parcial')`
+       WHERE clinica_id = ? AND status IN ('pendente', 'parcial')`, [req.user.clinica_id]
     );
 
     // Contas vencidas (a pagar)
@@ -94,7 +94,7 @@ router.get("/dashboard", auth, async (req, res) => {
       `SELECT COALESCE(SUM(valor - valor_pago), 0) as total,
               COUNT(*) as quantidade
        FROM contas_pagar
-       WHERE status IN ('pendente', 'parcial') AND data_vencimento < date('now')`
+       WHERE clinica_id = ? AND status IN ('pendente', 'parcial') AND data_vencimento < date('now')`, [req.user.clinica_id]
     );
 
     // Contas vencidas (a receber)
@@ -102,7 +102,7 @@ router.get("/dashboard", auth, async (req, res) => {
       `SELECT COALESCE(SUM(valor - valor_recebido), 0) as total,
               COUNT(*) as quantidade
        FROM contas_receber
-       WHERE status IN ('pendente', 'parcial') AND data_vencimento < date('now')`
+       WHERE clinica_id = ? AND status IN ('pendente', 'parcial') AND data_vencimento < date('now')`, [req.user.clinica_id]
     );
 
     // Receitas vs Despesas últimos 6 meses
@@ -1123,7 +1123,7 @@ router.put("/comissoes/pagar-lote", auth, async (req, res) => {
 router.get("/formas-pagamento", auth, async (req, res) => {
   try {
     const formas = await dbAll(
-      "SELECT * FROM formas_pagamento_config WHERE ativo = 1 ORDER BY nome"
+      "SELECT * FROM formas_pagamento_config WHERE ativo = 1 AND clinica_id = ? ORDER BY nome", [req.user.clinica_id]
     );
     res.json(formas);
   } catch (error) {
@@ -1139,9 +1139,9 @@ router.post("/formas-pagamento", auth, async (req, res) => {
 
     const result = await dbRun(
       `INSERT INTO formas_pagamento_config
-         (nome, tipo, taxa_percentual, taxa_fixa, prazo_recebimento, max_parcelas)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [nome, tipo || "outros", taxa_percentual || 0, taxa_fixa || 0, prazo_recebimento || 0, max_parcelas || 1]
+         (nome, tipo, taxa_percentual, taxa_fixa, prazo_recebimento, max_parcelas, clinica_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [nome, tipo || "outros", taxa_percentual || 0, taxa_fixa || 0, prazo_recebimento || 0, max_parcelas || 1, req.user.clinica_id]
     );
 
     res.status(201).json({ id: result.lastID, mensagem: "Forma de pagamento criada." });
@@ -1158,8 +1158,8 @@ router.put("/formas-pagamento/:id", auth, async (req, res) => {
       `UPDATE formas_pagamento_config
        SET nome = ?, tipo = ?, taxa_percentual = ?, taxa_fixa = ?,
            prazo_recebimento = ?, max_parcelas = ?
-       WHERE id = ?`,
-      [nome, tipo, taxa_percentual, taxa_fixa, prazo_recebimento, max_parcelas, req.params.id]
+       WHERE id = ? AND clinica_id = ?`,
+      [nome, tipo, taxa_percentual, taxa_fixa, prazo_recebimento, max_parcelas, req.params.id, req.user.clinica_id]
     );
     res.json({ mensagem: "Forma de pagamento atualizada." });
   } catch (error) {
@@ -1170,7 +1170,7 @@ router.put("/formas-pagamento/:id", auth, async (req, res) => {
 // DELETE /financeiro/formas-pagamento/:id
 router.delete("/formas-pagamento/:id", auth, async (req, res) => {
   try {
-    await dbRun("UPDATE formas_pagamento_config SET ativo = 0 WHERE id = ?", [req.params.id]);
+    await dbRun("UPDATE formas_pagamento_config SET ativo = 0 WHERE id = ? AND clinica_id = ?", [req.params.id, req.user.clinica_id]);
     res.json({ mensagem: "Forma de pagamento desativada." });
   } catch (error) {
     res.status(500).json({ erro: "Erro ao desativar forma de pagamento." });
@@ -1202,22 +1202,22 @@ router.post("/metas", auth, async (req, res) => {
 
     // Verificar se já existe meta para o mesmo mês/ano/tipo
     const existente = await dbGet(
-      "SELECT id FROM metas_financeiras WHERE mes = ? AND ano = ? AND tipo = ?",
-      [mes, ano, tipo || "receita"]
+      "SELECT id FROM metas_financeiras WHERE mes = ? AND ano = ? AND tipo = ? AND clinica_id = ?",
+      [mes, ano, tipo || "receita", req.user.clinica_id]
     );
 
     if (existente) {
       await dbRun(
-        "UPDATE metas_financeiras SET titulo = ?, valor_meta = ?, observacoes = ? WHERE id = ?",
-        [titulo, valor_meta, observacoes || null, existente.id]
+        "UPDATE metas_financeiras SET titulo = ?, valor_meta = ?, observacoes = ? WHERE id = ? AND clinica_id = ?",
+        [titulo, valor_meta, observacoes || null, existente.id, req.user.clinica_id]
       );
       return res.json({ mensagem: "Meta atualizada." });
     }
 
     const result = await dbRun(
-      `INSERT INTO metas_financeiras (titulo, tipo, valor_meta, mes, ano, observacoes)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [titulo, tipo || "receita", valor_meta, mes, ano, observacoes || null]
+      `INSERT INTO metas_financeiras (titulo, tipo, valor_meta, mes, ano, observacoes, clinica_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [titulo, tipo || "receita", valor_meta, mes, ano, observacoes || null, req.user.clinica_id]
     );
 
     res.status(201).json({ id: result.lastID, mensagem: "Meta criada." });
@@ -1229,7 +1229,7 @@ router.post("/metas", auth, async (req, res) => {
 // DELETE /financeiro/metas/:id
 router.delete("/metas/:id", auth, async (req, res) => {
   try {
-    await dbRun("DELETE FROM metas_financeiras WHERE id = ?", [req.params.id]);
+    await dbRun("DELETE FROM metas_financeiras WHERE id = ? AND clinica_id = ?", [req.params.id, req.user.clinica_id]);
     res.json({ mensagem: "Meta excluída." });
   } catch (error) {
     res.status(500).json({ erro: "Erro ao excluir meta." });
