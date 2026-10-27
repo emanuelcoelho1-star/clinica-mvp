@@ -66,8 +66,8 @@ function Login() {
     setErro("");
     setSucesso("");
 
-    if (senha.length < 6) {
-      setErro("A senha deve ter no mínimo 6 caracteres.");
+    if (senha.length < 8) {
+      setErro("A senha deve ter no mínimo 8 caracteres.");
       return;
     }
     if (senha !== confirmarSenha) {
@@ -257,7 +257,7 @@ function Login() {
                   style={S.input}
                   required
                   autoComplete={modoCadastro ? "new-password" : "current-password"}
-                  minLength={modoCadastro ? 6 : undefined}
+                  minLength={modoCadastro ? 8 : undefined}
                 />
                 <button
                   type="button"
