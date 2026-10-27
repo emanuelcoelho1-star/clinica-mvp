@@ -767,51 +767,30 @@ function Agenda() {
                 <div style={S.fieldGroup}><label style={S.label}>Data do atendimento / retorno</label>
                   <input type="date" name="data" min={formatarDataISO(new Date())} value={formData.data} onChange={handleInput} style={S.input} />
 {agendamentoEditando && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "8px" }}>
-                      <label style={{ color: "#64748b", fontSize: "12px", fontWeight: "600" }}>Agendar retorno</label>
-                      <select
-                        value={retornoPersonalizado ? "personalizado" : ""}
-                        onChange={(e) => {
-                          const valor = e.target.value;
+                    <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "4px" }}>
+                      <label style={S.label}>Agendar retorno</label>
+                      <CustomDropdown
+                        value=""
+                        options={[
+                          { value: "7", label: "1 semana" },
+                          { value: "14", label: "2 semanas" },
+                          { value: "21", label: "3 semanas" },
+                          { value: "30", label: "1 mês" },
+                          { value: "personalizado", label: "Escolher quantidade de dias" },
+                        ]}
+                        onChange={(valor) => {
                           if (valor === "personalizado") {
+                            setDiasRetornoPersonalizado("10");
                             setRetornoPersonalizado(true);
                             setErroFormulario("");
                             return;
                           }
-                          const dias = Number(valor);
-                          if (dias > 0) definirRetorno(dias);
+                          definirRetorno(Number(valor));
                         }}
-                        style={{ ...S.input, cursor: "pointer" }}
-                      >
-                        <option value="">Selecione quando retornar...</option>
-                        <option value="7">1 semana</option>
-                        <option value="14">2 semanas</option>
-                        <option value="21">3 semanas</option>
-                        <option value="30">1 mês</option>
-                        <option value="personalizado">Escolher quantidade de dias</option>
-                      </select>
-                      {retornoPersonalizado && (
-                        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                          <label style={{ color: "#64748b", fontSize: "12px" }}>Quantidade de dias (1 a 365)</label>
-                          <input
-                            type="number"
-                            min="1"
-                            max="365"
-                            step="1"
-                            value={diasRetornoPersonalizado}
-                            onChange={(e) => setDiasRetornoPersonalizado(e.target.value)}
-                            style={S.input}
-                            placeholder="Ex.: 45"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => definirRetorno(Number(diasRetornoPersonalizado))}
-                            style={{ ...S.btnSecondary, justifyContent: "center" }}
-                          >
-                            Definir retorno
-                          </button>
-                        </div>
-                      )}
+                        placeholder="Selecione quando retornar..."
+                        triggerStyle={S.input}
+                        menuStyle={{ zIndex: 3000 }}
+                      />
                     </div>
                   )}
                 </div>
@@ -840,6 +819,56 @@ function Agenda() {
                 <button type="button" style={S.btnSecondary} onClick={fecharModal} disabled={salvando || excluindo}>Cancelar</button>
                 <button type="submit" style={S.btnPrimary} disabled={salvando || excluindo || (!agendamentoEditando && !formData.horario)}>
                   {salvando ? "Salvando..." : agendamentoEditando ? "Salvar alterações" : "Salvar"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal quantidade personalizada de dias do retorno ── */}
+      {retornoPersonalizado && (
+        <div style={{ ...S.overlay, zIndex: 1200 }} onClick={() => setRetornoPersonalizado(false)}>
+          <div style={{ ...S.modal, maxWidth: "420px" }} onClick={(e) => e.stopPropagation()}>
+            <div style={S.modalHeader}>
+              <div>
+                <h2 style={S.modalTitle}>Personalizar retorno</h2>
+                <p style={S.modalSub}>Informe em quantos dias deseja agendar o retorno.</p>
+              </div>
+              <button type="button" style={S.closeBtn} onClick={() => setRetornoPersonalizado(false)} aria-label="Fechar">
+                {Icons.close}
+              </button>
+            </div>
+            <form
+              style={S.form}
+              onSubmit={(e) => {
+                e.preventDefault();
+                definirRetorno(Number(diasRetornoPersonalizado));
+              }}
+            >
+              <div style={S.fieldGroup}>
+                <label style={S.label}>Quantidade de dias (1 a 365)</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="365"
+                  step="1"
+                  required
+                  value={diasRetornoPersonalizado}
+                  onChange={(e) => setDiasRetornoPersonalizado(e.target.value)}
+                  style={S.input}
+                  placeholder="Ex.: 45"
+                  autoFocus
+                />
+              </div>
+              {erroFormulario && <div style={S.formError}>{erroFormulario}</div>}
+              <div style={S.formActions}>
+                <div style={{ flex: 1 }} />
+                <button type="button" style={S.btnSecondary} onClick={() => setRetornoPersonalizado(false)}>
+                  Cancelar
+                </button>
+                <button type="submit" style={S.btnPrimary}>
+                  Definir retorno
                 </button>
               </div>
             </form>
