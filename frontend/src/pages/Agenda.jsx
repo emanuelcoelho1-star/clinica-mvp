@@ -564,17 +564,33 @@ function Agenda() {
         </div>
       </div>
 
-      {/* ── Gerenciador de consultas: pesquisa em todas as datas ── */}
+      {/* ── Gerenciador de consultas em modal ── */}
       {mostrarGerenciador && (
-        <section style={S.managePanel}>
+        <div style={{ ...S.overlay, zIndex: 1100, alignItems: "center" }} onClick={() => setMostrarGerenciador(false)}>
+        <section style={S.managePanel} onClick={(e) => e.stopPropagation()}>
           <div style={S.manageHeader}>
             <div>
               <h2 style={S.manageTitle}>Todas as consultas</h2>
               <p style={S.manageSubtitle}>Pesquise por paciente, procedimento, profissional, data ou horário. Edite ou exclua qualquer consulta sem navegar até a semana correspondente.</p>
             </div>
-            <span style={S.manageTotal}>{consultasGerenciadas.length} resultado(s)</span>
+            <div style={S.manageHeaderActions}>
+              <span style={S.manageTotal}>{consultasGerenciadas.length} resultado(s)</span>
+              <button type="button" aria-label="Fechar gerenciador de consultas" style={S.closeBtn}
+                onClick={() => setMostrarGerenciador(false)}>{Icons.close}</button>
+            </div>
           </div>
           <div style={S.manageFilters}>
+            <div style={{ flex: "0 0 190px", minWidth: "170px" }}>
+              <CustomDropdown
+                value={statusGerenciador}
+                onChange={setStatusGerenciador}
+                options={[{ value: "todos", label: "Todos os status" }, ...statusOptions]}
+                placeholder="Todos os status"
+                triggerStyle={S.manageStatusTrigger}
+                menuStyle={{ zIndex: 1300 }}
+                maxHeight="240px"
+              />
+            </div>
             <div style={S.manageSearchWrap}>
               <span style={{ display: "flex", color: "#94a3b8" }}>{Icons.search}</span>
               <input
@@ -587,15 +603,6 @@ function Agenda() {
               />
               {buscaGerenciador && <button type="button" style={S.searchClear} onClick={() => setBuscaGerenciador("")}>✕</button>}
             </div>
-            <CustomDropdown
-              value={statusGerenciador}
-              onChange={setStatusGerenciador}
-              options={[{ value: "todos", label: "Todos os status" }, ...statusOptions]}
-              placeholder="Todos os status"
-              triggerStyle={S.manageStatusTrigger}
-              menuStyle={{ zIndex: 1300 }}
-              maxHeight="240px"
-            />
           </div>
           {consultasGerenciadas.length === 0 ? (
             <div style={S.manageEmpty}>Nenhuma consulta encontrada com esses filtros.</div>
@@ -645,6 +652,7 @@ function Agenda() {
             </div>
           )}
         </section>
+        </div>
       )}
 
       {/* ── Loading / Erro ────────────────────────────────── */}
@@ -1002,7 +1010,8 @@ const S = {
   /* ── Consulta management ───────────────────── */
   btnManageActive: { display: "inline-flex", alignItems: "center", gap: "8px", border: "1px solid #bfdbfe", borderRadius: "10px", padding: "0 14px", background: "#eff6ff", color: "#1d4ed8", fontWeight: "600", fontSize: "13px", cursor: "pointer", height: "36px", boxSizing: "border-box" },
   manageCount: { display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: "22px", height: "22px", padding: "0 5px", borderRadius: "7px", background: "#dbeafe", color: "#1d4ed8", fontSize: "11px", fontWeight: "700" },
-  managePanel: { background: "#fff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "20px", boxShadow: "0 4px 16px rgba(15,23,42,0.03)", minWidth: 0 },
+  managePanel: { background: "#fff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "24px", boxShadow: "0 24px 64px rgba(15,23,42,0.18)", width: "100%", maxWidth: "1080px", maxHeight: "min(86vh, 820px)", overflowY: "auto", minWidth: 0, boxSizing: "border-box" },
+  manageHeaderActions: { display: "flex", alignItems: "center", gap: "12px", flexShrink: 0 },
   manageHeader: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px", flexWrap: "wrap", marginBottom: "16px" },
   manageTitle: { margin: 0, color: "#0f172a", fontSize: "17px", fontWeight: "700" },
   manageSubtitle: { margin: "5px 0 0", color: "#64748b", fontSize: "13px", lineHeight: 1.5, maxWidth: "700px" },
