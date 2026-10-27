@@ -346,17 +346,17 @@ function Agenda() {
     finally { setExcluindo(false); }
   }
 
-  const numeros = (valor) => String(valor || "").replace(/\\D/g, "");
+  const numeros = (valor) => String(valor || "").replace(/\D/g, "");
   function formatarCpfPaciente(valor) {
     return numeros(valor).slice(0, 11)
-      .replace(/^(\\d{3})(\\d)/, "$1.$2")
-      .replace(/^(\\d{3})\\.(\\d{3})(\\d)/, "$1.$2.$3")
-      .replace(/\\.(\\d{3})(\\d)/, ".$1-$2");
+      .replace(/^(\d{3})(\d)/, "$1.$2")
+      .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
+      .replace(/\.(\d{3})(\d)/, ".$1-$2");
   }
   function formatarTelefonePaciente(valor) {
     const n = numeros(valor).slice(0, 11);
-    if (n.length <= 10) return n.replace(/^(\\d{2})(\\d)/, "($1) $2").replace(/(\\d{4})(\\d)/, "$1-$2");
-    return n.replace(/^(\\d{2})(\\d)/, "($1) $2").replace(/(\\d{5})(\\d)/, "$1-$2");
+    if (n.length <= 10) return n.replace(/^(\d{2})(\d)/, "($1) $2").replace(/(\d{4})(\d)/, "$1-$2");
+    return n.replace(/^(\d{2})(\d)/, "($1) $2").replace(/(\d{5})(\d)/, "$1-$2");
   }
   function atualizarCampoPaciente(campo, valor) {
     setFormPaciente((p) => ({ ...p, [campo]: valor }));
@@ -702,7 +702,7 @@ function Agenda() {
               </div>
               <h3 style={S.patientSectionTitle}>Endereço</h3>
               <div style={S.patientFormGrid}>
-                <div className="fieldGroup"><label style={S.label}>CEP</label>
+                <div style={S.fieldGroup}><label style={S.label}>CEP</label>
                   <input value={formPaciente.cep} onChange={(e) => atualizarCampoPaciente("cep", numeros(e.target.value).slice(0,8).replace(/^(\\d{5})(\\d)/, "$1-$2"))} onBlur={(e) => buscarCepPaciente(e.target.value)} placeholder="00000-000" style={S.input} />
                   {buscandoCepPaciente && <span style={S.patientHelper}>Buscando CEP...</span>}</div>
                 <div style={S.patientFieldFull}><label style={S.label}>Rua</label>
