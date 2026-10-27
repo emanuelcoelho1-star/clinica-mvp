@@ -19,7 +19,7 @@ router.get("/paciente/:paciente_id", auth, (req, res) => {
     [paciente_id],
     (err, rows) => {
       if (err) {
-        return res.status(500).json({ erro: err.message });
+        return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
       }
       res.json(rows);
     }
@@ -35,7 +35,7 @@ router.get("/:id", auth, (req, res) => {
 
   db.get("SELECT * FROM anamneses WHERE id = ?", [id], (err, row) => {
     if (err) {
-      return res.status(500).json({ erro: err.message });
+      return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
     }
     if (!row) {
       return res.status(404).json({ erro: "Anamnese não encontrada." });
@@ -76,7 +76,7 @@ router.post("/", auth, (req, res) => {
     pressao_arterial || "", frequencia_cardiaca || "", glicemia || "",
   ], function (err) {
     if (err) {
-      return res.status(500).json({ erro: err.message });
+      return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
     }
     res.status(201).json({ id: this.lastID, mensagem: "Anamnese criada com sucesso." });
   });
@@ -115,7 +115,7 @@ router.put("/:id", auth, (req, res) => {
     pressao_arterial || "", frequencia_cardiaca || "", glicemia || "", id,
   ], function (err) {
     if (err) {
-      return res.status(500).json({ erro: err.message });
+      return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
     }
     if (this.changes === 0) {
       return res.status(404).json({ erro: "Anamnese não encontrada." });
@@ -133,7 +133,7 @@ router.delete("/:id", auth, (req, res) => {
 
   db.run("DELETE FROM anamneses WHERE id = ?", [id], function (err) {
     if (err) {
-      return res.status(500).json({ erro: err.message });
+      return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
     }
     if (this.changes === 0) {
       return res.status(404).json({ erro: "Anamnese não encontrada." });
