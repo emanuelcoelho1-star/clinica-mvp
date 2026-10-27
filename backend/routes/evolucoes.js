@@ -42,6 +42,9 @@ router.post("/", auth, (req, res) => {
     [data, procedimento || null, dente || null, descricao || null, observacoes || null, profissional || null, req.user.clinica_id, paciente_id, req.user.clinica_id],
     function (err) {
       if (err) return res.status(500).json({ error: "Erro ao criar evolução." });
+      if (this.changes === 0) {
+        return res.status(404).json({ error: "Paciente não encontrado nesta clínica." });
+      }
       res.status(201).json({ id: this.lastID });
     }
   );
