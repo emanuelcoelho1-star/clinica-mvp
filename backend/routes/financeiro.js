@@ -1255,10 +1255,10 @@ router.get("/dre", auth, async (req, res) => {
          COALESCE(cr.procedimento, 'Outros') as categoria,
          COALESCE(SUM(cr.valor_recebido), 0) as total
        FROM contas_receber cr
-       WHERE cr.status = 'pago' AND strftime('%Y-%m', cr.data_recebimento) = ?
+       WHERE cr.clinica_id = ? AND cr.status = 'pago' AND strftime('%Y-%m', cr.data_recebimento) = ?
        GROUP BY cr.procedimento
        ORDER BY total DESC`,
-      [periodo]
+      [req.user.clinica_id, periodo]
     );
 
     // Receitas legadas
@@ -1267,10 +1267,10 @@ router.get("/dre", auth, async (req, res) => {
          COALESCE(pg.descricao, 'Procedimento') as categoria,
          COALESCE(SUM(pg.valor), 0) as total
        FROM pagamentos pg
-       WHERE pg.status = 'confirmado' AND strftime('%Y-%m', pg.data) = ?
+       WHERE pg.clinica_id = ? AND pg.status = 'confirmado' AND strftime('%Y-%m', pg.data) = ?
        GROUP BY pg.descricao
        ORDER BY total DESC`,
-      [periodo]
+      [req.user.clinica_id, periodo]
     );
 
     // Despesas por categoria
@@ -1280,19 +1280,19 @@ router.get("/dre", auth, async (req, res) => {
          cf.cor,
          COALESCE(SUM(cp.valor_pago), 0) as total
        FROM contas_pagar cp
-       LEFT JOIN categorias_financeiras cf ON cp.categoria_id = cf.id
-       WHERE cp.status = 'pago' AND strftime('%Y-%m', cp.data_pagamento) = ?
+       LEFT JOIN categorias_financeiras cf ON cp.categoria_id = cf.id AND cf.clinica_id = cp.clinica_id
+       WHERE cp.clinica_id = ? AND cp.status = 'pago' AND strftime('%Y-%m', cp.data_pagamento) = ?
        GROUP BY cp.categoria_id
        ORDER BY total DESC`,
-      [periodo]
+      [req.user.clinica_id, periodo]
     );
 
     // Comissões do mês
     const comissoes = await dbGet(
       `SELECT COALESCE(SUM(valor_comissao), 0) as total
        FROM comissoes
-       WHERE strftime('%Y-%m', data_referencia) = ?`,
-      [periodo]
+       WHERE clinica_id = ? AND strftime('%Y-%m', data_referencia) = ?`,
+      [req.user.clinica_id, periodo]
     );
 
     const totalReceitas = receitas.reduce((s, r) => s + r.total, 0)
@@ -1353,7 +1353,7 @@ router.get("/kpis", auth, async (req, res) => {
          COUNT(*) as total,
          COUNT(CASE WHEN status = 'aprovado' THEN 1 END) as aprovados
        FROM orcamentos
-       WHERE strftime('%Y-%m', data) = ?`,
+       WHERE clinica_id = ? AND strftime('%Y-%m', data) = ?`,
       [periodo]
     );
 
@@ -1369,7 +1369,7 @@ router.get("/kpis", auth, async (req, res) => {
        GROUP BY procedimento
        ORDER BY receita_total DESC
        LIMIT 5`,
-      [periodo]
+      [req.user.clinica_id, periodo]
     );
 
     // Receita por profissional
@@ -1379,11 +1379,11 @@ router.get("/kpis", auth, async (req, res) => {
          COUNT(cr.id) as atendimentos,
          COALESCE(SUM(cr.valor_recebido), 0) as receita_total
        FROM contas_receber cr
-       INNER JOIN profissionais pr ON cr.profissional_id = pr.id
-       WHERE cr.status = 'pago' AND strftime('%Y-%m', cr.data_recebimento) = ?
+       INNER JOIN profissionais pr ON cr.profissional_id = pr.id AND pr.clinica_id = cr.clinica_id
+       WHERE cr.clinica_id = ? AND cr.status = 'pago' AND strftime('%Y-%m', cr.data_recebimento) = ?
        GROUP BY cr.profissional_id
        ORDER BY receita_total DESC`,
-      [periodo]
+      [req.user.clinica_id, periodo]
     );
 
     // Pacientes novos no mês
@@ -1427,10 +1427,10 @@ router.get("/kpis", auth, async (req, res) => {
     const totalInadimplente = await dbGet(
       `SELECT COALESCE(SUM(valor - valor_recebido), 0) as total
        FROM contas_receber
-       WHERE status IN ('pendente','parcial')
+       WHERE clinica_id = ? AND status IN ('pendente','parcial')
          AND data_vencimento < date('now')
          AND strftime('%Y-%m', data_vencimento) = ?`,
-      [periodo]
+      [req.user.clinica_id, periodo]
     );
 
     const taxaInadimplencia = totalFaturado?.total > 0
