@@ -186,6 +186,8 @@ function Agenda() {
   const [excluindo, setExcluindo] = useState(false);
   const [erroFormulario, setErroFormulario] = useState("");
   const [agendamentoEditando, setAgendamentoEditando] = useState(null);
+  const [retornoPersonalizado, setRetornoPersonalizado] = useState(false);
+  const [diasRetornoPersonalizado, setDiasRetornoPersonalizado] = useState("10");
   const [confirmarExclusaoAberto, setConfirmarExclusaoAberto] = useState(false);
   const [agora, setAgora] = useState(new Date());
   const [buscaPaciente, setBuscaPaciente] = useState("");
@@ -311,50 +313,48 @@ function Agenda() {
     setFormData((p) => ({ ...p, data: novaData, horario: disp.length === 0 ? "" : disp.includes(p.horario) ? p.horario : disp[0] }));
   }
 
-  // Atalhos para marcar um retorno sem substituir a consulta que já existe.
+  // Agenda um novo retorno a partir de uma consulta já existente.
   function definirRetorno(dias) {
-    const dataRetorno = formatarDataISO(adicionarDias(new Date(), dias));
+    if (!agendamentoEditando || !Number.isInteger(Number(dias)) || Number(dias) < 1 || Number(dias) > 365) {
+      setErroFormulario("Informe uma quantidade de dias entre 1 e 365.");
+      return;
+    }
+
+    const dataRetorno = formatarDataISO(adicionarDias(new Date(), Number(dias)));
     const horarioAtual = formData.horario;
     const horarioDisponivel = horarios.filter((h) => !horarioPassado(dataRetorno, h));
     const horarioRetorno = horarioDisponivel.includes(horarioAtual)
       ? horarioAtual
       : (horarioDisponivel[0] || "");
+    const pacienteId = String(formData.paciente_id || agendamentoEditando.paciente_id || "");
 
-    // Se estiver editando uma consulta, transforma o formulário em um NOVO
-    // agendamento, mantendo o paciente selecionado e preservando a consulta original.
-    if (agendamentoEditando) {
-      const pacienteId = String(formData.paciente_id || agendamentoEditando.paciente_id || "");
-      setAgendamentoEditando(null);
-      setFormData((p) => ({
-        ...p,
-        paciente_id: pacienteId,
-        data: dataRetorno,
-        horario: horarioRetorno,
-        procedimento: "Retorno",
-        status: "agendado",
-      }));
-      setErroFormulario("");
-      return;
-    }
-
+    // Ao escolher o retorno, o próximo salvamento cria uma nova consulta (POST)
+    // e mantém intacta a consulta original.
+    setAgendamentoEditando(null);
     setFormData((p) => ({
       ...p,
+      paciente_id: pacienteId,
       data: dataRetorno,
       horario: horarioRetorno,
-      procedimento: p.procedimento.trim() ? p.procedimento : "Retorno",
+      procedimento: "Retorno",
+      status: "agendado",
     }));
+    setRetornoPersonalizado(false);
+    setErroFormulario("");
   }
 
   function abrirModal(ag = null, dataPad = null, horPad = "08:00") {
     setErroFormulario(""); setConfirmarExclusaoAberto(false); setMostrarSugestoesPaciente(false);
     if (ag) {
       setAgendamentoEditando(ag);
+      setRetornoPersonalizado(false);
       setFormData({ paciente_id: String(ag.paciente_id||""), data: ag.data||formatarDataISO(new Date()), horario: ag.inicio||"08:00", procedimento: ag.procedimento||"", status: ag.status||"agendado" });
       setBuscaPaciente(ag.paciente||"");
     } else {
       const di = dataPad || diasSemana[0]?.iso || formatarDataISO(new Date());
       let hi = horPad; if (horarioPassado(di, hi)) hi = horarios.find((h) => !horarioPassado(di, h)) || "";
       setAgendamentoEditando(null);
+      setRetornoPersonalizado(false);
       setFormData({ paciente_id: "", data: di, horario: hi, procedimento: "", status: "agendado" });
       setBuscaPaciente("");
     }
@@ -766,17 +766,54 @@ function Agenda() {
               <div style={S.formGrid}>
                 <div style={S.fieldGroup}><label style={S.label}>Data do atendimento / retorno</label>
                   <input type="date" name="data" min={formatarDataISO(new Date())} value={formData.data} onChange={handleInput} style={S.input} />
-                  <span style={{ color: "#64748b", fontSize: "12px", marginTop: "2px" }}>Atalhos para agendar o retorno a partir de hoje:</span>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "4px" }}>
-                    {[{ label: "1 semana", dias: 7 }, { label: "2 semanas", dias: 14 }, { label: "3 semanas", dias: 21 }, { label: "1 mês", dias: 30 }].map((opcao) => {
-                      const dataAtalho = formatarDataISO(adicionarDias(new Date(), opcao.dias));
-                      const ativo = formData.data === dataAtalho;
-                      return <button key={opcao.dias} type="button" onClick={() => definirRetorno(opcao.dias)}
-                        style={{ padding: "6px 9px", borderRadius: "8px", border: ativo ? "1px solid #2563eb" : "1px solid #cbd5e1", background: ativo ? "#eff6ff" : "#fff", color: ativo ? "#1d4ed8" : "#475569", fontSize: "12px", fontWeight: ativo ? "700" : "500", cursor: "pointer" }}>
-                        {opcao.label}
-                      </button>;
-                    })}
-                  </div>
+{agendamentoEditando && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "8px" }}>
+                      <label style={{ color: "#64748b", fontSize: "12px", fontWeight: "600" }}>Agendar retorno</label>
+                      <select
+                        value={retornoPersonalizado ? "personalizado" : ""}
+                        onChange={(e) => {
+                          const valor = e.target.value;
+                          if (valor === "personalizado") {
+                            setRetornoPersonalizado(true);
+                            setErroFormulario("");
+                            return;
+                          }
+                          const dias = Number(valor);
+                          if (dias > 0) definirRetorno(dias);
+                        }}
+                        style={{ ...S.input, cursor: "pointer" }}
+                      >
+                        <option value="">Selecione quando retornar...</option>
+                        <option value="7">1 semana</option>
+                        <option value="14">2 semanas</option>
+                        <option value="21">3 semanas</option>
+                        <option value="30">1 mês</option>
+                        <option value="personalizado">Escolher quantidade de dias</option>
+                      </select>
+                      {retornoPersonalizado && (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                          <label style={{ color: "#64748b", fontSize: "12px" }}>Quantidade de dias (1 a 365)</label>
+                          <input
+                            type="number"
+                            min="1"
+                            max="365"
+                            step="1"
+                            value={diasRetornoPersonalizado}
+                            onChange={(e) => setDiasRetornoPersonalizado(e.target.value)}
+                            style={S.input}
+                            placeholder="Ex.: 45"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => definirRetorno(Number(diasRetornoPersonalizado))}
+                            style={{ ...S.btnSecondary, justifyContent: "center" }}
+                          >
+                            Definir retorno
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div style={S.fieldGroup}><label style={S.label}>Horário</label>
                   <CustomDropdown value={formData.horario} options={horariosOpts}
