@@ -66,8 +66,8 @@ const upload = multer({
 router.get("/paciente/:pacienteId", auth, (req, res) => {
   const { pacienteId } = req.params;
   db.all(
-    "SELECT * FROM arquivos WHERE paciente_id = ? ORDER BY created_at DESC",
-    [pacienteId],
+    "SELECT * FROM arquivos WHERE paciente_id = ? AND clinica_id = ? ORDER BY created_at DESC",
+    [pacienteId, req.user.clinica_id],
     (err, rows) => {
       if (err) return res.status(500).json({ erro: "Não foi possível processar o arquivo. Tente novamente." });
       res.json(rows || []);
@@ -92,30 +92,36 @@ router.post("/", auth, upload.single("arquivo"), (req, res) => {
     return res.status(400).json({ erro: "paciente_id é obrigatório." });
   }
 
+  const nomeOriginal = path.basename(req.file.originalname || "arquivo").replace(/[\\r\\n\\0]/g, "").slice(0, 180);
   const sql = `
-    INSERT INTO arquivos (paciente_id, nome_original, nome_salvo, tamanho, mimetype, categoria, descricao)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO arquivos (paciente_id, nome_original, nome_salvo, tamanho, mimetype, categoria, descricao, clinica_id)
+    SELECT p.id, ?, ?, ?, ?, ?, ?, ?
+    FROM pacientes p
+    WHERE p.id = ? AND p.clinica_id = ?
   `;
 
   db.run(
     sql,
     [
-      paciente_id,
-      path.basename(req.file.originalname || "arquivo").replace(/[\\r\\n\\0]/g, "").slice(0, 180),
+      nomeOriginal,
       req.file.filename,
       req.file.size,
       req.file.mimetype,
       categoria || "outro",
       descricao || "",
+      req.user.clinica_id,
+      paciente_id,
+      req.user.clinica_id,
     ],
     function (err) {
-      if (err) {
-        fs.unlinkSync(req.file.path);
-        return res.status(500).json({ erro: "Não foi possível processar o arquivo. Tente novamente." });
+      if (err || this.changes === 0) {
+        fs.unlink(req.file.path, () => {});
+        if (err) return res.status(500).json({ erro: "Não foi possível processar o arquivo. Tente novamente." });
+        return res.status(404).json({ erro: "Paciente não encontrado nesta clínica." });
       }
       res.status(201).json({
         id: this.lastID,
-        nome_original: path.basename(req.file.originalname || "arquivo").replace(/[\\r\\n\\0]/g, "").slice(0, 180),
+        nome_original: nomeOriginal,
         nome_salvo: req.file.filename,
         tamanho: req.file.size,
         mimetype: req.file.mimetype,
@@ -155,11 +161,11 @@ router.get("/:id/download", (req, res) => {
 
   // Downloads abertos em nova aba também precisam validar a conta no banco.
   db.get(
-    `SELECT u.id, r.ativo AS role_ativo
+    `SELECT u.id, r.ativo AS role_ativo, u.clinica_id
      FROM usuarios u
      LEFT JOIN roles r ON r.id = u.role_id
-     WHERE u.id = ?`,
-    [decoded.id],
+     WHERE u.id = ? AND u.clinica_id = ?`,
+    [decoded.id, req.user.clinica_id],
     (userErr, user) => {
       if (userErr) return res.status(500).json({ erro: "Não foi possível validar a sessão." });
       if (!user) return res.status(401).json({ erro: "Sessão inválida. Faça login novamente." });
@@ -168,7 +174,7 @@ router.get("/:id/download", (req, res) => {
       }
 
       const { id } = req.params;
-      db.get("SELECT * FROM arquivos WHERE id = ?", [id], (err, row) => {
+      db.get("SELECT * FROM arquivos WHERE id = ? AND clinica_id = ?", [id, req.user.clinica_id], (err, row) => {
         if (err) return res.status(500).json({ erro: "Erro ao buscar arquivo." });
         if (!row) return res.status(404).json({ erro: "Arquivo não encontrado." });
 
@@ -205,7 +211,7 @@ router.get("/:id/download", (req, res) => {
 router.delete("/:id", auth, (req, res) => {
   const { id } = req.params;
 
-  db.get("SELECT * FROM arquivos WHERE id = ?", [id], (err, row) => {
+  db.get("SELECT * FROM arquivos WHERE id = ? AND clinica_id = ?", [id, req.user.clinica_id], (err, row) => {
     if (err) return res.status(500).json({ erro: "Não foi possível processar o arquivo. Tente novamente." });
     if (!row) return res.status(404).json({ erro: "Arquivo não encontrado." });
 
@@ -216,7 +222,7 @@ router.delete("/:id", auth, (req, res) => {
     }
 
     // Remove do banco
-    db.run("DELETE FROM arquivos WHERE id = ?", [id], function (delErr) {
+    db.run("DELETE FROM arquivos WHERE id = ? AND clinica_id = ?", [id, req.user.clinica_id], function (delErr) {
       if (delErr) return res.status(500).json({ erro: "Não foi possível processar o arquivo. Tente novamente." });
       res.json({ mensagem: "Arquivo excluído com sucesso." });
     });
