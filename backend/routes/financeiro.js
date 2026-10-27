@@ -784,10 +784,10 @@ router.get("/fluxo-caixa", auth, async (req, res) => {
     const projecaoPagar = await dbGet(
       `SELECT COALESCE(SUM(valor - valor_pago), 0) as total
        FROM contas_pagar
-       WHERE status IN ('pendente','parcial')
+       WHERE clinica_id = ? AND status IN ('pendente','parcial')
          AND strftime('%Y-%m', data_vencimento) = ?
          AND data_vencimento >= ?`,
-      [`${ano}-${mesStr}`, hoje]
+      [req.user.clinica_id, `${ano}-${mesStr}`, hoje]
     );
 
     res.json({
@@ -862,12 +862,12 @@ router.get("/inadimplencia", auth, async (req, res) => {
         MAX(cr.data_vencimento) as vencimento_mais_recente,
         CAST(julianday('now') - julianday(MIN(cr.data_vencimento)) AS INTEGER) as dias_atraso_max
       FROM contas_receber cr
-      INNER JOIN pacientes p ON cr.paciente_id = p.id
-      WHERE cr.status IN ('pendente', 'parcial')
+      INNER JOIN pacientes p ON cr.paciente_id = p.id AND p.clinica_id = cr.clinica_id
+       WHERE cr.clinica_id = ? AND cr.status IN ('pendente', 'parcial')
         AND cr.data_vencimento < date('now')
       GROUP BY p.id
       ORDER BY valor_total_devido DESC
-    `);
+     `, [req.user.clinica_id]);
 
     // Classificar por gravidade
     const classificados = inadimplentes.map((i) => {
@@ -900,10 +900,10 @@ router.get("/inadimplencia", auth, async (req, res) => {
                 data_vencimento, forma_pagamento,
                 CAST(julianday('now') - julianday(data_vencimento) AS INTEGER) as dias_atraso
          FROM contas_receber
-         WHERE paciente_id = ? AND status IN ('pendente', 'parcial')
-           AND data_vencimento < date('now')
-         ORDER BY data_vencimento ASC`,
-        [inad.paciente_id]
+         WHERE paciente_id = ? AND clinica_id = ? AND status IN ('pendente', 'parcial')
+            AND data_vencimento < date('now')
+          ORDER BY data_vencimento ASC`,
+        [inad.paciente_id, req.user.clinica_id]
       );
     }
 
@@ -1608,11 +1608,11 @@ router.get("/exportar/comissoes", auth, async (req, res) => {
              p.nome as paciente, c.valor_procedimento, c.percentual,
              c.valor_comissao, c.data_referencia, c.status, c.data_pagamento
       FROM comissoes c
-      INNER JOIN profissionais pr ON c.profissional_id = pr.id
-      LEFT JOIN pacientes p ON c.paciente_id = p.id
-      WHERE 1=1
-    `;
-    const params = [];
+      INNER JOIN profissionais pr ON c.profissional_id = pr.id AND pr.clinica_id = c.clinica_id
+       LEFT JOIN pacientes p ON c.paciente_id = p.id AND p.clinica_id = c.clinica_id
+       WHERE c.clinica_id = ?
+     `;
+     const params = [req.user.clinica_id];
 
     if (mes && ano) {
       sql += " AND strftime('%Y-%m', c.data_referencia) = ?";
