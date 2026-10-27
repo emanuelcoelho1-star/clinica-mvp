@@ -274,7 +274,7 @@ router.patch("/:id/status", auth, (req, res) => {
 
         // 3) Se está sendo APROVADO (e não estava aprovado antes), gera contas a receber
         if (status === "aprovado" && orcamento.status !== "aprovado") {
-          gerarContasReceber(id, orcamento.paciente_id, (erroFinanceiro) => {
+          gerarContasReceber(id, orcamento.paciente_id, req.user.clinica_id, (erroFinanceiro) => {
             if (erroFinanceiro) {
               console.error("Erro ao gerar contas a receber:", erroFinanceiro);
               // Retorna sucesso no status, mas avisa sobre o erro financeiro
@@ -300,27 +300,30 @@ router.patch("/:id/status", auth, (req, res) => {
 // =========================
 // FUNÇÃO: GERAR CONTAS A RECEBER A PARTIR DO ORÇAMENTO
 // =========================
-function gerarContasReceber(orcamentoId, pacienteId, callback) {
-  // Busca os itens do orçamento
+function gerarContasReceber(orcamentoId, pacienteId, clinicaId, callback) {
+  // Busca os itens apenas se o orçamento pertencer à clínica autenticada.
   db.all(
-    "SELECT * FROM orcamento_itens WHERE orcamento_id = ? ORDER BY id ASC",
-    [orcamentoId],
+    `SELECT oi.* FROM orcamento_itens oi
+     INNER JOIN orcamentos o ON o.id = oi.orcamento_id
+     WHERE oi.orcamento_id = ? AND o.clinica_id = ?
+     ORDER BY oi.id ASC`,
+    [orcamentoId, clinicaId],
     (err, itens) => {
       if (err) return callback(err.message);
       if (!itens || itens.length === 0) return callback("Orçamento sem itens.");
 
       // Busca o orçamento para pegar o desconto
       db.get(
-        "SELECT * FROM orcamentos WHERE id = ?",
-        [orcamentoId],
+        "SELECT * FROM orcamentos WHERE id = ? AND clinica_id = ? AND paciente_id = ?",
+        [orcamentoId, clinicaId, pacienteId],
         (errOrc, orcamento) => {
           if (errOrc) return callback(errOrc.message);
           if (!orcamento) return callback("Orçamento não encontrado.");
 
           // Verifica se já existem contas vinculadas a este orçamento (evita duplicatas)
           db.get(
-            "SELECT COUNT(*) as total FROM contas_receber WHERE orcamento_id = ?",
-            [orcamentoId],
+            "SELECT COUNT(*) as total FROM contas_receber WHERE orcamento_id = ? AND clinica_id = ?",
+            [orcamentoId, clinicaId],
             (errCheck, row) => {
               if (errCheck) return callback(errCheck.message);
 
@@ -357,11 +360,19 @@ function gerarContasReceber(orcamentoId, pacienteId, callback) {
                 `INSERT INTO contas_receber
                    (paciente_id, orcamento_id, descricao, procedimento, valor,
                     desconto, data_emissao, data_vencimento, forma_pagamento,
-                    status, parcela_atual, total_parcelas, observacoes)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'dinheiro', 'pendente', 1, 1, ?)`,
+                    status, parcela_atual, total_parcelas, observacoes, clinica_id)
+                 SELECT p.id, o.id, ?, ?, ?, ?, ?, ?, 'dinheiro', 'pendente', 1, 1, ?, ?
+                 FROM pacientes p
+                 INNER JOIN orcamentos o ON o.paciente_id = p.id
+                 WHERE p.id = ? AND p.clinica_id = ?
+                   AND o.id = ? AND o.clinica_id = ?`,
                 [
-                  pacienteId,
-                  orcamentoId,
+                  descricao,
+                  procedimentos || null,
+                  totalLiquido,
+                  desconto,
+                  hojeStr,
+                  vencimentoStr,
                   descricao,
                   procedimentos || null,
                   totalLiquido,
@@ -369,9 +380,15 @@ function gerarContasReceber(orcamentoId, pacienteId, callback) {
                   hojeStr,
                   vencimentoStr,
                   `Gerado automaticamente ao aprovar orçamento #${orcamentoId}`,
+                  clinicaId,
+                  pacienteId,
+                  clinicaId,
+                  orcamentoId,
+                  clinicaId,
                 ],
                 function (errInsert) {
                   if (errInsert) return callback(errInsert.message);
+                  if (this.changes === 0) return callback("Paciente ou orçamento não pertence a esta clínica.");
                   callback(null);
                 }
               );
