@@ -23,7 +23,7 @@ router.get("/paciente/:paciente_id", auth, (req, res) => {
     [paciente_id],
     (err, rows) => {
       if (err) {
-        return res.status(500).json({ erro: err.message });
+        return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
       }
       res.json(rows || []);
     }
@@ -45,7 +45,7 @@ router.get("/:id", auth, (req, res) => {
     [id],
     (err, row) => {
       if (err) {
-        return res.status(500).json({ erro: err.message });
+        return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
       }
       if (!row) {
         return res.status(404).json({ erro: "Pagamento não encontrado." });
@@ -112,7 +112,7 @@ router.post("/", auth, (req, res) => {
     ],
     function (err) {
       if (err) {
-        return res.status(500).json({ erro: err.message });
+        return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
       }
       res.status(201).json({
         id: this.lastID,
@@ -163,7 +163,7 @@ router.put("/:id", auth, (req, res) => {
     ],
     function (err) {
       if (err) {
-        return res.status(500).json({ erro: err.message });
+        return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
       }
       if (this.changes === 0) {
         return res.status(404).json({ erro: "Pagamento não encontrado." });
@@ -194,7 +194,7 @@ router.patch("/:id/status", auth, (req, res) => {
     [status, id],
     function (err) {
       if (err) {
-        return res.status(500).json({ erro: err.message });
+        return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
       }
       if (this.changes === 0) {
         return res.status(404).json({ erro: "Pagamento não encontrado." });
@@ -213,7 +213,7 @@ router.delete("/:id", auth, (req, res) => {
 
   db.run("DELETE FROM pagamentos WHERE id = ?", [id], function (err) {
     if (err) {
-      return res.status(500).json({ erro: err.message });
+      return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
     }
     if (this.changes === 0) {
       return res.status(404).json({ erro: "Pagamento não encontrado." });
