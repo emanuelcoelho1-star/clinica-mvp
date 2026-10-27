@@ -208,115 +208,92 @@ router.post("/login", loginLimiter, (req, res) => {
 
 /* ── Verificar token (me) ─────────────────────── */
 router.get("/me", authGeneralLimiter, auth, (req, res) => {
-  const authHeader = req.headers["authorization"];
-
-  if (!authHeader) {
-    return res.status(401).json({ erro: "Token não fornecido." });
-  }
-
-  const token = authHeader.startsWith("Bearer ")
-    ? authHeader.slice(7)
-    : authHeader;
-
-  try {
-    const decoded = jwt.verify(token, SECRET);
-
-    db.get(
-      "SELECT id, nome, email FROM usuarios WHERE id = ?",
-      [decoded.id],
-      (err, user) => {
-        if (err || !user) {
-          return res.status(401).json({ erro: "Usuário não encontrado." });
-        }
-        res.json({ usuario: user });
+  db.get(
+    "SELECT id, nome, email FROM usuarios WHERE id = ? AND clinica_id = ?",
+    [req.user.id, req.user.clinica_id],
+    (err, user) => {
+      if (err) {
+        return res.status(500).json({ erro: "Erro ao consultar usuário." });
       }
-    );
-  } catch (error) {
-    return res.status(401).json({ erro: "Token inválido ou expirado." });
-  }
+      if (!user) {
+        return res.status(401).json({ erro: "Usuário não encontrado nesta clínica." });
+      }
+      res.json({ usuario: user });
+    }
+  );
 });
 
 /* ── Atualizar perfil ─────────────────────────── */
 router.put("/perfil", authGeneralLimiter, auth, (req, res) => {
-  const authHeader = req.headers["authorization"];
+  const { nome } = req.body;
 
-  if (!authHeader) {
-    return res.status(401).json({ erro: "Token não fornecido." });
+  if (typeof nome !== "string" || !nome.trim()) {
+    return res.status(400).json({ erro: "Nome é obrigatório." });
   }
 
-  const token = authHeader.startsWith("Bearer ")
-    ? authHeader.slice(7)
-    : authHeader;
-
-  try {
-    const decoded = jwt.verify(token, SECRET);
-    const { nome } = req.body;
-
-    if (!nome || !nome.trim()) {
-      return res.status(400).json({ erro: "Nome é obrigatório." });
-    }
-
-    db.run("UPDATE usuarios SET nome = ? WHERE id = ?", [nome.trim(), decoded.id], function (err) {
+  db.run(
+    "UPDATE usuarios SET nome = ? WHERE id = ? AND clinica_id = ?",
+    [nome.trim(), req.user.id, req.user.clinica_id],
+    function (err) {
       if (err) {
         return res.status(500).json({ erro: "Erro ao atualizar perfil." });
       }
       if (this.changes === 0) {
-        return res.status(404).json({ erro: "Usuário não encontrado." });
+        return res.status(404).json({ erro: "Usuário não encontrado nesta clínica." });
       }
       res.json({ mensagem: "Perfil atualizado com sucesso." });
-    });
-  } catch (error) {
-    return res.status(401).json({ erro: "Token inválido ou expirado." });
-  }
+    }
+  );
 });
 
 /* ── Alterar senha ────────────────────────────── */
 router.put("/alterar-senha", authGeneralLimiter, auth, (req, res) => {
-  const authHeader = req.headers["authorization"];
+  const { senha_atual, nova_senha } = req.body;
 
-  if (!authHeader) {
-    return res.status(401).json({ erro: "Token não fornecido." });
+  if (!senha_atual || !nova_senha) {
+    return res.status(400).json({ erro: "Senha atual e nova senha são obrigatórias." });
   }
 
-  const token = authHeader.startsWith("Bearer ")
-    ? authHeader.slice(7)
-    : authHeader;
+  if (typeof nova_senha !== "string" || nova_senha.length < 6) {
+    return res.status(400).json({ erro: "A nova senha deve ter no mínimo 6 caracteres." });
+  }
 
-  try {
-    const decoded = jwt.verify(token, SECRET);
-
-    const { senha_atual, nova_senha } = req.body;
-
-    if (!senha_atual || !nova_senha) {
-      return res.status(400).json({ erro: "Senha atual e nova senha são obrigatórias." });
-    }
-
-    if (nova_senha.length < 6) {
-      return res.status(400).json({ erro: "A nova senha deve ter no mínimo 6 caracteres." });
-    }
-
-    db.get("SELECT * FROM usuarios WHERE id = ?", [decoded.id], async (err, user) => {
-      if (err || !user) {
-        return res.status(404).json({ erro: "Usuário não encontrado." });
+  db.get(
+    "SELECT id, senha FROM usuarios WHERE id = ? AND clinica_id = ?",
+    [req.user.id, req.user.clinica_id],
+    async (err, user) => {
+      if (err) {
+        return res.status(500).json({ erro: "Erro ao consultar usuário." });
+      }
+      if (!user) {
+        return res.status(404).json({ erro: "Usuário não encontrado nesta clínica." });
       }
 
-      const senhaValida = await bcrypt.compare(senha_atual, user.senha);
-      if (!senhaValida) {
-        return res.status(401).json({ erro: "Senha atual incorreta." });
-      }
-
-      const novoHash = await bcrypt.hash(nova_senha, 10);
-
-      db.run("UPDATE usuarios SET senha = ? WHERE id = ?", [novoHash, decoded.id], function (err) {
-        if (err) {
-          return res.status(500).json({ erro: "Erro ao alterar senha." });
+      try {
+        const senhaValida = await bcrypt.compare(senha_atual, user.senha);
+        if (!senhaValida) {
+          return res.status(401).json({ erro: "Senha atual incorreta." });
         }
-        res.json({ mensagem: "Senha alterada com sucesso." });
-      });
-    });
-  } catch (error) {
-    return res.status(401).json({ erro: "Token inválido ou expirado." });
-  }
+
+        const novoHash = await bcrypt.hash(nova_senha, 10);
+        db.run(
+          "UPDATE usuarios SET senha = ? WHERE id = ? AND clinica_id = ?",
+          [novoHash, req.user.id, req.user.clinica_id],
+          function (updateErr) {
+            if (updateErr) {
+              return res.status(500).json({ erro: "Erro ao alterar senha." });
+            }
+            if (this.changes === 0) {
+              return res.status(404).json({ erro: "Usuário não encontrado nesta clínica." });
+            }
+            res.json({ mensagem: "Senha alterada com sucesso." });
+          }
+        );
+      } catch (hashErr) {
+        return res.status(500).json({ erro: "Erro ao processar alteração de senha." });
+      }
+    }
+  );
 });
 
 module.exports = router;
