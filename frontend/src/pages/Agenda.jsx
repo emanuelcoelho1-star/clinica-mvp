@@ -34,7 +34,13 @@ const STATUS_STYLE = {
    HELPERS
    ═══════════════════════════════════════════════════════════ */
 function zerarHora(data) { const d = new Date(data); d.setHours(0,0,0,0); return d; }
-function obterInicioAgenda(data) { return zerarHora(data); }
+function obterInicioAgenda(data) {
+  const d = zerarHora(data);
+  const diaSemana = d.getDay();
+  // A visualização semanal fica ancorada na segunda-feira (segunda a sábado).
+  d.setDate(d.getDate() - (diaSemana === 0 ? 6 : diaSemana - 1));
+  return d;
+}
 function formatarDataISO(data) {
   return `${data.getFullYear()}-${String(data.getMonth()+1).padStart(2,"0")}-${String(data.getDate()).padStart(2,"0")}`;
 }
@@ -266,8 +272,8 @@ function Agenda() {
     return `${nomesMeses[p.getMonth()]} — ${nomesMeses[u.getMonth()]} ${u.getFullYear()}`;
   }, [diasSemana]);
 
-  function voltarSemana() { setInicioSemana((p) => adicionarDias(p, -6)); }
-  function avancarSemana() { setInicioSemana((p) => adicionarDias(p, 6)); }
+  function voltarSemana() { setInicioSemana((p) => adicionarDias(p, -7)); }
+  function avancarSemana() { setInicioSemana((p) => adicionarDias(p, 7)); }
   function irParaHoje() { setInicioSemana(obterInicioAgenda(new Date())); }
   function obterAgendamento(iso, h) { return agendamentosFiltrados.find((i) => i.data === iso && i.inicio === h); }
 
@@ -320,7 +326,6 @@ function Agenda() {
         body: JSON.stringify({ paciente_id: Number(formData.paciente_id), data: formData.data, horario: formData.horario, procedimento: formData.procedimento, status: formData.status }),
       });
       if (!r.ok) throw new Error(); await carregarConsultas(); fecharModal();
-      setInicioSemana(obterInicioAgenda(new Date(`${formData.data}T00:00:00`)));
     } catch { setErroFormulario("Não foi possível salvar o agendamento."); }
     finally { setSalvando(false); }
   }
@@ -374,7 +379,6 @@ function Agenda() {
         <div style={S.headerLeft}>
           <div style={S.headerTitleRow}>
             <h1 style={S.headerTitle}>Agenda</h1>
-            <span style={S.headerCount}>{weekStats.total} esta semana</span>
           </div>
           <p style={S.headerSub}>Organize atendimentos e acompanhe os horários</p>
         </div>
