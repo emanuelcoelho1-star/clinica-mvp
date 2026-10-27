@@ -316,6 +316,8 @@ router.get("/contas-pagar", auth, async (req, res) => {
       FROM contas_pagar
       WHERE clinica_id = ?
     `, [req.user.clinica_id]);
+
+    res.json({ contas, resumo });
   } catch (error) {
     res.status(500).json({ erro: "Erro ao listar contas a pagar." });
   }
@@ -419,7 +421,7 @@ router.put("/contas-pagar/:id", auth, async (req, res) => {
 router.put("/contas-pagar/:id/pagar", auth, async (req, res) => {
   try {
     const { valor_pago, data_pagamento, forma_pagamento } = req.body;
-    const conta = await dbGet("SELECT * FROM contas_pagar WHERE id = ?", [req.params.id]);
+    const conta = await dbGet("SELECT * FROM contas_pagar WHERE id = ? AND clinica_id = ?", [req.params.id, req.user.clinica_id]);
     if (!conta) return res.status(404).json({ erro: "Conta não encontrada." });
 
     const novoValorPago = (conta.valor_pago || 0) + (valor_pago || conta.valor);
@@ -428,7 +430,7 @@ router.put("/contas-pagar/:id/pagar", auth, async (req, res) => {
     await dbRun(
       `UPDATE contas_pagar
        SET valor_pago = ?, data_pagamento = ?, forma_pagamento = ?, status = ?
-       WHERE id = ?`,
+       WHERE id = ? AND clinica_id = ?`,
       [
         novoValorPago,
         data_pagamento || new Date().toISOString().split("T")[0],
@@ -441,8 +443,8 @@ router.put("/contas-pagar/:id/pagar", auth, async (req, res) => {
 
     // Registrar no fluxo de caixa
     await dbRun(
-      `INSERT INTO fluxo_caixa (tipo, categoria_id, conta_pagar_id, descricao, valor, data, forma_pagamento)
-       VALUES ('saida', ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO fluxo_caixa (tipo, categoria_id, conta_pagar_id, descricao, valor, data, forma_pagamento, clinica_id)
+       VALUES ('saida', ?, ?, ?, ?, ?, ?, ?)`,
       [
         conta.categoria_id,
         conta.id,
@@ -450,6 +452,7 @@ router.put("/contas-pagar/:id/pagar", auth, async (req, res) => {
         valor_pago || conta.valor,
         data_pagamento || new Date().toISOString().split("T")[0],
         forma_pagamento || conta.forma_pagamento,
+        req.user.clinica_id,
       ]
     );
 
@@ -466,10 +469,10 @@ router.delete("/contas-pagar/:id", auth, async (req, res) => {
     if (!conta) return res.status(404).json({ erro: "Conta não encontrada." });
 
     // Remove lançamentos do fluxo de caixa vinculados
-    await dbRun("DELETE FROM fluxo_caixa WHERE conta_pagar_id = ?", [req.params.id]);
+    await dbRun("DELETE FROM fluxo_caixa WHERE conta_pagar_id = ? AND clinica_id = ?", [req.params.id, req.user.clinica_id]);
 
     // Remove a conta
-    await dbRun("DELETE FROM contas_pagar WHERE id = ?", [req.params.id]);
+    await dbRun("DELETE FROM contas_pagar WHERE id = ? AND clinica_id = ?", [req.params.id, req.user.clinica_id]);
 
     res.json({ mensagem: "Conta excluída com sucesso." });
   } catch (error) {
