@@ -40,9 +40,12 @@ Copie o valor gerado. Crie um arquivo chamado `.env` dentro da pasta `backend` c
 
 ```env
 JWT_SECRET=COLE_AQUI_A_CHAVE_ALEATORIA_GERADA
+ALLOW_PUBLIC_SIGNUP=true
 ```
 
 Não publique nem compartilhe esse arquivo. Ele já deve ser ignorado pelo Git.
+
+`ALLOW_PUBLIC_SIGNUP=true` permite cadastrar clínicas adicionais para testes locais. Mantenha essa opção desativada ou remova-a em ambientes publicados na internet; ela abre o cadastro de novas clínicas.
 
 ### 4. Instalar dependências e iniciar a API
 
