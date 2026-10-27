@@ -390,33 +390,60 @@ function gerarContasReceber(orcamentoId, pacienteId, callback) {
 router.delete("/:id", auth, (req, res) => {
   const { id } = req.params;
 
-  // 1) Remove lançamentos do fluxo de caixa vinculados às contas deste orçamento
-  db.run(
-    `DELETE FROM fluxo_caixa WHERE conta_receber_id IN
-       (SELECT id FROM contas_receber WHERE orcamento_id = ?)`,
-    [id],
-    function () {
-      // 2) Remove comissões vinculadas às contas deste orçamento
+  // Confirma a propriedade antes de tocar em qualquer registro financeiro.
+  db.get(
+    "SELECT id FROM orcamentos WHERE id = ? AND clinica_id = ?",
+    [id, req.user.clinica_id],
+    (errBusca, orcamento) => {
+      if (errBusca) {
+        return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
+      }
+      if (!orcamento) {
+        return res.status(404).json({ erro: "Orçamento não encontrado." });
+      }
+
+      // Só remove registros financeiros vinculados a contas da mesma clínica.
       db.run(
-        `DELETE FROM comissoes WHERE conta_receber_id IN
-           (SELECT id FROM contas_receber WHERE orcamento_id = ?)`,
-        [id],
-        function () {
-          // 3) Remove as contas a receber vinculadas ao orçamento
+        `DELETE FROM fluxo_caixa WHERE conta_receber_id IN
+           (SELECT id FROM contas_receber WHERE orcamento_id = ? AND clinica_id = ?)`,
+        [id, req.user.clinica_id],
+        (errFluxo) => {
+          if (errFluxo) {
+            return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
+          }
+
           db.run(
-            "DELETE FROM contas_receber WHERE orcamento_id = ?",
-            [id],
-            function () {
-              // 4) Remove o orçamento (itens saem por CASCADE)
-              db.run("DELETE FROM orcamentos WHERE id = ?", [id], function (err) {
-                if (err) {
-                  return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
+            `DELETE FROM comissoes WHERE conta_receber_id IN
+               (SELECT id FROM contas_receber WHERE orcamento_id = ? AND clinica_id = ?)`,
+            [id, req.user.clinica_id],
+            (errComissoes) => {
+              if (errComissoes) {
+                return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
+              }
+
+              db.run(
+                "DELETE FROM contas_receber WHERE orcamento_id = ? AND clinica_id = ?",
+                [id, req.user.clinica_id],
+                (errContas) => {
+                  if (errContas) {
+                    return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
+                  }
+
+                  db.run(
+                    "DELETE FROM orcamentos WHERE id = ? AND clinica_id = ?",
+                    [id, req.user.clinica_id],
+                    function (errDelete) {
+                      if (errDelete) {
+                        return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
+                      }
+                      if (this.changes === 0) {
+                        return res.status(404).json({ erro: "Orçamento não encontrado." });
+                      }
+                      res.json({ mensagem: "Orçamento e registros financeiros excluídos com sucesso." });
+                    }
+                  );
                 }
-                if (this.changes === 0) {
-                  return res.status(404).json({ erro: "Orçamento não encontrado." });
-                }
-                res.json({ mensagem: "Orçamento e registros financeiros excluídos com sucesso." });
-              });
+              );
             }
           );
         }
@@ -424,6 +451,5 @@ router.delete("/:id", auth, (req, res) => {
     }
   );
 });
-
 
 module.exports = router;
