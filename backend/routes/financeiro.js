@@ -922,7 +922,7 @@ router.get("/inadimplencia", auth, async (req, res) => {
 router.get("/profissionais", auth, async (req, res) => {
   try {
     const profissionais = await dbAll(
-      "SELECT * FROM profissionais WHERE ativo = 1 ORDER BY nome"
+      "SELECT * FROM profissionais WHERE ativo = 1 AND clinica_id = ? ORDER BY nome", [req.user.clinica_id]
     );
     res.json(profissionais);
   } catch (error) {
@@ -943,13 +943,13 @@ router.post("/profissionais", auth, async (req, res) => {
     const result = await dbRun(
       `INSERT INTO profissionais
          (nome, cpf, cro, especialidade, telefone, email, tipo,
-          percentual_comissao, valor_fixo_comissao, tipo_comissao, observacoes)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          percentual_comissao, valor_fixo_comissao, tipo_comissao, observacoes, clinica_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         nome, cpf || null, cro || null, especialidade || null,
         telefone || null, email || null, tipo || "dentista",
         percentual_comissao || 0, valor_fixo_comissao || 0,
-        tipo_comissao || "percentual", observacoes || null,
+        tipo_comissao || "percentual", observacoes || null, req.user.clinica_id,
       ]
     );
 
@@ -972,11 +972,11 @@ router.put("/profissionais/:id", auth, async (req, res) => {
        SET nome = ?, cpf = ?, cro = ?, especialidade = ?, telefone = ?,
            email = ?, tipo = ?, percentual_comissao = ?, valor_fixo_comissao = ?,
            tipo_comissao = ?, observacoes = ?
-       WHERE id = ?`,
+       WHERE id = ? AND clinica_id = ?`,
       [
         nome, cpf, cro, especialidade, telefone, email, tipo,
         percentual_comissao, valor_fixo_comissao, tipo_comissao,
-        observacoes, req.params.id,
+        observacoes, req.params.id, req.user.clinica_id,
       ]
     );
 
@@ -989,7 +989,7 @@ router.put("/profissionais/:id", auth, async (req, res) => {
 // DELETE /financeiro/profissionais/:id (soft delete)
 router.delete("/profissionais/:id", auth, async (req, res) => {
   try {
-    await dbRun("UPDATE profissionais SET ativo = 0 WHERE id = ?", [req.params.id]);
+    await dbRun("UPDATE profissionais SET ativo = 0 WHERE id = ? AND clinica_id = ?", [req.params.id, req.user.clinica_id]);
     res.json({ mensagem: "Profissional desativado." });
   } catch (error) {
     res.status(500).json({ erro: "Erro ao desativar profissional." });
