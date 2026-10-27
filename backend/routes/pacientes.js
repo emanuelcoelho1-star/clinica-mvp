@@ -107,14 +107,22 @@ router.get("/:id/odontograma", auth, (req, res) => {
   const { id } = req.params;
 
   db.get(
-    "SELECT mapa FROM odontogramas WHERE paciente_id = ?",
-    [id],
+    `SELECT o.mapa
+     FROM pacientes p
+     LEFT JOIN odontogramas o
+       ON o.paciente_id = p.id AND o.clinica_id = p.clinica_id
+     WHERE p.id = ? AND p.clinica_id = ?`,
+    [id, req.user.clinica_id],
     (err, row) => {
       if (err) {
         return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
       }
 
-      if (!row || !row.mapa) {
+      if (!row) {
+        return res.status(404).json({ erro: "Paciente não encontrado" });
+      }
+
+      if (!row.mapa) {
         return res.json({});
       }
 
@@ -137,39 +145,53 @@ router.put("/:id/odontograma", auth, (req, res) => {
 
   const mapaString = JSON.stringify(mapa || {});
 
+  // Confirma que o paciente pertence à clínica autenticada antes de ler ou gravar.
   db.get(
-    "SELECT id FROM odontogramas WHERE paciente_id = ?",
-    [id],
-    (err, row) => {
-      if (err) {
+    "SELECT id FROM pacientes WHERE id = ? AND clinica_id = ?",
+    [id, req.user.clinica_id],
+    (patientErr, patient) => {
+      if (patientErr) {
         return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
       }
-
-      if (row) {
-        db.run(
-          "UPDATE odontogramas SET mapa = ? WHERE paciente_id = ?",
-          [mapaString, id],
-          function (updateErr) {
-            if (updateErr) {
-              return res.status(500).json({ erro: updateErr.message });
-            }
-
-            res.json({ message: "Odontograma atualizado com sucesso" });
-          }
-        );
-      } else {
-        db.run(
-          "INSERT INTO odontogramas (paciente_id, mapa) VALUES (?, ?)",
-          [id, mapaString],
-          function (insertErr) {
-            if (insertErr) {
-              return res.status(500).json({ erro: insertErr.message });
-            }
-
-            res.json({ message: "Odontograma salvo com sucesso" });
-          }
-        );
+      if (!patient) {
+        return res.status(404).json({ erro: "Paciente não encontrado" });
       }
+
+      db.get(
+        "SELECT id FROM odontogramas WHERE paciente_id = ? AND clinica_id = ?",
+        [id, req.user.clinica_id],
+        (err, row) => {
+          if (err) {
+            return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
+          }
+
+          if (row) {
+            db.run(
+              "UPDATE odontogramas SET mapa = ? WHERE paciente_id = ? AND clinica_id = ?",
+              [mapaString, id, req.user.clinica_id],
+              function (updateErr) {
+                if (updateErr) {
+                  return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
+                }
+
+                res.json({ message: "Odontograma atualizado com sucesso" });
+              }
+            );
+          } else {
+            db.run(
+              "INSERT INTO odontogramas (paciente_id, mapa, clinica_id) VALUES (?, ?, ?)",
+              [id, mapaString, req.user.clinica_id],
+              function (insertErr) {
+                if (insertErr) {
+                  return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
+                }
+
+                res.json({ message: "Odontograma salvo com sucesso" });
+              }
+            );
+          }
+        }
+      );
     }
   );
 });
