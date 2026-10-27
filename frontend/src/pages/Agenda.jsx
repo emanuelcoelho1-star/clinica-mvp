@@ -311,11 +311,38 @@ function Agenda() {
     setFormData((p) => ({ ...p, data: novaData, horario: disp.length === 0 ? "" : disp.includes(p.horario) ? p.horario : disp[0] }));
   }
 
-  // Atalhos para marcar o retorno do paciente sem precisar calcular a data manualmente.
+  // Atalhos para marcar um retorno sem substituir a consulta que já existe.
   function definirRetorno(dias) {
     const dataRetorno = formatarDataISO(adicionarDias(new Date(), dias));
-    ajustarHorario(dataRetorno);
-    setFormData((p) => ({ ...p, procedimento: p.procedimento.trim() ? p.procedimento : "Retorno" }));
+    const horarioAtual = formData.horario;
+    const horarioDisponivel = horarios.filter((h) => !horarioPassado(dataRetorno, h));
+    const horarioRetorno = horarioDisponivel.includes(horarioAtual)
+      ? horarioAtual
+      : (horarioDisponivel[0] || "");
+
+    // Se estiver editando uma consulta, transforma o formulário em um NOVO
+    // agendamento, mantendo o paciente selecionado e preservando a consulta original.
+    if (agendamentoEditando) {
+      const pacienteId = String(formData.paciente_id || agendamentoEditando.paciente_id || "");
+      setAgendamentoEditando(null);
+      setFormData((p) => ({
+        ...p,
+        paciente_id: pacienteId,
+        data: dataRetorno,
+        horario: horarioRetorno,
+        procedimento: "Retorno",
+        status: "agendado",
+      }));
+      setErroFormulario("");
+      return;
+    }
+
+    setFormData((p) => ({
+      ...p,
+      data: dataRetorno,
+      horario: horarioRetorno,
+      procedimento: p.procedimento.trim() ? p.procedimento : "Retorno",
+    }));
   }
 
   function abrirModal(ag = null, dataPad = null, horPad = "08:00") {
