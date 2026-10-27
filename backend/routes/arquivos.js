@@ -69,7 +69,7 @@ router.get("/paciente/:pacienteId", auth, (req, res) => {
     "SELECT * FROM arquivos WHERE paciente_id = ? ORDER BY created_at DESC",
     [pacienteId],
     (err, rows) => {
-      if (err) return res.status(500).json({ erro: err.message });
+      if (err) return res.status(500).json({ erro: "Não foi possível processar o arquivo. Tente novamente." });
       res.json(rows || []);
     }
   );
@@ -111,7 +111,7 @@ router.post("/", auth, upload.single("arquivo"), (req, res) => {
     function (err) {
       if (err) {
         fs.unlinkSync(req.file.path);
-        return res.status(500).json({ erro: err.message });
+        return res.status(500).json({ erro: "Não foi possível processar o arquivo. Tente novamente." });
       }
       res.status(201).json({
         id: this.lastID,
@@ -206,7 +206,7 @@ router.delete("/:id", auth, (req, res) => {
   const { id } = req.params;
 
   db.get("SELECT * FROM arquivos WHERE id = ?", [id], (err, row) => {
-    if (err) return res.status(500).json({ erro: err.message });
+    if (err) return res.status(500).json({ erro: "Não foi possível processar o arquivo. Tente novamente." });
     if (!row) return res.status(404).json({ erro: "Arquivo não encontrado." });
 
     // Remove do disco
@@ -217,7 +217,7 @@ router.delete("/:id", auth, (req, res) => {
 
     // Remove do banco
     db.run("DELETE FROM arquivos WHERE id = ?", [id], function (delErr) {
-      if (delErr) return res.status(500).json({ erro: delErr.message });
+      if (delErr) return res.status(500).json({ erro: "Não foi possível processar o arquivo. Tente novamente." });
       res.json({ mensagem: "Arquivo excluído com sucesso." });
     });
   });
