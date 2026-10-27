@@ -197,6 +197,7 @@ function StatusBadge({ status }) {
 function Dashboard() {
   const navigate = useNavigate();
   const [pacientes, setPacientes] = useState([]);
+  const [totalPacientes, setTotalPacientes] = useState(0);
   const [consultas, setConsultas] = useState([]);
   const [carregando, setCarregando] = useState(true);
 
@@ -205,14 +206,35 @@ function Dashboard() {
     const headers = { Authorization: token };
 
     Promise.all([
-      fetch(`${API_URL}/pacientes`, { headers }).then((r) => r.json()),
-      fetch(`${API_URL}/consultas`, { headers }).then((r) => r.json()),
+      // A API de pacientes retorna { dados, paginacao }, não um array direto.
+      fetch(`${API_URL}/pacientes?limit=5`, { headers }).then((r) => {
+        if (!r.ok) throw new Error("Não foi possível carregar os pacientes.");
+        return r.json();
+      }),
+      fetch(`${API_URL}/consultas`, { headers }).then((r) => {
+        if (!r.ok) throw new Error("Não foi possível carregar as consultas.");
+        return r.json();
+      }),
     ])
-      .then(([p, c]) => {
-        setPacientes(Array.isArray(p) ? p : []);
-        setConsultas(Array.isArray(c) ? c : []);
+      .then(([respostaPacientes, respostaConsultas]) => {
+        const listaPacientes = Array.isArray(respostaPacientes)
+          ? respostaPacientes
+          : Array.isArray(respostaPacientes?.dados)
+            ? respostaPacientes.dados
+            : Array.isArray(respostaPacientes?.pacientes)
+              ? respostaPacientes.pacientes
+              : [];
+
+        // A lista usa os cinco pacientes mais recentes; o total vem da paginação da API.
+        setPacientes(listaPacientes);
+        setTotalPacientes(
+          Array.isArray(respostaPacientes)
+            ? respostaPacientes.length
+            : Number(respostaPacientes?.paginacao?.total ?? respostaPacientes?.total ?? listaPacientes.length)
+        );
+        setConsultas(Array.isArray(respostaConsultas) ? respostaConsultas : []);
       })
-      .catch((err) => console.error("Erro ao buscar dados:", err))
+      .catch((err) => console.error("Erro ao buscar dados do dashboard:", err))
       .finally(() => setCarregando(false));
   }, []);
 
@@ -317,7 +339,7 @@ function Dashboard() {
 
       {/* ── Stats Grid ───────────────────────────── */}
       <div style={S.statsGrid}>
-        <StatCard label="Total de pacientes" value={pacientes.length} icon={Icons.users} accent="#2563eb" sub="cadastrados no sistema" />
+        <StatCard label="Total de pacientes" value={totalPacientes} icon={Icons.users} accent="#2563eb" sub="cadastrados no sistema" />
         <StatCard label="Consultas hoje" value={consultasHoje.length} icon={Icons.calendarCheck} accent="#0ea5e9" sub={consultasHoje.length > 0 ? `Próx. às ${consultasHoje[0].horario}` : "Nenhuma agendada"} />
         <StatCard label="Esta semana" value={consultasSemana} icon={Icons.clock} accent="#8b5cf6" sub="próximos 7 dias" />
         <StatCard label="Total de consultas" value={consultas.length} icon={Icons.activity} accent="#10b981" sub="registradas no sistema" />
