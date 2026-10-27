@@ -277,10 +277,10 @@ router.get("/contas-pagar", auth, async (req, res) => {
     let sql = `
       SELECT cp.*, cf.nome as categoria_nome, cf.cor as categoria_cor
       FROM contas_pagar cp
-      LEFT JOIN categorias_financeiras cf ON cp.categoria_id = cf.id
-      WHERE 1=1
+      LEFT JOIN categorias_financeiras cf ON cp.categoria_id = cf.id AND cf.clinica_id = cp.clinica_id
+      WHERE cp.clinica_id = ?
     `;
-    const params = [];
+    const params = [req.user.clinica_id];
 
     if (status) {
       sql += " AND cp.status = ?";
@@ -314,9 +314,8 @@ router.get("/contas-pagar", auth, async (req, res) => {
         COALESCE(SUM(CASE WHEN status IN ('pendente','parcial') AND data_vencimento < date('now') THEN valor - valor_pago ELSE 0 END), 0) as total_vencido,
         COUNT(CASE WHEN status IN ('pendente','parcial') AND data_vencimento < date('now') THEN 1 END) as qtd_vencidas
       FROM contas_pagar
-    `);
-
-    res.json({ contas, resumo });
+      WHERE clinica_id = ?
+    `, [req.user.clinica_id]);
   } catch (error) {
     res.status(500).json({ erro: "Erro ao listar contas a pagar." });
   }
@@ -328,9 +327,9 @@ router.get("/contas-pagar/:id", auth, async (req, res) => {
     const conta = await dbGet(
       `SELECT cp.*, cf.nome as categoria_nome, cf.cor as categoria_cor
        FROM contas_pagar cp
-       LEFT JOIN categorias_financeiras cf ON cp.categoria_id = cf.id
-       WHERE cp.id = ?`,
-      [req.params.id]
+       LEFT JOIN categorias_financeiras cf ON cp.categoria_id = cf.id AND cf.clinica_id = cp.clinica_id
+       WHERE cp.id = ? AND cp.clinica_id = ?`,
+      [req.params.id, req.user.clinica_id]
     );
     if (!conta) return res.status(404).json({ erro: "Conta não encontrada." });
     res.json(conta);
@@ -367,8 +366,8 @@ router.post("/contas-pagar", auth, async (req, res) => {
            (descricao, categoria_id, fornecedor, valor, data_emissao,
             data_vencimento, forma_pagamento, recorrente, recorrencia_tipo,
             recorrencia_fim, parcela_atual, total_parcelas,
-            numero_documento, codigo_barras, observacoes)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            numero_documento, codigo_barras, observacoes, clinica_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           parcelas > 1 ? `${descricao} (${i + 1}/${parcelas})` : descricao,
           categoria_id || null, fornecedor || null, valorParcela,
@@ -376,7 +375,7 @@ router.post("/contas-pagar", auth, async (req, res) => {
           vencStr, forma_pagamento || null, recorrente || 0,
           recorrencia_tipo || null, recorrencia_fim || null,
           i + 1, parcelas, numero_documento || null,
-          codigo_barras || null, observacoes || null,
+          codigo_barras || null, observacoes || null, req.user.clinica_id,
         ]
       );
     }
@@ -402,11 +401,11 @@ router.put("/contas-pagar/:id", auth, async (req, res) => {
        SET descricao = ?, categoria_id = ?, fornecedor = ?, valor = ?,
            data_emissao = ?, data_vencimento = ?, forma_pagamento = ?,
            numero_documento = ?, codigo_barras = ?, observacoes = ?
-       WHERE id = ?`,
+       WHERE id = ? AND clinica_id = ?`,
       [
         descricao, categoria_id, fornecedor, valor, data_emissao,
         data_vencimento, forma_pagamento, numero_documento,
-        codigo_barras, observacoes, req.params.id,
+        codigo_barras, observacoes, req.params.id, req.user.clinica_id,
       ]
     );
 
