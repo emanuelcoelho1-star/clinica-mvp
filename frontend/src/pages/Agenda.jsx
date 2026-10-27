@@ -580,17 +580,6 @@ function Agenda() {
             </div>
           </div>
           <div style={S.manageFilters}>
-            <div style={{ flex: "0 0 190px", minWidth: "170px" }}>
-              <CustomDropdown
-                value={statusGerenciador}
-                onChange={setStatusGerenciador}
-                options={[{ value: "todos", label: "Todos os status" }, ...statusOptions]}
-                placeholder="Todos os status"
-                triggerStyle={S.manageStatusTrigger}
-                menuStyle={{ zIndex: 1300 }}
-                maxHeight="240px"
-              />
-            </div>
             <div style={S.manageSearchWrap}>
               <span style={{ display: "flex", color: "#94a3b8" }}>{Icons.search}</span>
               <input
@@ -602,6 +591,17 @@ function Agenda() {
                 style={S.manageSearchInput}
               />
               {buscaGerenciador && <button type="button" style={S.searchClear} onClick={() => setBuscaGerenciador("")}>✕</button>}
+            </div>
+            <div style={{ flex: "0 0 190px", minWidth: "170px" }}>
+              <CustomDropdown
+                value={statusGerenciador}
+                onChange={setStatusGerenciador}
+                options={[{ value: "todos", label: "Todos os status" }, ...statusOptions]}
+                placeholder="Todos os status"
+                triggerStyle={S.manageStatusTrigger}
+                menuStyle={{ zIndex: 1300 }}
+                maxHeight="240px"
+              />
             </div>
           </div>
           {consultasGerenciadas.length === 0 ? (
@@ -1010,13 +1010,13 @@ const S = {
   /* ── Consulta management ───────────────────── */
   btnManageActive: { display: "inline-flex", alignItems: "center", gap: "8px", border: "1px solid #bfdbfe", borderRadius: "10px", padding: "0 14px", background: "#eff6ff", color: "#1d4ed8", fontWeight: "600", fontSize: "13px", cursor: "pointer", height: "36px", boxSizing: "border-box" },
   manageCount: { display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: "22px", height: "22px", padding: "0 5px", borderRadius: "7px", background: "#dbeafe", color: "#1d4ed8", fontSize: "11px", fontWeight: "700" },
-  managePanel: { background: "#fff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "24px", boxShadow: "0 24px 64px rgba(15,23,42,0.18)", width: "100%", maxWidth: "1080px", maxHeight: "min(86vh, 820px)", overflowY: "auto", minWidth: 0, boxSizing: "border-box" },
+  managePanel: { background: "#fff", border: "1px solid #e2e8f0", borderRadius: "16px", padding: "24px", boxShadow: "0 24px 64px rgba(15,23,42,0.18)", width: "100%", maxWidth: "1200px", maxHeight: "min(94vh, 1000px)", overflowY: "visible", minWidth: 0, boxSizing: "border-box" },
   manageHeaderActions: { display: "flex", alignItems: "center", gap: "12px", flexShrink: 0 },
   manageHeader: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px", flexWrap: "wrap", marginBottom: "16px" },
   manageTitle: { margin: 0, color: "#0f172a", fontSize: "17px", fontWeight: "700" },
   manageSubtitle: { margin: "5px 0 0", color: "#64748b", fontSize: "13px", lineHeight: 1.5, maxWidth: "700px" },
   manageTotal: { borderRadius: "8px", background: "#f1f5f9", color: "#475569", padding: "6px 9px", fontSize: "12px", fontWeight: "600", whiteSpace: "nowrap" },
-  manageFilters: { display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", marginBottom: "14px" },
+  manageFilters: { display: "flex", alignItems: "center", gap: "10px", flexWrap: "nowrap", marginBottom: "14px" },
   manageSearchWrap: { display: "flex", alignItems: "center", gap: "8px", height: "40px", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "0 12px", flex: "1 1 260px", minWidth: "180px", boxSizing: "border-box" },
   manageSearchInput: { flex: 1, minWidth: 0, border: "none", outline: "none", fontSize: "13px", color: "#0f172a", background: "transparent", height: "100%" },
   manageStatusTrigger: { height: "40px", minWidth: "170px", fontSize: "13px", color: "#334155" },
