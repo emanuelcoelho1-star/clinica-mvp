@@ -859,9 +859,119 @@ function executarMigracaoSaaS(onComplete = () => {}) {
   });
 }
 
-db.pronto = new Promise((resolve, reject) => {
+db.prontoSaaS = new Promise((resolve, reject) => {
   executarMigracaoSaaS((err) => {
     if (err) reject(err);
     else resolve();
   });
 });
+
+/* ══════════════════════════════════════════════════════════
+   MIGRAÇÃO 002 — nomes de perfis únicos por clínica.
+   Preserva IDs e registros de role_permissoes.
+   ══════════════════════════════════════════════════════════ */
+function executarMigracaoRoles(onComplete) {
+  db.get("SELECT 1 FROM saas_migracoes WHERE versao = ?", ["002-roles-por-clinica"], (checkErr, migration) => {
+    if (checkErr) return onComplete(checkErr);
+    if (migration) return onComplete();
+
+    db.all("PRAGMA table_info(roles)", [], (infoErr, columns) => {
+      if (infoErr) return onComplete(infoErr);
+      const hasClinic = columns.some((column) => column.name === "clinica_id");
+      if (!hasClinic) {
+        return onComplete(new Error("Migração 002 exige roles.clinica_id; a migração 001 não foi concluída corretamente."));
+      }
+
+      // A tabela antiga tem UNIQUE(nome). Reconstruí-la é necessário para
+      // permitir nomes iguais em clínicas diferentes. O ID não é recalculado.
+      db.serialize(() => {
+        db.run("PRAGMA foreign_keys = OFF", (pragmaErr) => {
+          if (pragmaErr) return onComplete(pragmaErr);
+
+          db.run("BEGIN IMMEDIATE TRANSACTION", (beginErr) => {
+            if (beginErr) {
+              db.run("PRAGMA foreign_keys = ON");
+              return onComplete(beginErr);
+            }
+
+            const abortar = (err) => {
+              db.run("ROLLBACK", () => {
+                db.run("PRAGMA foreign_keys = ON", () => onComplete(err));
+              });
+            };
+
+            db.run(`
+              CREATE TABLE roles_nova (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nome TEXT NOT NULL,
+                descricao TEXT,
+                cor TEXT DEFAULT '#64748b',
+                protegido INTEGER NOT NULL DEFAULT 0,
+                ativo INTEGER NOT NULL DEFAULT 1,
+                created_at TEXT DEFAULT (datetime('now','localtime')),
+                clinica_id INTEGER
+              )
+            `, (createErr) => {
+              if (createErr) return abortar(createErr);
+
+              db.run(`
+                INSERT INTO roles_nova
+                  (id, nome, descricao, cor, protegido, ativo, created_at, clinica_id)
+                SELECT id, nome, descricao, cor, protegido, ativo, created_at, clinica_id
+                FROM roles
+              `, (copyErr) => {
+                if (copyErr) return abortar(copyErr);
+
+                db.run("DROP TABLE roles", (dropErr) => {
+                  if (dropErr) return abortar(dropErr);
+
+                  db.run("ALTER TABLE roles_nova RENAME TO roles", (renameErr) => {
+                    if (renameErr) return abortar(renameErr);
+
+                    db.run(
+                      "CREATE UNIQUE INDEX IF NOT EXISTS idx_roles_clinica_nome ON roles(clinica_id, nome)",
+                      (indexErr) => {
+                        if (indexErr) return abortar(indexErr);
+
+                        db.run(
+                          "INSERT INTO saas_migracoes (versao) VALUES (?)",
+                          ["002-roles-por-clinica"],
+                          (recordErr) => {
+                            if (recordErr) return abortar(recordErr);
+
+                            db.run("COMMIT", (commitErr) => {
+                              if (commitErr) return abortar(commitErr);
+                              db.run("PRAGMA foreign_keys = ON", (restoreErr) => {
+                                if (restoreErr) return onComplete(restoreErr);
+                                db.get("PRAGMA foreign_key_check", [], (fkErr, violation) => {
+                                  if (fkErr) return onComplete(fkErr);
+                                  if (violation) {
+                                    return onComplete(new Error("A verificação de chaves estrangeiras encontrou inconsistências após a migração de roles."));
+                                  }
+                                  console.log("Migração SaaS 002 concluída: nomes de perfis isolados por clínica.");
+                                  onComplete();
+                                });
+                              });
+                            });
+                          }
+                        );
+                      }
+                    );
+                  });
+                });
+              });
+            });
+          });
+        });
+      });
+    });
+  });
+}
+
+const executarMigracoesPendentes = () =>
+  db.prontoSaaS.then(() => new Promise((resolve, reject) => {
+    executarMigracaoRoles((err) => err ? reject(err) : resolve());
+  }));
+
+
+db.pronto = executarMigracoesPendentes();
