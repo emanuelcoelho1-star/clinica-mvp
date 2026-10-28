@@ -400,6 +400,10 @@ router.put("/:id", auth, (req, res) => {
         return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
       }
 
+      if (!this.changes) {
+        return res.status(404).json({ erro: "Paciente não encontrado nesta clínica." });
+      }
+
       res.json({ message: "Paciente atualizado com sucesso" });
     }
   );
@@ -415,6 +419,10 @@ router.delete("/:id", auth, (req, res) => {
   db.run("DELETE FROM pacientes WHERE id = ? AND clinica_id = ?", [id, req.user.clinica_id], function (err) {
     if (err) {
       return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
+    }
+
+    if (!this.changes) {
+      return res.status(404).json({ erro: "Paciente não encontrado nesta clínica." });
     }
 
     res.json({ message: "Paciente deletado com sucesso" });
