@@ -629,7 +629,7 @@ module.exports = db;
    os registros antigos a uma clínica legada, sem abrir cadastro
    público antes de todas as rotas estarem isoladas por clínica.
    ══════════════════════════════════════════════════════════ */
-function executarMigracaoSaaS() {
+function executarMigracaoSaaS(onComplete = () => {}) {
   db.serialize(() => {
     db.run(`
       CREATE TABLE IF NOT EXISTS clinicas (
@@ -752,7 +752,7 @@ function executarMigracaoSaaS() {
                   ["001-saas-foundation"],
                   (migrationErr) => {
                     if (migrationErr) console.error("Migração SaaS: erro ao registrar versão:", migrationErr.message);
-                    else console.log("Migração SaaS 001 concluída; dados legados associados à clínica", clinicId);
+                    else {\n                      console.log("Migração SaaS 001 concluída; dados legados associados à clínica", clinicId);\n                      onComplete();\n                    }
                   }
                 );
                 return;
@@ -783,7 +783,7 @@ function executarMigracaoSaaS() {
               db.run(
                 "INSERT OR IGNORE INTO saas_migracoes (versao) VALUES (?)",
                 ["001-saas-foundation"],
-                () => console.log("Migração SaaS 001 concluída; aguardando primeira clínica.")
+                (migrationErr) => {\n                  if (migrationErr) return console.error("Migração SaaS: erro ao registrar versão:", migrationErr.message);\n                  console.log("Migração SaaS 001 concluída; aguardando primeira clínica.");\n                  onComplete();\n                }
               );
               return;
             }
@@ -825,8 +825,8 @@ function executarMigracaoSaaS() {
     };
 
     // Aguarda a criação das tabelas acima antes de inspecionar colunas.
-    db.run("SELECT 1", [], () => garantirColuna(0));
+    db.run("SELECT 1", [], (err) => {\n      if (err) {\n        console.error("Migração SaaS: banco indisponível:", err.message);\n        return;\n      }\n      garantirColuna(0);\n    });
   });
 }
 
-executarMigracaoSaaS();
+db.pronto = new Promise((resolve, reject) => {\n  executarMigracaoSaaS((err) => {\n    if (err) reject(err);\n    else resolve();\n  });\n});
