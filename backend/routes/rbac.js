@@ -178,7 +178,7 @@ router.put("/roles/:id/permissoes", (req, res) => {
         db.serialize(() => {
           db.run("BEGIN IMMEDIATE TRANSACTION", (beginErr) => {
             if (beginErr) return res.status(500).json({ erro: "Não foi possível iniciar a atualização das permissões." });
-            db.run("DELETE FROM role_permissoes WHERE role_id = ?", [id], (deleteErr) => {
+            db.run("DELETE FROM role_permissoes WHERE role_id = ? AND clinica_id = ?", [id, clinicaId(req)], (deleteErr) => {
               if (deleteErr) return db.run("ROLLBACK", () => res.status(500).json({ erro: "Erro ao limpar permissões." }));
               const finish = () => db.run("COMMIT", (commitErr) => {
                 if (commitErr) return db.run("ROLLBACK", () => res.status(500).json({ erro: "Erro ao salvar permissões." }));
