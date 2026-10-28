@@ -630,6 +630,13 @@ module.exports = db;
    público antes de todas as rotas estarem isoladas por clínica.
    ══════════════════════════════════════════════════════════ */
 function executarMigracaoSaaS(onComplete = () => {}) {
+  let concluida = false;
+  const finalizar = (err = null) => {
+    if (concluida) return;
+    concluida = true;
+    onComplete(err);
+  };
+
   db.serialize(() => {
     db.run(`
       CREATE TABLE IF NOT EXISTS clinicas (
@@ -689,22 +696,7 @@ function executarMigracaoSaaS(onComplete = () => {}) {
       )
     `);
 
-    // Cria uma clínica de transição apenas quando já existem dados.
-    // Não atribui os dados existentes a uma nova conta pública.
-    db.get("SELECT COUNT(*) AS total FROM usuarios", [], (userErr, userCount) => {
-      if (userErr || !userCount || userCount.total === 0) return;
-
-      db.get("SELECT id FROM clinicas ORDER BY id LIMIT 1", [], (clinicErr, clinic) => {
-        if (clinicErr || clinic) return;
-        db.run(
-          "INSERT INTO clinicas (nome, slug, plano, status) VALUES (?, ?, 'legacy', 'ativa')",
-          ["Clínica existente", "clinica-legada"],
-          (insertErr) => {
-            if (insertErr) console.error("Migração SaaS: não foi possível criar clínica legada:", insertErr.message);
-          }
-        );
-      });
-    });
+    // A criação/seleção da clínica legada ocorre sequencialmente após as colunas.
 
     const colunasSaaS = [
       ["usuarios", "clinica_id", "INTEGER"],
@@ -740,6 +732,7 @@ function executarMigracaoSaaS(onComplete = () => {}) {
         db.get("SELECT id FROM clinicas ORDER BY id LIMIT 1", [], (findErr, existingClinic) => {
           if (findErr) {
             console.error("Migração SaaS: não foi possível consultar clínicas:", findErr.message);
+            finalizar(findErr);
             return;
           }
 
@@ -751,10 +744,12 @@ function executarMigracaoSaaS(onComplete = () => {}) {
                   "INSERT OR IGNORE INTO saas_migracoes (versao) VALUES (?)",
                   ["001-saas-foundation"],
                   (migrationErr) => {
-                    if (migrationErr) console.error("Migração SaaS: erro ao registrar versão:", migrationErr.message);
-                    else {
+                    if (migrationErr) {
+                      console.error("Migração SaaS: erro ao registrar versão:", migrationErr.message);
+                      finalizar(migrationErr);
+                    } else {
                       console.log("Migração SaaS 001 concluída; dados legados associados à clínica", clinicId);
-                      onComplete();
+                      finalizar();
                     }
                   }
                 );
@@ -763,12 +758,21 @@ function executarMigracaoSaaS(onComplete = () => {}) {
 
               const tabela = tabelasComTenant[pos];
               db.all("PRAGMA table_info(" + tabela + ")", [], (columnsErr, columns) => {
-                if (columnsErr || !columns.some((col) => col.name === "clinica_id")) {
+                if (columnsErr) {
+                  console.error("Migração SaaS: erro ao consultar " + tabela + ":", columnsErr.message);
+                  finalizar(columnsErr);
+                  return;
+                }
+                if (!columns.some((col) => col.name === "clinica_id")) {
                   atualizarTabela(pos + 1);
                   return;
                 }
                 db.run("UPDATE " + tabela + " SET clinica_id = ? WHERE clinica_id IS NULL", [clinicId], (updateErr) => {
-                  if (updateErr) console.error("Migração SaaS: erro ao associar dados de " + tabela + ":", updateErr.message);
+                  if (updateErr) {
+                    console.error("Migração SaaS: erro ao associar dados de " + tabela + ":", updateErr.message);
+                    finalizar(updateErr);
+                    return;
+                  }
                   atualizarTabela(pos + 1);
                 });
               });
@@ -782,14 +786,23 @@ function executarMigracaoSaaS(onComplete = () => {}) {
           }
 
           db.get("SELECT COUNT(*) AS total FROM usuarios", [], (countErr, count) => {
-            if (countErr || !count || count.total === 0) {
+            if (countErr) {
+              console.error("Migração SaaS: erro ao consultar usuários:", countErr.message);
+              finalizar(countErr);
+              return;
+            }
+            if (!count || count.total === 0) {
               db.run(
                 "INSERT OR IGNORE INTO saas_migracoes (versao) VALUES (?)",
                 ["001-saas-foundation"],
                 (migrationErr) => {
-                  if (migrationErr) return console.error("Migração SaaS: erro ao registrar versão:", migrationErr.message);
+                  if (migrationErr) {
+                    console.error("Migração SaaS: erro ao registrar versão:", migrationErr.message);
+                    finalizar(migrationErr);
+                    return;
+                  }
                   console.log("Migração SaaS 001 concluída; aguardando primeira clínica.");
-                  onComplete();
+                  finalizar();
                 }
               );
               return;
@@ -801,6 +814,7 @@ function executarMigracaoSaaS(onComplete = () => {}) {
               function (insertErr) {
                 if (insertErr) {
                   console.error("Migração SaaS: não foi possível criar clínica legada:", insertErr.message);
+                  finalizar(insertErr);
                   return;
                 }
                 prepararDadosLegados(this.lastID);
@@ -815,6 +829,7 @@ function executarMigracaoSaaS(onComplete = () => {}) {
       db.all(`PRAGMA table_info(${tabela})`, [], (err, columns) => {
         if (err) {
           console.error(`Migração SaaS: erro ao verificar ${tabela}:`, err.message);
+          finalizar(err);
           return;
         }
         if (columns.some((item) => item.name === coluna)) {
@@ -824,6 +839,7 @@ function executarMigracaoSaaS(onComplete = () => {}) {
         db.run(`ALTER TABLE ${tabela} ADD COLUMN ${coluna} ${definicao}`, (alterErr) => {
           if (alterErr) {
             console.error(`Migração SaaS: erro ao adicionar ${tabela}.${coluna}:`, alterErr.message);
+            finalizar(alterErr);
             return;
           }
           garantirColuna(indice + 1);
@@ -835,6 +851,7 @@ function executarMigracaoSaaS(onComplete = () => {}) {
     db.run("SELECT 1", [], (err) => {
       if (err) {
         console.error("Migração SaaS: banco indisponível:", err.message);
+        finalizar(err);
         return;
       }
       garantirColuna(0);
