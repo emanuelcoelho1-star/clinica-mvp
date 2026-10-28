@@ -933,28 +933,37 @@ function executarMigracaoRoles(onComplete) {
                       (indexErr) => {
                         if (indexErr) return abortar(indexErr);
 
-                        db.run(
-                          "INSERT INTO saas_migracoes (versao) VALUES (?)",
-                          ["002-roles-por-clinica"],
-                          (recordErr) => {
-                            if (recordErr) return abortar(recordErr);
+                        // Valida todas as relações antes de registrar/confirmar a migração.
+                        // Se houver qualquer inconsistência, a transação será revertida.
+                        db.all("PRAGMA foreign_key_check", [], (fkErr, violations) => {
+                          if (fkErr) return abortar(fkErr);
+                          if (violations && violations.length > 0) {
+                            const detalhes = violations
+                              .slice(0, 5)
+                              .map((item) => `${item.table} (rowid=${item.rowid}, parent=${item.parent})`)
+                              .join("; ");
+                            return abortar(new Error(
+                              "A verificação de chaves estrangeiras encontrou inconsistências antes de confirmar a migração de roles: " + detalhes
+                            ));
+                          }
 
-                            db.run("COMMIT", (commitErr) => {
-                              if (commitErr) return abortar(commitErr);
-                              db.run("PRAGMA foreign_keys = ON", (restoreErr) => {
-                                if (restoreErr) return onComplete(restoreErr);
-                                db.get("PRAGMA foreign_key_check", [], (fkErr, violation) => {
-                                  if (fkErr) return onComplete(fkErr);
-                                  if (violation) {
-                                    return onComplete(new Error("A verificação de chaves estrangeiras encontrou inconsistências após a migração de roles."));
-                                  }
+                          db.run(
+                            "INSERT INTO saas_migracoes (versao) VALUES (?)",
+                            ["002-roles-por-clinica"],
+                            (recordErr) => {
+                              if (recordErr) return abortar(recordErr);
+
+                              db.run("COMMIT", (commitErr) => {
+                                if (commitErr) return abortar(commitErr);
+                                db.run("PRAGMA foreign_keys = ON", (restoreErr) => {
+                                  if (restoreErr) return onComplete(restoreErr);
                                   console.log("Migração SaaS 002 concluída: nomes de perfis isolados por clínica.");
                                   onComplete();
                                 });
                               });
-                            });
-                          }
-                        );
+                            }
+                          );
+                        });
                       }
                     );
                   });
