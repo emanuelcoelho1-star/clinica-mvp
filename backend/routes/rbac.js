@@ -249,6 +249,57 @@ router.get("/usuarios", (req, res) => {
   );
 });
 
+router.post("/usuarios", async (req, res) => {
+  const nome = String(req.body?.nome || "").trim().slice(0, 120);
+  const email = String(req.body?.email || "").trim().toLowerCase();
+  const senha = req.body?.senha;
+  const roleId = Number(req.body?.role_id);
+
+  if (!nome) return res.status(400).json({ erro: "Nome é obrigatório." });
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ erro: "Informe um e-mail válido." });
+  }
+  if (typeof senha !== "string" || senha.length < 8) {
+    return res.status(400).json({ erro: "A senha deve ter no mínimo 8 caracteres." });
+  }
+  if (!Number.isInteger(roleId) || roleId <= 0) {
+    return res.status(400).json({ erro: "Selecione um perfil de acesso válido." });
+  }
+
+  try {
+    db.get(
+      "SELECT id FROM roles WHERE id = ? AND clinica_id = ? AND protegido = 0 AND ativo = 1",
+      [roleId, clinicaId(req)],
+      async (roleErr, role) => {
+        if (roleErr) return res.status(500).json({ erro: "Erro ao validar perfil de acesso." });
+        if (!role) return res.status(400).json({ erro: "Selecione um perfil ativo criado nesta clínica." });
+
+        try {
+          const bcrypt = require("bcrypt");
+          const hash = await bcrypt.hash(senha, 12);
+          db.run(
+            "INSERT INTO usuarios (nome, email, senha, role_id, clinica_id) VALUES (?, ?, ?, ?, ?)",
+            [nome, email, hash, roleId, clinicaId(req)],
+            function (insertErr) {
+              if (insertErr) {
+                if (insertErr.message.includes("UNIQUE")) {
+                  return res.status(409).json({ erro: "Este e-mail já está cadastrado." });
+                }
+                return res.status(500).json({ erro: "Não foi possível criar o usuário." });
+              }
+              return res.status(201).json({ id: this.lastID, mensagem: "Usuário criado com sucesso." });
+            }
+          );
+        } catch (hashErr) {
+          return res.status(500).json({ erro: "Não foi possível proteger a senha do usuário." });
+        }
+      }
+    );
+  } catch (error) {
+    return res.status(500).json({ erro: "Não foi possível criar o usuário." });
+  }
+});
+
 router.put("/usuarios/:id/role", (req, res) => {
   const { id } = req.params;
   const roleId = Number(req.body?.role_id);
