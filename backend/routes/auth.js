@@ -206,6 +206,46 @@ router.post("/login", loginLimiter, (req, res) => {
   }
 });
 
+/* ── Permissões do usuário autenticado ────────── */
+router.get("/permissoes", authGeneralLimiter, auth, (req, res) => {
+  db.get(
+    `SELECT r.protegido
+     FROM usuarios u
+     INNER JOIN roles r ON r.id = u.role_id
+     WHERE u.id = ? AND u.clinica_id = ? AND r.ativo = 1`,
+    [req.user.id, req.user.clinica_id],
+    (roleErr, role) => {
+      if (roleErr) return res.status(500).json({ erro: "Não foi possível consultar o perfil." });
+      if (!role) return res.status(403).json({ erro: "Perfil inexistente ou desativado." });
+
+      if (Number(role.protegido) === 1) {
+        return db.all(
+          "SELECT DISTINCT modulo, acao FROM permissoes ORDER BY modulo, acao",
+          [],
+          (permErr, permissoes) => {
+            if (permErr) return res.status(500).json({ erro: "Não foi possível consultar permissões." });
+            res.json({ administrador: true, permissoes });
+          }
+        );
+      }
+
+      db.all(
+        `SELECT DISTINCT p.modulo, p.acao
+         FROM usuarios u
+         INNER JOIN role_permissoes rp ON rp.role_id = u.role_id AND rp.clinica_id = u.clinica_id
+         INNER JOIN permissoes p ON p.id = rp.permissao_id
+         WHERE u.id = ? AND u.clinica_id = ?
+         ORDER BY p.modulo, p.acao`,
+        [req.user.id, req.user.clinica_id],
+        (permErr, permissoes) => {
+          if (permErr) return res.status(500).json({ erro: "Não foi possível consultar permissões." });
+          res.json({ administrador: false, permissoes });
+        }
+      );
+    }
+  );
+});
+
 /* ── Verificar token (me) ─────────────────────── */
 router.get("/me", authGeneralLimiter, auth, (req, res) => {
   db.get(
