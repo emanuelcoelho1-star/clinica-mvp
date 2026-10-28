@@ -142,9 +142,14 @@ router.get("/roles/:id/permissoes", (req, res) => {
 
       db.all(
         `SELECT p.* FROM permissoes p
-         INNER JOIN role_permissoes rp ON rp.permissao_id = p.id
-         WHERE rp.role_id = ? ORDER BY p.modulo, p.acao`,
-        [id],
+         INNER JOIN role_permissoes rp
+           ON rp.permissao_id = p.id
+          AND rp.clinica_id = p.clinica_id
+         WHERE rp.role_id = ?
+           AND rp.clinica_id = ?
+           AND p.clinica_id = ?
+         ORDER BY p.modulo, p.acao`,
+        [id, clinicaId(req), clinicaId(req)],
         (permissionErr, rows) => {
           if (permissionErr) return res.status(500).json({ erro: "Erro ao buscar permissões." });
           res.json(rows);
@@ -184,11 +189,11 @@ router.put("/roles/:id/permissoes", (req, res) => {
               });
               if (!permissionIds.length) return finish();
 
-              const stmt = db.prepare("INSERT INTO role_permissoes (role_id, permissao_id) VALUES (?, ?)");
+              const stmt = db.prepare("INSERT INTO role_permissoes (role_id, permissao_id, clinica_id) VALUES (?, ?, ?)");
               let remaining = permissionIds.length;
               let insertError = null;
               permissionIds.forEach((permissionId) => {
-                stmt.run([id, permissionId], (insertErr) => {
+                stmt.run([id, permissionId, clinicaId(req)], (insertErr) => {
                   if (insertErr && !insertError) insertError = insertErr;
                   remaining -= 1;
                   if (remaining === 0) {
@@ -209,8 +214,8 @@ router.put("/roles/:id/permissoes", (req, res) => {
       if (!permissionIds.length) return save();
       const placeholders = permissionIds.map(() => "?").join(",");
       db.get(
-        `SELECT COUNT(*) AS total FROM permissoes WHERE id IN (${placeholders})`,
-        permissionIds,
+        `SELECT COUNT(*) AS total FROM permissoes WHERE id IN (${placeholders}) AND clinica_id = ?`,
+        [...permissionIds, clinicaId(req)],
         (countErr, row) => {
           if (countErr) return res.status(500).json({ erro: "Erro ao validar permissões." });
           if (!row || Number(row.total) !== permissionIds.length) {
