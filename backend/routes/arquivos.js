@@ -88,8 +88,10 @@ router.post("/", auth, upload.single("arquivo"), (req, res) => {
   const { paciente_id, categoria, descricao } = req.body;
 
   if (!paciente_id) {
-    fs.unlinkSync(req.file.path);
-    return res.status(400).json({ erro: "paciente_id é obrigatório." });
+    // Remove o upload inválido sem bloquear o event loop nem deixar uma falha de limpeza derrubar a rota.
+    return fs.unlink(req.file.path, () => {
+      res.status(400).json({ erro: "paciente_id é obrigatório." });
+    });
   }
 
   const nomeOriginal = path.basename(req.file.originalname || "arquivo").replace(/[\\r\\n\\0]/g, "").slice(0, 180);
