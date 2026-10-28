@@ -37,7 +37,7 @@ const authRoutes = require("./routes/auth");
 const financeiroRoutes = require("./routes/financeiro");
 const rbacRoutes = require("./routes/rbac");
 
-require("./database");
+const db = require("./database");
 
 const app = express();
 const PORT = 3001;
