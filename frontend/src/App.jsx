@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Link, useLocation, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import Pacientes from "./pages/Pacientes";
 import Dashboard from "./pages/Dashboard";
@@ -9,6 +9,7 @@ import ProntuarioPaciente from "./pages/ProntuarioPaciente";
 import Configuracoes from "./pages/Configuracoes";
 import Financeiro from "./pages/Financeiro";
 import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
+import API_URL from "./api";
 
 /* ═══════════════════════════════════════════════════════════
    HELPER: Validar token JWT sem dependência externa
@@ -57,6 +58,7 @@ const NAV_ITEMS = [
   {
     path: "/agenda",
     label: "Agenda",
+    modulo: "agenda",
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
@@ -67,6 +69,7 @@ const NAV_ITEMS = [
   {
     path: "/pacientes",
     label: "Pacientes",
+    modulo: "pacientes",
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
@@ -79,6 +82,7 @@ const NAV_ITEMS = [
   {
     path: "/financeiro",
     label: "Financeiro",
+    modulo: "financeiro",
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <line x1="12" x2="12" y1="2" y2="22" />
@@ -141,7 +145,7 @@ function getInitials(nome) {
 /* ═══════════════════════════════════════════════════════════
    AVATAR DROPDOWN (com toggle de tema)
    ═══════════════════════════════════════════════════════════ */
-function AvatarDropdown() {
+function AvatarDropdown({ administrador }) {
   const [aberto, setAberto] = useState(false);
   const [hoverConfig, setHoverConfig] = useState(false);
   const [hoverLogout, setHoverLogout] = useState(false);
@@ -231,18 +235,20 @@ function AvatarDropdown() {
             <span>{isDark ? "Modo claro" : "Modo escuro"}</span>
           </button>
 
-          <button
-            style={{
-              ...S.dropdownItem,
-              ...(hoverConfig ? S.dropdownItemHover : {}),
-            }}
-            onClick={() => { setAberto(false); navigate("/configuracoes"); }}
-            onMouseEnter={() => setHoverConfig(true)}
-            onMouseLeave={() => setHoverConfig(false)}
-          >
-            <span style={S.dropdownItemIcon}>{SettingsIcon}</span>
-            <span>Configurações</span>
-          </button>
+          {administrador && (
+            <button
+              style={{
+                ...S.dropdownItem,
+                ...(hoverConfig ? S.dropdownItemHover : {}),
+              }}
+              onClick={() => { setAberto(false); navigate("/configuracoes"); }}
+              onMouseEnter={() => setHoverConfig(true)}
+              onMouseLeave={() => setHoverConfig(false)}
+            >
+              <span style={S.dropdownItemIcon}>{SettingsIcon}</span>
+              <span>Configurações</span>
+            </button>
+          )}
 
           <div style={S.dropdownDivider} />
 
@@ -268,7 +274,7 @@ function AvatarDropdown() {
 /* ═══════════════════════════════════════════════════════════
    TOP BAR — COM RESPONSIVIDADE CORRIGIDA
    ═══════════════════════════════════════════════════════════ */
-function TopBar() {
+function TopBar({ acesso }) {
   const location = useLocation();
   const [hoveredPath, setHoveredPath] = useState(null);
 
@@ -336,7 +342,7 @@ function TopBar() {
         <div className="topbar-divider" style={S.divider} />
 
         {/* 3. Nav links — INLINE, sem wrapper flex:1 */}
-        {NAV_ITEMS.map((item) => {
+        {NAV_ITEMS.filter((item) => acesso?.administrador || acesso?.permissoes?.some((p) => p.modulo === item.modulo && p.acao === "listar")).map((item) => {
           const ativo = isActive(item.path);
           const hovered = hoveredPath === item.path && !ativo;
           return (
@@ -365,7 +371,7 @@ function TopBar() {
         <div style={{ flex: 1 }} />
 
         {/* 5. Avatar — sempre no canto direito */}
-        <AvatarDropdown />
+        <AvatarDropdown administrador={Boolean(acesso?.administrador)} />
 
       </div>
     </header>
@@ -375,7 +381,43 @@ function TopBar() {
 /* ═══════════════════════════════════════════════════════════
    LAYOUT
    ═══════════════════════════════════════════════════════════ */
+function RotaComPermissao({ acesso, modulo, children }) {
+  if (!acesso) return null;
+  const permitido = acesso.administrador || acesso.permissoes?.some(
+    (permissao) => permissao.modulo === modulo && permissao.acao === "listar"
+  );
+  return permitido ? children : <Navigate to="/" replace />;
+}
+
 function Layout() {
+  const [acesso, setAcesso] = useState(null);
+  const [carregandoAcesso, setCarregandoAcesso] = useState(true);
+
+  useEffect(() => {
+    let ativo = true;
+    async function carregarPermissoes() {
+      try {
+        const tokenAtual = localStorage.getItem("token");
+        const resposta = await fetch(`${API_URL}/auth/permissoes`, {
+          headers: { Authorization: `Bearer ${tokenAtual}` },
+        });
+        if (!resposta.ok) throw new Error("Não foi possível carregar permissões.");
+        const dados = await resposta.json();
+        if (ativo) setAcesso(dados);
+      } catch (erro) {
+        if (ativo) setAcesso({ administrador: false, permissoes: [] });
+      } finally {
+        if (ativo) setCarregandoAcesso(false);
+      }
+    }
+    carregarPermissoes();
+    return () => { ativo = false; };
+  }, []);
+
+  if (carregandoAcesso) {
+    return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", background: "var(--bg-page)", fontFamily: "'Inter', 'DM Sans', 'Segoe UI', sans-serif" }}>Carregando seus acessos...</div>;
+  }
+
   return (
     <div style={S.app}>
       <style>{`
@@ -390,18 +432,18 @@ function Layout() {
           }
         }
       `}</style>
-      <TopBar />
+      <TopBar acesso={acesso} />
       <main className="app-main" style={S.main}>
         <div style={S.contentWrapper}>
           <Routes>
             <Route path="/" element={<Dashboard />} />
-            <Route path="/agenda" element={<Agenda />} />
-            <Route path="/pacientes" element={<Pacientes />} />
-            <Route path="/pacientes/novo" element={<CadastroPaciente />} />
-            <Route path="/pacientes/editar/:id" element={<CadastroPaciente />} />
-            <Route path="/pacientes/:id" element={<ProntuarioPaciente />} />
-            <Route path="/financeiro" element={<Financeiro />} />
-            <Route path="/configuracoes" element={<Configuracoes />} />
+            <Route path="/agenda" element={<RotaComPermissao acesso={acesso} modulo="agenda"><Agenda /></RotaComPermissao>} />
+            <Route path="/pacientes" element={<RotaComPermissao acesso={acesso} modulo="pacientes"><Pacientes /></RotaComPermissao>} />
+            <Route path="/pacientes/novo" element={<RotaComPermissao acesso={acesso} modulo="pacientes"><CadastroPaciente /></RotaComPermissao>} />
+            <Route path="/pacientes/editar/:id" element={<RotaComPermissao acesso={acesso} modulo="pacientes"><CadastroPaciente /></RotaComPermissao>} />
+            <Route path="/pacientes/:id" element={<RotaComPermissao acesso={acesso} modulo="pacientes"><ProntuarioPaciente /></RotaComPermissao>} />
+            <Route path="/financeiro" element={<RotaComPermissao acesso={acesso} modulo="financeiro"><Financeiro /></RotaComPermissao>} />
+            <Route path="/configuracoes" element={acesso?.administrador ? <Configuracoes /> : <Navigate to="/" replace />} />
           </Routes>
         </div>
       </main>
