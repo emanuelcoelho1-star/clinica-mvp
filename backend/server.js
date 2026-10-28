@@ -37,7 +37,7 @@ const authRoutes = require("./routes/auth");
 const financeiroRoutes = require("./routes/financeiro");
 const rbacRoutes = require("./routes/rbac");
 
-const db = require("./database");
+const db = const db = require("./database");
 
 const app = express();
 const PORT = 3001;
@@ -133,6 +133,11 @@ app.use((err, req, res, next) => {
   return res.status(500).json({ erro: "Erro interno do servidor." });
 });
 
-app.listen(PORT, () => {
-  console.log(`Servidor rodando em http://localhost:${PORT}`);
+db.pronto.then(() => {
+  app.listen(PORT, () => {
+    console.log(`Servidor rodando em http://localhost:${PORT}`);
+  });
+}).catch((err) => {
+  console.error("Servidor não iniciado: falha ao preparar o banco de dados:", err.message);
+  process.exitCode = 1;
 });
