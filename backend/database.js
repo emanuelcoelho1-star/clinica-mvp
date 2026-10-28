@@ -752,7 +752,10 @@ function executarMigracaoSaaS(onComplete = () => {}) {
                   ["001-saas-foundation"],
                   (migrationErr) => {
                     if (migrationErr) console.error("Migração SaaS: erro ao registrar versão:", migrationErr.message);
-                    else {\n                      console.log("Migração SaaS 001 concluída; dados legados associados à clínica", clinicId);\n                      onComplete();\n                    }
+                    else {
+                      console.log("Migração SaaS 001 concluída; dados legados associados à clínica", clinicId);
+                      onComplete();
+                    }
                   }
                 );
                 return;
@@ -783,7 +786,11 @@ function executarMigracaoSaaS(onComplete = () => {}) {
               db.run(
                 "INSERT OR IGNORE INTO saas_migracoes (versao) VALUES (?)",
                 ["001-saas-foundation"],
-                (migrationErr) => {\n                  if (migrationErr) return console.error("Migração SaaS: erro ao registrar versão:", migrationErr.message);\n                  console.log("Migração SaaS 001 concluída; aguardando primeira clínica.");\n                  onComplete();\n                }
+                (migrationErr) => {
+                  if (migrationErr) return console.error("Migração SaaS: erro ao registrar versão:", migrationErr.message);
+                  console.log("Migração SaaS 001 concluída; aguardando primeira clínica.");
+                  onComplete();
+                }
               );
               return;
             }
@@ -825,8 +832,19 @@ function executarMigracaoSaaS(onComplete = () => {}) {
     };
 
     // Aguarda a criação das tabelas acima antes de inspecionar colunas.
-    db.run("SELECT 1", [], (err) => {\n      if (err) {\n        console.error("Migração SaaS: banco indisponível:", err.message);\n        return;\n      }\n      garantirColuna(0);\n    });
+    db.run("SELECT 1", [], (err) => {
+      if (err) {
+        console.error("Migração SaaS: banco indisponível:", err.message);
+        return;
+      }
+      garantirColuna(0);
+    });
   });
 }
 
-db.pronto = new Promise((resolve, reject) => {\n  executarMigracaoSaaS((err) => {\n    if (err) reject(err);\n    else resolve();\n  });\n});
+db.pronto = new Promise((resolve, reject) => {
+  executarMigracaoSaaS((err) => {
+    if (err) reject(err);
+    else resolve();
+  });
+});
