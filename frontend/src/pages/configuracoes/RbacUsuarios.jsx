@@ -8,6 +8,9 @@ function RbacUsuarios({ usuarios, roles, token, onReload, onMsg, onErro }) {
   const [usuarioSelecionado, setUsuarioSelecionado] = useState(null);
   const [roleId, setRoleId] = useState("");
   const [salvando, setSalvando] = useState(false);
+  const [modalCriarAberto, setModalCriarAberto] = useState(false);
+  const [salvandoNovo, setSalvandoNovo] = useState(false);
+  const [novoUsuario, setNovoUsuario] = useState({ nome: "", email: "", senha: "", role_id: "" });
 
   const headers = {
     "Content-Type": "application/json",
@@ -78,9 +81,22 @@ function RbacUsuarios({ usuarios, roles, token, onReload, onMsg, onErro }) {
             <span style={S.cardIcon}>{Icons.users}</span>
             <h2 style={S.cardTitle}>Usuários do Sistema</h2>
           </div>
-          <span style={{ fontSize: "13px", color: "#94a3b8", fontWeight: "500" }}>
-            {usuarios.length} usuário(s)
-          </span>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+            <span style={{ fontSize: "13px", color: "#94a3b8", fontWeight: "500" }}>
+              {usuarios.length} usuário(s)
+            </span>
+            <button
+              type="button"
+              style={S.btnPrimary}
+              onClick={() => {
+                setNovoUsuario({ nome: "", email: "", senha: "", role_id: roles.find((r) => !r.protegido && r.ativo !== 0)?.id || "" });
+                setModalCriarAberto(true);
+              }}
+            >
+              {Icons.plus}
+              <span>Novo usuário</span>
+            </button>
+          </div>
         </div>
 
         <div style={S.tableWrap}>
@@ -181,6 +197,126 @@ function RbacUsuarios({ usuarios, roles, token, onReload, onMsg, onErro }) {
           </table>
         </div>
       </div>
+
+      {/* ── Modal: Criar usuário ─────────────────── */}
+      {modalCriarAberto && (
+        <div style={S.overlay} onClick={() => !salvandoNovo && setModalCriarAberto(false)}>
+          <div style={S.modal} onClick={(e) => e.stopPropagation()}>
+            <div style={S.modalHeader}>
+              <h3 style={S.modalTitle}>Cadastrar novo usuário</h3>
+              <button style={S.modalCloseBtn} onClick={() => !salvandoNovo && setModalCriarAberto(false)} disabled={salvandoNovo}>
+                {Icons.x}
+              </button>
+            </div>
+            <div style={S.modalBody}>
+              <p style={{ margin: "0 0 14px", color: "#64748b", fontSize: "13px", lineHeight: 1.5 }}>
+                Cadastre o usuário e escolha um perfil. As permissões desse perfil definirão quais áreas e funções ele poderá acessar.
+              </p>
+              <div style={S.inputGroup}>
+                <label style={S.label}>Nome completo *</label>
+                <input
+                  type="text"
+                  autoComplete="name"
+                  value={novoUsuario.nome}
+                  onChange={(e) => setNovoUsuario({ ...novoUsuario, nome: e.target.value })}
+                  style={S.input}
+                  placeholder="Nome do profissional"
+                  maxLength={120}
+                />
+              </div>
+              <div style={S.inputGroup}>
+                <label style={S.label}>E-mail de acesso *</label>
+                <input
+                  type="email"
+                  autoComplete="email"
+                  value={novoUsuario.email}
+                  onChange={(e) => setNovoUsuario({ ...novoUsuario, email: e.target.value })}
+                  style={S.input}
+                  placeholder="nome@clinica.com"
+                />
+              </div>
+              <div style={S.inputGroup}>
+                <label style={S.label}>Senha inicial * (mínimo 8 caracteres)</label>
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  value={novoUsuario.senha}
+                  onChange={(e) => setNovoUsuario({ ...novoUsuario, senha: e.target.value })}
+                  style={S.input}
+                  minLength={8}
+                  placeholder="Crie uma senha inicial"
+                />
+              </div>
+              <div style={S.inputGroup}>
+                <label style={S.label}>Perfil de acesso *</label>
+                <select
+                  value={novoUsuario.role_id}
+                  onChange={(e) => setNovoUsuario({ ...novoUsuario, role_id: e.target.value })}
+                  style={S.select}
+                >
+                  <option value="">Selecione um perfil</option>
+                  {roles.filter((r) => !r.protegido && r.ativo !== 0).map((r) => (
+                    <option key={r.id} value={r.id}>{r.nome}</option>
+                  ))}
+                </select>
+                {roles.filter((r) => !r.protegido && r.ativo !== 0).length === 0 && (
+                  <span style={{ color: "#b45309", fontSize: "12px", lineHeight: 1.5 }}>
+                    Crie primeiro um perfil na aba Perfis e configure suas permissões.
+                  </span>
+                )}
+              </div>
+            </div>
+            <div style={S.modalFooter}>
+              <button style={S.btnSecondary} onClick={() => setModalCriarAberto(false)} disabled={salvandoNovo}>Cancelar</button>
+              <button
+                style={{ ...S.btnPrimary, opacity: salvandoNovo ? 0.7 : 1 }}
+                disabled={salvandoNovo || !roles.some((r) => !r.protegido && r.ativo !== 0)}
+                onClick={async () => {
+                  const nome = novoUsuario.nome.trim();
+                  const email = novoUsuario.email.trim().toLowerCase();
+                  if (!nome || !email || !novoUsuario.senha || !novoUsuario.role_id) {
+                    onErro("Preencha todos os campos e selecione um perfil.");
+                    return;
+                  }
+                  if (novoUsuario.senha.length < 8) {
+                    onErro("A senha deve ter no mínimo 8 caracteres.");
+                    return;
+                  }
+                  setSalvandoNovo(true);
+                  try {
+                    const res = await fetch(`${API}/rbac/usuarios`, {
+                      method: "POST",
+                      headers,
+                      body: JSON.stringify({
+                        nome,
+                        email,
+                        senha: novoUsuario.senha,
+                        role_id: Number(novoUsuario.role_id),
+                      }),
+                    });
+                    const data = await res.json();
+                    if (!res.ok) {
+                      onErro(data.erro || "Não foi possível criar o usuário.");
+                    } else {
+                      onMsg("Usuário criado com sucesso.");
+                      setModalCriarAberto(false);
+                      setNovoUsuario({ nome: "", email: "", senha: "", role_id: "" });
+                      onReload();
+                    }
+                  } catch (e) {
+                    onErro("Erro de conexão ao criar usuário.");
+                  } finally {
+                    setSalvandoNovo(false);
+                  }
+                }}
+              >
+                {Icons.check}
+                <span>{salvandoNovo ? "Criando..." : "Criar usuário"}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Modal: Alterar perfil ─────────────────── */}
       {modalAberto && usuarioSelecionado && (
