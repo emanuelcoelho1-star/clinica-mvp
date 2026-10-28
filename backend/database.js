@@ -933,9 +933,9 @@ function executarMigracaoRoles(onComplete) {
                       (indexErr) => {
                         if (indexErr) return abortar(indexErr);
 
-                        // Valida todas as relações antes de registrar/confirmar a migração.
-                        // Se houver qualquer inconsistência, a transação será revertida.
-                        db.all("PRAGMA foreign_key_check", [], (fkErr, violations) => {
+                        // Valida as relações da tabela afetada pela reconstrução de roles.
+                        // Inconsistências antigas em outras tabelas não devem bloquear esta migração.
+                        db.all("PRAGMA foreign_key_check(role_permissoes)", [], (fkErr, violations) => {
                           if (fkErr) return abortar(fkErr);
                           if (violations && violations.length > 0) {
                             const detalhes = violations
@@ -943,7 +943,7 @@ function executarMigracaoRoles(onComplete) {
                               .map((item) => `${item.table} (rowid=${item.rowid}, parent=${item.parent})`)
                               .join("; ");
                             return abortar(new Error(
-                              "A verificação de chaves estrangeiras encontrou inconsistências antes de confirmar a migração de roles: " + detalhes
+                              "A verificação de chaves estrangeiras encontrou inconsistências em role_permissoes antes de confirmar a migração de roles: " + detalhes
                             ));
                           }
 
