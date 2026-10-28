@@ -1,7 +1,85 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import S from "./rbacStyles";
 import Icons from "./RbacIcons";
 import { API, getInitials } from "./rbacHelpers";
+
+function SelectPerfil({ value, options, onChange, placeholder = "Selecione um perfil" }) {
+  const [aberto, setAberto] = useState(false);
+  const ref = useRef(null);
+  const selecionado = options.find((option) => String(option.value) === String(value));
+
+  useEffect(() => {
+    function fecharAoClicarFora(evento) {
+      if (ref.current && !ref.current.contains(evento.target)) setAberto(false);
+    }
+    document.addEventListener("mousedown", fecharAoClicarFora);
+    return () => document.removeEventListener("mousedown", fecharAoClicarFora);
+  }, []);
+
+  return (
+    <div ref={ref} style={{ position: "relative", width: "100%" }}>
+      <button
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={aberto}
+        onClick={() => setAberto((anterior) => !anterior)}
+        style={{
+          width: "100%", height: "42px", display: "flex", alignItems: "center",
+          justifyContent: "space-between", gap: "10px", padding: "0 14px",
+          border: aberto ? "1px solid #93c5fd" : "1px solid #e2e8f0",
+          borderRadius: "10px", background: "#fff", color: selecionado ? "#0f172a" : "#94a3b8",
+          boxSizing: "border-box", fontSize: "14px", fontWeight: "500",
+          fontFamily: "inherit", cursor: "pointer",
+          boxShadow: aberto ? "0 0 0 3px rgba(37,99,235,0.08)" : "none",
+          textAlign: "left",
+        }}
+      >
+        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {selecionado?.label || placeholder}
+        </span>
+        <span style={{ display: "flex", alignItems: "center", color: "#94a3b8", flexShrink: 0, transform: aberto ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s ease" }}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </span>
+      </button>
+      {aberto && (
+        <div role="listbox" style={{
+          position: "absolute", top: "calc(100% + 6px)", left: 0, right: 0,
+          maxHeight: "220px", overflowY: "auto", display: "flex", flexDirection: "column",
+          border: "1px solid #f1f5f9", borderRadius: "12px", background: "#fff",
+          boxShadow: "0 12px 32px rgba(15,23,42,0.1)", zIndex: 2000, padding: "4px",
+        }}>
+          {options.length === 0 ? (
+            <div style={{ padding: "14px", color: "#94a3b8", fontSize: "13px" }}>Nenhum perfil disponível</div>
+          ) : options.map((option, index) => {
+            const ativo = String(option.value) === String(value);
+            return (
+              <button
+                key={option.value}
+                type="button"
+                role="option"
+                aria-selected={ativo}
+                onClick={() => { onChange(String(option.value)); setAberto(false); }}
+                style={{
+                  border: "none", borderBottom: index === options.length - 1 ? "none" : "1px solid #f8fafc",
+                  borderRadius: "7px", background: ativo ? "#eff6ff" : "#fff",
+                  color: ativo ? "#2563eb" : "#0f172a", padding: "10px 12px",
+                  textAlign: "left", cursor: "pointer", width: "100%", fontSize: "14px",
+                  fontWeight: ativo ? "600" : "400", fontFamily: "inherit", transition: "background 0.1s",
+                }}
+                onMouseEnter={(evento) => { if (!ativo) evento.currentTarget.style.background = "#f8fafc"; }}
+                onMouseLeave={(evento) => { if (!ativo) evento.currentTarget.style.background = "#fff"; }}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function RbacUsuarios({ usuarios, roles, token, onReload, onMsg, onErro }) {
   const [modalAberto, setModalAberto] = useState(false);
@@ -249,16 +327,13 @@ function RbacUsuarios({ usuarios, roles, token, onReload, onMsg, onErro }) {
               </div>
               <div style={S.inputGroup}>
                 <label style={S.label}>Perfil de acesso *</label>
-                <select
+                <SelectPerfil
                   value={novoUsuario.role_id}
-                  onChange={(e) => setNovoUsuario({ ...novoUsuario, role_id: e.target.value })}
-                  style={S.select}
-                >
-                  <option value="">Selecione um perfil</option>
-                  {roles.filter((r) => !r.protegido && r.ativo !== 0).map((r) => (
-                    <option key={r.id} value={r.id}>{r.nome}</option>
-                  ))}
-                </select>
+                  onChange={(value) => setNovoUsuario({ ...novoUsuario, role_id: value })}
+                  options={roles
+                    .filter((r) => !r.protegido && r.ativo !== 0)
+                    .map((r) => ({ value: String(r.id), label: r.nome }))}
+                />
                 {roles.filter((r) => !r.protegido && r.ativo !== 0).length === 0 && (
                   <span style={{ color: "#b45309", fontSize: "12px", lineHeight: 1.5 }}>
                     Crie primeiro um perfil na aba Perfis e configure suas permissões.
@@ -359,17 +434,11 @@ function RbacUsuarios({ usuarios, roles, token, onReload, onMsg, onErro }) {
 
               <div style={S.inputGroup}>
                 <label style={S.label}>Perfil de acesso</label>
-                <select
+                <SelectPerfil
                   value={roleId}
-                  onChange={(e) => setRoleId(e.target.value)}
-                  style={S.select}
-                >
-                  {roles.map((r) => (
-                    <option key={r.id} value={r.id}>
-                      {r.nome}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setRoleId}
+                  options={roles.map((r) => ({ value: String(r.id), label: r.nome }))}
+                />
               </div>
             </div>
 
