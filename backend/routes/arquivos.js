@@ -228,9 +228,18 @@ router.delete("/:id", auth, (req, res) => {
     if (!row) return res.status(404).json({ erro: "Arquivo não encontrado." });
 
     // Remove do disco
-    const filePath = path.join(uploadDir, row.nome_salvo);
+    // Garante que a exclusão use apenas o nome do arquivo dentro da pasta de uploads.
+    const nomeSalvo = path.basename(String(row.nome_salvo || ""));
+    if (!nomeSalvo || nomeSalvo === "." || nomeSalvo === "..") {
+      return res.status(400).json({ erro: "Nome de arquivo inválido." });
+    }
+    const filePath = path.join(uploadDir, nomeSalvo);
     if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
+      try {
+        fs.unlinkSync(filePath);
+      } catch (fileErr) {
+        return res.status(500).json({ erro: "Não foi possível remover o arquivo do disco." });
+      }
     }
 
     // Remove do banco
