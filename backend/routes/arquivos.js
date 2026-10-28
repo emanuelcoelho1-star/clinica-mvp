@@ -161,9 +161,12 @@ router.get("/:id/download", (req, res) => {
 
   // Downloads abertos em nova aba também precisam validar a conta no banco.
   db.get(
-    `SELECT u.id, r.ativo AS role_ativo, u.clinica_id
+    `SELECT u.id, u.clinica_id, r.ativo AS role_ativo,
+            r.clinica_id AS role_clinica_id, r.protegido AS role_protegido,
+            c.status AS clinica_status
      FROM usuarios u
      LEFT JOIN roles r ON r.id = u.role_id
+     LEFT JOIN clinicas c ON c.id = u.clinica_id
      WHERE u.id = ?`,
     [decoded.id],
     (userErr, user) => {
@@ -171,6 +174,15 @@ router.get("/:id/download", (req, res) => {
       if (!user) return res.status(401).json({ erro: "Sessão inválida. Faça login novamente." });
       if (Number(user.role_ativo) !== 1) {
         return res.status(403).json({ erro: "Este perfil está desativado. Contate o administrador." });
+      }
+      if (!user.clinica_id) {
+        return res.status(403).json({ erro: "Usuário sem clínica vinculada. Contate o administrador." });
+      }
+      if (user.clinica_status !== "ativa") {
+        return res.status(403).json({ erro: "A clínica não está ativa. Contate o administrador." });
+      }
+      if (Number(user.role_protegido) !== 1 && Number(user.role_clinica_id) !== Number(user.clinica_id)) {
+        return res.status(403).json({ erro: "O perfil de acesso não pertence a esta clínica." });
       }
 
       const { id } = req.params;
