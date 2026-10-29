@@ -51,10 +51,9 @@ module.exports = function requirePermission(modulo, resolverAcao) {
              FROM usuarios
              WHERE id = ? AND clinica_id = ?
            )
-           AND rp.clinica_id = ?
            AND p.modulo = ? AND p.acao = ?
            LIMIT 1`,
-          [req.user.id, req.user.clinica_id, req.user.clinica_id, modulo, acao],
+          [req.user.id, req.user.clinica_id, modulo, acao],
           (permErr, permission) => {
             if (permErr) {
               return res.status(500).json({ erro: "Não foi possível verificar a permissão." });
