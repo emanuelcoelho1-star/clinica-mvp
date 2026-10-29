@@ -205,20 +205,14 @@ function ProntuarioPaciente() {
   const [carregando, setCarregando] = useState(true);
   const [abaAtiva, setAbaAtiva] = useState("visao-geral");
   const [hoveredTab, setHoveredTab] = useState(null);
-  const [acesso, setAcesso] = useState({ administrador: false, permissoes: [] });
 
   useEffect(() => {
     const carregarDados = async () => {
       const token = localStorage.getItem("token");
       try {
-        const [resPaciente, resPermissoes] = await Promise.all([
-          fetch(`${API_URL}/pacientes/${id}`, {
-            headers: { Authorization: token },
-          }),
-          fetch(`${API_URL}/auth/permissoes`, {
-            headers: { Authorization: token },
-          }),
-        ]);
+        const resPaciente = await fetch(`${API_URL}/pacientes/${id}`, {
+          headers: { Authorization: token },
+        });
 
         if (!resPaciente.ok) {
           const erro = await resPaciente.json().catch(() => ({}));
@@ -228,15 +222,6 @@ function ProntuarioPaciente() {
         const pacienteData = await resPaciente.json();
         setPaciente(pacienteData);
 
-        if (resPermissoes.ok) {
-          const dadosAcesso = await resPermissoes.json();
-          setAcesso({
-            administrador: Boolean(dadosAcesso.administrador),
-            permissoes: Array.isArray(dadosAcesso.permissoes) ? dadosAcesso.permissoes : [],
-          });
-        } else {
-          console.error("Não foi possível consultar permissões para as abas do prontuário.");
-        }
       } catch (error) {
         console.error("Erro ao carregar prontuário:", error);
         setPaciente(null);
@@ -246,23 +231,6 @@ function ProntuarioPaciente() {
     };
     carregarDados();
   }, [id]);
-
-  const abasVisiveis = useMemo(
-    () => ABAS.filter((aba) =>
-      !aba.modulo ||
-      acesso.administrador ||
-      acesso.permissoes.some((permissao) =>
-        permissao.modulo === aba.modulo && permissao.acao === "listar"
-      )
-    ),
-    [acesso]
-  );
-
-  useEffect(() => {
-    if (!abasVisiveis.some((aba) => aba.id === abaAtiva)) {
-      setAbaAtiva("visao-geral");
-    }
-  }, [abasVisiveis, abaAtiva]);
 
   const idadePaciente = useMemo(() => calcularIdade(paciente?.data_nascimento), [paciente?.data_nascimento]);
   const dataResponsavelFormatada = useMemo(() => formatarData(paciente?.responsavel_data_nascimento), [paciente?.responsavel_data_nascimento]);
@@ -453,7 +421,7 @@ function ProntuarioPaciente() {
 
         {/* ── Tabs ─────────────────────────────────────────── */}
         <div style={s.tabsBar}>
-          {abasVisiveis.map((aba) => {
+          {ABAS.map((aba) => {
             const ativa = abaAtiva === aba.id;
             const hovered = hoveredTab === aba.id;
             return (
