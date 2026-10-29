@@ -5,6 +5,17 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const rateLimit = require("express-rate-limit");
 const auth = require("../middleware/auth");
+const { domainToUnicode } = require("url");
+
+// Exibe domínios internacionalizados em Unicode sem alterar o e-mail usado no login.
+function emailParaExibicao(email) {
+  if (typeof email !== "string") return email;
+  const separador = email.lastIndexOf("@");
+  if (separador < 0) return email;
+  const usuario = email.slice(0, separador);
+  const dominio = email.slice(separador + 1);
+  return `${usuario}@${domainToUnicode(dominio) || dominio}`;
+}
 
 /* ── SECRET centralizado ──────────────────────── */
 const SECRET = process.env.JWT_SECRET;
@@ -196,7 +207,7 @@ router.post("/login", loginLimiter, (req, res) => {
           usuario: {
             id: user.id,
             nome: user.nome || "Administrador",
-            email: user.email,
+            email: emailParaExibicao(user.email),
           },
         });
       }
@@ -258,7 +269,7 @@ router.get("/me", authGeneralLimiter, auth, (req, res) => {
       if (!user) {
         return res.status(401).json({ erro: "Usuário não encontrado nesta clínica." });
       }
-      res.json({ usuario: user });
+      res.json({ usuario: { ...user, email: emailParaExibicao(user.email) } });
     }
   );
 });
