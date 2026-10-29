@@ -232,7 +232,7 @@ router.get("/permissoes", authGeneralLimiter, auth, (req, res) => {
       db.all(
         `SELECT DISTINCT p.modulo, p.acao
          FROM usuarios u
-         INNER JOIN role_permissoes rp ON rp.role_id = u.role_id AND rp.clinica_id = u.clinica_id
+         INNER JOIN role_permissoes rp ON rp.role_id = u.role_id
          INNER JOIN permissoes p ON p.id = rp.permissao_id
          WHERE u.id = ? AND u.clinica_id = ?
          ORDER BY p.modulo, p.acao`,
