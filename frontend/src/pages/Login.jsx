@@ -91,6 +91,12 @@ function Login() {
         return;
       }
 
+      if (data.token) {
+        localStorage.setItem("token", data.token);
+        if (data.usuario) localStorage.setItem("usuario", JSON.stringify(data.usuario));
+        window.location.href = "/cadastro-clinica";
+        return;
+      }
       setModoCadastro(false);
       setSenha("");
       setConfirmarSenha("");
