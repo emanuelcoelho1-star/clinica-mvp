@@ -41,19 +41,21 @@ function CadastroPaciente() {
 
     const token = localStorage.getItem("token");
 
-    fetch(`${API_URL}/pacientes`, {
+    fetch(`${API_URL}/pacientes/${id}`, {
       headers: {
         Authorization: token,
       },
     })
-      .then((res) => res.json())
-      .then((data) => {
-        const paciente = data.find((item) => String(item.id) === String(id));
-
-        if (!paciente) {
-          setErroModal("Paciente não encontrado.");
-          navigate("/pacientes");
-          return;
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.erro || "Não foi possível carregar o paciente.");
+        }
+        return data;
+      })
+      .then((paciente) => {
+        if (!paciente || String(paciente.id) !== String(id)) {
+          throw new Error("Paciente não encontrado.");
         }
 
         setForm({
