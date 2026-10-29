@@ -134,10 +134,17 @@ router.post("/register", registerLimiter, async (req, res) => {
 
                         db.run("COMMIT", (commitErr) => {
                           if (commitErr) return rollback(500, "Não foi possível concluir o cadastro.");
+                          const token = jwt.sign(
+                            { id: usuarioId, nome: nomeNormalizado, email: emailNormalizado },
+                            SECRET,
+                            { expiresIn: "7d" }
+                          );
                           return res.status(201).json({
-                            mensagem: "Conta criada. Agora entre com seu e-mail e senha.",
+                            mensagem: "Conta criada. Complete agora os dados da sua clínica.",
                             id: usuarioId,
                             clinica_id: clinicaId,
+                            token,
+                            usuario: { id: usuarioId, nome: nomeNormalizado, email: emailParaExibicao(emailNormalizado) },
                           });
                         });
                       }
