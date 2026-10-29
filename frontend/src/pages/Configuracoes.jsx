@@ -80,7 +80,7 @@ function InfoItem({ label, value, icon }) {
 }
 
 /* ═══════════════════════════════════════════════════════════ */
-function Configuracoes() {
+function Configuracoes({ administrador = false }) {
   const navigate = useNavigate();
   const [usuario, setUsuario] = useState({ nome: "", email: "" });
   const [senhaAtual, setSenhaAtual] = useState("");
@@ -126,10 +126,10 @@ function Configuracoes() {
 
   /* ── Carregar dados RBAC quando a aba ativar ─── */
   useEffect(() => {
-    if (abaAtiva === "rbac") {
+    if (abaAtiva === "rbac" && administrador) {
       carregarDadosRbac();
     }
-  }, [abaAtiva]);
+  }, [abaAtiva, administrador]);
 
   const carregarDadosRbac = async () => {
     try {
@@ -248,7 +248,7 @@ function Configuracoes() {
   const ABAS = [
     { id: "perfil", label: "Perfil" },
     { id: "seguranca", label: "Segurança" },
-    { id: "rbac", label: "Permissões & Acessos" },
+    ...(administrador ? [{ id: "rbac", label: "Permissões & Acessos" }] : []),
   ];
 
   /* ── Render ─────────────────────────────────── */
@@ -287,7 +287,7 @@ function Configuracoes() {
               </span>
               <span style={S.chip}>
                 <span style={S.chipIcon}>{Icons.shield}</span>
-                Administrador
+                {administrador ? "Administrador" : "Usuário"}
               </span>
             </div>
           </div>
@@ -332,7 +332,7 @@ function Configuracoes() {
             <div style={S.infoGrid}>
               <InfoItem label="Nome completo" value={usuario.nome || "Administrador"} />
               <InfoItem label="E-mail" value={usuario.email} />
-              <InfoItem label="Perfil" value="Administrador" />
+              <InfoItem label="Perfil" value={administrador ? "Administrador" : "Usuário"} />
             </div>
           </div>
 
