@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import API_URL from "../api";
+import { useTheme } from "../contexts/ThemeContext";
 
 const SECOES = [
   { titulo: "Identificação da clínica", descricao: "Informações principais para identificar sua clínica.", campos: [
@@ -43,6 +44,8 @@ export default function ClinicaForm({ onComplete, modoOnboarding = false }) {
   const [erro, setErro] = useState("");
   const [sucesso, setSucesso] = useState("");
   const [modoLogo, setModoLogo] = useState("upload");
+  const { tema } = useTheme();
+  const modoEscuro = tema === "dark";
   const [arquivoLogo, setArquivoLogo] = useState("");
   const inputArquivoRef = useRef(null);
   const token = localStorage.getItem("token");
@@ -149,7 +152,7 @@ export default function ClinicaForm({ onComplete, modoOnboarding = false }) {
             {modoLogo === "upload" ? (
               <div style={S.uploadBox}>
                 <input ref={inputArquivoRef} type="file" accept="image/png,image/jpeg,image/webp" onChange={selecionarLogo} style={{ display: "none" }} />
-                <div style={S.uploadIcon}>↑</div>
+                <div style={{ ...S.uploadIcon, ...(modoEscuro ? S.uploadIconDark : S.uploadIconLight) }} aria-hidden="true">↑</div>
                 <strong style={{ fontSize: 14 }}>Selecione o logo da sua clínica</strong>
                 <span style={S.uploadHelp}>PNG, JPG ou WEBP · máximo de 500 KB</span>
                 <button type="button" onClick={() => inputArquivoRef.current?.click()} style={S.secondaryButton}>Escolher imagem</button>
@@ -213,7 +216,9 @@ const S = {
   modeButton: { border: "1px solid var(--border-primary, #cbd5e1)", borderRadius: 9, padding: "10px 13px", background: "transparent", color: "var(--text-primary, #334155)", fontSize: 13, fontWeight: 650, cursor: "pointer" },
   modeActive: { borderColor: "#2563eb", background: "#eff6ff", color: "#1d4ed8" },
   uploadBox: { border: "1px dashed var(--border-primary, #94a3b8)", borderRadius: 12, padding: "24px 16px", display: "flex", flexDirection: "column", alignItems: "center", gap: 9, textAlign: "center", background: "var(--bg-muted, var(--bg-card, #1e293b))", color: "var(--text-primary, #f1f5f9)" },
-  uploadIcon: { width: 38, height: 38, display: "grid", placeItems: "center", borderRadius: 12, background: "var(--bg-muted, #dbeafe)", color: "var(--accent-primary, var(--text-primary, #1d4ed8))", fontSize: 25, fontWeight: 700 },
+  uploadIcon: { width: 38, height: 38, display: "grid", placeItems: "center", borderRadius: 12, fontSize: 25, fontWeight: 700, lineHeight: 1 },
+  uploadIconLight: { background: "#dbeafe", color: "#1d4ed8" },
+  uploadIconDark: { background: "#334155", color: "#93c5fd" },
   uploadHelp: { margin: 0, fontSize: 12, lineHeight: 1.5, color: "var(--text-secondary, #64748b)" },
   secondaryButton: { border: "1px solid var(--border-primary, #cbd5e1)", borderRadius: 9, background: "var(--bg-card, #fff)", color: "var(--text-primary, #334155)", padding: "9px 13px", fontSize: 13, fontWeight: 700, cursor: "pointer" },
   fileName: { color: "#15803d", fontSize: 12, fontWeight: 650, overflowWrap: "anywhere" },
