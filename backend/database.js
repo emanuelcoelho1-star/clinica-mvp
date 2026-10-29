@@ -616,6 +616,22 @@ db.serialize(() => {
   adicionarColunaSeNaoExistir("pacientes", "responsavel_data_nascimento", "TEXT");
   adicionarColunaSeNaoExistir("pacientes", "responsavel_telefone", "TEXT");
 
+  adicionarColunaSeNaoExistir("clinicas", "cnpj", "TEXT");
+  adicionarColunaSeNaoExistir("clinicas", "nome_fantasia", "TEXT");
+  adicionarColunaSeNaoExistir("clinicas", "razao_social", "TEXT");
+  adicionarColunaSeNaoExistir("clinicas", "cep", "TEXT");
+  adicionarColunaSeNaoExistir("clinicas", "rua", "TEXT");
+  adicionarColunaSeNaoExistir("clinicas", "numero", "TEXT");
+  adicionarColunaSeNaoExistir("clinicas", "complemento", "TEXT");
+  adicionarColunaSeNaoExistir("clinicas", "bairro", "TEXT");
+  adicionarColunaSeNaoExistir("clinicas", "cidade", "TEXT");
+  adicionarColunaSeNaoExistir("clinicas", "estado", "TEXT");
+  adicionarColunaSeNaoExistir("clinicas", "logo_url", "TEXT");
+  adicionarColunaSeNaoExistir("clinicas", "responsavel_tecnico", "TEXT");
+  adicionarColunaSeNaoExistir("clinicas", "cro", "TEXT");
+  adicionarColunaSeNaoExistir("clinicas", "telefone_secundario", "TEXT");
+  adicionarColunaSeNaoExistir("clinicas", "site", "TEXT");
+  adicionarColunaSeNaoExistir("clinicas", "updated_at", "TEXT");
   adicionarColunaSeNaoExistir("usuarios", "nome", "TEXT DEFAULT 'Administrador'");
   adicionarColunaSeNaoExistir("usuarios", "created_at", "TEXT");
   adicionarColunaSeNaoExistir("usuarios", "role_id", "INTEGER DEFAULT 1"); // ← NOVO: RBAC
