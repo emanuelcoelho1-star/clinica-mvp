@@ -58,6 +58,7 @@ function Login() {
   const [sucesso, setSucesso] = useState("");
   const [carregando, setCarregando] = useState(false);
   const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [mostrarConfirmarSenha, setMostrarConfirmarSenha] = useState(false);
   const [focusEmail, setFocusEmail] = useState(false);
   const [focusSenha, setFocusSenha] = useState(false);
 
@@ -273,18 +274,36 @@ function Login() {
             {modoCadastro && (
               <div style={S.inputGroup}>
                 <label style={S.label}>Confirmar senha</label>
-                <div style={S.inputWrapper}>
+                <div style={{
+                  ...S.inputWrapper,
+                  borderColor: confirmarSenha && confirmarSenha !== senha ? "#ef4444" : confirmarSenha && confirmarSenha === senha ? "#16a34a" : "#e2e8f0",
+                }}>
                   <input
-                    type="password"
+                    type={mostrarConfirmarSenha ? "text" : "password"}
                     placeholder="Digite a senha novamente"
                     value={confirmarSenha}
                     onChange={(e) => setConfirmarSenha(e.target.value)}
                     style={S.input}
                     required
                     autoComplete="new-password"
-                    minLength={modoCadastro ? 8 : undefined}
+                    minLength={8}
+                    aria-invalid={Boolean(confirmarSenha && confirmarSenha !== senha)}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setMostrarConfirmarSenha(!mostrarConfirmarSenha)}
+                    style={S.toggleSenha}
+                    aria-label={mostrarConfirmarSenha ? "Ocultar senha de confirmação" : "Mostrar senha de confirmação"}
+                    title={mostrarConfirmarSenha ? "Ocultar senha" : "Mostrar senha"}
+                  >
+                    {mostrarConfirmarSenha ? EyeOffIcon : EyeIcon}
+                  </button>
                 </div>
+                {confirmarSenha && (
+                  <span style={{ fontSize: "12px", fontWeight: 600, color: confirmarSenha === senha ? "#16a34a" : "#dc2626" }}>
+                    {confirmarSenha === senha ? "✓ As senhas coincidem" : "As senhas ainda não coincidem"}
+                  </span>
+                )}
               </div>
             )}
 
