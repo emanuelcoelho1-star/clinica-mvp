@@ -165,13 +165,13 @@ const Icons = {
 /* ── Tab config ──────────────────────────────────────────── */
 const ABAS = [
   { id: "visao-geral", label: "Visão geral", icon: Icons.user },
-  { id: "anamneses", label: "Anamneses", icon: Icons.fileText },
-  { id: "orcamentos", label: "Orçamentos", icon: Icons.id },
-  { id: "tratamentos", label: "Tratamentos", icon: Icons.calendar },
-  { id: "pagamentos", label: "Pagamentos", icon: Icons.dollarSign },
-  { id: "evolucoes", label: "Evoluções", icon: Icons.fileText },
-  { id: "documentos", label: "Documentos", icon: Icons.fileText },
-  { id: "arquivos", label: "Arquivos", icon: Icons.fileText },
+  { id: "anamneses", label: "Anamneses", modulo: "anamneses", icon: Icons.fileText },
+  { id: "orcamentos", label: "Orçamentos", modulo: "orcamentos", icon: Icons.id },
+  { id: "tratamentos", label: "Tratamentos", modulo: "tratamentos", icon: Icons.calendar },
+  { id: "pagamentos", label: "Pagamentos", modulo: "pagamentos", icon: Icons.dollarSign },
+  { id: "evolucoes", label: "Evoluções", modulo: "evolucoes", icon: Icons.fileText },
+  { id: "documentos", label: "Documentos", modulo: "documentos", icon: Icons.fileText },
+  { id: "arquivos", label: "Arquivos", modulo: "arquivos", icon: Icons.fileText },
 ];
 
 /* ── InfoCard component ──────────────────────────────────── */
@@ -205,19 +205,40 @@ function ProntuarioPaciente() {
   const [carregando, setCarregando] = useState(true);
   const [abaAtiva, setAbaAtiva] = useState("visao-geral");
   const [hoveredTab, setHoveredTab] = useState(null);
+  const [acesso, setAcesso] = useState({ administrador: false, permissoes: [] });
 
   useEffect(() => {
     const carregarDados = async () => {
       const token = localStorage.getItem("token");
       try {
-        const resPaciente = await fetch(`${API_URL}/pacientes/${id}`, {
-          headers: { Authorization: token },
-        });
-        if (!resPaciente.ok) throw new Error("Paciente não encontrado");
+        const [resPaciente, resPermissoes] = await Promise.all([
+          fetch(`${API_URL}/pacientes/${id}`, {
+            headers: { Authorization: token },
+          }),
+          fetch(`${API_URL}/auth/permissoes`, {
+            headers: { Authorization: token },
+          }),
+        ]);
+
+        if (!resPaciente.ok) {
+          const erro = await resPaciente.json().catch(() => ({}));
+          throw new Error(erro.erro || "Não foi possível carregar o paciente.");
+        }
+
         const pacienteData = await resPaciente.json();
         setPaciente(pacienteData);
+
+        if (resPermissoes.ok) {
+          const dadosAcesso = await resPermissoes.json();
+          setAcesso({
+            administrador: Boolean(dadosAcesso.administrador),
+            permissoes: Array.isArray(dadosAcesso.permissoes) ? dadosAcesso.permissoes : [],
+          });
+        } else {
+          console.error("Não foi possível consultar permissões para as abas do prontuário.");
+        }
       } catch (error) {
-        console.error("Erro ao carregar paciente:", error);
+        console.error("Erro ao carregar prontuário:", error);
         setPaciente(null);
       } finally {
         setCarregando(false);
@@ -225,6 +246,23 @@ function ProntuarioPaciente() {
     };
     carregarDados();
   }, [id]);
+
+  const abasVisiveis = useMemo(
+    () => ABAS.filter((aba) =>
+      !aba.modulo ||
+      acesso.administrador ||
+      acesso.permissoes.some((permissao) =>
+        permissao.modulo === aba.modulo && permissao.acao === "listar"
+      )
+    ),
+    [acesso]
+  );
+
+  useEffect(() => {
+    if (!abasVisiveis.some((aba) => aba.id === abaAtiva)) {
+      setAbaAtiva("visao-geral");
+    }
+  }, [abasVisiveis, abaAtiva]);
 
   const idadePaciente = useMemo(() => calcularIdade(paciente?.data_nascimento), [paciente?.data_nascimento]);
   const dataResponsavelFormatada = useMemo(() => formatarData(paciente?.responsavel_data_nascimento), [paciente?.responsavel_data_nascimento]);
@@ -415,7 +453,7 @@ function ProntuarioPaciente() {
 
         {/* ── Tabs ─────────────────────────────────────────── */}
         <div style={s.tabsBar}>
-          {ABAS.map((aba) => {
+          {abasVisiveis.map((aba) => {
             const ativa = abaAtiva === aba.id;
             const hovered = hoveredTab === aba.id;
             return (
