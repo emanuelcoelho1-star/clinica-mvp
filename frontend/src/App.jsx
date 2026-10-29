@@ -7,6 +7,7 @@ import Agenda from "./pages/Agenda";
 import CadastroPaciente from "./pages/CadastroPaciente";
 import ProntuarioPaciente from "./pages/ProntuarioPaciente";
 import Configuracoes from "./pages/Configuracoes";
+import CadastroClinica from "./pages/CadastroClinica";
 import Financeiro from "./pages/Financeiro";
 import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
 import API_URL from "./api";
@@ -442,6 +443,7 @@ function Layout() {
             <Route path="/pacientes/:id" element={<RotaComPermissao acesso={acesso} modulo="pacientes"><ProntuarioPaciente /></RotaComPermissao>} />
             <Route path="/financeiro" element={<RotaComPermissao acesso={acesso} modulo="financeiro"><Financeiro /></RotaComPermissao>} />
             <Route path="/configuracoes" element={<Configuracoes administrador={Boolean(acesso?.administrador)} />} />
+            <Route path="/cadastro-clinica" element={<CadastroClinica />} />
           </Routes>
         </div>
       </main>
