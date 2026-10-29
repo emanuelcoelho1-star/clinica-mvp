@@ -45,9 +45,26 @@ router.put("/", exigirAdministrador, (req, res) => {
   const nome = String(dados.nome || "").trim();
   if (!nome) return res.status(400).json({ erro: "O nome da clínica é obrigatório." });
 
+  const logo = typeof dados.logo_url === "string" ? dados.logo_url.trim() : "";
+  if (logo && logo.startsWith("data:") && !/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(logo)) {
+    return res.status(400).json({ erro: "O logo enviado precisa ser uma imagem PNG, JPG ou WEBP válida." });
+  }
+  if (logo.startsWith("data:image/") && logo.length > 700000) {
+    return res.status(413).json({ erro: "O logo é muito grande. Envie uma imagem de até 500 KB." });
+  }
+  if (logo && !logo.startsWith("data:image/")) {
+    try {
+      const url = new URL(logo);
+      if (!["http:", "https:"].includes(url.protocol)) throw new Error("Protocolo inválido");
+    } catch {
+      return res.status(400).json({ erro: "Informe um link válido para a imagem do logo." });
+    }
+  }
+
   const valores = CAMPOS.map((campo) => {
     const valor = dados[campo];
-    return typeof valor === "string" ? valor.trim().slice(0, campo === "logo_url" ? 1500 : 250) : "";
+    const limite = campo === "logo_url" ? 700000 : campo === "nome" ? 180 : 250;
+    return typeof valor === "string" ? valor.trim().slice(0, limite) : "";
   });
   valores[0] = nome.slice(0, 180);
   const camposSql = CAMPOS.map((campo) => `${campo} = ?`).join(", ");
