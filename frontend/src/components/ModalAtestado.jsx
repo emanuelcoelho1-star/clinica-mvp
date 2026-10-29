@@ -95,6 +95,8 @@ function ModalAtestado({ aberto, onFechar, paciente, pacienteId, onDocumentoCria
       cid: form.cid,
       horaInicial: form.horaInicial,
       horaFinal: form.horaFinal,
+      apiUrl: API_URL,
+      token: localStorage.getItem("token"),
     });
 
     // Salvar no banco como documento
