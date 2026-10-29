@@ -658,14 +658,31 @@ const s = {
 
   /* ── Tabs ─────────────────────────────────────────── */
   tabsBar: {
-    display: "flex", gap: "0", borderTop: "1px solid #f1f5f9",
-    padding: "0 28px", overflowX: "auto",
+    display: "flex",
+    flexWrap: "wrap",
+    alignItems: "stretch",
+    gap: "0",
+    borderTop: "1px solid #f1f5f9",
+    padding: "0 16px",
+    overflowX: "visible",
+    width: "100%",
+    boxSizing: "border-box",
   },
   tab: {
-    background: "none", border: "none",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flex: "0 0 auto",
+    background: "none",
+    border: "none",
     borderBottom: "2px solid transparent",
-    padding: "14px 16px", fontSize: "13px", fontWeight: "600",
-    cursor: "pointer", transition: "all 0.15s ease", whiteSpace: "nowrap",
+    padding: "14px 12px",
+    fontSize: "13px",
+    fontWeight: "600",
+    cursor: "pointer",
+    transition: "all 0.15s ease",
+    whiteSpace: "nowrap",
+    minHeight: "46px",
   },
 
   /* ── Grid ─────────────────────────────────────────── */
