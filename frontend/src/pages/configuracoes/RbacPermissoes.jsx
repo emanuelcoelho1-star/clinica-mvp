@@ -195,6 +195,39 @@ function RbacPermissoes({ roles, permissoes, token, onMsg, onErro }) {
         </div>
       )}
 
+      {/* ── Orientação sobre permissões ───────────── */}
+      <div
+        role="note"
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          gap: "12px",
+          padding: "14px 16px",
+          marginBottom: "18px",
+          borderRadius: "10px",
+          border: "1px solid #bfdbfe",
+          background: "#eff6ff",
+          color: "#1e3a8a",
+          fontSize: "13px",
+          lineHeight: 1.55,
+        }}
+      >
+        <span style={{ flexShrink: 0, marginTop: "1px" }}>{Icons.info || Icons.key}</span>
+        <div>
+          <strong style={{ display: "block", marginBottom: "4px" }}>
+            Importante: as abas do prontuário têm permissões próprias
+          </strong>
+          Marcar <strong>Pacientes</strong> libera as ações da lista/cadastro de pacientes e a permissão
+          específica de acesso ao prontuário. Para que o usuário veja e utilize as abas dentro do prontuário,
+          marque também <strong>Anamneses, Orçamentos, Tratamentos, Pagamentos, Evoluções, Documentos</strong>
+          e <strong>Arquivos de pacientes</strong>, conforme o acesso que deseja conceder.
+          <div style={{ marginTop: "6px" }}>
+            <strong>Dica:</strong> clique no nome de um módulo para marcar ou desmarcar todas as ações dele.
+            As caixas individuais controlam cada ação (listar, criar, editar ou excluir).
+          </div>
+        </div>
+      </div>
+
       {/* ── Tabela de permissões ────────────────── */}
       {carregando ? (
         <div style={{ textAlign: "center", padding: "40px", color: "#94a3b8" }}>
