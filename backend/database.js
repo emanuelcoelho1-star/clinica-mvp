@@ -616,22 +616,6 @@ db.serialize(() => {
   adicionarColunaSeNaoExistir("pacientes", "responsavel_data_nascimento", "TEXT");
   adicionarColunaSeNaoExistir("pacientes", "responsavel_telefone", "TEXT");
 
-  adicionarColunaSeNaoExistir("clinicas", "cnpj", "TEXT");
-  adicionarColunaSeNaoExistir("clinicas", "nome_fantasia", "TEXT");
-  adicionarColunaSeNaoExistir("clinicas", "razao_social", "TEXT");
-  adicionarColunaSeNaoExistir("clinicas", "cep", "TEXT");
-  adicionarColunaSeNaoExistir("clinicas", "rua", "TEXT");
-  adicionarColunaSeNaoExistir("clinicas", "numero", "TEXT");
-  adicionarColunaSeNaoExistir("clinicas", "complemento", "TEXT");
-  adicionarColunaSeNaoExistir("clinicas", "bairro", "TEXT");
-  adicionarColunaSeNaoExistir("clinicas", "cidade", "TEXT");
-  adicionarColunaSeNaoExistir("clinicas", "estado", "TEXT");
-  adicionarColunaSeNaoExistir("clinicas", "logo_url", "TEXT");
-  adicionarColunaSeNaoExistir("clinicas", "responsavel_tecnico", "TEXT");
-  adicionarColunaSeNaoExistir("clinicas", "cro", "TEXT");
-  adicionarColunaSeNaoExistir("clinicas", "telefone_secundario", "TEXT");
-  adicionarColunaSeNaoExistir("clinicas", "site", "TEXT");
-  adicionarColunaSeNaoExistir("clinicas", "updated_at", "TEXT");
   adicionarColunaSeNaoExistir("usuarios", "nome", "TEXT DEFAULT 'Administrador'");
   adicionarColunaSeNaoExistir("usuarios", "created_at", "TEXT");
   adicionarColunaSeNaoExistir("usuarios", "role_id", "INTEGER DEFAULT 1"); // ← NOVO: RBAC
@@ -661,6 +645,21 @@ function executarMigracaoSaaS(onComplete = () => {}) {
         slug TEXT UNIQUE,
         email_contato TEXT,
         telefone TEXT,
+        cnpj TEXT,
+        nome_fantasia TEXT,
+        razao_social TEXT,
+        cep TEXT,
+        rua TEXT,
+        numero TEXT,
+        complemento TEXT,
+        bairro TEXT,
+        cidade TEXT,
+        estado TEXT,
+        logo_url TEXT,
+        responsavel_tecnico TEXT,
+        cro TEXT,
+        telefone_secundario TEXT,
+        site TEXT,
         status TEXT NOT NULL DEFAULT 'ativa'
           CHECK (status IN ('ativa', 'suspensa', 'cancelada')),
         plano TEXT NOT NULL DEFAULT 'trial',
@@ -863,6 +862,27 @@ function executarMigracaoSaaS(onComplete = () => {}) {
       });
     };
 
+    // Migra os campos cadastrais da clínica também em bancos já existentes.
+    const camposClinica = [
+      ["cnpj", "TEXT"], ["nome_fantasia", "TEXT"], ["razao_social", "TEXT"],
+      ["cep", "TEXT"], ["rua", "TEXT"], ["numero", "TEXT"], ["complemento", "TEXT"],
+      ["bairro", "TEXT"], ["cidade", "TEXT"], ["estado", "TEXT"], ["logo_url", "TEXT"],
+      ["responsavel_tecnico", "TEXT"], ["cro", "TEXT"], ["telefone_secundario", "TEXT"],
+      ["site", "TEXT"], ["updated_at", "TEXT"]
+    ];
+    const migrarCamposClinica = (indice) => {
+      if (indice >= camposClinica.length) return garantirColuna(0);
+      const [coluna, definicao] = camposClinica[indice];
+      db.all("PRAGMA table_info(clinicas)", [], (infoErr, columns) => {
+        if (infoErr) return finalizar(infoErr);
+        if (columns.some((item) => item.name === coluna)) return migrarCamposClinica(indice + 1);
+        db.run(`ALTER TABLE clinicas ADD COLUMN ${coluna} ${definicao}`, (alterErr) => {
+          if (alterErr) return finalizar(alterErr);
+          migrarCamposClinica(indice + 1);
+        });
+      });
+    };
+
     // Aguarda a criação das tabelas acima antes de inspecionar colunas.
     db.run("SELECT 1", [], (err) => {
       if (err) {
@@ -870,7 +890,7 @@ function executarMigracaoSaaS(onComplete = () => {}) {
         finalizar(err);
         return;
       }
-      garantirColuna(0);
+      migrarCamposClinica(0);
     });
   });
 }
