@@ -25,7 +25,8 @@ const CAMPOS = [
   "cidade", "estado", "logo_url", "responsavel_tecnico", "cro", "site"
 ];
 
-router.get("/", exigirAdministrador, (req, res) => {
+// Qualquer usuário autenticado da mesma clínica pode ler os dados para montar documentos.
+router.get("/", (req, res) => {
   db.get(
     `SELECT id, nome, nome_fantasia, razao_social, cnpj, email_contato, telefone,
             telefone_secundario, cep, rua, numero, complemento, bairro, cidade,
