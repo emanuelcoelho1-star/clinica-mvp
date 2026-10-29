@@ -245,7 +245,7 @@ function AvatarDropdown({ administrador }) {
               onMouseLeave={() => setHoverConfig(false)}
             >
               <span style={S.dropdownItemIcon}>{SettingsIcon}</span>
-              <span>Minha conta / Configurações</span>
+              <span>Configurações</span>
             </button>
 
           <div style={S.dropdownDivider} />
