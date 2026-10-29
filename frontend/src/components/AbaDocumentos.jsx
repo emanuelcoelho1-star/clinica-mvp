@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import API_URL from "../api";
 import ModalAtestado from "./ModalAtestado";
+import gerarPdfDocumento from "../utils/gerarPdfDocumento";
 
 /* ═══════════════════════════════════════════════════════════
    HELPERS
@@ -219,6 +220,16 @@ function AbaDocumentos({ pacienteId, paciente }) {
     setTela("detalhes");
   }
 
+  async function gerarPdfAtual() {
+    if (!detalhes) return;
+    await gerarPdfDocumento({
+      documento: detalhes,
+      paciente,
+      apiUrl: API_URL,
+      token: localStorage.getItem("token"),
+    });
+  }
+
   function voltarParaLista() {
     setTela("lista");
     setEditando(null);
@@ -369,7 +380,7 @@ function AbaDocumentos({ pacienteId, paciente }) {
                 style={{ ...S.quickCard, ...(hoveredBtn === "quick-receita" ? S.quickCardHover : {}) }}
                 onMouseEnter={() => setHoveredBtn("quick-receita")}
                 onMouseLeave={() => setHoveredBtn(null)}
-                onClick={() => alert("Modal de Receituário em breve!")}
+                onClick={() => abrirFormComTipo("receita")}
               >
                 <div style={{ ...S.quickIcon, background: "#f0fdf4", color: "#16a34a" }}>
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -740,7 +751,18 @@ function AbaDocumentos({ pacienteId, paciente }) {
             <h2 style={S.title}>Documento #{detalhes.id}</h2>
             <p style={S.subtitle}>Registrado em {formatarDataBR(detalhes.data)}</p>
           </div>
-          <div style={{ display: "flex", gap: "8px" }}>
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+            <button
+              style={{
+                ...S.btnSecondary,
+                ...(hoveredBtn === "pdf-det" ? S.btnSecondaryHover : {}),
+              }}
+              onMouseEnter={() => setHoveredBtn("pdf-det")}
+              onMouseLeave={() => setHoveredBtn(null)}
+              onClick={gerarPdfAtual}
+            >
+              <span>Imprimir / salvar PDF</span>
+            </button>
             <button
               style={{
                 ...S.btnSecondary,
