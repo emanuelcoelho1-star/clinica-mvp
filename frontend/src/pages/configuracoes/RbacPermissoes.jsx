@@ -339,6 +339,28 @@ function RbacPermissoes({ roles, permissoes, token, onMsg, onErro }) {
                           </span>
                         )}
                       </button>
+                      <button
+                        type="button"
+                        onClick={() => toggleModulo(modulo)}
+                        disabled={Boolean(roleSelecionada?.protegido)}
+                        style={{
+                          marginTop: "7px",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "5px",
+                          padding: "4px 8px",
+                          borderRadius: "6px",
+                          border: isDark ? "1px solid #475569" : "1px solid #cbd5e1",
+                          background: isDark ? "#1e293b" : "#f8fafc",
+                          color: isDark ? "#e2e8f0" : "#475569",
+                          fontSize: "11px",
+                          fontWeight: "600",
+                          cursor: roleSelecionada?.protegido ? "default" : "pointer",
+                          opacity: roleSelecionada?.protegido ? 0.6 : 1,
+                        }}
+                      >
+                        {todasAtivas ? "Desmarcar todas" : "Marcar todas"}
+                      </button>
                     </td>
                     {acoesExistentes.map((acao) => {
                       const perm = permsDoModulo.find((p) => p.acao === acao);
