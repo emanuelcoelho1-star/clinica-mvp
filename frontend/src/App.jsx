@@ -235,8 +235,7 @@ function AvatarDropdown({ administrador }) {
             <span>{isDark ? "Modo claro" : "Modo escuro"}</span>
           </button>
 
-          {administrador && (
-            <button
+          <button
               style={{
                 ...S.dropdownItem,
                 ...(hoverConfig ? S.dropdownItemHover : {}),
@@ -246,9 +245,8 @@ function AvatarDropdown({ administrador }) {
               onMouseLeave={() => setHoverConfig(false)}
             >
               <span style={S.dropdownItemIcon}>{SettingsIcon}</span>
-              <span>Configurações</span>
+              <span>Minha conta / Configurações</span>
             </button>
-          )}
 
           <div style={S.dropdownDivider} />
 
@@ -443,7 +441,7 @@ function Layout() {
             <Route path="/pacientes/editar/:id" element={<RotaComPermissao acesso={acesso} modulo="pacientes"><CadastroPaciente /></RotaComPermissao>} />
             <Route path="/pacientes/:id" element={<RotaComPermissao acesso={acesso} modulo="pacientes"><ProntuarioPaciente /></RotaComPermissao>} />
             <Route path="/financeiro" element={<RotaComPermissao acesso={acesso} modulo="financeiro"><Financeiro /></RotaComPermissao>} />
-            <Route path="/configuracoes" element={acesso?.administrador ? <Configuracoes /> : <Navigate to="/" replace />} />
+            <Route path="/configuracoes" element={<Configuracoes administrador={Boolean(acesso?.administrador)} />} />
           </Routes>
         </div>
       </main>
