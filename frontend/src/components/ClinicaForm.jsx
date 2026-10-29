@@ -137,23 +137,6 @@ export default function ClinicaForm({ onComplete, modoOnboarding = false }) {
       {sucesso && <div role="status" style={S.success}>{sucesso}</div>}
       <form onSubmit={salvar}>
         <div style={S.sections}>
-          {SECOES.map((secao, indice) => (
-            <section key={secao.titulo} style={S.section}>
-              <div style={S.sectionHeading}>
-                <span style={S.sectionNumber}>{String(indice + 1).padStart(2, "0")}</span>
-                <div><h2 style={S.sectionTitle}>{secao.titulo}</h2><p style={S.sectionDescription}>{secao.descricao}</p></div>
-              </div>
-              <div style={S.grid}>
-                {secao.campos.map((campo) => (
-                  <label key={campo.name} style={{ ...S.field, ...(campo.wide ? S.wide : {}) }}>
-                    <span style={S.label}>{campo.label}</span>
-                    <input name={campo.name} type={campo.type || "text"} value={dados[campo.name] || ""} onChange={alterar} required={Boolean(campo.required)} maxLength={250} placeholder={campo.placeholder || ""} style={S.input} />
-                  </label>
-                ))}
-              </div>
-            </section>
-          ))}
-
           <section style={S.section}>
             <div style={S.sectionHeading}>
               <span style={S.sectionNumber}>05</span>
@@ -181,6 +164,24 @@ export default function ClinicaForm({ onComplete, modoOnboarding = false }) {
             )}
             {dados.logo_url && <div style={S.logoPreview}><img src={dados.logo_url} alt="Prévia do logo da clínica" style={S.logo} onError={(e) => { e.currentTarget.style.display = "none"; }} /><div><strong style={{ fontSize: 13 }}>Prévia do logo</strong><p style={S.uploadHelp}>Confira se a imagem está nítida e correta.</p><button type="button" onClick={() => { setDados((atual) => ({ ...atual, logo_url: "" })); setArquivoLogo(""); if (inputArquivoRef.current) inputArquivoRef.current.value = ""; }} style={S.removeLogo}>Remover logo</button></div></div>}
           </section>
+
+          {SECOES.map((secao, indice) => (
+            <section key={secao.titulo} style={S.section}>
+              <div style={S.sectionHeading}>
+                <span style={S.sectionNumber}>{String(indice + 2).padStart(2, "0")}</span>
+                <div><h2 style={S.sectionTitle}>{secao.titulo}</h2><p style={S.sectionDescription}>{secao.descricao}</p></div>
+              </div>
+              <div style={S.grid}>
+                {secao.campos.map((campo) => (
+                  <label key={campo.name} style={{ ...S.field, ...(campo.wide ? S.wide : {}) }}>
+                    <span style={S.label}>{campo.label}</span>
+                    <input name={campo.name} type={campo.type || "text"} value={dados[campo.name] || ""} onChange={alterar} required={Boolean(campo.required)} maxLength={250} placeholder={campo.placeholder || ""} style={S.input} />
+                  </label>
+                ))}
+              </div>
+            </section>
+          ))}
+
         </div>
         <div style={S.actions}>
           <button type="submit" disabled={salvando} style={{ ...S.button, opacity: salvando ? 0.7 : 1 }}>{salvando ? "Salvando..." : modoOnboarding ? "Salvar e entrar no sistema" : "Salvar alterações"}</button>
