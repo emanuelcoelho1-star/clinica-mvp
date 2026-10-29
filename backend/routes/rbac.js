@@ -2,6 +2,16 @@ const express = require("express");
 const router = express.Router();
 const db = require("../database");
 const auth = require("../middleware/auth");
+const { domainToUnicode } = require("url");
+
+function emailParaExibicao(email) {
+  if (typeof email !== "string") return email;
+  const separador = email.lastIndexOf("@");
+  if (separador < 0) return email;
+  const usuario = email.slice(0, separador);
+  const dominio = email.slice(separador + 1);
+  return `${usuario}@${domainToUnicode(dominio) || dominio}`;
+}
 
 // Todas as operações RBAC exigem administrador e usam a clínica da sessão.
 // O catálogo de permissões é global (módulos/ações do sistema); perfis e usuários não.
@@ -244,7 +254,7 @@ router.get("/usuarios", (req, res) => {
     [clinicaId(req)],
     (err, rows) => {
       if (err) return res.status(500).json({ erro: "Erro ao buscar usuários da clínica." });
-      res.json(rows);
+      res.json(rows.map((usuario) => ({ ...usuario, email: emailParaExibicao(usuario.email) })));
     }
   );
 });
