@@ -51,12 +51,13 @@ export default async function gerarPdfAtestado({
     w.document.write(`<!DOCTYPE html>
 <html lang="pt-BR"><head><meta charset="utf-8"><title>${esc(titulo)}</title>
 <style>
-@page{size:A4;margin-top:0;margin-right:30pt;margin-bottom:30pt;margin-left:30pt}
+@page{size:A4;margin:0}
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
-body{font-family:Arial,Helvetica,sans-serif;color:#111;font-size:12pt}
-.cabecalho{display:grid;grid-template-columns:94pt minmax(0,1fr) auto;column-gap:17pt;align-items:start;height:94pt;margin:18pt 0 0}
-.logo{display:block;width:94pt;height:94pt;object-fit:contain;object-position:left top;border-radius:14pt;overflow:hidden}
+body{font-family:Arial,Helvetica,sans-serif;color:#111;font-size:12pt;padding:18pt 30pt 30pt}
+.cabecalho{display:grid;grid-template-columns:94pt minmax(0,1fr) auto;column-gap:17pt;align-items:start;height:94pt;margin:0}
+.cabecalho>div:first-child{width:94pt;height:94pt;overflow:hidden;border-radius:14pt}
+.logo{display:block;width:94pt;height:94pt;object-fit:contain;object-position:left top;border-radius:14pt !important;clip-path:inset(0 round 14pt)}
 .identidade{padding:0;line-height:1.2}
 .nome-clinica{font-size:14pt;font-weight:700;margin:0 0 5pt}
 .dados-clinica{font-size:11pt;line-height:1.2}
