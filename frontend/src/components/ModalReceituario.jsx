@@ -232,7 +232,9 @@ function ModalReceituario({ aberto, onFechar, paciente, pacienteId }) {
           .receituario-grid-duplo{grid-template-columns:1fr!important}
           .receituario-campos-horizontal{grid-template-columns:1fr!important}
           .receituario-campo-busca{grid-column:1 / -1!important}
-          .receituario-medicamento-adicionado{grid-template-columns:1fr!important;align-items:stretch!important}
+          .receituario-medicamento-adicionado{grid-template-columns:1fr 38px!important;align-items:stretch!important}
+          .receituario-posologia-horizontal{grid-column:1!important;border-top:1px solid #e2e8f0!important;border-left:0!important;padding:11px 0 0!important}
+          .receituario-medicamento-adicionado>div:last-child{grid-column:2!important;grid-row:2!important}
           .receituario-posologia-horizontal{border-top:1px solid #e2e8f0!important;border-left:0!important;padding:11px 0 0!important}
           .receituario-rodape{flex-wrap:wrap}
         }
@@ -326,16 +328,18 @@ function ModalReceituario({ aberto, onFechar, paciente, pacienteId }) {
                       </div>
                       <div style={M.selectedActions}>
                         {Number(medicamento.receita_controlada) === 1 && <span style={M.controlledTag}>Receita controlada</span>}
-                        <button type="button" aria-label={`Remover ${medicamento.nome}`} title="Remover medicamento" onClick={() => removerMedicamento(medicamento)} style={M.removeSelection}>
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                            <path d="M3 6h18" /><path d="M8 6V4h8v2" /><path d="m19 6-1 14H6L5 6" /><path d="M10 11v5M14 11v5" />
-                          </svg>
-                        </button>
                       </div>
                     </div>
                     <div className="receituario-posologia-horizontal" style={M.posologyBlock}>
                       <span style={M.posologyLabel}>POSOLOGIA</span>
                       <p style={M.posologyText}>{medicamento.posologia}</p>
+                    </div>
+                    <div style={M.removeMedicineFooter}>
+                      <button type="button" aria-label={`Remover ${medicamento.nome}`} title="Remover medicamento" onClick={() => removerMedicamento(medicamento)} style={M.removeSelection}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <path d="M3 6h18" /><path d="M8 6V4h8v2" /><path d="m19 6-1 14H6L5 6" /><path d="M10 11v5M14 11v5" />
+                        </svg>
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -424,7 +428,7 @@ const M = {
   selectHint: { color: "#2563eb", fontSize: "11px", fontWeight: "600", whiteSpace: "nowrap" },
   addMedicine: { width: "100%", display: "flex", alignItems: "center", gap: "10px", padding: "12px 14px", border: 0, background: "#f8fafc", color: "#1d4ed8", cursor: "pointer", textAlign: "left" },
   plus: { width: "28px", height: "28px", borderRadius: "8px", background: "#dbeafe", display: "grid", placeItems: "center", fontSize: "20px", fontWeight: "500" },
-  selectedMedicine: { marginTop: "10px", padding: "15px", border: "1px solid #dbeafe", background: "#f8fbff", borderRadius: "12px", color: "#0f172a", display: "grid", gridTemplateColumns: "minmax(0, 0.9fr) minmax(0, 1.1fr)", alignItems: "center", gap: "18px" },
+  selectedMedicine: { marginTop: "10px", padding: "15px", border: "1px solid #dbeafe", background: "#f8fbff", borderRadius: "12px", color: "#0f172a", display: "grid", gridTemplateColumns: "minmax(0, 0.9fr) minmax(0, 1.1fr) 38px", alignItems: "center", gap: "18px" },
   selectedHeader: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" },
   selectedIdentity: { display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "4px", minWidth: 0 },
   selectedEyebrow: { color: "#64748b", fontSize: "9px", fontWeight: "700", letterSpacing: "0.08em" },
@@ -435,6 +439,7 @@ const M = {
   posologyLabel: { color: "#64748b", fontSize: "9px", fontWeight: "700", letterSpacing: "0.08em" },
   posologyText: { margin: 0, color: "#334155", fontSize: "13px", lineHeight: 1.6, whiteSpace: "pre-wrap", overflowWrap: "anywhere" },
   controlledTag: { fontSize: "10px", fontWeight: "700", color: "#92400e", background: "#fef3c7", borderRadius: "6px", padding: "5px 7px", whiteSpace: "nowrap" },
+  removeMedicineFooter: { display: "flex", alignItems: "center", justifyContent: "flex-end", alignSelf: "stretch" },
   removeSelection: { border: "1px solid #e2e8f0", background: "#fff", color: "#64748b", width: "34px", height: "34px", borderRadius: "9px", display: "grid", placeItems: "center", cursor: "pointer", flexShrink: 0, alignSelf: "center" },
   gridTwo: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" },
   radioGroup: { display: "flex", flexWrap: "wrap", gap: "18px" },
