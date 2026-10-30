@@ -310,7 +310,7 @@ function ModalReceituario({ aberto, onFechar, paciente, pacienteId }) {
                       {semResultado && <div style={M.dropdownHint}>Nenhum medicamento encontrado.</div>}
                       <button type="button" style={M.addMedicine} onClick={() => { setListaAberta(false); setErroCadastro(""); setModalCadastro(true); }}>
                         <span style={M.plus}>+</span>
-                        <span><strong>Cadastrar medicamento</strong><small>Adicionar ao catálogo desta clínica</small></span>
+                        <span style={M.addMedicineText}><strong style={M.addMedicineTitle}>Cadastrar medicamento</strong><small style={M.addMedicineDescription}>Adicionar ao catálogo desta clínica</small></span>
                       </button>
                     </div>
                   )}
@@ -426,8 +426,11 @@ const M = {
   dropdownItem: { width: "100%", border: 0, borderBottom: "1px solid #f1f5f9", background: "#fff", padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", textAlign: "left", cursor: "pointer", color: "#0f172a" },
   dropdownHint: { padding: "12px 14px", color: "#64748b", fontSize: "12px" },
   selectHint: { color: "#2563eb", fontSize: "11px", fontWeight: "600", whiteSpace: "nowrap" },
-  addMedicine: { width: "100%", display: "flex", alignItems: "center", gap: "10px", padding: "12px 14px", border: 0, background: "#f8fafc", color: "#1d4ed8", cursor: "pointer", textAlign: "left" },
-  plus: { width: "28px", height: "28px", borderRadius: "8px", background: "#dbeafe", display: "grid", placeItems: "center", fontSize: "20px", fontWeight: "500" },
+  addMedicine: { width: "100%", display: "flex", alignItems: "center", gap: "12px", padding: "14px 16px", border: 0, borderTop: "1px solid #e8eef7", background: "linear-gradient(180deg, #ffffff 0%, #f8fbff 100%)", color: "#1d4ed8", cursor: "pointer", textAlign: "left", transition: "background 0.18s ease" },
+  addMedicineText: { display: "flex", flexDirection: "column", gap: "3px", minWidth: 0 },
+  addMedicineTitle: { fontSize: "13px", fontWeight: "700", color: "#1d4ed8", lineHeight: 1.35 },
+  addMedicineDescription: { fontSize: "11px", color: "#64748b", lineHeight: 1.4 },
+  plus: { width: "36px", height: "36px", borderRadius: "10px", background: "#e8f1ff", border: "1px solid #d7e6ff", display: "grid", placeItems: "center", fontSize: "22px", fontWeight: "500", flexShrink: 0 },
   selectedMedicine: { marginTop: "10px", padding: "15px", border: "1px solid #dbeafe", background: "#f8fbff", borderRadius: "12px", color: "#0f172a", display: "grid", gridTemplateColumns: "minmax(0, 0.9fr) minmax(0, 1.1fr) 38px", alignItems: "center", gap: "18px" },
   selectedHeader: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" },
   selectedIdentity: { display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "4px", minWidth: 0 },
