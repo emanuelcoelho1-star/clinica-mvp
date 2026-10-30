@@ -194,7 +194,18 @@ function ModalReceituario({ aberto, onFechar, paciente, pacienteId }) {
 
   return (
     <div style={M.overlay} onClick={fechar}>
-      <div style={M.modal} onClick={(e) => e.stopPropagation()}>
+      <style>{`
+        .receituario-sem-barra{scrollbar-width:none;-ms-overflow-style:none}
+        .receituario-sem-barra::-webkit-scrollbar{display:none;width:0;height:0}
+        @media(max-width:600px){
+          .receituario-modal-principal{width:calc(100vw - 20px)!important;max-height:calc(100dvh - 20px)!important;padding:18px!important;border-radius:13px!important;gap:16px!important}
+          .receituario-modal-cadastro{width:calc(100vw - 20px)!important;max-height:calc(100dvh - 20px)!important;padding:18px!important}
+          .receituario-opcoes{grid-template-columns:1fr!important}
+          .receituario-grid-duplo{grid-template-columns:1fr!important}
+          .receituario-rodape{flex-wrap:wrap}
+        }
+      `}</style>
+      <div className="receituario-modal-principal receituario-sem-barra" style={M.modal} onClick={(e) => e.stopPropagation()}>
         <div style={M.header}>
           <div>
             <h3 style={M.title}>{etapa === "tipo" ? "Novo receituário" : etapa === "impresso" ? "Receituário impresso" : "Receituário digital"}</h3>
@@ -208,7 +219,7 @@ function ModalReceituario({ aberto, onFechar, paciente, pacienteId }) {
         </div>
 
         {etapa === "tipo" && (
-          <div style={M.options}>
+          <div className="receituario-opcoes" style={M.options}>
             <button type="button" style={M.optionCard} onClick={() => setEtapa("impresso")}>
               <span style={{ ...M.optionIcon, background: "#eff6ff", color: "#2563eb" }}>
                 <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9V2h12v7" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><path d="M6 14h12v8H6z" /></svg>
@@ -249,7 +260,7 @@ function ModalReceituario({ aberto, onFechar, paciente, pacienteId }) {
                     autoComplete="off"
                   />
                   {listaAberta && (
-                    <div style={M.dropdown}>
+                    <div className="receituario-sem-barra" style={M.dropdown}>
                       {buscando && <div style={M.dropdownHint}>Buscando medicamentos...</div>}
                       {!buscando && medicamentos.map((medicamento) => (
                         <button type="button" key={medicamento.id} style={M.dropdownItem} onClick={() => selecionarMedicamento(medicamento)}>
@@ -299,7 +310,7 @@ function ModalReceituario({ aberto, onFechar, paciente, pacienteId }) {
                 Há medicamento controlado nesta receita. O PDF será gerado em duas vias: farmácia e paciente.
               </div>
             )}
-            <div style={M.footer}>
+            <div className="receituario-rodape" style={M.footer}>
               <button type="button" style={M.secondary} onClick={voltar}>Voltar</button>
               <button type="button" style={M.secondary} onClick={fechar}>Fechar</button>
               <button type="button" style={M.primary} onClick={gerarReceita} disabled={gerandoReceita}>
@@ -316,7 +327,7 @@ function ModalReceituario({ aberto, onFechar, paciente, pacienteId }) {
 
       {modalCadastro && (
         <div style={M.overlayNested} onClick={() => setModalCadastro(false)}>
-          <form style={M.modalCadastro} onClick={(e) => e.stopPropagation()} onSubmit={cadastrarMedicamento}>
+          <form className="receituario-modal-cadastro receituario-sem-barra" style={M.modalCadastro} onClick={(e) => e.stopPropagation()} onSubmit={cadastrarMedicamento}>
             <div style={M.header}>
               <div><h3 style={M.title}>Cadastrar medicamento</h3><p style={M.subtitle}>Este cadastro ficará disponível para todos os profissionais da clínica.</p></div>
               <button type="button" style={M.closeBtn} onClick={() => setModalCadastro(false)} aria-label="Fechar">{IconClose}</button>
@@ -332,7 +343,7 @@ function ModalReceituario({ aberto, onFechar, paciente, pacienteId }) {
 
             <div style={M.field}><label style={M.label}>Nome do medicamento</label><input name="nome" value={novoMedicamento.nome} onChange={atualizarNovoMedicamento} placeholder="Nome do medicamento" style={M.input} maxLength={160} required /></div>
 
-            <div style={M.gridTwo}>
+            <div className="receituario-grid-duplo" style={M.gridTwo}>
               <div style={M.field}><label style={M.label}>Quantidade</label><input name="quantidade" value={novoMedicamento.quantidade} onChange={atualizarNovoMedicamento} placeholder="Ex.: 1" style={M.input} required /></div>
               <div style={M.field}><label style={M.label}>Unidade de medida</label><select name="unidade" value={novoMedicamento.unidade} onChange={atualizarNovoMedicamento} style={M.input}>{UNIDADES.map((unidade) => <option key={unidade} value={unidade}>{unidade}</option>)}</select></div>
             </div>
@@ -352,8 +363,8 @@ function ModalReceituario({ aberto, onFechar, paciente, pacienteId }) {
 const M = {
   overlay: { position: "fixed", inset: 0, background: "rgba(15,23,42,0.4)", backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px", zIndex: 1000 },
   overlayNested: { position: "fixed", inset: 0, background: "rgba(15,23,42,0.45)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px", zIndex: 1010 },
-  modal: { width: "100%", maxWidth: "560px", background: "#fff", borderRadius: "16px", padding: "28px", boxShadow: "0 24px 64px rgba(15,23,42,0.18)", animation: "documento-fade-in 0.2s ease", display: "flex", flexDirection: "column", gap: "22px", maxHeight: "90vh", overflowY: "auto" },
-  modalCadastro: { width: "100%", maxWidth: "540px", background: "#fff", borderRadius: "16px", padding: "26px", boxShadow: "0 24px 64px rgba(15,23,42,0.22)", display: "flex", flexDirection: "column", gap: "16px", maxHeight: "90vh", overflowY: "auto" },
+  modal: { width: "min(560px, calc(100vw - 32px))", maxWidth: "560px", background: "#fff", borderRadius: "16px", padding: "clamp(16px, 3vw, 28px)", boxShadow: "0 24px 64px rgba(15,23,42,0.18)", animation: "documento-fade-in 0.2s ease", display: "flex", flexDirection: "column", gap: "22px", maxHeight: "min(90vh, 900px)", maxHeight: "min(90dvh, 900px)", overflowY: "auto" },
+  modalCadastro: { width: "min(540px, calc(100vw - 32px))", maxWidth: "540px", background: "#fff", borderRadius: "16px", padding: "clamp(16px, 3vw, 26px)", boxShadow: "0 24px 64px rgba(15,23,42,0.22)", display: "flex", flexDirection: "column", gap: "16px", maxHeight: "min(90vh, 900px)", maxHeight: "min(90dvh, 900px)", overflowY: "auto" },
   header: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "16px" },
   title: { margin: 0, fontSize: "18px", fontWeight: "700", color: "#0f172a" },
   subtitle: { margin: "6px 0 0", fontSize: "13px", color: "#94a3b8", lineHeight: 1.5 },
@@ -373,7 +384,7 @@ const M = {
   secondary: { border: "1px solid #e2e8f0", borderRadius: "10px", padding: "0 16px", minHeight: "40px", background: "#fff", color: "#475569", fontWeight: "500", cursor: "pointer" },
   digitalInfo: { display: "flex", flexDirection: "column", gap: "14px", alignItems: "flex-start", color: "#64748b", fontSize: "13px" },
   searchWrap: { position: "relative" },
-  dropdown: { position: "absolute", top: "calc(100% + 5px)", left: 0, right: 0, background: "#fff", border: "1px solid #e2e8f0", borderRadius: "11px", boxShadow: "0 14px 35px rgba(15,23,42,0.13)", zIndex: 5, maxHeight: "260px", overflowY: "auto" },
+  dropdown: { position: "absolute", top: "calc(100% + 5px)", left: 0, right: 0, background: "#fff", border: "1px solid #e2e8f0", borderRadius: "11px", boxShadow: "0 14px 35px rgba(15,23,42,0.13)", zIndex: 5, maxHeight: "min(260px, 35dvh)", overflowY: "auto" },
   dropdownItem: { width: "100%", border: 0, borderBottom: "1px solid #f1f5f9", background: "#fff", padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", textAlign: "left", cursor: "pointer", color: "#0f172a" },
   dropdownHint: { padding: "12px 14px", color: "#64748b", fontSize: "12px" },
   selectHint: { color: "#2563eb", fontSize: "11px", fontWeight: "600", whiteSpace: "nowrap" },
