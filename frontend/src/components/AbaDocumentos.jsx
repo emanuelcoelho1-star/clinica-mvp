@@ -247,8 +247,7 @@ function AbaDocumentos({ pacienteId, paciente }) {
   /* ═══════════════════════════════════════════
      RENDER — LISTA
      ═══════════════════════════════════════════ */
-  if (tela === "lista") {
-    return (
+  return (
       <div style={S.wrapper}>
 
         {/* Header */}
