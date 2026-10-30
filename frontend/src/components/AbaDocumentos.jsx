@@ -147,6 +147,7 @@ const Icons = {
    ═══════════════════════════════════════════════════════════ */
 function AbaDocumentos({ pacienteId, paciente }) {
   const [documentos, setDocumentos] = useState([]);
+  const [secaoAtiva, setSecaoAtiva] = useState("atestados");
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
 
@@ -266,6 +267,15 @@ function AbaDocumentos({ pacienteId, paciente }) {
     return total;
   }
 
+  const secoesDocumentos = [
+    { id: "atestados", label: "Atestados", filtro: (d) => d.tipo === "atestado" },
+    { id: "receitas", label: "Receitas", filtro: (d) => d.tipo === "receita" },
+    { id: "outros", label: "Outros arquivos", filtro: (d) => !["atestado", "receita"].includes(d.tipo) },
+  ];
+  const documentosDaSecao = documentos.filter(
+    (documento) => secoesDocumentos.find((secao) => secao.id === secaoAtiva).filtro(documento)
+  );
+
   /* ═══════════════════════════════════════════
      RENDER — LISTA
      ═══════════════════════════════════════════ */
@@ -375,19 +385,44 @@ function AbaDocumentos({ pacienteId, paciente }) {
           </div>
         )}
 
-        {/* Vazio */}
-        {!carregando && !erro && documentos.length === 0 && (
-          <div style={S.emptyBox}>
-            {Icons.clipboard}
-            <h3 style={S.emptyTitle}>Nenhum documento registrado</h3>
-            <p style={S.emptyText}>Use os atalhos acima para criar documentos.</p>
-          </div>
-        )}
+        {/* Separação por categoria */}
+        {!carregando && !erro && (
+          <div style={S.documentSections}>
+            <div style={S.sectionTabs}>
+              {secoesDocumentos.map((secao) => {
+                const quantidade = documentos.filter(secao.filtro).length;
+                const ativa = secaoAtiva === secao.id;
+                return (
+                  <button
+                    key={secao.id}
+                    type="button"
+                    style={{ ...S.sectionTab, ...(ativa ? S.sectionTabActive : {}) }}
+                    onClick={() => setSecaoAtiva(secao.id)}
+                  >
+                    <span>{secao.label}</span>
+                    <span style={{ ...S.sectionCount, ...(ativa ? S.sectionCountActive : {}) }}>{quantidade}</span>
+                  </button>
+                );
+              })}
+            </div>
 
-        {/* Lista de cards */}
-        {!carregando && !erro && documentos.length > 0 && (
-          <div style={S.cardGrid}>
-            {documentos.map((d) => {
+            {documentosDaSecao.length === 0 ? (
+              <div style={S.emptyBox}>
+                {Icons.clipboard}
+                <h3 style={S.emptyTitle}>
+                  {documentos.length === 0 ? "Nenhum documento registrado" : "Nenhum item nesta seção"}
+                </h3>
+                <p style={S.emptyText}>
+                  {secaoAtiva === "atestados"
+                    ? "Os atestados emitidos para este paciente aparecerão aqui."
+                    : secaoAtiva === "receitas"
+                    ? "As receitas emitidas para este paciente aparecerão aqui."
+                    : "Termos, contratos, laudos e outros documentos aparecerão aqui."}
+                </p>
+              </div>
+            ) : (
+              <div style={S.cardGrid}>
+                {documentosDaSecao.map((d) => {
               const hovered = hoveredCardId === d.id;
               const camposPreenchidos = contarCamposPreenchidos(d);
               return (
@@ -455,7 +490,9 @@ function AbaDocumentos({ pacienteId, paciente }) {
                   </div>
                 </div>
               );
-            })}
+                })}
+              </div>
+            )}
           </div>
         )}
 
@@ -721,6 +758,63 @@ const S = {
     color: "#94a3b8",
     lineHeight: 1.5,
     maxWidth: "360px",
+  },
+
+  /* ── Separação por categoria ───────────────────── */
+  documentSections: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "18px",
+  },
+  sectionTabs: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    padding: "6px",
+    background: "#f8fafc",
+    border: "1px solid #e2e8f0",
+    borderRadius: "14px",
+    width: "fit-content",
+    maxWidth: "100%",
+    flexWrap: "wrap",
+  },
+  sectionTab: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "9px",
+    border: "1px solid transparent",
+    borderRadius: "10px",
+    padding: "10px 14px",
+    background: "transparent",
+    color: "#64748b",
+    fontSize: "13px",
+    fontWeight: "600",
+    cursor: "pointer",
+    transition: "all 0.18s ease",
+  },
+  sectionTabActive: {
+    background: "#fff",
+    color: "#1d4ed8",
+    borderColor: "#dbeafe",
+    boxShadow: "0 1px 3px rgba(15,23,42,0.07)",
+  },
+  sectionCount: {
+    minWidth: "22px",
+    height: "22px",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "0 6px",
+    borderRadius: "7px",
+    background: "#e2e8f0",
+    color: "#64748b",
+    fontSize: "11px",
+    fontWeight: "700",
+  },
+  sectionCountActive: {
+    background: "#eff6ff",
+    color: "#2563eb",
   },
 
   /* ── Quick Access Section ──────────────────────── */
