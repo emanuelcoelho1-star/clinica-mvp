@@ -303,9 +303,6 @@ function AbaDocumentos({ pacienteId, paciente }) {
      RENDER — RECEITUÁRIO
      ═══════════════════════════════════════════ */
   if (tela === "form") {
-     RENDER — FORMULÁRIO
-     ═══════════════════════════════════════════ */
-  if (tela === "form") {
     return (
       <div style={S.wrapper}>
 
@@ -440,7 +437,6 @@ function AbaDocumentos({ pacienteId, paciente }) {
         </form>
       </div>
     );
-  }
   }
 
   /* ═══════════════════════════════════════════
