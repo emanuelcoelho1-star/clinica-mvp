@@ -167,6 +167,19 @@ db.serialize(() => {
 
 
   db.run(`
+    CREATE TABLE IF NOT EXISTS pastas_arquivos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      paciente_id INTEGER NOT NULL,
+      clinica_id INTEGER NOT NULL,
+      nome TEXT NOT NULL,
+      pasta_pai_id INTEGER,
+      created_at TEXT DEFAULT (datetime('now','localtime')),
+      FOREIGN KEY (paciente_id) REFERENCES pacientes(id),
+      FOREIGN KEY (pasta_pai_id) REFERENCES pastas_arquivos(id)
+    )
+  `);
+
+  db.run(`
     CREATE TABLE IF NOT EXISTS documentos (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       paciente_id INTEGER NOT NULL,
@@ -739,6 +752,7 @@ function executarMigracaoSaaS(onComplete = () => {}) {
       ["orcamentos", "clinica_id", "INTEGER"],
       ["orcamento_itens", "clinica_id", "INTEGER"],
       ["arquivos", "clinica_id", "INTEGER"],
+      ["arquivos", "pasta_id", "INTEGER"],
       ["documentos", "clinica_id", "INTEGER"],
       ["pagamentos", "clinica_id", "INTEGER"],
       ["evolucoes", "clinica_id", "INTEGER"],
