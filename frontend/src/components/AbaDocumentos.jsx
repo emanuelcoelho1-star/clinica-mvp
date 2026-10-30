@@ -287,10 +287,12 @@ function AbaDocumentos({ pacienteId, paciente }) {
           </div>
         )}
 
+        {/* Atalhos rápidos — sempre visíveis */}
         {!carregando && !erro && (
           <div style={S.quickSection}>
             <span style={S.quickSectionTitle}>Acesso rápido</span>
             <div style={S.quickGrid}>
+              {/* Atestado — abre modal */}
               <button
                 style={{ ...S.quickCard, ...(hoveredBtn === "quick-atestado" ? S.quickCardHover : {}) }}
                 onMouseEnter={() => setHoveredBtn("quick-atestado")}
@@ -306,6 +308,53 @@ function AbaDocumentos({ pacienteId, paciente }) {
                 </div>
                 <span style={S.quickLabel}>Atestado</span>
               </button>
+              {/* Receituário */}
+              <button
+                style={{ ...S.quickCard, ...(hoveredBtn === "quick-receita" ? S.quickCardHover : {}) }}
+                onMouseEnter={() => setHoveredBtn("quick-receita")}
+                onMouseLeave={() => setHoveredBtn(null)}
+                onClick={() => abrirFormComTipo("receita")}
+              >
+                <div style={{ ...S.quickIcon, background: "#f0fdf4", color: "#16a34a" }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M9 2v4" /><path d="M15 2v4" />
+                    <rect width="18" height="18" x="3" y="4" rx="2" />
+                    <path d="M9 14h6" /><path d="M12 11v6" />
+                  </svg>
+                </div>
+                <span style={S.quickLabel}>Receituário</span>
+              </button>
+              {/* Termos */}
+              <button
+                style={{ ...S.quickCard, ...(hoveredBtn === "quick-termo" ? S.quickCardHover : {}) }}
+                onMouseEnter={() => setHoveredBtn("quick-termo")}
+                onMouseLeave={() => setHoveredBtn(null)}
+                onClick={() => alert("Modal de Termos em breve!")}
+              >
+                <div style={{ ...S.quickIcon, background: "#faf5ff", color: "#9333ea" }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                    <path d="M9 12l2 2 4-4" />
+                  </svg>
+                </div>
+                <span style={S.quickLabel}>Termos</span>
+              </button>
+              {/* Contratos */}
+              <button
+                style={{ ...S.quickCard, ...(hoveredBtn === "quick-contrato" ? S.quickCardHover : {}) }}
+                onMouseEnter={() => setHoveredBtn("quick-contrato")}
+                onMouseLeave={() => setHoveredBtn(null)}
+                onClick={() => alert("Modal de Contratos em breve!")}
+              >
+                <div style={{ ...S.quickIcon, background: "#fff7ed", color: "#ea580c" }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <line x1="16" x2="8" y1="13" y2="13" /><line x1="16" x2="8" y1="17" y2="17" /><line x1="10" x2="8" y1="9" y2="9" />
+                  </svg>
+                </div>
+                <span style={S.quickLabel}>Contratos</span>
+              </button>
             </div>
           </div>
         )}
@@ -315,7 +364,7 @@ function AbaDocumentos({ pacienteId, paciente }) {
           <div style={S.emptyBox}>
             {Icons.clipboard}
             <h3 style={S.emptyTitle}>Nenhum documento registrado</h3>
-            <p style={S.emptyText}>Use o atalho acima para emitir um atestado.</p>
+            <p style={S.emptyText}>Use os atalhos acima para criar documentos.</p>
           </div>
         )}
 
@@ -331,10 +380,6 @@ function AbaDocumentos({ pacienteId, paciente }) {
                   style={{ ...S.card, ...(hovered ? S.cardHover : {}) }}
                   onMouseEnter={() => setHoveredCardId(d.id)}
                   onMouseLeave={() => setHoveredCardId(null)}
-                  onClick={() => abrirPdfDocumento(d)}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") abrirPdfDocumento(d); }}
                 >
                   {/* Topo do card */}
                   <div style={S.cardTop}>
@@ -364,8 +409,20 @@ function AbaDocumentos({ pacienteId, paciente }) {
                     <span style={S.metaChip}>{camposPreenchidos} campo{camposPreenchidos !== 1 ? "s" : ""} preenchido{camposPreenchidos !== 1 ? "s" : ""}</span>
                   </div>
 
-                  {/* Ação de exclusão; clicar no card abre o PDF */}
+                  {/* Ações */}
                   <div style={S.cardActions}>
+                    <button
+                      style={{
+                        ...S.cardBtn,
+                        ...(hoveredBtn === `ver-${d.id}` ? S.cardBtnHover : {}),
+                      }}
+                      onMouseEnter={() => setHoveredBtn(`ver-${d.id}`)}
+                      onMouseLeave={() => setHoveredBtn(null)}
+                      onClick={() => abrirPdfDocumento(d)}
+                    >
+                      {Icons.eye}
+                      <span>Ver</span>
+                    </button>
                     <button
                       style={{
                         ...S.cardBtn,
@@ -374,7 +431,7 @@ function AbaDocumentos({ pacienteId, paciente }) {
                       }}
                       onMouseEnter={() => setHoveredBtn(`excluir-${d.id}`)}
                       onMouseLeave={() => setHoveredBtn(null)}
-                      onClick={(e) => { e.stopPropagation(); setConfirmarExclusao(d); }}
+                      onClick={() => setConfirmarExclusao(d)}
                     >
                       {Icons.trash}
                       <span>Excluir</span>
