@@ -210,6 +210,44 @@ db.serialize(() => {
     )
   `);
 
+  /* ── Relacionamento: retornos programados e histórico de contatos ── */
+  db.run(`
+    CREATE TABLE IF NOT EXISTS retornos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      clinica_id INTEGER NOT NULL,
+      paciente_id INTEGER NOT NULL,
+      profissional_id INTEGER,
+      data_prevista TEXT NOT NULL,
+      motivo TEXT,
+      status TEXT NOT NULL DEFAULT 'pendente'
+        CHECK (status IN ('pendente', 'agendado', 'concluido', 'cancelado')),
+      consulta_origem_id INTEGER,
+      consulta_id INTEGER,
+      ultimo_contato_em TEXT,
+      observacoes TEXT,
+      created_at TEXT DEFAULT (datetime('now','localtime')),
+      FOREIGN KEY (paciente_id) REFERENCES pacientes(id),
+      FOREIGN KEY (profissional_id) REFERENCES profissionais(id),
+      FOREIGN KEY (consulta_origem_id) REFERENCES consultas(id),
+      FOREIGN KEY (consulta_id) REFERENCES consultas(id)
+    )
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS contatos_paciente (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      clinica_id INTEGER NOT NULL,
+      paciente_id INTEGER NOT NULL,
+      tipo TEXT NOT NULL CHECK (tipo IN ('retorno', 'reativacao', 'aniversario')),
+      canal TEXT NOT NULL DEFAULT 'whatsapp',
+      retorno_id INTEGER,
+      usuario_id INTEGER,
+      created_at TEXT DEFAULT (datetime('now','localtime')),
+      FOREIGN KEY (paciente_id) REFERENCES pacientes(id),
+      FOREIGN KEY (retorno_id) REFERENCES retornos(id)
+    )
+  `);
+
   db.run(`
     CREATE TABLE IF NOT EXISTS pagamentos (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -612,6 +650,10 @@ db.serialize(() => {
     ["financeiro", "editar", "Editar lançamentos financeiros"],
     ["financeiro", "excluir", "Excluir lançamentos financeiros"],
     ["financeiro", "exportar", "Exportar relatórios financeiros"],
+    ["relacionamento", "listar", "Ver retornos, inativos e aniversariantes"],
+    ["relacionamento", "criar", "Programar retornos e registrar contatos"],
+    ["relacionamento", "editar", "Editar e mudar status de retornos"],
+    ["relacionamento", "excluir", "Excluir retornos"],
     ["configuracoes", "gerenciar_usuarios", "Gerenciar usuários"],
     ["configuracoes", "gerenciar_roles", "Gerenciar perfis de acesso"],
     ["configuracoes", "gerenciar_permissoes", "Gerenciar permissões"],

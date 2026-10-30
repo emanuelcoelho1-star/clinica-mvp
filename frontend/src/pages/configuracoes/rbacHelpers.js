@@ -14,6 +14,7 @@ export const MODULOS_LABELS = {
   pagamentos: "Pagamentos",
   evolucoes: "Evoluções clínicas",
   financeiro: "Financeiro",
+  relacionamento: "Relacionamento",
   orcamentos: "Orçamentos",
   documentos: "Documentos",
   tratamentos: "Tratamentos",

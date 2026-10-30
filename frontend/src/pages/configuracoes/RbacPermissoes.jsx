@@ -113,7 +113,7 @@ function RbacPermissoes({ roles, permissoes, token, onMsg, onErro }) {
   const ordemModulos = [
     "pacientes", "anamneses", "orcamentos", "tratamentos",
     "pagamentos", "evolucoes", "documentos", "arquivos",
-    "agenda", "financeiro", "configuracoes",
+    "agenda", "relacionamento", "financeiro", "configuracoes",
   ];
   const modulos = [...new Set(permissoes.map((p) => p.modulo))].sort((a, b) => {
     const ia = ordemModulos.indexOf(a);
