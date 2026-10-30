@@ -24,6 +24,27 @@ function ModalReceituario({ aberto, onFechar }) {
     posologia: "", receita_controlada: false,
   });
   const buscaRef = useRef(null);
+  const buscaContainerRef = useRef(null);
+
+  useEffect(() => {
+    if (!listaAberta) return;
+    function fecharAoClicarFora(evento) {
+      if (buscaContainerRef.current && !buscaContainerRef.current.contains(evento.target)) {
+        setListaAberta(false);
+      }
+    }
+    function fecharComEscape(evento) {
+      if (evento.key === "Escape") setListaAberta(false);
+    }
+    document.addEventListener("mousedown", fecharAoClicarFora);
+    document.addEventListener("touchstart", fecharAoClicarFora);
+    document.addEventListener("keydown", fecharComEscape);
+    return () => {
+      document.removeEventListener("mousedown", fecharAoClicarFora);
+      document.removeEventListener("touchstart", fecharAoClicarFora);
+      document.removeEventListener("keydown", fecharComEscape);
+    };
+  }, [listaAberta]);
 
   useEffect(() => {
     if (!aberto || etapa !== "impresso") return;
@@ -157,7 +178,7 @@ function ModalReceituario({ aberto, onFechar }) {
               </div>
               <div style={M.field}>
                 <label style={M.label}>Buscar medicamento</label>
-                <div style={M.searchWrap}>
+                <div ref={buscaContainerRef} style={M.searchWrap}>
                   <input
                     ref={buscaRef} type="text" value={busca}
                     onChange={(e) => { setBusca(e.target.value); setForm((atual) => ({ ...atual, medicamento: null })); setListaAberta(true); }}
