@@ -181,6 +181,22 @@ db.serialize(() => {
   `);
 
   db.run(`
+    CREATE TABLE IF NOT EXISTS medicamentos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      clinica_id INTEGER NOT NULL,
+      tipo_uso TEXT NOT NULL CHECK (tipo_uso IN ('interno', 'externo')),
+      nome TEXT NOT NULL,
+      quantidade TEXT NOT NULL,
+      unidade TEXT NOT NULL CHECK (unidade IN ('Ampola(s)', 'Caixa(s)', 'Comprimido(s)', 'Frasco(s)', 'Pacote(s)', 'Tubo(s)', 'Cápsula(s)')),
+      posologia TEXT NOT NULL,
+      receita_controlada INTEGER NOT NULL DEFAULT 0,
+      ativo INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT DEFAULT (datetime('now','localtime')),
+      UNIQUE(clinica_id, nome)
+    )
+  `);
+
+  db.run(`
     CREATE TABLE IF NOT EXISTS pagamentos (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       paciente_id INTEGER NOT NULL,
