@@ -76,6 +76,64 @@ router.get("/paciente/:pacienteId", auth, (req, res) => {
 });
 
 /* ═══════════════════════════════════════════════════════════
+   PASTAS DO PACIENTE
+   ═══════════════════════════════════════════════════════════ */
+router.get("/pastas/paciente/:pacienteId", (req, res) => {
+  db.all(
+    "SELECT id, paciente_id, nome, pasta_pai_id, created_at FROM pastas_arquivos WHERE paciente_id = ? AND clinica_id = ? ORDER BY nome COLLATE NOCASE",
+    [req.params.pacienteId, req.user.clinica_id],
+    (err, rows) => {
+      if (err) return res.status(500).json({ erro: "Não foi possível carregar as pastas." });
+      res.json(rows || []);
+    }
+  );
+});
+
+router.post("/pastas", (req, res) => {
+  const { paciente_id, nome, pasta_pai_id } = req.body;
+  const nomeSeguro = String(nome || "").trim().slice(0, 100);
+  if (!paciente_id || !nomeSeguro) return res.status(400).json({ erro: "Informe o nome da pasta." });
+  db.get("SELECT id FROM pacientes WHERE id = ? AND clinica_id = ?", [paciente_id, req.user.clinica_id], (patientErr, patient) => {
+    if (patientErr) return res.status(500).json({ erro: "Não foi possível validar o paciente." });
+    if (!patient) return res.status(404).json({ erro: "Paciente não encontrado nesta clínica." });
+    const inserir = () => db.run(
+      "INSERT INTO pastas_arquivos (paciente_id, clinica_id, nome, pasta_pai_id) VALUES (?, ?, ?, ?)",
+      [paciente_id, req.user.clinica_id, nomeSeguro, pasta_pai_id || null],
+      function (err) {
+        if (err) return res.status(500).json({ erro: "Não foi possível criar a pasta." });
+        res.status(201).json({ id: this.lastID, paciente_id: Number(paciente_id), nome: nomeSeguro, pasta_pai_id: pasta_pai_id || null });
+      }
+    );
+    if (!pasta_pai_id) return inserir();
+    db.get("SELECT id FROM pastas_arquivos WHERE id = ? AND paciente_id = ? AND clinica_id = ?", [pasta_pai_id, paciente_id, req.user.clinica_id], (parentErr, parent) => {
+      if (parentErr) return res.status(500).json({ erro: "Não foi possível validar a pasta de destino." });
+      if (!parent) return res.status(400).json({ erro: "Pasta de destino inválida." });
+      inserir();
+    });
+  });
+});
+
+router.delete("/pastas/:id", (req, res) => {
+  const id = req.params.id;
+  db.get("SELECT id FROM pastas_arquivos WHERE id = ? AND clinica_id = ?", [id, req.user.clinica_id], (err, folder) => {
+    if (err) return res.status(500).json({ erro: "Não foi possível localizar a pasta." });
+    if (!folder) return res.status(404).json({ erro: "Pasta não encontrada." });
+    db.get(
+      "SELECT (SELECT COUNT(*) FROM arquivos WHERE pasta_id = ?) + (SELECT COUNT(*) FROM pastas_arquivos WHERE pasta_pai_id = ?) AS total",
+      [id, id],
+      (countErr, row) => {
+        if (countErr) return res.status(500).json({ erro: "Não foi possível verificar o conteúdo da pasta." });
+        if (row.total > 0) return res.status(409).json({ erro: "A pasta precisa estar vazia para ser excluída." });
+        db.run("DELETE FROM pastas_arquivos WHERE id = ? AND clinica_id = ?", [id, req.user.clinica_id], (deleteErr) => {
+          if (deleteErr) return res.status(500).json({ erro: "Não foi possível excluir a pasta." });
+          res.json({ mensagem: "Pasta excluída." });
+        });
+      }
+    );
+  });
+});
+
+/* ═══════════════════════════════════════════════════════════
    UPLOAD DE ARQUIVO
    POST /arquivos
    body (multipart/form-data): arquivo, paciente_id, categoria, descricao
@@ -85,7 +143,7 @@ router.post("/", auth, upload.single("arquivo"), (req, res) => {
     return res.status(400).json({ erro: "Nenhum arquivo enviado." });
   }
 
-  const { paciente_id, categoria, descricao } = req.body;
+  const { paciente_id, categoria, descricao, pasta_id } = req.body;
 
   if (!paciente_id) {
     // Remove o upload inválido sem bloquear o event loop nem deixar uma falha de limpeza derrubar a rota.
@@ -96,10 +154,14 @@ router.post("/", auth, upload.single("arquivo"), (req, res) => {
 
   const nomeOriginal = path.basename(req.file.originalname || "arquivo").replace(/[\\r\\n\\0]/g, "").slice(0, 180);
   const sql = `
-    INSERT INTO arquivos (paciente_id, nome_original, nome_salvo, tamanho, mimetype, categoria, descricao, clinica_id)
-    SELECT p.id, ?, ?, ?, ?, ?, ?, ?
+    INSERT INTO arquivos (paciente_id, nome_original, nome_salvo, tamanho, mimetype, categoria, descricao, clinica_id, pasta_id)
+    SELECT p.id, ?, ?, ?, ?, ?, ?, ?, ?
     FROM pacientes p
     WHERE p.id = ? AND p.clinica_id = ?
+      AND (? IS NULL OR EXISTS (
+        SELECT 1 FROM pastas_arquivos pa
+        WHERE pa.id = ? AND pa.paciente_id = p.id AND pa.clinica_id = p.clinica_id
+      ))
   `;
 
   db.run(
@@ -112,8 +174,11 @@ router.post("/", auth, upload.single("arquivo"), (req, res) => {
       categoria || "outro",
       descricao || "",
       req.user.clinica_id,
+      pasta_id || null,
       paciente_id,
       req.user.clinica_id,
+      pasta_id || null,
+      pasta_id || null,
     ],
     function (err) {
       if (err || this.changes === 0) {
