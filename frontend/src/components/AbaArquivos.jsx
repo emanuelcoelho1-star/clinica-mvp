@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import API_URL from "../api";
 
 /* ═══════════════════════════════════════════════════════════
@@ -72,13 +72,6 @@ const Icons = {
       <path d="m15 18-6-6 6-6" />
     </svg>
   ),
-  upload: (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-      <polyline points="17 8 12 3 7 8" />
-      <line x1="12" x2="12" y1="3" y2="15" />
-    </svg>
-  ),
   file: (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
@@ -133,9 +126,6 @@ const Icons = {
   ),
   folderCard: (
     <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></svg>
-  ),
-  camera: (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 4h-4l-2 3H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z" /><circle cx="12" cy="13" r="3" /></svg>
   ),
   folder: (
     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
@@ -217,21 +207,12 @@ function AbaArquivos({ pacienteId }) {
   const [modalPastaAberto, setModalPastaAberto] = useState(false);
   const [nomeNovaPasta, setNomeNovaPasta] = useState("");
   const [salvandoPasta, setSalvandoPasta] = useState(false);
-  const [tipoSelecao, setTipoSelecao] = useState("arquivo");
   const [erro, setErro] = useState("");
 
   const [tela, setTela] = useState("lista"); // "lista" | "upload" | "preview"
   const [preview, setPreview] = useState(null);
   const [previewUrl, setPreviewUrl] = useState("");
 
-  // Upload
-  const [selectedFiles, setSelectedFiles] = useState([]);
-  const [categoria, setCategoria] = useState("outro");
-  const [descricao, setDescricao] = useState("");
-  const [uploading, setUploading] = useState(false);
-  const [erroUpload, setErroUpload] = useState("");
-  const [dragOver, setDragOver] = useState(false);
-  const fileInputRef = useRef(null);
 
   // Busca e filtros
   const [busca, setBusca] = useState("");
@@ -343,17 +324,6 @@ function AbaArquivos({ pacienteId }) {
     return matchBusca && matchCategoria;
   });
 
-  /* ── Upload ──────────────────────────────── */
-  function abrirUpload(tipo = "arquivo") {
-    setSelectedFiles([]);
-    setCategoria("outro");
-    setDescricao("");
-    setErroUpload("");
-    setTipoSelecao(tipo);
-    setMenuNovoAberto(false);
-    setTela("upload");
-  }
-
   async function criarPasta(e) {
     e.preventDefault();
     const nome = nomeNovaPasta.trim();
@@ -380,71 +350,15 @@ function AbaArquivos({ pacienteId }) {
     }
   }
 
-  function handleFileSelect(e) {
-    const files = Array.from(e.target.files || []);
-    setSelectedFiles((prev) => [...prev, ...files]);
-  }
-
-  function handleDrop(e) {
-    e.preventDefault();
-    setDragOver(false);
-    const files = Array.from(e.dataTransfer.files || []);
-    setSelectedFiles((prev) => [...prev, ...files]);
-  }
-
-  function removerFile(index) {
-    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
-  }
-
-  async function handleUpload(e) {
-    e.preventDefault();
-    if (selectedFiles.length === 0) {
-      setErroUpload("Selecione pelo menos um arquivo.");
-      return;
-    }
-
-    try {
-      setUploading(true);
-      setErroUpload("");
-      const tk = localStorage.getItem("token");
-
-      for (const file of selectedFiles) {
-        const formData = new FormData();
-        formData.append("arquivo", file);
-        formData.append("paciente_id", pacienteId);
-        formData.append("categoria", categoria);
-        formData.append("descricao", descricao);
-        if (pastaAtualId) formData.append("pasta_id", pastaAtualId);
-
-        const r = await fetch(`${API_URL}/arquivos`, {
-          method: "POST",
-          headers: { Authorization: tk || "" },
-          body: formData,
-        });
-        if (!r.ok) throw new Error();
-      }
-
-      await carregarArquivos();
-      await carregarPastas();
-      voltarParaLista();
-    } catch {
-      setErroUpload("Não foi possível enviar o(s) arquivo(s).");
-    } finally {
-      setUploading(false);
-    }
+  /* ── Preview ─────────────────────────────── */
+  function abrirPreview(arquivo) {
+    setPreview(arquivo);
+    setTela("preview");
   }
 
   function voltarParaLista() {
     setTela("lista");
     setPreview(null);
-    setSelectedFiles([]);
-    setErroUpload("");
-  }
-
-  /* ── Preview ─────────────────────────────── */
-  function abrirPreview(arquivo) {
-    setPreview(arquivo);
-    setTela("preview");
   }
 
   /* ── Baixar ──────────────────────────────── */
@@ -537,9 +451,6 @@ function AbaArquivos({ pacienteId }) {
             </button>
             {menuNovoAberto && <div style={S.newMenu}>
               <button type="button" style={S.newMenuItem} onClick={() => { setMenuNovoAberto(false); setNomeNovaPasta(""); setModalPastaAberto(true); }}>{Icons.folderSmall}<span>Pasta</span></button>
-              <button type="button" style={S.newMenuItem} onClick={() => abrirUpload("arquivo")}>{Icons.fileSmall}<span>Arquivo</span></button>
-              <button type="button" style={S.newMenuItem} onClick={() => abrirUpload("imagem")}>{Icons.image}<span>Imagem</span></button>
-              <button type="button" style={S.newMenuItem} onClick={() => abrirUpload("camera")}>{Icons.camera}<span>Tirar foto</span></button>
             </div>}
           </div>
         </div>
@@ -798,173 +709,6 @@ function AbaArquivos({ pacienteId }) {
             0%, 80%, 100% { transform: scale(0); opacity: 0.5; }
             40% { transform: scale(1); opacity: 1; }
           }
-          @keyframes arquivo-fade-in {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: translateY(0); }
-          }
-        `}</style>
-      </div>
-    );
-  }
-
-  /* ═══════════════════════════════════════════
-     RENDER — UPLOAD
-     ═══════════════════════════════════════════ */
-  if (tela === "upload") {
-    return (
-      <div style={S.wrapper}>
-        {/* Header */}
-        <div style={S.header}>
-          <div>
-            <button
-              style={{
-                ...S.backBtn,
-                ...(hoveredBtn === "back-upload" ? S.backBtnHover : {}),
-              }}
-              onMouseEnter={() => setHoveredBtn("back-upload")}
-              onMouseLeave={() => setHoveredBtn(null)}
-              onClick={voltarParaLista}
-            >
-              {Icons.arrowLeft}
-              <span>Voltar</span>
-            </button>
-            <h2 style={S.title}>Enviar arquivos</h2>
-            <p style={S.subtitle}>{tipoSelecao === "camera" ? "Tire uma foto para adicionar ao prontuário." : tipoSelecao === "imagem" ? "Selecione imagens para adicionar ao prontuário." : "Selecione os arquivos que deseja enviar para o prontuário."}</p>
-          </div>
-        </div>
-
-        <form onSubmit={handleUpload} style={S.formWrap}>
-          {/* Drop zone */}
-          <div
-            style={{
-              ...S.dropZone,
-              ...(dragOver ? S.dropZoneActive : {}),
-            }}
-            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-            onDragLeave={() => setDragOver(false)}
-            onDrop={handleDrop}
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <div style={S.dropIcon}>{Icons.upload}</div>
-            <p style={S.dropTitle}>
-              Arraste arquivos aqui ou <span style={S.dropLink}>clique para selecionar</span>
-            </p>
-            <p style={S.dropHint}>PDF, imagens, documentos — até 10 MB por arquivo</p>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept={tipoSelecao === "imagem" || tipoSelecao === "camera" ? "image/*" : ".pdf,.jpg,.jpeg,.png,.gif,.webp,.doc,.docx,.xls,.xlsx,.txt"}
-              capture={tipoSelecao === "camera" ? "environment" : undefined}
-              multiple={tipoSelecao !== "camera"}
-              onChange={handleFileSelect}
-              style={{ display: "none" }}
-            />
-          </div>
-
-          {/* Arquivos selecionados */}
-          {selectedFiles.length > 0 && (
-            <div style={S.formCard}>
-              <div style={S.formCardHeader}>
-                <span style={S.formCardIcon}>{Icons.fileSmall}</span>
-                <span style={S.formCardTitle}>
-                  {selectedFiles.length} arquivo{selectedFiles.length !== 1 ? "s" : ""} selecionado{selectedFiles.length !== 1 ? "s" : ""}
-                </span>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                {selectedFiles.map((file, idx) => (
-                  <div key={idx} style={S.fileRow}>
-                    <FileIcon nome={file.name} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={S.fileName}>{file.name}</p>
-                      <span style={S.fileMeta}>{formatarTamanho(file.size)}</span>
-                    </div>
-                    <button
-                      type="button"
-                      style={{
-                        ...S.removeFileBtn,
-                        ...(hoveredBtn === `rm-${idx}` ? S.removeFileBtnHover : {}),
-                      }}
-                      onMouseEnter={() => setHoveredBtn(`rm-${idx}`)}
-                      onMouseLeave={() => setHoveredBtn(null)}
-                      onClick={() => removerFile(idx)}
-                    >
-                      {Icons.close}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Categoria + Descrição */}
-          <div style={S.formCard}>
-            <div style={S.formCardHeader}>
-              <span style={S.formCardIcon}>{Icons.file}</span>
-              <span style={S.formCardTitle}>Detalhes</span>
-            </div>
-            <div style={S.formGrid2}>
-              <div style={S.fieldGroup}>
-                <label style={S.label}>Categoria</label>
-                <select
-                  value={categoria}
-                  onChange={(e) => setCategoria(e.target.value)}
-                  style={S.input}
-                >
-                  {CATEGORIAS.map((c) => (
-                    <option key={c.value} value={c.value}>
-                      {c.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div style={S.fieldGroup}>
-                <label style={S.label}>Descrição (opcional)</label>
-                <input
-                  type="text"
-                  value={descricao}
-                  onChange={(e) => setDescricao(e.target.value)}
-                  placeholder="Ex: Panorâmica 2026"
-                  style={S.input}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Erro */}
-          {erroUpload && <div style={S.errorBox}><span>{erroUpload}</span></div>}
-
-          {/* Ações */}
-          <div style={S.formActions}>
-            <button
-              type="button"
-              style={{
-                ...S.btnSecondary,
-                ...(hoveredBtn === "cancel-upload" ? S.btnSecondaryHover : {}),
-              }}
-              onMouseEnter={() => setHoveredBtn("cancel-upload")}
-              onMouseLeave={() => setHoveredBtn(null)}
-              onClick={voltarParaLista}
-              disabled={uploading}
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              style={{
-                ...S.btnPrimary,
-                ...(hoveredBtn === "confirm-upload" ? S.btnPrimaryHover : {}),
-              }}
-              onMouseEnter={() => setHoveredBtn("confirm-upload")}
-              onMouseLeave={() => setHoveredBtn(null)}
-              disabled={uploading || selectedFiles.length === 0}
-            >
-              {Icons.upload}
-              <span>{uploading ? "Enviando..." : "Enviar arquivos"}</span>
-            </button>
-          </div>
-        </form>
-
-        <style>{`
           @keyframes arquivo-fade-in {
             from { opacity: 0; transform: translateY(8px); }
             to { opacity: 1; transform: translateY(0); }
@@ -1331,7 +1075,6 @@ const S = {
   modalActions: { display: "flex", justifyContent: "center", gap: "10px", marginTop: "24px" },
 
   /* ── Form ────────────────────────────────────── */
-  formWrap: { display: "flex", flexDirection: "column", gap: "16px" },
   formCard: {
     background: "#fff", borderRadius: "16px", border: "1px solid #f1f5f9", padding: "22px",
   },
@@ -1342,52 +1085,11 @@ const S = {
     background: "#eff6ff", color: "#2563eb", flexShrink: 0,
   },
   formCardTitle: { fontSize: "14px", fontWeight: "600", color: "#0f172a", letterSpacing: "-0.01em" },
-  formGrid2: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" },
-  fieldGroup: { display: "flex", flexDirection: "column", gap: "6px" },
-  label: { fontSize: "12px", fontWeight: "600", color: "#64748b", letterSpacing: "0.02em" },
   input: {
     width: "100%", height: "42px", borderRadius: "10px", border: "1px solid #e2e8f0",
     padding: "0 14px", outline: "none", fontSize: "14px", background: "#fff",
     boxSizing: "border-box", color: "#0f172a", transition: "border-color 0.2s ease, box-shadow 0.2s ease",
   },
-  formActions: { display: "flex", justifyContent: "flex-end", gap: "10px", flexWrap: "wrap" },
-
-  /* ── Drop Zone ───────────────────────────────── */
-  dropZone: {
-    display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-    gap: "12px", padding: "48px 24px", background: "#fff", borderRadius: "16px",
-    border: "2px dashed #e2e8f0", cursor: "pointer", transition: "all 0.2s ease",
-    textAlign: "center",
-  },
-  dropZoneActive: {
-    borderColor: "#2563eb", background: "#eff6ff",
-  },
-  dropIcon: {
-    display: "flex", alignItems: "center", justifyContent: "center",
-    width: "48px", height: "48px", borderRadius: "12px",
-    background: "#eff6ff", color: "#2563eb",
-  },
-  dropTitle: {
-    margin: 0, fontSize: "14px", fontWeight: "600", color: "#334155",
-  },
-  dropLink: { color: "#2563eb", textDecoration: "underline" },
-  dropHint: {
-    margin: 0, fontSize: "13px", color: "#94a3b8",
-  },
-
-  /* ── File row ────────────────────────────────── */
-  fileRow: {
-    display: "flex", alignItems: "center", gap: "12px",
-    background: "#fafbfc", borderRadius: "10px", padding: "12px 14px",
-    border: "1px solid #f1f5f9",
-  },
-  removeFileBtn: {
-    display: "flex", alignItems: "center", justifyContent: "center",
-    width: "28px", height: "28px", borderRadius: "6px",
-    border: "1px solid #f1f5f9", background: "#fff", color: "#94a3b8",
-    cursor: "pointer", flexShrink: 0, transition: "all 0.15s ease",
-  },
-  removeFileBtnHover: { background: "#fef2f2", borderColor: "#fecaca", color: "#ef4444" },
 
   /* ── Preview ─────────────────────────────────── */
   previewCard: {
