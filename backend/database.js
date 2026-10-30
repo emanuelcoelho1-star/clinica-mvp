@@ -654,6 +654,7 @@ db.serialize(() => {
     ["relacionamento", "criar", "Programar retornos e registrar contatos"],
     ["relacionamento", "editar", "Editar e mudar status de retornos"],
     ["relacionamento", "excluir", "Excluir retornos"],
+    ["relatorios", "listar", "Ver relatórios de agenda, orçamentos e receita"],
     ["configuracoes", "gerenciar_usuarios", "Gerenciar usuários"],
     ["configuracoes", "gerenciar_roles", "Gerenciar perfis de acesso"],
     ["configuracoes", "gerenciar_permissoes", "Gerenciar permissões"],
@@ -698,6 +699,9 @@ db.serialize(() => {
   adicionarColunaSeNaoExistir("consultas", "observacoes", "TEXT");
   adicionarColunaSeNaoExistir("consultas", "lembrete_enviado_em", "TEXT");
   adicionarColunaSeNaoExistir("consultas", "confirmado_em", "TEXT");
+  // Funil de orçamentos: último follow-up e motivo de recusa
+  adicionarColunaSeNaoExistir("orcamentos", "ultimo_contato_em", "TEXT");
+  adicionarColunaSeNaoExistir("orcamentos", "motivo_recusa", "TEXT");
 });
 
 module.exports = db;

@@ -68,3 +68,11 @@ export function mensagemAniversario({ paciente, clinica }) {
     `Toda a equipe ${clinica ? `da ${clinica}` : "da clínica"} deseja um feliz aniversário! Que seu novo ciclo seja cheio de saúde e muitos sorrisos.\n\n` +
     "Um grande abraço!";
 }
+
+export function mensagemOrcamento({ paciente, procedimentos, clinica }) {
+  const sobre = procedimentos ? ` de ${procedimentos.toLowerCase()}` : "";
+  return `Olá, ${primeiroNome(paciente)}! Tudo bem?${apresentacao(clinica)}\n\n` +
+    `Passando para saber se ficou alguma dúvida sobre o orçamento${sobre} que preparamos para você. ` +
+    "Podemos ver juntos a melhor forma de pagamento ou já reservar um horário para começar.\n\n" +
+    "É só responder esta mensagem.";
+}

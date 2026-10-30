@@ -10,6 +10,8 @@ import Configuracoes from "./pages/Configuracoes";
 import CadastroClinica from "./pages/CadastroClinica";
 import Financeiro from "./pages/Financeiro";
 import Relacionamento from "./pages/Relacionamento";
+import Funil from "./pages/Funil";
+import Relatorios from "./pages/Relatorios";
 import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
 import API_URL from "./api";
 
@@ -82,6 +84,16 @@ const NAV_ITEMS = [
     ),
   },
   {
+    path: "/orcamentos",
+    label: "Orçamentos",
+    modulo: "orcamentos",
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 4h18l-7 8.5V19l-4 2v-8.5L3 4Z" />
+      </svg>
+    ),
+  },
+  {
     path: "/relacionamento",
     label: "Relacionamento",
     modulo: "relacionamento",
@@ -99,6 +111,16 @@ const NAV_ITEMS = [
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <line x1="12" x2="12" y1="2" y2="22" />
         <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+      </svg>
+    ),
+  },
+  {
+    path: "/relatorios",
+    label: "Relatórios",
+    modulo: "relatorios",
+    icon: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 3v18h18" /><path d="M18 17V9" /><path d="M13 17V5" /><path d="M8 17v-3" />
       </svg>
     ),
   },
@@ -331,11 +353,12 @@ function TopBar({ acesso }) {
           .topbar-inner {
             padding: 0 8px !important;
           }
+          /* 7 ícones + logo + avatar precisam caber numa linha em 375px */
           .topbar-nav-link {
-            padding: 7px 8px !important;
+            padding: 7px 6px !important;
           }
           .topbar-divider {
-            margin: 0 6px !important;
+            display: none !important;
           }
         }
       `}</style>
@@ -454,6 +477,8 @@ function Layout() {
             <Route path="/pacientes/:id" element={<RotaComPermissao acesso={acesso} modulo="pacientes"><ProntuarioPaciente /></RotaComPermissao>} />
             <Route path="/financeiro" element={<RotaComPermissao acesso={acesso} modulo="financeiro"><Financeiro /></RotaComPermissao>} />
             <Route path="/relacionamento" element={<RotaComPermissao acesso={acesso} modulo="relacionamento"><Relacionamento /></RotaComPermissao>} />
+            <Route path="/orcamentos" element={<RotaComPermissao acesso={acesso} modulo="orcamentos"><Funil /></RotaComPermissao>} />
+            <Route path="/relatorios" element={<RotaComPermissao acesso={acesso} modulo="relatorios"><Relatorios /></RotaComPermissao>} />
             <Route path="/configuracoes" element={<Configuracoes administrador={Boolean(acesso?.administrador)} />} />
             <Route path="/cadastro-clinica" element={<CadastroClinica />} />
           </Routes>
