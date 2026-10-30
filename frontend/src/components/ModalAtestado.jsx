@@ -477,7 +477,7 @@ const M = {
   previewLabel: {
     fontSize: "11px",
     fontWeight: "600",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     textTransform: "uppercase",
     letterSpacing: "0.06em",
     display: "block",

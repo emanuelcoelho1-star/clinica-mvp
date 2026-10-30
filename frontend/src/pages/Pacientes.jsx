@@ -581,7 +581,7 @@ function Pacientes() {
                   <div className="pac-cell-tel" style={{ ...s.rowCell, width: "140px" }}>
                     {p.telefone ? (
                       <span style={{ ...s.cellText, display: "flex", alignItems: "center", gap: "6px" }}>
-                        <span style={{ color: "#94a3b8", display: "flex" }}>{Icons.phone}</span>
+                        <span style={{ color: "var(--text-muted)", display: "flex" }}>{Icons.phone}</span>
                         {p.telefone}
                       </span>
                     ) : (
@@ -593,7 +593,7 @@ function Pacientes() {
                   <div className="pac-cell-email" style={{ ...s.rowCell, width: "180px" }}>
                     {p.email ? (
                       <span style={{ ...s.cellText, display: "flex", alignItems: "center", gap: "6px" }}>
-                        <span style={{ color: "#94a3b8", display: "flex" }}>{Icons.mail}</span>
+                        <span style={{ color: "var(--text-muted)", display: "flex" }}>{Icons.mail}</span>
                         <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           {p.email}
                         </span>
@@ -822,7 +822,7 @@ const s = {
   loadingText: {
     fontSize: "14px",
     fontWeight: "500",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     letterSpacing: "0.02em",
   },
 
@@ -931,7 +931,7 @@ const s = {
   },
   statLabel: {
     fontSize: "13px",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     fontWeight: "500",
   },
   statBar: {
@@ -990,7 +990,7 @@ const s = {
     borderRadius: "50%",
     border: "none",
     background: "#f1f5f9",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     fontSize: "10px",
     cursor: "pointer",
     flexShrink: 0,
@@ -1016,7 +1016,7 @@ const s = {
   thCell: {
     fontSize: "11px",
     fontWeight: "600",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     textTransform: "uppercase",
     letterSpacing: "0.06em",
   },
@@ -1076,7 +1076,7 @@ const s = {
   },
   profession: {
     fontSize: "12px",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     fontWeight: "400",
     lineHeight: 1.3,
   },
@@ -1128,7 +1128,7 @@ const s = {
   },
   emptyText: {
     margin: 0,
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     fontSize: "14px",
     fontWeight: "400",
     textAlign: "center",
@@ -1149,7 +1149,7 @@ const s = {
   },
   footerText: {
     fontSize: "13px",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     fontWeight: "400",
   },
 
@@ -1193,7 +1193,7 @@ const s = {
     width: "34px",
     height: "34px",
     fontSize: "14px",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     fontWeight: "500",
     userSelect: "none",
   },

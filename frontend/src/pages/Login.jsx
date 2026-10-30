@@ -495,7 +495,7 @@ const S = {
     background: "none",
     border: "none",
     cursor: "pointer",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     padding: "4px",
     borderRadius: "6px",
     transition: "all 0.15s ease",

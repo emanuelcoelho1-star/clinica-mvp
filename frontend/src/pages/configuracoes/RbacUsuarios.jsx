@@ -37,7 +37,7 @@ function SelectPerfil({ value, options, onChange, placeholder = "Selecione um pe
         <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {selecionado?.label || placeholder}
         </span>
-        <span style={{ display: "flex", alignItems: "center", color: "#94a3b8", flexShrink: 0, transform: aberto ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s ease" }}>
+        <span style={{ display: "flex", alignItems: "center", color: "var(--text-muted)", flexShrink: 0, transform: aberto ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s ease" }}>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="m6 9 6 6 6-6" />
           </svg>
@@ -51,7 +51,7 @@ function SelectPerfil({ value, options, onChange, placeholder = "Selecione um pe
           boxShadow: "0 12px 32px rgba(15,23,42,0.1)", zIndex: 2000, padding: "4px",
         }}>
           {options.length === 0 ? (
-            <div style={{ padding: "14px", color: "#94a3b8", fontSize: "13px" }}>Nenhum perfil disponível</div>
+            <div style={{ padding: "14px", color: "var(--text-muted)", fontSize: "13px" }}>Nenhum perfil disponível</div>
           ) : options.map((option, index) => {
             const ativo = String(option.value) === String(value);
             return (
@@ -160,7 +160,7 @@ function RbacUsuarios({ usuarios, roles, token, onReload, onMsg, onErro }) {
             <h2 style={S.cardTitle}>Usuários do Sistema</h2>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-            <span style={{ fontSize: "13px", color: "#94a3b8", fontWeight: "500" }}>
+            <span style={{ fontSize: "13px", color: "var(--text-muted)", fontWeight: "500" }}>
               {usuarios.length} usuário(s)
             </span>
             <button
@@ -239,7 +239,7 @@ function RbacUsuarios({ usuarios, roles, token, onReload, onMsg, onErro }) {
                       {u.role_nome || "Administrador"}
                     </span>
                   </td>
-                  <td style={{ ...S.td, color: "#94a3b8", fontSize: "12px" }}>
+                  <td style={{ ...S.td, color: "var(--text-muted)", fontSize: "12px" }}>
                     {u.created_at
                       ? new Date(u.created_at).toLocaleDateString("pt-BR")
                       : "—"}
@@ -426,7 +426,7 @@ function RbacUsuarios({ usuarios, roles, token, onReload, onMsg, onErro }) {
                   <div style={{ fontWeight: "600", color: "#0f172a", fontSize: "14px" }}>
                     {usuarioSelecionado.nome}
                   </div>
-                  <div style={{ fontSize: "12px", color: "#94a3b8" }}>
+                  <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
                     {usuarioSelecionado.email}
                   </div>
                 </div>

@@ -339,9 +339,9 @@ function AbaOrcamentos({ pacienteId }) {
       const data = await r.json();
 
       if (novoStatus === "aprovado" && data.financeiro_gerado) {
-        alert("✅ Orçamento aprovado!\n\nConta a receber gerada automaticamente no módulo Financeiro.");
+        alert("Orçamento aprovado!\n\nConta a receber gerada automaticamente no módulo Financeiro.");
       } else if (data.aviso) {
-        alert(`⚠️ Status atualizado, mas houve um aviso:\n${data.aviso}`);
+        alert(`Status atualizado, mas houve um aviso:\n${data.aviso}`);
       }
 
       await carregarOrcamentos();
@@ -1138,7 +1138,7 @@ const S = {
   subtitle: {
     margin: "6px 0 0",
     fontSize: "14px",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     fontWeight: "500",
     lineHeight: 1.4,
   },
@@ -1259,7 +1259,7 @@ const S = {
   },
   feedbackText: {
     fontSize: "14px",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     fontWeight: "500",
   },
   errorBox: {
@@ -1296,7 +1296,7 @@ const S = {
   emptyText: {
     margin: 0,
     fontSize: "14px",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     lineHeight: 1.5,
     maxWidth: "360px",
   },
@@ -1358,7 +1358,7 @@ const S = {
   cardSectionLabel: {
     fontSize: "11px",
     fontWeight: "600",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     textTransform: "uppercase",
     letterSpacing: "0.06em",
   },
@@ -1608,7 +1608,7 @@ const S = {
     borderRadius: "8px",
     border: "1px solid #f1f5f9",
     background: "#fff",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     cursor: "pointer",
     flexShrink: 0,
     marginTop: "24px",
@@ -1684,7 +1684,7 @@ const S = {
   detailLabel: {
     fontSize: "11px",
     fontWeight: "600",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     textTransform: "uppercase",
     letterSpacing: "0.06em",
   },

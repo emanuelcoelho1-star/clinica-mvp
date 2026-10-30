@@ -919,7 +919,7 @@ const S = {
   },
   subtitle: {
     margin: "6px 0 0", fontSize: "14px",
-    color: "#94a3b8", fontWeight: "500", lineHeight: 1.4,
+    color: "var(--text-muted)", fontWeight: "500", lineHeight: 1.4,
   },
 
   /* ── Back Button ─────────────────────────────────── */
@@ -950,7 +950,7 @@ const S = {
   },
   resumoLabel: {
     display: "block", fontSize: "12px", fontWeight: "600",
-    color: "#94a3b8", textTransform: "uppercase",
+    color: "var(--text-muted)", textTransform: "uppercase",
     letterSpacing: "0.04em", marginBottom: "2px",
   },
   resumoValue: {
@@ -1012,7 +1012,7 @@ const S = {
     width: "10px", height: "10px", borderRadius: "50%", background: "#2563eb",
     animation: "pagamento-pulse-dot 1.4s ease-in-out infinite", animationDelay: "0.4s",
   },
-  feedbackText: { fontSize: "14px", color: "#94a3b8", fontWeight: "500" },
+  feedbackText: { fontSize: "14px", color: "var(--text-muted)", fontWeight: "500" },
   errorBox: {
     display: "flex", alignItems: "center", gap: "12px",
     background: "#fef2f2", border: "1px solid #fecaca", color: "#b91c1c",
@@ -1026,7 +1026,7 @@ const S = {
     borderRadius: "16px", border: "1px solid #f1f5f9", textAlign: "center",
   },
   emptyTitle: { margin: 0, fontSize: "16px", fontWeight: "600", color: "#0f172a" },
-  emptyText: { margin: 0, fontSize: "14px", color: "#94a3b8", lineHeight: 1.5, maxWidth: "360px" },
+  emptyText: { margin: 0, fontSize: "14px", color: "var(--text-muted)", lineHeight: 1.5, maxWidth: "360px" },
 
   /* ── Card Grid ───────────────────────────────────── */
   cardGrid: {
@@ -1073,7 +1073,7 @@ const S = {
     padding: "14px 16px", border: "1px solid #f1f5f9",
   },
   cardSectionLabel: {
-    fontSize: "11px", fontWeight: "600", color: "#94a3b8",
+    fontSize: "11px", fontWeight: "600", color: "var(--text-muted)",
     textTransform: "uppercase", letterSpacing: "0.06em",
   },
   cardSectionText: {
@@ -1133,7 +1133,7 @@ const S = {
     display: "flex", alignItems: "center", gap: "10px",
     marginBottom: "18px",
   },
-  formCardIcon: { display: "flex", color: "#94a3b8" },
+  formCardIcon: { display: "flex", color: "var(--text-muted)" },
   formCardTitle: {
     fontSize: "15px", fontWeight: "600", color: "#0f172a",
     letterSpacing: "-0.01em",
@@ -1182,7 +1182,7 @@ const S = {
     padding: "14px 16px", background: "#fafbfc",
   },
   detailLabel: {
-    fontSize: "11px", fontWeight: "600", color: "#94a3b8",
+    fontSize: "11px", fontWeight: "600", color: "var(--text-muted)",
     textTransform: "uppercase", letterSpacing: "0.06em",
   },
   detailValue: {

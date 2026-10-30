@@ -21,7 +21,7 @@
 
   --text-primary: #0f172a;
   --text-secondary: #475569;
-  --text-muted: #94a3b8;
+  --text-muted: #64748b; /* #94a3b8 não passa 4.5:1 sobre branco (DESIGN.md) */
   --text-link: #2563eb;
 
   --accent: #2563eb;
@@ -891,4 +891,14 @@
   background: #102318;
   border-color: #22543a;
   color: #86efac;
+}
+
+/* ── Movimento reduzido: loaders e transições param para quem pediu ── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

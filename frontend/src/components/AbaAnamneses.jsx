@@ -788,7 +788,7 @@ const S = {
   subtitle: {
     margin: "6px 0 0",
     fontSize: "14px",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     fontWeight: "500",
     lineHeight: 1.4,
   },
@@ -909,7 +909,7 @@ const S = {
   },
   feedbackText: {
     fontSize: "14px",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     fontWeight: "500",
   },
   errorBox: {
@@ -946,7 +946,7 @@ const S = {
   emptyText: {
     margin: 0,
     fontSize: "14px",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     lineHeight: 1.5,
     maxWidth: "360px",
   },
@@ -1008,7 +1008,7 @@ const S = {
   cardSectionLabel: {
     fontSize: "11px",
     fontWeight: "600",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     textTransform: "uppercase",
     letterSpacing: "0.06em",
   },
@@ -1050,7 +1050,7 @@ const S = {
   metaChip: {
     fontSize: "12px",
     fontWeight: "500",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
   },
 
   /* ── Card Actions ────────────────────────────────── */
@@ -1253,7 +1253,7 @@ const S = {
   detailLabel: {
     fontSize: "11px",
     fontWeight: "600",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     textTransform: "uppercase",
     letterSpacing: "0.06em",
   },

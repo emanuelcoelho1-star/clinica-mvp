@@ -33,12 +33,12 @@ function FaixaIndicadores({ itens, rotulo }) {
 }
 
 const S = {
-  // gap de 1px sobre o fundo da borda desenha as divisórias, também quando quebra linha no celular
+  // divisórias via box-shadow nos itens: as da borda externa são cortadas pelo overflow,
+  // e uma célula sobrando no celular fica na cor do card em vez de virar um bloco cinza
   faixa: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
-    gap: "1px",
-    background: "var(--border-input)",
+    background: "var(--bg-card)",
     border: "1px solid var(--border-input)",
     borderRadius: "12px",
     overflow: "hidden",
@@ -49,6 +49,7 @@ const S = {
     gap: "2px",
     padding: "14px 18px",
     background: "var(--bg-card)",
+    boxShadow: "1px 0 0 var(--border-input), 0 1px 0 var(--border-input)",
     textAlign: "left",
     minWidth: 0,
   },

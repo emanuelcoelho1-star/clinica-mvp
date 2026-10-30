@@ -22,7 +22,7 @@ const CONDICOES = [
   { id: "protese",      label: "Prótese",          cor: "#86efac", corBorda: "#22c55e", icone: "◆" },
   { id: "implante",     label: "Implante",         cor: "#c4b5fd", corBorda: "#8b5cf6", icone: "⬟" },
   { id: "selante",      label: "Selante",          cor: "#f9a8d4", corBorda: "#ec4899", icone: "◐" },
-  { id: "fratura",      label: "Fratura",          cor: "#fdba74", corBorda: "#f97316", icone: "⚡" },
+  { id: "fratura",      label: "Fratura",          cor: "#fdba74", corBorda: "#f97316", icone: "↯" },
   { id: "coroa",        label: "Coroa",            cor: "#a5f3fc", corBorda: "#06b6d4", icone: "♛" },
   { id: "provisorio",   label: "Provisório",       cor: "#fef08a", corBorda: "#eab308", icone: "◑" },
   { id: "erupcionando", label: "Em erupção",       cor: "#d9f99d", corBorda: "#84cc16", icone: "↑" },
@@ -591,7 +591,7 @@ function CondPopup({ pos, denteFace, onSelect, onSelectAll, onClose }) {
       }}
     >
       <div style={{
-        fontSize: "11px", fontWeight: "700", color: "#94a3b8",
+        fontSize: "11px", fontWeight: "700", color: "var(--text-muted)",
         textTransform: "uppercase", letterSpacing: "0.06em",
         padding: "6px 10px 8px", borderBottom: "1px solid #f1f5f9", marginBottom: "4px",
         display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -599,7 +599,7 @@ function CondPopup({ pos, denteFace, onSelect, onSelectAll, onClose }) {
         <span>Dente {denteFace.dente} — {FACE_LABELS[denteFace.face] || denteFace.face}</span>
         <button onClick={onClose} style={{
           background: "none", border: "none", cursor: "pointer",
-          color: "#94a3b8", display: "flex", padding: "2px",
+          color: "var(--text-muted)", display: "flex", padding: "2px",
         }}>
           {Icons.x}
         </button>
@@ -692,7 +692,7 @@ function PainelDente({ denteNum, mapa, notas, onNotaChange, onClose, onFaceClick
         </div>
         <button onClick={onClose} style={{
           background: "none", border: "none", cursor: "pointer",
-          color: "#94a3b8", display: "flex", padding: "4px",
+          color: "var(--text-muted)", display: "flex", padding: "4px",
           borderRadius: "6px",
         }}>
           {Icons.x}
@@ -707,7 +707,7 @@ function PainelDente({ denteNum, mapa, notas, onNotaChange, onClose, onFaceClick
       {/* Faces */}
       <div>
         <span style={{
-          fontSize: "11px", fontWeight: "700", color: "#94a3b8",
+          fontSize: "11px", fontWeight: "700", color: "var(--text-muted)",
           textTransform: "uppercase", letterSpacing: "0.06em",
         }}>
           Faces do dente
@@ -755,7 +755,7 @@ function PainelDente({ denteNum, mapa, notas, onNotaChange, onClose, onFaceClick
       {/* Notas */}
       <div>
         <span style={{
-          fontSize: "11px", fontWeight: "700", color: "#94a3b8",
+          fontSize: "11px", fontWeight: "700", color: "var(--text-muted)",
           textTransform: "uppercase", letterSpacing: "0.06em",
         }}>
           Observações do dente
@@ -1035,7 +1035,7 @@ export default function Odontograma({ pacienteId }) {
           <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#2563eb", animation: "pulse-dot 1.4s ease-in-out infinite", animationDelay: "0.2s" }} />
           <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#2563eb", animation: "pulse-dot 1.4s ease-in-out infinite", animationDelay: "0.4s" }} />
         </div>
-        <span style={{ fontSize: "14px", fontWeight: "500", color: "#94a3b8" }}>Carregando odontograma</span>
+        <span style={{ fontSize: "14px", fontWeight: "500", color: "var(--text-muted)" }}>Carregando odontograma</span>
         <style>{`@keyframes pulse-dot { 0%, 80%, 100% { transform: scale(0); opacity: 0.5; } 40% { transform: scale(1); opacity: 1; } }`}</style>
       </div>
     );
@@ -1063,7 +1063,7 @@ export default function Odontograma({ pacienteId }) {
             <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "700", color: "#0f172a" }}>
               Odontograma
             </h3>
-            <p style={{ margin: 0, fontSize: "12px", color: "#94a3b8", fontWeight: "500" }}>
+            <p style={{ margin: 0, fontSize: "12px", color: "var(--text-muted)", fontWeight: "500" }}>
               {stats.alterados} dente{stats.alterados !== 1 ? "s" : ""} alterado{stats.alterados !== 1 ? "s" : ""}
               {stats.ausentes > 0 && ` · ${stats.ausentes} ausente${stats.ausentes !== 1 ? "s" : ""}`}
               {stats.comNotas > 0 && ` · ${stats.comNotas} com notas`}
@@ -1179,7 +1179,7 @@ export default function Odontograma({ pacienteId }) {
               padding: "16px",
             }}>
               <div style={{
-                fontSize: "11px", fontWeight: "700", color: "#94a3b8",
+                fontSize: "11px", fontWeight: "700", color: "var(--text-muted)",
                 textTransform: "uppercase", letterSpacing: "0.06em",
                 marginBottom: "10px", textAlign: "center",
               }}>
@@ -1200,7 +1200,7 @@ export default function Odontograma({ pacienteId }) {
               padding: "16px",
             }}>
               <div style={{
-                fontSize: "11px", fontWeight: "700", color: "#94a3b8",
+                fontSize: "11px", fontWeight: "700", color: "var(--text-muted)",
                 textTransform: "uppercase", letterSpacing: "0.06em",
                 marginBottom: "10px", textAlign: "center",
               }}>
@@ -1221,7 +1221,7 @@ export default function Odontograma({ pacienteId }) {
               padding: "16px",
             }}>
               <div style={{
-                fontSize: "11px", fontWeight: "700", color: "#94a3b8",
+                fontSize: "11px", fontWeight: "700", color: "var(--text-muted)",
                 textTransform: "uppercase", letterSpacing: "0.06em",
                 marginBottom: "10px", textAlign: "center",
               }}>
@@ -1242,7 +1242,7 @@ export default function Odontograma({ pacienteId }) {
               padding: "16px",
             }}>
               <div style={{
-                fontSize: "11px", fontWeight: "700", color: "#94a3b8",
+                fontSize: "11px", fontWeight: "700", color: "var(--text-muted)",
                 textTransform: "uppercase", letterSpacing: "0.06em",
                 marginBottom: "10px", textAlign: "center",
               }}>

@@ -435,7 +435,7 @@ const M = {
   modalCadastro: { width: "min(540px, calc(100vw - 32px))", maxWidth: "540px", background: "#fff", borderRadius: "16px", padding: "clamp(16px, 3vw, 26px)", boxShadow: "0 24px 64px rgba(15,23,42,0.22)", display: "flex", flexDirection: "column", gap: "16px", maxHeight: "min(90vh, 900px)", maxHeight: "min(90dvh, 900px)", overflowY: "auto" },
   header: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "16px" },
   title: { margin: 0, fontSize: "18px", fontWeight: "700", color: "#0f172a" },
-  subtitle: { margin: "6px 0 0", fontSize: "13px", color: "#94a3b8", lineHeight: 1.5 },
+  subtitle: { margin: "6px 0 0", fontSize: "13px", color: "var(--text-muted)", lineHeight: 1.5 },
   closeBtn: { width: "34px", height: "34px", borderRadius: "8px", border: "1px solid #f1f5f9", background: "#fff", color: "#64748b", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
   options: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" },
   optionCard: { display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "12px", padding: "22px", border: "1px solid #e2e8f0", borderRadius: "14px", background: "#fff", cursor: "pointer", textAlign: "left", transition: "all 0.18s ease" },

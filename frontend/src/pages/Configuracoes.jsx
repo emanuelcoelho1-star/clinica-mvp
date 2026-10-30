@@ -365,7 +365,7 @@ function Configuracoes({ administrador = false }) {
                 <input
                   type="email"
                   value={usuario.email || ""}
-                  style={{ ...S.input, background: "#f8fafc", color: "#94a3b8", cursor: "not-allowed" }}
+                  style={{ ...S.input, background: "#f8fafc", color: "var(--text-muted)", cursor: "not-allowed" }}
                   disabled
                 />
                 <span style={S.inputHint}>O e-mail não pode ser alterado.</span>
@@ -663,7 +663,7 @@ const S = {
   chipIcon: {
     display: "flex",
     alignItems: "center",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
   },
 
   /* ── Tabs ─────────────────────────────────────── */
@@ -713,7 +713,7 @@ const S = {
   },
   cardIcon: {
     display: "flex",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
   },
   cardTitle: {
     margin: 0,
@@ -745,7 +745,7 @@ const S = {
     gap: "6px",
     fontSize: "11px",
     fontWeight: "600",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     textTransform: "uppercase",
     letterSpacing: "0.06em",
   },
@@ -795,7 +795,7 @@ const S = {
   },
   inputHint: {
     fontSize: "11px",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     fontWeight: "500",
   },
 

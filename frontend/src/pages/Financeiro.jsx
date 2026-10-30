@@ -55,7 +55,7 @@ const S = {
   headerSub: {
     margin: 0,
     fontSize: "14px",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     fontWeight: "400",
   },
   tabsBar: {

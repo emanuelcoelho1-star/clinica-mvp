@@ -591,7 +591,7 @@ const S = {
   subtitle: {
     margin: "6px 0 0",
     fontSize: "14px",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     fontWeight: "500",
     lineHeight: 1.4,
   },
@@ -712,7 +712,7 @@ const S = {
   },
   feedbackText: {
     fontSize: "14px",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     fontWeight: "500",
   },
   errorBox: {
@@ -749,7 +749,7 @@ const S = {
   emptyText: {
     margin: 0,
     fontSize: "14px",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     lineHeight: 1.5,
     maxWidth: "360px",
   },
@@ -821,7 +821,7 @@ const S = {
   quickSectionTitle: {
     fontSize: "12px",
     fontWeight: "600",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     textTransform: "uppercase",
     letterSpacing: "0.06em",
   },
@@ -924,7 +924,7 @@ const S = {
     alignItems: "center",
     flexWrap: "wrap",
     gap: "7px",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     fontSize: "11px",
   },
   documentMetaDot: { color: "#cbd5e1" },
@@ -959,7 +959,7 @@ const S = {
     border: "1px solid transparent",
     borderRadius: "7px",
     background: "transparent",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     cursor: "pointer",
   },
   listDeleteBtnHover: { color: "#dc2626", background: "#fef2f2", borderColor: "#fee2e2" },
@@ -1014,7 +1014,7 @@ const S = {
   cardSectionLabel: {
     fontSize: "11px",
     fontWeight: "600",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     textTransform: "uppercase",
     letterSpacing: "0.06em",
   },
@@ -1056,7 +1056,7 @@ const S = {
   metaChip: {
     fontSize: "12px",
     fontWeight: "500",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
   },
 
   /* ── Card Actions ────────────────────────────────── */
@@ -1259,7 +1259,7 @@ const S = {
   detailLabel: {
     fontSize: "11px",
     fontWeight: "600",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     textTransform: "uppercase",
     letterSpacing: "0.06em",
   },

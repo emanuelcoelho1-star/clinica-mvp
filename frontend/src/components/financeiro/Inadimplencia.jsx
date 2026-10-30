@@ -165,7 +165,7 @@ const S = {
   loadingText: {
     fontSize: "14px",
     fontWeight: "500",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     letterSpacing: "0.02em",
   },
   statsGrid: {
@@ -212,7 +212,7 @@ const S = {
   },
   statSub: {
     fontSize: "12px",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     fontWeight: "500",
   },
   searchBar: {
@@ -263,7 +263,7 @@ const S = {
     borderRadius: "50%",
     border: "none",
     background: "#f1f5f9",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     fontSize: "10px",
     cursor: "pointer",
     flexShrink: 0,
@@ -321,7 +321,7 @@ const S = {
   thCell: {
     fontSize: "11px",
     fontWeight: "600",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     textTransform: "uppercase",
     letterSpacing: "0.06em",
   },
@@ -358,7 +358,7 @@ const S = {
   },
   cellSub: {
     fontSize: "12px",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     fontWeight: "500",
   },
   tableFooter: {
@@ -371,7 +371,7 @@ const S = {
   },
   footerText: {
     fontSize: "13px",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     fontWeight: "400",
   },
   badge: (bg, color) => ({
@@ -431,7 +431,7 @@ const S = {
   detailLabel: {
     fontSize: "11px",
     fontWeight: "600",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     textTransform: "uppercase",
     letterSpacing: "0.06em",
   },
@@ -503,7 +503,7 @@ const S = {
   },
   emptyText: {
     margin: 0,
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     fontSize: "14px",
     fontWeight: "400",
     textAlign: "center",
@@ -913,7 +913,7 @@ function Inadimplencia() {
                         alignItems: "center",
                       }}
                     >
-                      <span style={{ display: "flex", color: "#94a3b8", transition: "transform 0.2s" }}>
+                      <span style={{ display: "flex", color: "var(--text-muted)", transition: "transform 0.2s" }}>
                         {isExpanded ? Icons.chevronUp : Icons.chevronDown}
                       </span>
                     </div>

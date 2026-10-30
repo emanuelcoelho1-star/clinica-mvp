@@ -842,7 +842,7 @@ function Agenda() {
           </div>
           <div style={S.manageFilters}>
             <div style={S.manageSearchWrap}>
-              <span style={{ display: "flex", color: "#94a3b8" }}>{Icons.search}</span>
+              <span style={{ display: "flex", color: "var(--text-muted)" }}>{Icons.search}</span>
               <input
                 type="search"
                 value={buscaGerenciador}
@@ -1449,7 +1449,7 @@ const S = {
   headerTitleRow: { display: "flex", alignItems: "center", gap: "12px" },
   headerTitle: { margin: 0, fontSize: "28px", fontWeight: "700", color: "#0f172a", letterSpacing: "-0.025em", lineHeight: 1.2 },
   headerCount: { display: "inline-flex", alignItems: "center", background: "#f1f5f9", color: "#475569", borderRadius: "8px", fontSize: "13px", fontWeight: "600", padding: "4px 10px", lineHeight: 1 },
-  headerSub: { margin: 0, fontSize: "14px", color: "#94a3b8", fontWeight: "400" },
+  headerSub: { margin: 0, fontSize: "14px", color: "var(--text-muted)", fontWeight: "400" },
   headerActions: { display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" },
   btnConfirmacoes: { display: "inline-flex", alignItems: "center", gap: "8px", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "0 16px", background: "#fff", color: "#334155", fontWeight: "600", fontSize: "14px", cursor: "pointer", height: "40px", boxSizing: "border-box" },
   badgeCount: { display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: "20px", height: "20px", padding: "0 6px", borderRadius: "10px", background: "#f97316", color: "#fff", fontSize: "11px", fontWeight: "700", boxSizing: "border-box" },
@@ -1478,11 +1478,11 @@ const S = {
   manageTh: { padding: "12px 14px", background: "#f8fafc", borderBottom: "1px solid #e2e8f0", color: "#64748b", textAlign: "left", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.04em", fontWeight: "700", whiteSpace: "nowrap" },
   manageTd: { padding: "13px 14px", borderBottom: "1px solid #f1f5f9", color: "#334155", verticalAlign: "middle" },
   managePatientName: { color: "#0f172a", fontWeight: "700", marginBottom: "3px" },
-  manageMuted: { color: "#94a3b8", fontSize: "12px" },
+  manageMuted: { color: "var(--text-muted)", fontSize: "12px" },
   manageDate: { color: "#0f172a", fontWeight: "600" },
   manageStatus: { display: "inline-flex", alignItems: "center", gap: "6px", border: "1px solid", borderRadius: "7px", padding: "5px 8px", fontSize: "11px", fontWeight: "600", whiteSpace: "nowrap" },
   manageEditButton: { height: "32px", padding: "0 12px", borderRadius: "8px", border: "1px solid #bfdbfe", background: "#eff6ff", color: "#1d4ed8", fontSize: "12px", fontWeight: "700", cursor: "pointer" },
-  manageEmpty: { padding: "28px 16px", textAlign: "center", color: "#94a3b8", background: "#f8fafc", borderRadius: "12px", fontSize: "13px" },
+  manageEmpty: { padding: "28px 16px", textAlign: "center", color: "var(--text-muted)", background: "#f8fafc", borderRadius: "12px", fontSize: "13px" },
 
   /* ── Stats ────────────────────────────────── */
   statsRow: { display: "flex", gap: "10px", flexWrap: "wrap" },
@@ -1503,7 +1503,7 @@ const S = {
   /* ── Search ──────────────────────────────── */
   searchWrap: { display: "flex", alignItems: "center", gap: "8px", height: "36px", borderRadius: "10px", border: "1px solid #e2e8f0", padding: "0 12px", background: "#fff", transition: "all 0.2s ease", minWidth: "200px", boxSizing: "border-box" },
   searchInput: { flex: 1, border: "none", outline: "none", fontSize: "13px", color: "#0f172a", background: "transparent", fontWeight: "400", height: "100%" },
-  searchClear: { display: "flex", alignItems: "center", justifyContent: "center", width: "18px", height: "18px", borderRadius: "50%", border: "none", background: "#f1f5f9", color: "#94a3b8", fontSize: "9px", cursor: "pointer", flexShrink: 0, lineHeight: 1 },
+  searchClear: { display: "flex", alignItems: "center", justifyContent: "center", width: "18px", height: "18px", borderRadius: "50%", border: "none", background: "#f1f5f9", color: "var(--text-muted)", fontSize: "9px", cursor: "pointer", flexShrink: 0, lineHeight: 1 },
 
   /* ── Loading ─────────────────────────────── */
   loadingWrap: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "20px", minHeight: "300px" },
@@ -1511,7 +1511,7 @@ const S = {
   dot1: { width: "10px", height: "10px", borderRadius: "50%", background: "#2563eb", animation: "pulse-dot 1.4s ease-in-out infinite", animationDelay: "0s" },
   dot2: { width: "10px", height: "10px", borderRadius: "50%", background: "#2563eb", animation: "pulse-dot 1.4s ease-in-out infinite", animationDelay: "0.2s" },
   dot3: { width: "10px", height: "10px", borderRadius: "50%", background: "#2563eb", animation: "pulse-dot 1.4s ease-in-out infinite", animationDelay: "0.4s" },
-  loadingText: { fontSize: "14px", fontWeight: "500", color: "#94a3b8", letterSpacing: "0.02em" },
+  loadingText: { fontSize: "14px", fontWeight: "500", color: "var(--text-muted)", letterSpacing: "0.02em" },
   errorCard: { background: "#fef2f2", border: "1px solid #fecaca", color: "#b91c1c", borderRadius: "12px", padding: "14px 18px", fontSize: "14px", fontWeight: "500" },
 
   /* ── Calendar ────────────────────────────── */
@@ -1524,7 +1524,7 @@ const S = {
   timeColHead: { padding: "14px 8px", borderRight: "1px solid #f1f5f9" },
   dayHead: { padding: "12px 6px", display: "flex", flexDirection: "column", gap: "2px", alignItems: "center", justifyContent: "center", borderRight: "1px solid #f1f5f9", position: "relative" },
   dayHeadToday: { background: "#fafcff" },
-  dayLabel: { fontSize: "11px", fontWeight: "600", color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em" },
+  dayLabel: { fontSize: "11px", fontWeight: "600", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" },
   dayNum: { fontSize: "18px", fontWeight: "700", color: "#0f172a", lineHeight: 1.2 },
   dayNumToday: { color: "#2563eb" },
   todayDot: { width: "5px", height: "5px", borderRadius: "50%", background: "#2563eb" },
@@ -1545,7 +1545,7 @@ const S = {
   /* ── Event Card ──────────────────────────── */
   eventCard: { position: "absolute", boxSizing: "border-box", borderRadius: "10px", border: "1px solid", padding: "6px 9px", textAlign: "left", cursor: "pointer", display: "flex", flexDirection: "column", gap: "2px", overflow: "hidden", zIndex: 10, transition: "box-shadow 0.15s ease" },
   eventActive: { outline: "2px solid #2563eb", outlineOffset: "1px" },
-  eventTime: { fontSize: "10px", fontWeight: "600", color: "#94a3b8", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "4px", whiteSpace: "nowrap", overflow: "hidden", flexShrink: 0 },
+  eventTime: { fontSize: "10px", fontWeight: "600", color: "var(--text-muted)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "4px", whiteSpace: "nowrap", overflow: "hidden", flexShrink: 0 },
   eventSent: { display: "inline-flex", color: "#16a34a", transform: "scale(0.85)" },
   eventFooter: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: "4px", marginTop: "auto" },
   eventWhats: { display: "inline-flex", alignItems: "center", justifyContent: "center", width: "22px", height: "22px", borderRadius: "6px", border: "1px solid #bbf7d0", background: "#fff", color: "#16a34a", cursor: "pointer", padding: 0, flexShrink: 0 },
@@ -1564,15 +1564,15 @@ const S = {
   modal: { width: "100%", maxWidth: "520px", background: "#fff", borderRadius: "16px", padding: "28px", boxShadow: "0 24px 64px rgba(15,23,42,0.18)", overflow: "visible", margin: "auto" },
   modalHeader: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "16px", marginBottom: "22px" },
   modalTitle: { margin: 0, fontSize: "20px", fontWeight: "700", color: "#0f172a", letterSpacing: "-0.02em" },
-  modalSub: { margin: "4px 0 0", color: "#94a3b8", fontSize: "14px", fontWeight: "400" },
-  closeBtn: { border: "1px solid #f1f5f9", background: "#fafbfc", width: "34px", height: "34px", borderRadius: "8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8", flexShrink: 0, transition: "all 0.15s ease" },
+  modalSub: { margin: "4px 0 0", color: "var(--text-muted)", fontSize: "14px", fontWeight: "400" },
+  closeBtn: { border: "1px solid #f1f5f9", background: "#fafbfc", width: "34px", height: "34px", borderRadius: "8px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-muted)", flexShrink: 0, transition: "all 0.15s ease" },
 
   /* ── Form ─────────────────────────────────── */
   form: { display: "flex", flexDirection: "column", gap: "16px", overflow: "visible" },
   formGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" },
   formGrid3: { display: "grid", gridTemplateColumns: "1.3fr 1fr 1fr", gap: "12px" },
   textarea: { width: "100%", borderRadius: "10px", border: "1px solid #e2e8f0", padding: "10px 12px", outline: "none", fontSize: "14px", background: "#fff", boxSizing: "border-box", color: "#0f172a", fontFamily: "inherit", resize: "vertical", lineHeight: 1.5 },
-  fieldHint: { fontSize: "12px", color: "#94a3b8" },
+  fieldHint: { fontSize: "12px", color: "var(--text-muted)" },
 
   /* ── Confirmações ────────────────────────── */
   confirmBox: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap", border: "1px solid #e2e8f0", background: "#f8fafc", borderRadius: "12px", padding: "12px 14px" },
@@ -1591,7 +1591,7 @@ const S = {
   retornoAviso: { background: "#eff6ff", border: "1px solid #bfdbfe", color: "#1d4ed8", borderRadius: "10px", padding: "10px 14px", fontSize: "13px", fontWeight: "500" },
   confirmSentText: { fontSize: "11px", color: "#16a34a", fontWeight: "600" },
   fieldGroup: { display: "flex", flexDirection: "column", gap: "6px", overflow: "visible" },
-  label: { fontSize: "11px", fontWeight: "600", color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em" },
+  label: { fontSize: "11px", fontWeight: "600", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" },
   input: { width: "100%", height: "40px", borderRadius: "10px", border: "1px solid #e2e8f0", padding: "0 12px", outline: "none", fontSize: "14px", background: "#fff", boxSizing: "border-box", color: "#0f172a", transition: "border-color 0.2s, box-shadow 0.2s" },
   formError: { background: "#fef2f2", border: "1px solid #fecaca", color: "#b91c1c", borderRadius: "10px", padding: "10px 14px", fontSize: "13px", fontWeight: "500" },
   formActions: { display: "flex", alignItems: "center", gap: "10px", marginTop: "8px", flexWrap: "wrap" },
@@ -1609,26 +1609,26 @@ const S = {
   patientOpt: { border: "none", borderBottom: "1px solid #f8fafc", background: "#fff", padding: "10px 14px", textAlign: "left", cursor: "pointer", display: "flex", flexDirection: "column", gap: "2px", width: "100%", transition: "background 0.1s" },
   patientOptActive: { background: "#eff6ff" },
   patientOptNome: { fontSize: "14px", fontWeight: "600", color: "#0f172a" },
-  patientOptTel: { fontSize: "12px", color: "#94a3b8" },
-  patientEmpty: { padding: "14px", color: "#94a3b8", fontSize: "13px" },
+  patientOptTel: { fontSize: "12px", color: "var(--text-muted)" },
+  patientEmpty: { padding: "14px", color: "var(--text-muted)", fontSize: "13px" },
 
   /* ── Confirm delete ──────────────────────── */
   confirmTitle: { margin: "12px 0 0", fontSize: "18px", fontWeight: "700", color: "#0f172a" },
-  confirmText: { margin: "6px 0 0", color: "#94a3b8", fontSize: "14px", lineHeight: 1.5 },
+  confirmText: { margin: "6px 0 0", color: "var(--text-muted)", fontSize: "14px", lineHeight: 1.5 },
 
   /* ── Dropdown ────────────────────────────── */
   dropWrap: { position: "relative", width: "100%" },
   dropTrigger: { width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", border: "1px solid #e2e8f0", background: "#fff", borderRadius: "10px", cursor: "pointer", boxSizing: "border-box", fontSize: "14px", color: "#0f172a", height: "40px", padding: "0 12px" },
   dropTriggerDisabled: { cursor: "not-allowed", opacity: 0.6, background: "#fafbfc" },
   dropText: { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" },
-  dropArrow: { display: "flex", alignItems: "center", color: "#94a3b8", transition: "transform 0.2s ease", flexShrink: 0 },
+  dropArrow: { display: "flex", alignItems: "center", color: "var(--text-muted)", transition: "transform 0.2s ease", flexShrink: 0 },
   dropArrowOpen: { transform: "rotate(180deg)" },
   dropMenu: { position: "absolute", top: "calc(100% + 6px)", left: 0, right: 0, border: "1px solid #f1f5f9", borderRadius: "12px", background: "#fff", overflowY: "auto", display: "flex", flexDirection: "column", boxShadow: "0 12px 32px rgba(15,23,42,0.1)", zIndex: 2000 },
   dropOption: { border: "none", borderBottom: "1px solid #f8fafc", background: "#fff", padding: "10px 14px", textAlign: "left", cursor: "pointer", width: "100%", fontSize: "14px", color: "#0f172a", fontWeight: "400", transition: "background 0.1s" },
   dropOptionLast: { borderBottom: "none" },
   dropOptionActive: { background: "#eff6ff", color: "#2563eb", fontWeight: "600" },
   dropOptionDisabled: { color: "#d1d5db", background: "#fafbfc", cursor: "not-allowed" },
-  dropEmpty: { padding: "14px", color: "#94a3b8", fontSize: "13px" },
+  dropEmpty: { padding: "14px", color: "var(--text-muted)", fontSize: "13px" },
 };
 
 export default Agenda;

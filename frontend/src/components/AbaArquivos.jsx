@@ -616,7 +616,7 @@ function AbaArquivos({ pacienteId }) {
 
               {arquivosDaPasta.length > 0 && arquivosFiltrados.length === 0 && (
                 <div style={S.panelEmptyHint}>
-                  <span style={{ color: "#94a3b8" }}>{Icons.search}</span>
+                  <span style={{ color: "var(--text-muted)" }}>{Icons.search}</span>
                   <span>Nenhum resultado encontrado. Tente ajustar o filtro ou termo de busca.</span>
                 </div>
               )}
@@ -1114,8 +1114,8 @@ function AbaArquivos({ pacienteId }) {
 const S = {
   folderArea: { display: "flex", flexDirection: "column", gap: "16px" },
   contentPanel: { minHeight: "260px", padding: "24px", background: "#fff", border: "1px solid #f1f5f9", borderRadius: "16px", display: "flex", flexDirection: "column", gap: "20px" },
-  panelEmptyHint: { display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", padding: "28px 16px", color: "#94a3b8", fontSize: "13px" },
-  breadcrumbs: { display: "flex", alignItems: "center", flexWrap: "wrap", gap: "8px", minHeight: "28px", color: "#94a3b8", fontSize: "13px" },
+  panelEmptyHint: { display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", padding: "28px 16px", color: "var(--text-muted)", fontSize: "13px" },
+  breadcrumbs: { display: "flex", alignItems: "center", flexWrap: "wrap", gap: "8px", minHeight: "28px", color: "var(--text-muted)", fontSize: "13px" },
   breadcrumbPart: { display: "inline-flex", alignItems: "center", gap: "8px" },
   breadcrumbSlash: { color: "#cbd5e1" },
   breadcrumbButton: { border: "none", background: "transparent", color: "#64748b", padding: "4px 0", fontSize: "13px", fontWeight: "600", cursor: "pointer" },
@@ -1125,7 +1125,7 @@ const S = {
   folderDeleteButton: { display: "inline-flex", alignItems: "center", justifyContent: "center", alignSelf: "flex-end", gap: "6px", padding: "6px 9px", border: "1px solid #fee2e2", borderRadius: "8px", background: "#fff", color: "#dc2626", fontSize: "12px", fontWeight: "600", cursor: "pointer" },
   folderCardIcon: { display: "flex", alignItems: "center", justifyContent: "center", width: "48px", height: "42px", borderRadius: "10px", background: "#eff6ff", color: "#3b82f6" },
   folderCardName: { color: "#1e293b", fontSize: "14px", fontWeight: "650", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" },
-  folderCardHint: { color: "#94a3b8", fontSize: "12px" },
+  folderCardHint: { color: "var(--text-muted)", fontSize: "12px" },
   newMenu: { position: "absolute", top: "calc(100% + 8px)", right: 0, zIndex: 30, width: "190px", padding: "6px", background: "#fff", border: "1px solid #e2e8f0", borderRadius: "12px", boxShadow: "0 12px 32px rgba(15,23,42,.12)" },
   newMenuItem: { display: "flex", alignItems: "center", gap: "10px", width: "100%", padding: "10px 12px", border: "none", borderRadius: "8px", background: "transparent", color: "#334155", fontSize: "13px", fontWeight: "550", textAlign: "left", cursor: "pointer" },
   wrapper: {
@@ -1154,7 +1154,7 @@ const S = {
   subtitle: {
     margin: "6px 0 0",
     fontSize: "14px",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     fontWeight: "500",
     lineHeight: 1.4,
     display: "flex",
@@ -1221,14 +1221,14 @@ const S = {
     background: "#fff", border: "1px solid #e2e8f0", borderRadius: "10px",
     padding: "0 14px", height: "40px", transition: "border-color 0.2s",
   },
-  searchIcon: { display: "flex", color: "#94a3b8", flexShrink: 0 },
+  searchIcon: { display: "flex", color: "var(--text-muted)", flexShrink: 0 },
   searchInput: {
     flex: 1, border: "none", outline: "none", fontSize: "14px",
     color: "#0f172a", background: "transparent",
   },
   searchClear: {
     display: "flex", alignItems: "center", justifyContent: "center",
-    background: "none", border: "none", color: "#94a3b8", cursor: "pointer",
+    background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer",
     padding: "4px", borderRadius: "6px", transition: "all 0.15s",
   },
   filterSelect: {
@@ -1256,7 +1256,7 @@ const S = {
     width: "10px", height: "10px", borderRadius: "50%", background: "#2563eb",
     animation: "arquivo-pulse-dot 1.4s ease-in-out infinite", animationDelay: "0.4s",
   },
-  feedbackText: { fontSize: "14px", color: "#94a3b8", fontWeight: "500" },
+  feedbackText: { fontSize: "14px", color: "var(--text-muted)", fontWeight: "500" },
   errorBox: {
     display: "flex", alignItems: "center", gap: "12px",
     background: "#fef2f2", border: "1px solid #fecaca", color: "#b91c1c",
@@ -1270,7 +1270,7 @@ const S = {
     border: "1px solid #f1f5f9", textAlign: "center",
   },
   emptyTitle: { margin: 0, fontSize: "16px", fontWeight: "600", color: "#0f172a" },
-  emptyText: { margin: 0, fontSize: "14px", color: "#94a3b8", lineHeight: 1.5, maxWidth: "360px" },
+  emptyText: { margin: 0, fontSize: "14px", color: "var(--text-muted)", lineHeight: 1.5, maxWidth: "360px" },
 
   /* ── Card Grid ───────────────────────────────── */
   cardGrid: {
@@ -1292,7 +1292,7 @@ const S = {
   },
   fileMeta: {
     display: "flex", alignItems: "center", gap: "6px",
-    fontSize: "12px", color: "#94a3b8", fontWeight: "500", marginTop: "2px",
+    fontSize: "12px", color: "var(--text-muted)", fontWeight: "500", marginTop: "2px",
   },
   cardDesc: {
     margin: 0, fontSize: "13px", color: "#64748b", lineHeight: 1.5,
@@ -1372,7 +1372,7 @@ const S = {
   },
   dropLink: { color: "#2563eb", textDecoration: "underline" },
   dropHint: {
-    margin: 0, fontSize: "13px", color: "#94a3b8",
+    margin: 0, fontSize: "13px", color: "var(--text-muted)",
   },
 
   /* ── File row ────────────────────────────────── */
@@ -1384,7 +1384,7 @@ const S = {
   removeFileBtn: {
     display: "flex", alignItems: "center", justifyContent: "center",
     width: "28px", height: "28px", borderRadius: "6px",
-    border: "1px solid #f1f5f9", background: "#fff", color: "#94a3b8",
+    border: "1px solid #f1f5f9", background: "#fff", color: "var(--text-muted)",
     cursor: "pointer", flexShrink: 0, transition: "all 0.15s ease",
   },
   removeFileBtnHover: { background: "#fef2f2", borderColor: "#fecaca", color: "#ef4444" },

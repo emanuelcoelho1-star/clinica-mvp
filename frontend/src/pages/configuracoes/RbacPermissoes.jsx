@@ -246,7 +246,7 @@ function RbacPermissoes({ roles, permissoes, token, onMsg, onErro }) {
 
       {/* ── Tabela de permissões ────────────────── */}
       {carregando ? (
-        <div style={{ textAlign: "center", padding: "40px", color: "#94a3b8" }}>
+        <div style={{ textAlign: "center", padding: "40px", color: "var(--text-muted)" }}>
           Carregando permissões...
         </div>
       ) : (
@@ -402,7 +402,7 @@ function RbacPermissoes({ roles, permissoes, token, onMsg, onErro }) {
                 <tr>
                   <td
                     colSpan={1 + acoesExistentes.length}
-                    style={{ ...S.td, textAlign: "center", color: "#94a3b8", padding: "40px" }}
+                    style={{ ...S.td, textAlign: "center", color: "var(--text-muted)", padding: "40px" }}
                   >
                     Nenhuma permissão encontrada.
                   </td>
