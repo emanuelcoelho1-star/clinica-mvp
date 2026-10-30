@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import API_URL from "../api";
 
 /* ═══════════════════════════════════════════════════════════
@@ -212,6 +212,9 @@ function AbaArquivos({ pacienteId }) {
   const [tela, setTela] = useState("lista"); // "lista" | "upload" | "preview"
   const [preview, setPreview] = useState(null);
   const [previewUrl, setPreviewUrl] = useState("");
+  const [tipoSelecao, setTipoSelecao] = useState("arquivo");
+  const [enviandoArquivos, setEnviandoArquivos] = useState(false);
+  const inputUploadRef = useRef(null);
 
 
   // Busca e filtros
@@ -324,6 +327,50 @@ function AbaArquivos({ pacienteId }) {
     return matchBusca && matchCategoria;
   });
 
+  function iniciarSelecaoArquivo(tipo) {
+    setTipoSelecao(tipo);
+    setMenuNovoAberto(false);
+    if (inputUploadRef.current) {
+      inputUploadRef.current.value = "";
+      inputUploadRef.current.click();
+    }
+  }
+
+  async function handleSelecionarArquivos(e) {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+
+    try {
+      setEnviandoArquivos(true);
+      setErro("");
+      const tk = localStorage.getItem("token");
+
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append("arquivo", file);
+        formData.append("paciente_id", pacienteId);
+        formData.append("categoria", "outro");
+        formData.append("descricao", "");
+        if (pastaAtualId) formData.append("pasta_id", pastaAtualId);
+
+        const response = await fetch(`${API_URL}/arquivos`, {
+          method: "POST",
+          headers: { Authorization: tk || "" },
+          body: formData,
+        });
+        if (!response.ok) throw new Error("Não foi possível enviar os arquivos.");
+      }
+
+      await carregarArquivos();
+      await carregarPastas();
+    } catch (err) {
+      setErro(err.message || "Não foi possível enviar os arquivos.");
+    } finally {
+      setEnviandoArquivos(false);
+      e.target.value = "";
+    }
+  }
+
   async function criarPasta(e) {
     e.preventDefault();
     const nome = nomeNovaPasta.trim();
@@ -435,6 +482,15 @@ function AbaArquivos({ pacienteId }) {
   if (tela === "lista") {
     return (
       <div style={S.wrapper}>
+        <input
+          ref={inputUploadRef}
+          type="file"
+          accept={tipoSelecao === "imagem" || tipoSelecao === "camera" ? "image/*" : undefined}
+          capture={tipoSelecao === "camera" ? "environment" : undefined}
+          multiple={tipoSelecao !== "camera"}
+          onChange={handleSelecionarArquivos}
+          style={{ display: "none" }}
+        />
         {/* Header */}
         <div style={S.header}>
           <div>
@@ -451,6 +507,9 @@ function AbaArquivos({ pacienteId }) {
             </button>
             {menuNovoAberto && <div style={S.newMenu}>
               <button type="button" style={S.newMenuItem} onClick={() => { setMenuNovoAberto(false); setNomeNovaPasta(""); setModalPastaAberto(true); }}>{Icons.folderSmall}<span>Pasta</span></button>
+              <button type="button" style={S.newMenuItem} onClick={() => iniciarSelecaoArquivo("arquivo")}>{Icons.fileSmall}<span>Arquivo</span></button>
+              <button type="button" style={S.newMenuItem} onClick={() => iniciarSelecaoArquivo("imagem")}>{Icons.image}<span>Imagem</span></button>
+              <button type="button" style={S.newMenuItem} onClick={() => iniciarSelecaoArquivo("camera")}>{Icons.image}<span>Tirar foto</span></button>
             </div>}
           </div>
         </div>
@@ -502,6 +561,8 @@ function AbaArquivos({ pacienteId }) {
             <span style={S.feedbackText}>Carregando arquivos...</span>
           </div>
         )}
+
+        {enviandoArquivos && <div style={S.feedbackBox}><span style={S.feedbackText}>Enviando arquivo(s)...</span></div>}
 
         {/* Erro */}
         {erro && <div style={S.errorBox}><span>{erro}</span></div>}
