@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import API_URL from "../api";
+import gerarPdfReceituario from "../utils/gerarPdfReceituario";
 
 function dataHojeISO() {
   const d = new Date();
@@ -9,7 +10,7 @@ function dataHojeISO() {
 const UNIDADES = ["Ampola(s)", "Caixa(s)", "Comprimido(s)", "Frasco(s)", "Pacote(s)", "Tubo(s)", "Cápsula(s)"];
 const IconClose = <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>;
 
-function ModalReceituario({ aberto, onFechar }) {
+function ModalReceituario({ aberto, onFechar, paciente, pacienteId }) {
   const [etapa, setEtapa] = useState("tipo");
   const [form, setForm] = useState({ profissional: "", data: dataHojeISO(), medicamentos: [] });
   const [busca, setBusca] = useState("");
@@ -19,6 +20,8 @@ function ModalReceituario({ aberto, onFechar }) {
   const [modalCadastro, setModalCadastro] = useState(false);
   const [salvandoMedicamento, setSalvandoMedicamento] = useState(false);
   const [erroCadastro, setErroCadastro] = useState("");
+  const [gerandoReceita, setGerandoReceita] = useState(false);
+  const [erroReceita, setErroReceita] = useState("");
   const [novoMedicamento, setNovoMedicamento] = useState({
     tipo_uso: "interno", nome: "", quantidade: "", unidade: "Comprimido(s)",
     posologia: "", receita_controlada: false,
@@ -149,6 +152,45 @@ function ModalReceituario({ aberto, onFechar }) {
   }
 
   const semResultado = !buscando && medicamentos.length === 0;
+  const possuiMedicamentoControlado = form.medicamentos.some((medicamento) => Number(medicamento.receita_controlada) === 1);
+
+  async function gerarReceita() {
+    setErroReceita("");
+    if (!form.profissional.trim()) {
+      setErroReceita("Informe o nome do profissional responsável.");
+      return;
+    }
+    if (form.medicamentos.length === 0) {
+      setErroReceita("Adicione pelo menos um medicamento antes de gerar a receita.");
+      return;
+    }
+
+    // Abre a janela durante o clique do usuário para evitar bloqueio de pop-up.
+    const janela = window.open("", "_blank", "width=900,height=1100");
+    if (!janela) {
+      setErroReceita("O navegador bloqueou a janela do PDF. Permita pop-ups para este site e tente novamente.");
+      return;
+    }
+
+    try {
+      setGerandoReceita(true);
+      await gerarPdfReceituario({
+        paciente,
+        pacienteId,
+        profissional: form.profissional,
+        data: form.data,
+        medicamentos: form.medicamentos,
+        apiUrl: API_URL,
+        token: localStorage.getItem("token"),
+        janela,
+      });
+    } catch (erro) {
+      janela.close();
+      setErroReceita(erro.message || "Não foi possível gerar o receituário.");
+    } finally {
+      setGerandoReceita(false);
+    }
+  }
 
   return (
     <div style={M.overlay} onClick={fechar}>
@@ -251,9 +293,18 @@ function ModalReceituario({ aberto, onFechar }) {
                 ))}
               </div>
             </div>
+            {erroReceita && <div style={M.error}>{erroReceita}</div>}
+            {possuiMedicamentoControlado && (
+              <div style={M.controlledNotice}>
+                Há medicamento controlado nesta receita. O PDF será gerado em duas vias: farmácia e paciente.
+              </div>
+            )}
             <div style={M.footer}>
               <button type="button" style={M.secondary} onClick={voltar}>Voltar</button>
-              <button type="button" style={M.primary} onClick={fechar}>Fechar</button>
+              <button type="button" style={M.secondary} onClick={fechar}>Fechar</button>
+              <button type="button" style={M.primary} onClick={gerarReceita} disabled={gerandoReceita}>
+                {gerandoReceita ? "Gerando PDF..." : "Gerar receita"}
+              </button>
             </div>
           </>
         )}
@@ -345,6 +396,7 @@ const M = {
   radioOption: { display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "#334155", cursor: "pointer" },
   checkboxOption: { display: "flex", alignItems: "center", gap: "9px", fontSize: "13px", color: "#334155", cursor: "pointer" },
   error: { color: "#b91c1c", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "9px", padding: "10px 12px", fontSize: "12px" },
+  controlledNotice: { color: "#92400e", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: "9px", padding: "10px 12px", fontSize: "12px", lineHeight: 1.5 },
 };
 
 export default ModalReceituario;
