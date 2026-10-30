@@ -225,11 +225,14 @@ function Pacientes() {
         method: "DELETE",
         headers: { Authorization: token },
       });
-      if (!resposta.ok) throw new Error("Erro ao excluir paciente");
+      if (!resposta.ok) {
+        const dados = await resposta.json().catch(() => ({}));
+        throw new Error(dados.erro || "Não foi possível excluir o paciente.");
+      }
       carregarPacientes();
     } catch (erro) {
       console.error(erro);
-      alert("Não foi possível excluir o paciente.");
+      alert(erro.message || "Não foi possível excluir o paciente.");
     }
   };
 

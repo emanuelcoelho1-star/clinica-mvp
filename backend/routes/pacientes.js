@@ -3,6 +3,8 @@ const router = express.Router();
 const db = require("../database");
 const auth = require("../middleware/auth");
 const requirePermission = require("../middleware/requirePermission");
+const fs = require("fs");
+const path = require("path");
 
 // A autorização é validada na API, não apenas na interface.
 router.use(auth, requirePermission("pacientes", (req) => {
@@ -413,20 +415,77 @@ router.put("/:id", auth, (req, res) => {
 // =========================
 // DELETAR PACIENTE
 // =========================
-router.delete("/:id", auth, (req, res) => {
-  const { id } = req.params;
+// =========================
+// EXCLUIR PACIENTE
+// Bloqueia se houver lançamentos financeiros (preserva o histórico contábil);
+// caso contrário remove junto os dados clínicos, a agenda e os arquivos do paciente,
+// sempre restrito à clínica do usuário.
+// =========================
+function dbGet(sql, params = []) {
+  return new Promise((resolve, reject) => db.get(sql, params, (err, row) => (err ? reject(err) : resolve(row))));
+}
+function dbAll(sql, params = []) {
+  return new Promise((resolve, reject) => db.all(sql, params, (err, rows) => (err ? reject(err) : resolve(rows || []))));
+}
+function dbRun(sql, params = []) {
+  return new Promise((resolve, reject) => db.run(sql, params, function (err) { return err ? reject(err) : resolve(this); }));
+}
 
-  db.run("DELETE FROM pacientes WHERE id = ? AND clinica_id = ?", [id, req.user.clinica_id], function (err) {
-    if (err) {
-      return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
+const uploadDir = path.join(__dirname, "..", "uploads");
+
+// Tabelas clínicas apagadas junto com o paciente (todas têm paciente_id e clinica_id)
+const TABELAS_DO_PACIENTE = ["consultas", "tratamentos", "evolucoes", "anamneses", "documentos", "arquivos", "pastas_arquivos", "odontogramas"];
+
+router.delete("/:id", auth, async (req, res) => {
+  const { id } = req.params;
+  const clinicaId = req.user.clinica_id;
+
+  try {
+    const paciente = await dbGet("SELECT id FROM pacientes WHERE id = ? AND clinica_id = ?", [id, clinicaId]);
+    if (!paciente) return res.status(404).json({ erro: "Paciente não encontrado nesta clínica." });
+
+    const financeiro = await dbGet(
+      `SELECT
+         (SELECT COUNT(*) FROM pagamentos WHERE paciente_id = ? AND clinica_id = ?) +
+         (SELECT COUNT(*) FROM contas_receber WHERE paciente_id = ? AND clinica_id = ?) +
+         (SELECT COUNT(*) FROM comissoes WHERE paciente_id = ? AND clinica_id = ?) AS total`,
+      [id, clinicaId, id, clinicaId, id, clinicaId]
+    );
+    if (financeiro.total > 0) {
+      return res.status(409).json({
+        erro: `Este paciente tem ${financeiro.total} lançamento(s) financeiro(s). Para preservar o histórico, ele não pode ser excluído.`,
+      });
     }
 
-    if (!this.changes) {
-      return res.status(404).json({ erro: "Paciente não encontrado nesta clínica." });
+    const arquivos = await dbAll("SELECT nome_salvo FROM arquivos WHERE paciente_id = ? AND clinica_id = ?", [id, clinicaId]);
+
+    await dbRun("BEGIN TRANSACTION");
+    try {
+      await dbRun(
+        "DELETE FROM orcamento_itens WHERE orcamento_id IN (SELECT id FROM orcamentos WHERE paciente_id = ? AND clinica_id = ?)",
+        [id, clinicaId]
+      );
+      await dbRun("DELETE FROM orcamentos WHERE paciente_id = ? AND clinica_id = ?", [id, clinicaId]);
+      for (const tabela of TABELAS_DO_PACIENTE) {
+        await dbRun(`DELETE FROM ${tabela} WHERE paciente_id = ? AND clinica_id = ?`, [id, clinicaId]);
+      }
+      await dbRun("DELETE FROM pacientes WHERE id = ? AND clinica_id = ?", [id, clinicaId]);
+      await dbRun("COMMIT");
+    } catch (err) {
+      await dbRun("ROLLBACK").catch(() => {});
+      throw err;
+    }
+
+    // Arquivos físicos só são apagados depois que o banco confirmou a exclusão
+    for (const a of arquivos) {
+      const caminho = path.join(uploadDir, path.basename(a.nome_salvo || ""));
+      if (a.nome_salvo && fs.existsSync(caminho)) fs.unlinkSync(caminho);
     }
 
     res.json({ message: "Paciente deletado com sucesso" });
-  });
+  } catch {
+    res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
+  }
 });
 
 
