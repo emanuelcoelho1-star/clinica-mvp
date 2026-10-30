@@ -270,7 +270,9 @@ function AbaDocumentos({ pacienteId, paciente }) {
   const secoesDocumentos = [
     { id: "atestados", label: "Atestados", filtro: (d) => d.tipo === "atestado" },
     { id: "receitas", label: "Receitas", filtro: (d) => d.tipo === "receita" },
-    { id: "outros", label: "Outros arquivos", filtro: (d) => !["atestado", "receita"].includes(d.tipo) },
+    { id: "termos", label: "Termos", filtro: (d) => ["termo", "termos"].includes(String(d.tipo || "").toLowerCase()) },
+    { id: "contratos", label: "Contratos", filtro: (d) => ["contrato", "contratos"].includes(String(d.tipo || "").toLowerCase()) },
+    { id: "outros", label: "Outros arquivos", filtro: (d) => !["atestado", "receita", "termo", "termos", "contrato", "contratos"].includes(String(d.tipo || "").toLowerCase()) },
   ];
   const documentosDaSecao = documentos.filter(
     (documento) => secoesDocumentos.find((secao) => secao.id === secaoAtiva).filtro(documento)
@@ -417,7 +419,11 @@ function AbaDocumentos({ pacienteId, paciente }) {
                     ? "Os atestados emitidos para este paciente aparecerão aqui."
                     : secaoAtiva === "receitas"
                     ? "As receitas emitidas para este paciente aparecerão aqui."
-                    : "Termos, contratos, laudos e outros documentos aparecerão aqui."}
+                    : secaoAtiva === "termos"
+                    ? "Os termos de consentimento e outros termos aparecerão aqui."
+                    : secaoAtiva === "contratos"
+                    ? "Os contratos deste paciente aparecerão aqui."
+                    : "Laudos, encaminhamentos, declarações e outros documentos aparecerão aqui."}
                 </p>
               </div>
             ) : (
