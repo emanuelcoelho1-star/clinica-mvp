@@ -505,9 +505,6 @@ function AbaDocumentos({ pacienteId, paciente }) {
         `}</style>
       </div>
     );
-  }
-
-  return null;
 }
 
 /* ═══════════════════════════════════════════════════════════
