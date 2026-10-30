@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import API_URL from "../api";
 import ModalAtestado from "./ModalAtestado";
 import gerarPdfDocumento from "../utils/gerarPdfDocumento";
+import gerarPdfAtestado from "../utils/gerarPdfAtestado";
 
 /* ═══════════════════════════════════════════════════════════
    HELPERS
@@ -222,6 +223,26 @@ function AbaDocumentos({ pacienteId, paciente }) {
 
   async function gerarPdfAtual() {
     if (!detalhes) return;
+    if (detalhes.tipo === "atestado") {
+      let meta = {};
+      try {
+        const raw = String(detalhes.observacoes || "");
+        if (raw.startsWith("__ATESTADO__")) meta = JSON.parse(raw.slice("__ATESTADO__".length));
+      } catch { meta = {}; }
+      await gerarPdfAtestado({
+        paciente,
+        profissional: detalhes.profissional,
+        tipoAtestado: meta.tipoAtestado || "dias",
+        data: detalhes.data,
+        dias: meta.dias,
+        cid: meta.cid,
+        horaInicial: meta.horaInicial,
+        horaFinal: meta.horaFinal,
+        apiUrl: API_URL,
+        token: localStorage.getItem("token"),
+      });
+      return;
+    }
     await gerarPdfDocumento({
       documento: detalhes,
       paciente,
