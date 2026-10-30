@@ -527,7 +527,7 @@ function AbaArquivos({ pacienteId }) {
           </div>
         )}
         {/* Sem resultados de filtro */}
-        {!carregando && !erro && arquivos.length > 0 && arquivosFiltrados.length === 0 && (
+        {!carregando && !erro && arquivosDaPasta.length > 0 && arquivosFiltrados.length === 0 && (
           <div style={S.emptyBox}>
             <span style={{ color: "#94a3b8" }}>{Icons.search}</span>
             <h3 style={S.emptyTitle}>Nenhum resultado encontrado</h3>
@@ -994,6 +994,18 @@ function AbaArquivos({ pacienteId }) {
    STYLES — Ultra Premium Minimal SaaS
    ═══════════════════════════════════════════════════════════ */
 const S = {
+  folderArea: { display: "flex", flexDirection: "column", gap: "16px" },
+  breadcrumbs: { display: "flex", alignItems: "center", flexWrap: "wrap", gap: "8px", minHeight: "28px", color: "#94a3b8", fontSize: "13px" },
+  breadcrumbPart: { display: "inline-flex", alignItems: "center", gap: "8px" },
+  breadcrumbSlash: { color: "#cbd5e1" },
+  breadcrumbButton: { border: "none", background: "transparent", color: "#64748b", padding: "4px 0", fontSize: "13px", fontWeight: "600", cursor: "pointer" },
+  folderGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(190px, 1fr))", gap: "12px" },
+  folderCard: { display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "8px", padding: "18px", minHeight: "126px", textAlign: "left", background: "#fff", border: "1px solid #e8edf4", borderRadius: "14px", cursor: "pointer", transition: "all .18s ease" },
+  folderCardIcon: { display: "flex", alignItems: "center", justifyContent: "center", width: "48px", height: "42px", borderRadius: "10px", background: "#eff6ff", color: "#3b82f6" },
+  folderCardName: { color: "#1e293b", fontSize: "14px", fontWeight: "650", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" },
+  folderCardHint: { color: "#94a3b8", fontSize: "12px" },
+  newMenu: { position: "absolute", top: "calc(100% + 8px)", right: 0, zIndex: 30, width: "190px", padding: "6px", background: "#fff", border: "1px solid #e2e8f0", borderRadius: "12px", boxShadow: "0 12px 32px rgba(15,23,42,.12)" },
+  newMenuItem: { display: "flex", alignItems: "center", gap: "10px", width: "100%", padding: "10px 12px", border: "none", borderRadius: "8px", background: "transparent", color: "#334155", fontSize: "13px", fontWeight: "550", textAlign: "left", cursor: "pointer" },
   wrapper: {
     display: "flex",
     flexDirection: "column",
