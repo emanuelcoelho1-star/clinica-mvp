@@ -193,7 +193,6 @@ function ModalReceituario({ aberto, onFechar, paciente, pacienteId }) {
       return;
     }
 
-    // Abre a janela durante o clique do usuário para evitar bloqueio de pop-up.
     const janela = window.open("", "_blank", "width=900,height=1100");
     if (!janela) {
       setErroReceita("O navegador bloqueou a janela do PDF. Permita pop-ups para este site e tente novamente.");
@@ -223,8 +222,6 @@ function ModalReceituario({ aberto, onFechar, paciente, pacienteId }) {
   return (
     <div style={M.overlay} onClick={fechar}>
       <style>{`
-        .receituario-sem-barra{scrollbar-width:none;-ms-overflow-style:none}
-        .receituario-sem-barra::-webkit-scrollbar{display:none;width:0;height:0}
         @media(max-width:600px){
           .receituario-modal-principal{width:calc(100vw - 20px)!important;max-height:calc(100dvh - 20px)!important;padding:18px!important;border-radius:13px!important;gap:16px!important}
           .receituario-modal-cadastro{width:calc(100vw - 20px)!important;max-height:calc(100dvh - 20px)!important;padding:18px!important}
@@ -235,11 +232,10 @@ function ModalReceituario({ aberto, onFechar, paciente, pacienteId }) {
           .receituario-medicamento-adicionado{grid-template-columns:1fr 38px!important;align-items:stretch!important}
           .receituario-posologia-horizontal{grid-column:1!important;border-top:1px solid #e2e8f0!important;border-left:0!important;padding:11px 0 0!important}
           .receituario-medicamento-adicionado>div:last-child{grid-column:2!important;grid-row:2!important}
-          .receituario-posologia-horizontal{border-top:1px solid #e2e8f0!important;border-left:0!important;padding:11px 0 0!important}
           .receituario-rodape{flex-wrap:wrap}
         }
       `}</style>
-      <div className="receituario-modal-principal receituario-sem-barra" style={M.modal} onClick={(e) => e.stopPropagation()}>
+      <div className="receituario-modal-principal" style={M.modal} onClick={(e) => e.stopPropagation()}>
         <div style={M.header}>
           <div>
             <h3 style={M.title}>{etapa === "tipo" ? "Novo receituário" : etapa === "impresso" ? "Receituário impresso" : "Receituário digital"}</h3>
@@ -283,11 +279,11 @@ function ModalReceituario({ aberto, onFechar, paciente, pacienteId }) {
                 <input type="date" name="data" value={form.data} onChange={handleInput} style={M.input} />
               </div>
               <div className="receituario-campo-busca" style={M.fieldBusca}>
-            {possuiMedicamentoControlado && (
-              <div style={M.controlledNotice}>
-                Há medicamento controlado nesta receita. O PDF será gerado em duas vias: farmácia e paciente.
-              </div>
-            )}
+                {possuiMedicamentoControlado && (
+                  <div style={M.controlledNotice}>
+                    Há medicamento controlado nesta receita. O PDF será gerado em duas vias: farmácia e paciente.
+                  </div>
+                )}
                 <label style={M.label}>Buscar medicamento</label>
                 <div ref={buscaContainerRef} style={M.searchWrap}>
                   <input
@@ -299,7 +295,7 @@ function ModalReceituario({ aberto, onFechar, paciente, pacienteId }) {
                     autoComplete="off"
                   />
                   {listaAberta && (
-                    <div className="receituario-sem-barra" style={{ ...M.dropdown, ...posicaoLista }}>
+                    <div style={{ ...M.dropdown, ...posicaoLista }}>
                       {buscando && <div style={M.dropdownHint}>Buscando medicamentos...</div>}
                       {!buscando && medicamentos.map((medicamento) => (
                         <button type="button" key={medicamento.id} style={M.dropdownItem} onClick={() => selecionarMedicamento(medicamento)}>
@@ -363,7 +359,7 @@ function ModalReceituario({ aberto, onFechar, paciente, pacienteId }) {
 
       {modalCadastro && (
         <div style={M.overlayNested} onClick={() => setModalCadastro(false)}>
-          <form className="receituario-modal-cadastro receituario-sem-barra" style={M.modalCadastro} onClick={(e) => e.stopPropagation()} onSubmit={cadastrarMedicamento}>
+          <form className="receituario-modal-cadastro" style={M.modalCadastro} onClick={(e) => e.stopPropagation()} onSubmit={cadastrarMedicamento}>
             <div style={M.header}>
               <div><h3 style={M.title}>Cadastrar medicamento</h3><p style={M.subtitle}>Este cadastro ficará disponível para todos os profissionais da clínica.</p></div>
               <button type="button" style={M.closeBtn} onClick={() => setModalCadastro(false)} aria-label="Fechar">{IconClose}</button>
