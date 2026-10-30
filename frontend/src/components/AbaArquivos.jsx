@@ -601,56 +601,29 @@ function AbaArquivos({ pacienteId }) {
               <button type="button" style={S.breadcrumbButton} onClick={() => setPastaAtualId(null)}>Arquivos</button>
               {caminhoPastas.map((p) => <span key={p.id} style={S.breadcrumbPart}><span style={S.breadcrumbSlash}>/</span><button type="button" style={S.breadcrumbButton} onClick={() => setPastaAtualId(p.id)}>{p.nome}</button></span>)}
             </div>
-            {pastasDaPasta.length > 0 && <div style={S.folderGrid}>
-              {pastasDaPasta.map((p) => <div key={p.id} style={S.folderCard}>
-                <button type="button" style={S.folderOpenButton} onClick={() => { setPastaAtualId(p.id); setBusca(""); setFiltroCategoria("todos"); }}>
-                  <span style={S.folderCardIcon}>{Icons.folderCard}</span><span style={S.folderCardName}>{p.nome}</span><span style={S.folderCardHint}>Abrir pasta</span>
-                </button>
-                <button type="button" title="Excluir pasta" aria-label={`Excluir pasta ${p.nome}`} style={S.folderDeleteButton}
-                  onClick={() => setConfirmarExclusaoPasta(p)}>{Icons.trash}<span>Excluir</span></button>
-              </div>)}
-            </div>}
-            {arquivosFiltrados.length === 0 && pastasDaPasta.length === 0 && <div style={S.emptyBox}>
-              {Icons.folder}
-              <h3 style={S.emptyTitle}>{pastaAtualId ? "Esta pasta está vazia" : "Nenhum arquivo armazenado"}</h3>
-              <p style={S.emptyText}>
-                {pastaAtualId
-                  ? "Adicione arquivos ou crie novas pastas usando o botão Novo."
-                  : "Envie exames, receitas, radiografias e outros documentos do paciente. Você também pode organizar tudo em pastas."}
-              </p>
-            </div>}
-          </div>
-        )}
-        {confirmarExclusaoPasta && (
-          <div style={S.overlay} onClick={() => !excluindoPasta && setConfirmarExclusaoPasta(null)}>
-            <div style={S.modal} onClick={(e) => e.stopPropagation()}>
-              <div style={S.modalIconWrap}>{Icons.alertTriangle}</div>
-              <h3 style={S.confirmTitle}>Excluir pasta?</h3>
-              <p style={S.confirmText}>
-                A pasta <strong>{confirmarExclusaoPasta.nome}</strong> será excluída. Para evitar perda de conteúdo, ela precisa estar vazia, sem arquivos ou subpastas.
-              </p>
-              <div style={S.modalActions}>
-                <button type="button" style={S.btnSecondary} onClick={() => setConfirmarExclusaoPasta(null)} disabled={excluindoPasta}>Cancelar</button>
-                <button type="button" style={S.btnDanger} onClick={handleExcluirPasta} disabled={excluindoPasta}>
-                  {Icons.trash}<span>{excluindoPasta ? "Excluindo..." : "Excluir pasta"}</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
 
-        {/* Sem resultados de filtro */}
-        {!carregando && !erro && arquivosDaPasta.length > 0 && arquivosFiltrados.length === 0 && (
-          <div style={S.emptyBox}>
-            <span style={{ color: "#94a3b8" }}>{Icons.search}</span>
-            <h3 style={S.emptyTitle}>Nenhum resultado encontrado</h3>
-            <p style={S.emptyText}>Tente ajustar o filtro ou termo de busca.</p>
-          </div>
-        )}
+            {/* Área de conteúdo no estilo do explorador de arquivos do Windows */}
+            <div style={S.contentPanel}>
+              {pastasDaPasta.length > 0 && <div style={S.folderGrid}>
+                {pastasDaPasta.map((p) => <div key={p.id} style={S.folderCard}>
+                  <button type="button" style={S.folderOpenButton} onClick={() => { setPastaAtualId(p.id); setBusca(""); setFiltroCategoria("todos"); }}>
+                    <span style={S.folderCardIcon}>{Icons.folderCard}</span><span style={S.folderCardName}>{p.nome}</span><span style={S.folderCardHint}>Abrir pasta</span>
+                  </button>
+                  <button type="button" title="Excluir pasta" aria-label={`Excluir pasta ${p.nome}`} style={S.folderDeleteButton}
+                    onClick={() => setConfirmarExclusaoPasta(p)}>{Icons.trash}<span>Excluir</span></button>
+                </div>)}
+              </div>}
 
-        {/* Lista de cards */}
-        {!carregando && !erro && arquivosFiltrados.length > 0 && (
-          <div style={S.cardGrid}>
+              {arquivosDaPasta.length > 0 && arquivosFiltrados.length === 0 && (
+                <div style={S.panelEmptyHint}>
+                  <span style={{ color: "#94a3b8" }}>{Icons.search}</span>
+                  <span>Nenhum resultado encontrado. Tente ajustar o filtro ou termo de busca.</span>
+                </div>
+              )}
+
+              {arquivosFiltrados.length > 0 && (
+                <div style={S.cardGrid}>
+
             {arquivosFiltrados.map((a) => {
               const hovered = hoveredCardId === a.id;
               return (
@@ -729,6 +702,38 @@ function AbaArquivos({ pacienteId }) {
                 </div>
               );
             })}
+                </div>
+              )}
+
+              {arquivosFiltrados.length === 0 && pastasDaPasta.length === 0 && (
+                <div style={S.emptyBox}>
+                  {Icons.folder}
+                  <h3 style={S.emptyTitle}>{pastaAtualId ? "Esta pasta está vazia" : "Nenhum arquivo armazenado"}</h3>
+                  <p style={S.emptyText}>
+                    {pastaAtualId
+                      ? "Adicione arquivos ou crie novas pastas usando o botão Novo."
+                      : "Envie exames, receitas, radiografias e outros documentos do paciente. Você também pode organizar tudo em pastas."}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+        {confirmarExclusaoPasta && (
+          <div style={S.overlay} onClick={() => !excluindoPasta && setConfirmarExclusaoPasta(null)}>
+            <div style={S.modal} onClick={(e) => e.stopPropagation()}>
+              <div style={S.modalIconWrap}>{Icons.alertTriangle}</div>
+              <h3 style={S.confirmTitle}>Excluir pasta?</h3>
+              <p style={S.confirmText}>
+                A pasta <strong>{confirmarExclusaoPasta.nome}</strong> será excluída. Para evitar perda de conteúdo, ela precisa estar vazia, sem arquivos ou subpastas.
+              </p>
+              <div style={S.modalActions}>
+                <button type="button" style={S.btnSecondary} onClick={() => setConfirmarExclusaoPasta(null)} disabled={excluindoPasta}>Cancelar</button>
+                <button type="button" style={S.btnDanger} onClick={handleExcluirPasta} disabled={excluindoPasta}>
+                  {Icons.trash}<span>{excluindoPasta ? "Excluindo..." : "Excluir pasta"}</span>
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
@@ -1108,6 +1113,8 @@ function AbaArquivos({ pacienteId }) {
    ═══════════════════════════════════════════════════════════ */
 const S = {
   folderArea: { display: "flex", flexDirection: "column", gap: "16px" },
+  contentPanel: { minHeight: "260px", padding: "24px", background: "#fff", border: "1px solid #f1f5f9", borderRadius: "16px", display: "flex", flexDirection: "column", gap: "20px" },
+  panelEmptyHint: { display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", padding: "28px 16px", color: "#94a3b8", fontSize: "13px" },
   breadcrumbs: { display: "flex", alignItems: "center", flexWrap: "wrap", gap: "8px", minHeight: "28px", color: "#94a3b8", fontSize: "13px" },
   breadcrumbPart: { display: "inline-flex", alignItems: "center", gap: "8px" },
   breadcrumbSlash: { color: "#cbd5e1" },
