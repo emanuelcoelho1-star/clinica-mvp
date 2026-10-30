@@ -5,7 +5,7 @@ function formatarDataBR(iso) {
   return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : iso;
 }
 function formatCpf(cpf) {
-  const d = String(cpf || "").replace(/\\D/g, "");
+  const d = String(cpf || "").replace(/\D/g, "");
   return d.length === 11 ? `${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6,9)}-${d.slice(9)}` : (cpf || "");
 }
 function esc(v) {
