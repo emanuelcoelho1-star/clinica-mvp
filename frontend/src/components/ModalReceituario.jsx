@@ -384,7 +384,7 @@ const M = {
   secondary: { border: "1px solid #e2e8f0", borderRadius: "10px", padding: "0 16px", minHeight: "40px", background: "#fff", color: "#475569", fontWeight: "500", cursor: "pointer" },
   digitalInfo: { display: "flex", flexDirection: "column", gap: "14px", alignItems: "flex-start", color: "#64748b", fontSize: "13px" },
   searchWrap: { position: "relative" },
-  dropdown: { position: "absolute", top: "calc(100% + 5px)", left: 0, right: 0, background: "#fff", border: "1px solid #e2e8f0", borderRadius: "11px", boxShadow: "0 14px 35px rgba(15,23,42,0.13)", zIndex: 20, maxHeight: "none", overflow: "visible" },
+  dropdown: { position: "absolute", top: "calc(100% + 5px)", left: 0, right: 0, background: "#fff", border: "1px solid #e2e8f0", borderRadius: "11px", boxShadow: "0 14px 35px rgba(15,23,42,0.13)", zIndex: 5, maxHeight: "min(260px, 35dvh)", overflowY: "auto" },
   dropdownItem: { width: "100%", border: 0, borderBottom: "1px solid #f1f5f9", background: "#fff", padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", textAlign: "left", cursor: "pointer", color: "#0f172a" },
   dropdownHint: { padding: "12px 14px", color: "#64748b", fontSize: "12px" },
   selectHint: { color: "#2563eb", fontSize: "11px", fontWeight: "600", whiteSpace: "nowrap" },
