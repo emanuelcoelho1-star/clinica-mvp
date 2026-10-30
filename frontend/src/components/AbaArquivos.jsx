@@ -210,7 +210,14 @@ function FileIcon({ nome }) {
    ═══════════════════════════════════════════════════════════ */
 function AbaArquivos({ pacienteId }) {
   const [arquivos, setArquivos] = useState([]);
+  const [pastas, setPastas] = useState([]);
+  const [pastaAtualId, setPastaAtualId] = useState(null);
   const [carregando, setCarregando] = useState(true);
+  const [menuNovoAberto, setMenuNovoAberto] = useState(false);
+  const [modalPastaAberto, setModalPastaAberto] = useState(false);
+  const [nomeNovaPasta, setNomeNovaPasta] = useState("");
+  const [salvandoPasta, setSalvandoPasta] = useState(false);
+  const [tipoSelecao, setTipoSelecao] = useState("arquivo");
   const [erro, setErro] = useState("");
 
   const [tela, setTela] = useState("lista"); // "lista" | "upload" | "preview"
@@ -240,7 +247,9 @@ function AbaArquivos({ pacienteId }) {
 
   /* ── Carregar ────────────────────────────── */
   useEffect(() => {
+    setPastaAtualId(null);
     carregarArquivos();
+    carregarPastas();
   }, [pacienteId]);
 
   useEffect(() => {
@@ -279,6 +288,20 @@ function AbaArquivos({ pacienteId }) {
     };
   }, [preview, tela]);
 
+  async function carregarPastas() {
+    try {
+      const tk = localStorage.getItem("token");
+      const r = await fetch(`${API_URL}/arquivos/pastas/paciente/${pacienteId}`, {
+        headers: { Authorization: tk || "" },
+      });
+      if (!r.ok) throw new Error();
+      const data = await r.json();
+      setPastas(Array.isArray(data) ? data : []);
+    } catch {
+      setErro("Erro ao carregar pastas.");
+    }
+  }
+
   async function carregarArquivos() {
     try {
       setCarregando(true);
@@ -298,7 +321,15 @@ function AbaArquivos({ pacienteId }) {
   }
 
   /* ── Filtrar ─────────────────────────────── */
-  const arquivosFiltrados = arquivos.filter((a) => {
+  const arquivosDaPasta = arquivos.filter((a) => Number(a.pasta_id || 0) === Number(pastaAtualId || 0));
+  const pastasDaPasta = pastas.filter((p) => Number(p.pasta_pai_id || 0) === Number(pastaAtualId || 0));
+  const caminhoPastas = [];
+  let pastaCaminho = pastas.find((p) => Number(p.id) === Number(pastaAtualId));
+  while (pastaCaminho) {
+    caminhoPastas.unshift(pastaCaminho);
+    pastaCaminho = pastas.find((p) => Number(p.id) === Number(pastaCaminho.pasta_pai_id));
+  }
+  const arquivosFiltrados = arquivosDaPasta.filter((a) => {
     const matchBusca =
       !busca ||
       (a.nome_original || "").toLowerCase().includes(busca.toLowerCase()) ||
@@ -309,12 +340,40 @@ function AbaArquivos({ pacienteId }) {
   });
 
   /* ── Upload ──────────────────────────────── */
-  function abrirUpload() {
+  function abrirUpload(tipo = "arquivo") {
     setSelectedFiles([]);
     setCategoria("outro");
     setDescricao("");
     setErroUpload("");
+    setTipoSelecao(tipo);
+    setMenuNovoAberto(false);
     setTela("upload");
+  }
+
+  async function criarPasta(e) {
+    e.preventDefault();
+    const nome = nomeNovaPasta.trim();
+    if (!nome) return;
+    try {
+      setSalvandoPasta(true);
+      const tk = localStorage.getItem("token");
+      const r = await fetch(`${API_URL}/arquivos/pastas`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: tk || "" },
+        body: JSON.stringify({ paciente_id: pacienteId, nome, pasta_pai_id: pastaAtualId || null }),
+      });
+      if (!r.ok) {
+        const data = await r.json().catch(() => ({}));
+        throw new Error(data.erro || "Não foi possível criar a pasta.");
+      }
+      setNomeNovaPasta("");
+      setModalPastaAberto(false);
+      await carregarPastas();
+    } catch (err) {
+      setErro(err.message || "Não foi possível criar a pasta.");
+    } finally {
+      setSalvandoPasta(false);
+    }
   }
 
   function handleFileSelect(e) {
@@ -351,6 +410,7 @@ function AbaArquivos({ pacienteId }) {
         formData.append("paciente_id", pacienteId);
         formData.append("categoria", categoria);
         formData.append("descricao", descricao);
+        if (pastaAtualId) formData.append("pasta_id", pastaAtualId);
 
         const r = await fetch(`${API_URL}/arquivos`, {
           method: "POST",
@@ -361,6 +421,7 @@ function AbaArquivos({ pacienteId }) {
       }
 
       await carregarArquivos();
+      await carregarPastas();
       voltarParaLista();
     } catch {
       setErroUpload("Não foi possível enviar o(s) arquivo(s).");
