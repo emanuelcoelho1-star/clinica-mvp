@@ -281,6 +281,11 @@ function ModalReceituario({ aberto, onFechar, paciente, pacienteId }) {
                 <input type="date" name="data" value={form.data} onChange={handleInput} style={M.input} />
               </div>
               <div className="receituario-campo-busca" style={M.fieldBusca}>
+            {possuiMedicamentoControlado && (
+              <div style={M.controlledNotice}>
+                Há medicamento controlado nesta receita. O PDF será gerado em duas vias: farmácia e paciente.
+              </div>
+            )}
                 <label style={M.label}>Buscar medicamento</label>
                 <div ref={buscaContainerRef} style={M.searchWrap}>
                   <input
@@ -337,11 +342,6 @@ function ModalReceituario({ aberto, onFechar, paciente, pacienteId }) {
               </div>
             </div>
             {erroReceita && <div style={M.error}>{erroReceita}</div>}
-            {possuiMedicamentoControlado && (
-              <div style={M.controlledNotice}>
-                Há medicamento controlado nesta receita. O PDF será gerado em duas vias: farmácia e paciente.
-              </div>
-            )}
             <div className="receituario-rodape" style={M.footer}>
               <button type="button" style={M.secondary} onClick={voltar}>Voltar</button>
               <button type="button" style={M.secondary} onClick={fechar}>Fechar</button>
@@ -430,18 +430,18 @@ const M = {
   selectedEyebrow: { color: "#64748b", fontSize: "9px", fontWeight: "700", letterSpacing: "0.08em" },
   selectedName: { color: "#0f172a", fontSize: "15px", fontWeight: "700", lineHeight: 1.4, overflowWrap: "anywhere" },
   selectedMeta: { color: "#64748b", fontSize: "11px" },
-  selectedActions: { display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 },
+  selectedActions: { display: "flex", alignItems: "center", gap: "8px", flexShrink: 0, alignSelf: "stretch", justifyContent: "flex-end" },
   posologyBlock: { borderTop: 0, borderLeft: "1px solid #e2e8f0", padding: "2px 0 2px 18px", display: "flex", flexDirection: "column", gap: "5px", minWidth: 0 },
   posologyLabel: { color: "#64748b", fontSize: "9px", fontWeight: "700", letterSpacing: "0.08em" },
   posologyText: { margin: 0, color: "#334155", fontSize: "13px", lineHeight: 1.6, whiteSpace: "pre-wrap", overflowWrap: "anywhere" },
   controlledTag: { fontSize: "10px", fontWeight: "700", color: "#92400e", background: "#fef3c7", borderRadius: "6px", padding: "5px 7px", whiteSpace: "nowrap" },
-  removeSelection: { border: "1px solid #e2e8f0", background: "#fff", color: "#64748b", width: "30px", height: "30px", borderRadius: "8px", display: "grid", placeItems: "center", cursor: "pointer", flexShrink: 0 },
+  removeSelection: { border: "1px solid #e2e8f0", background: "#fff", color: "#64748b", width: "34px", height: "34px", borderRadius: "9px", display: "grid", placeItems: "center", cursor: "pointer", flexShrink: 0, alignSelf: "center" },
   gridTwo: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" },
   radioGroup: { display: "flex", flexWrap: "wrap", gap: "18px" },
   radioOption: { display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "#334155", cursor: "pointer" },
   checkboxOption: { display: "flex", alignItems: "center", gap: "9px", fontSize: "13px", color: "#334155", cursor: "pointer" },
   error: { color: "#b91c1c", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "9px", padding: "10px 12px", fontSize: "12px" },
-  controlledNotice: { color: "#92400e", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: "9px", padding: "10px 12px", fontSize: "12px", lineHeight: 1.5 },
+  controlledNotice: { color: "#92400e", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: "9px", padding: "9px 12px", fontSize: "12px", lineHeight: 1.5, marginBottom: "2px", gridColumn: "1 / -1" },
 };
 
 export default ModalReceituario;
