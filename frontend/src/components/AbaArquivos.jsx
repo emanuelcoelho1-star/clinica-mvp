@@ -240,6 +240,8 @@ function AbaArquivos({ pacienteId }) {
   // Excluir
   const [confirmarExclusao, setConfirmarExclusao] = useState(null);
   const [excluindo, setExcluindo] = useState(false);
+  const [confirmarExclusaoPasta, setConfirmarExclusaoPasta] = useState(null);
+  const [excluindoPasta, setExcluindoPasta] = useState(false);
 
   // Hover
   const [hoveredCardId, setHoveredCardId] = useState(null);
@@ -492,6 +494,27 @@ function AbaArquivos({ pacienteId }) {
     }
   }
 
+  async function handleExcluirPasta() {
+    if (!confirmarExclusaoPasta?.id) return;
+    try {
+      setExcluindoPasta(true);
+      const tk = localStorage.getItem("token");
+      const r = await fetch(`${API_URL}/arquivos/pastas/${confirmarExclusaoPasta.id}`, {
+        method: "DELETE",
+        headers: { Authorization: tk || "" },
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(data.erro || "Não foi possível excluir a pasta.");
+      setConfirmarExclusaoPasta(null);
+      await carregarPastas();
+    } catch (err) {
+      setErro(err.message || "Não foi possível excluir a pasta.");
+      setConfirmarExclusaoPasta(null);
+    } finally {
+      setExcluindoPasta(false);
+    }
+  }
+
   /* ═══════════════════════════════════════════
      RENDER — LISTA
      ═══════════════════════════════════════════ */
@@ -579,9 +602,13 @@ function AbaArquivos({ pacienteId }) {
               {caminhoPastas.map((p) => <span key={p.id} style={S.breadcrumbPart}><span style={S.breadcrumbSlash}>/</span><button type="button" style={S.breadcrumbButton} onClick={() => setPastaAtualId(p.id)}>{p.nome}</button></span>)}
             </div>
             {pastasDaPasta.length > 0 && <div style={S.folderGrid}>
-              {pastasDaPasta.map((p) => <button key={p.id} type="button" style={S.folderCard} onClick={() => { setPastaAtualId(p.id); setBusca(""); setFiltroCategoria("todos"); }}>
-                <span style={S.folderCardIcon}>{Icons.folderCard}</span><span style={S.folderCardName}>{p.nome}</span><span style={S.folderCardHint}>Abrir pasta</span>
-              </button>)}
+              {pastasDaPasta.map((p) => <div key={p.id} style={S.folderCard}>
+                <button type="button" style={S.folderOpenButton} onClick={() => { setPastaAtualId(p.id); setBusca(""); setFiltroCategoria("todos"); }}>
+                  <span style={S.folderCardIcon}>{Icons.folderCard}</span><span style={S.folderCardName}>{p.nome}</span><span style={S.folderCardHint}>Abrir pasta</span>
+                </button>
+                <button type="button" title="Excluir pasta" aria-label={`Excluir pasta ${p.nome}`} style={S.folderDeleteButton}
+                  onClick={() => setConfirmarExclusaoPasta(p)}>{Icons.trash}<span>Excluir</span></button>
+              </div>)}
             </div>}
             {arquivosFiltrados.length === 0 && pastasDaPasta.length === 0 && <div style={S.emptyBox}>
               {Icons.folder}
@@ -594,6 +621,24 @@ function AbaArquivos({ pacienteId }) {
             </div>}
           </div>
         )}
+        {confirmarExclusaoPasta && (
+          <div style={S.overlay} onClick={() => !excluindoPasta && setConfirmarExclusaoPasta(null)}>
+            <div style={S.modal} onClick={(e) => e.stopPropagation()}>
+              <div style={S.modalIconWrap}>{Icons.alertTriangle}</div>
+              <h3 style={S.confirmTitle}>Excluir pasta?</h3>
+              <p style={S.confirmText}>
+                A pasta <strong>{confirmarExclusaoPasta.nome}</strong> será excluída. Para evitar perda de conteúdo, ela precisa estar vazia, sem arquivos ou subpastas.
+              </p>
+              <div style={S.modalActions}>
+                <button type="button" style={S.btnSecondary} onClick={() => setConfirmarExclusaoPasta(null)} disabled={excluindoPasta}>Cancelar</button>
+                <button type="button" style={S.btnDanger} onClick={handleExcluirPasta} disabled={excluindoPasta}>
+                  {Icons.trash}<span>{excluindoPasta ? "Excluindo..." : "Excluir pasta"}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Sem resultados de filtro */}
         {!carregando && !erro && arquivosDaPasta.length > 0 && arquivosFiltrados.length === 0 && (
           <div style={S.emptyBox}>
@@ -1068,7 +1113,9 @@ const S = {
   breadcrumbSlash: { color: "#cbd5e1" },
   breadcrumbButton: { border: "none", background: "transparent", color: "#64748b", padding: "4px 0", fontSize: "13px", fontWeight: "600", cursor: "pointer" },
   folderGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(190px, 1fr))", gap: "12px" },
-  folderCard: { display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "8px", padding: "18px", minHeight: "126px", textAlign: "left", background: "#fff", border: "1px solid #e8edf4", borderRadius: "14px", cursor: "pointer", transition: "all .18s ease" },
+  folderCard: { position: "relative", display: "flex", flexDirection: "column", alignItems: "stretch", gap: "10px", padding: "14px", minHeight: "126px", textAlign: "left", background: "#fff", border: "1px solid #e8edf4", borderRadius: "14px", transition: "all .18s ease" },
+  folderOpenButton: { display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "8px", width: "100%", padding: "4px", border: "none", background: "transparent", textAlign: "left", cursor: "pointer" },
+  folderDeleteButton: { display: "inline-flex", alignItems: "center", justifyContent: "center", alignSelf: "flex-end", gap: "6px", padding: "6px 9px", border: "1px solid #fee2e2", borderRadius: "8px", background: "#fff", color: "#dc2626", fontSize: "12px", fontWeight: "600", cursor: "pointer" },
   folderCardIcon: { display: "flex", alignItems: "center", justifyContent: "center", width: "48px", height: "42px", borderRadius: "10px", background: "#eff6ff", color: "#3b82f6" },
   folderCardName: { color: "#1e293b", fontSize: "14px", fontWeight: "650", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" },
   folderCardHint: { color: "#94a3b8", fontSize: "12px" },
