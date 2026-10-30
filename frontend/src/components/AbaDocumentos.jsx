@@ -321,8 +321,8 @@ function AbaDocumentos({ pacienteId, paciente }) {
               {Icons.arrowLeft}
               <span>Voltar</span>
             </button>
-            <h2 style={S.title}>"Novo receituário"</h2>
-            <p style={S.subtitle}>"Preencha os dados para gerar o receituário do paciente."</p>
+            <h2 style={S.title}>Novo receituário</h2>
+            <p style={S.subtitle}>Preencha os dados para gerar o receituário do paciente.</p>
           </div>
         </div>
 
