@@ -298,7 +298,9 @@ function AbaArquivos({ pacienteId }) {
       const data = await r.json();
       setPastas(Array.isArray(data) ? data : []);
     } catch {
-      setErro("Erro ao carregar pastas.");
+      // A ausência ou indisponibilidade da listagem de pastas não deve
+      // esconder a apresentação da aba Arquivos nem impedir a lista de arquivos.
+      setPastas([]);
     }
   }
 
@@ -582,8 +584,13 @@ function AbaArquivos({ pacienteId }) {
               </button>)}
             </div>}
             {arquivosFiltrados.length === 0 && pastasDaPasta.length === 0 && <div style={S.emptyBox}>
-              {Icons.folder}<h3 style={S.emptyTitle}>{pastaAtualId ? "Esta pasta está vazia" : "Nenhum arquivo ou pasta"}</h3>
-              <p style={S.emptyText}>Use o botão Novo para criar uma pasta, enviar um arquivo, adicionar uma imagem ou tirar uma foto.</p>
+              {Icons.folder}
+              <h3 style={S.emptyTitle}>{pastaAtualId ? "Esta pasta está vazia" : "Nenhum arquivo armazenado"}</h3>
+              <p style={S.emptyText}>
+                {pastaAtualId
+                  ? "Adicione arquivos ou crie novas pastas usando o botão Novo."
+                  : "Envie exames, receitas, radiografias e outros documentos do paciente. Você também pode organizar tudo em pastas."}
+              </p>
             </div>}
           </div>
         )}
