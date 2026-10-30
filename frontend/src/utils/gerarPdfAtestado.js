@@ -56,8 +56,8 @@ export default async function gerarPdfAtestado({
 html,body{margin:0;padding:0}
 body{font-family:Arial,Helvetica,sans-serif;color:#111;font-size:12pt;padding:18pt 30pt 30pt}
 .cabecalho{display:grid;grid-template-columns:94pt minmax(0,1fr) auto;column-gap:17pt;align-items:start;height:94pt;margin:0}
-.cabecalho>div:first-child{width:94pt;height:94pt;overflow:hidden;border-radius:14pt}
-.logo{display:block;width:94pt;height:94pt;object-fit:contain;object-position:left top;border-radius:14pt !important;clip-path:inset(0 round 14pt)}
+.cabecalho>div:first-child{width:94pt;height:94pt;overflow:hidden;border-radius:14pt;clip-path:inset(0 round 14pt);-webkit-mask-image:-webkit-radial-gradient(white,black)}
+.logo{display:block;width:94pt;height:94pt;object-fit:cover;object-position:center;border-radius:14pt !important;clip-path:inset(0 round 14pt);-webkit-mask-image:-webkit-radial-gradient(white,black)}
 .identidade{padding:0;line-height:1.2}
 .nome-clinica{font-size:14pt;font-weight:700;margin:0 0 5pt}
 .dados-clinica{font-size:11pt;line-height:1.2}
