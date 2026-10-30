@@ -4,6 +4,7 @@ import ModalAtestado from "./ModalAtestado";
 import ModalReceituario from "./ModalReceituario";
 import gerarPdfDocumento from "../utils/gerarPdfDocumento";
 import gerarPdfAtestado from "../utils/gerarPdfAtestado";
+import gerarPdfReceituario from "../utils/gerarPdfReceituario";
 
 /* ═══════════════════════════════════════════════════════════
    HELPERS
@@ -184,6 +185,27 @@ function AbaDocumentos({ pacienteId, paciente }) {
 
   async function abrirPdfDocumento(item) {
     if (!item) return;
+    if (item.tipo === "receita") {
+      let meta = {};
+      try {
+        const raw = String(item.observacoes || "");
+        if (raw.startsWith("__RECEITUARIO__")) meta = JSON.parse(raw.slice("__RECEITUARIO__".length));
+      } catch { meta = {}; }
+      if (!Array.isArray(meta.medicamentos) || meta.medicamentos.length === 0) {
+        alert("Não foi possível recuperar os medicamentos deste receituário.");
+        return;
+      }
+      await gerarPdfReceituario({
+        paciente,
+        pacienteId,
+        profissional: item.profissional,
+        data: item.data,
+        medicamentos: meta.medicamentos,
+        apiUrl: API_URL,
+        token: localStorage.getItem("token"),
+      });
+      return;
+    }
     if (item.tipo === "atestado") {
       let meta = {};
       try {
@@ -481,6 +503,7 @@ function AbaDocumentos({ pacienteId, paciente }) {
           onFechar={() => setModalReceituario(false)}
           paciente={paciente}
           pacienteId={pacienteId}
+          onDocumentoCriado={carregarDocumentos}
         />
 
         {/* Modal Atestado */}
