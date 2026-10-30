@@ -21,9 +21,9 @@ function enderecoClinica(c) {
 
 export default async function gerarPdfAtestado({
   paciente, profissional, tipoAtestado, data, dias, cid, horaInicial, horaFinal,
-  apiUrl, token,
+  apiUrl, token, janela,
 }) {
-  const w = window.open("", "_blank", "width=900,height=1100");
+  const w = janela || window.open("", "_blank", "width=900,height=1100");
   if (!w) {
     alert("Pop-up bloqueado! Permita pop-ups para gerar o PDF.");
     return false;
