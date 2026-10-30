@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import API_URL from "../api";
 import ModalAtestado from "./ModalAtestado";
+import ModalReceituario from "./ModalReceituario";
 import gerarPdfDocumento from "../utils/gerarPdfDocumento";
 import gerarPdfAtestado from "../utils/gerarPdfAtestado";
 
@@ -148,13 +149,6 @@ function AbaDocumentos({ pacienteId, paciente }) {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
 
-  const [tela, setTela] = useState("lista");
-  const [editando, setEditando] = useState(null);
-  const [detalhes, setDetalhes] = useState(null);
-
-  const [formData, setFormData] = useState({ ...EMPTY_FORM });
-  const [salvando, setSalvando] = useState(false);
-  const [erroForm, setErroForm] = useState("");
 
   const [confirmarExclusao, setConfirmarExclusao] = useState(null);
   const [excluindo, setExcluindo] = useState(false);
@@ -163,6 +157,7 @@ function AbaDocumentos({ pacienteId, paciente }) {
   const [hoveredBtn, setHoveredBtn] = useState(null);
 
   const [modalAtestado, setModalAtestado] = useState(false);
+  const [modalReceituario, setModalReceituario] = useState(false);
 
   /* ── Carregar ────────────────────────────── */
   useEffect(() => {
@@ -217,56 +212,6 @@ function AbaDocumentos({ pacienteId, paciente }) {
     });
   }
 
-  function abrirFormComTipo(tipo) {
-    setEditando(null);
-    setFormData({ ...EMPTY_FORM, tipo, titulo: TIPO_LABEL[tipo] || "" });
-    setErroForm("");
-    setTela("form");
-  }
-
-  function voltarParaLista() {
-    setTela("lista");
-    setEditando(null);
-    setDetalhes(null);
-    setErroForm("");
-  }
-
-  /* ── Salvar ──────────────────────────────── */
-  function handleInput(e) {
-    const { name, value } = e.target;
-    setFormData((p) => ({ ...p, [name]: value }));
-  }
-
-  async function handleSalvar(e) {
-    e.preventDefault();
-    if (!formData.data) { setErroForm("A data é obrigatória."); return; }
-    if (!formData.titulo.trim()) { setErroForm("O título é obrigatório."); return; }
-
-    try {
-      setSalvando(true);
-      setErroForm("");
-      const tk = localStorage.getItem("token");
-      const ed = Boolean(editando);
-      const body = { ...formData, paciente_id: Number(pacienteId) };
-
-      const r = await fetch(
-        ed ? `${API_URL}/documentos/${editando.id}` : `${API_URL}/documentos`,
-        {
-          method: ed ? "PUT" : "POST",
-          headers: { "Content-Type": "application/json", Authorization: tk || "" },
-          body: JSON.stringify(body),
-        }
-      );
-      if (!r.ok) throw new Error();
-      await carregarDocumentos();
-      voltarParaLista();
-    } catch {
-      setErroForm("Não foi possível salvar o documento.");
-    } finally {
-      setSalvando(false);
-    }
-  }
-
   /* ── Excluir ─────────────────────────────── */
   async function handleExcluir() {
     if (!confirmarExclusao?.id) return;
@@ -280,7 +225,7 @@ function AbaDocumentos({ pacienteId, paciente }) {
       if (!r.ok) throw new Error();
       setConfirmarExclusao(null);
       await carregarDocumentos();
-      if (tela !== "lista") voltarParaLista();
+      
     } catch {
       setErro("Erro ao excluir documento.");
     } finally {
@@ -297,146 +242,6 @@ function AbaDocumentos({ pacienteId, paciente }) {
       });
     });
     return total;
-  }
-
-  /* ═══════════════════════════════════════════
-     RENDER — RECEITUÁRIO
-     ═══════════════════════════════════════════ */
-  if (tela === "form") {
-    return (
-      <div style={S.wrapper}>
-
-        {/* Header */}
-        <div style={S.header}>
-          <div>
-            <button
-              style={{
-                ...S.backBtn,
-                ...(hoveredBtn === "back-form" ? S.backBtnHover : {}),
-              }}
-              onMouseEnter={() => setHoveredBtn("back-form")}
-              onMouseLeave={() => setHoveredBtn(null)}
-              onClick={voltarParaLista}
-            >
-              {Icons.arrowLeft}
-              <span>Voltar</span>
-            </button>
-            <h2 style={S.title}>Novo receituário</h2>
-            <p style={S.subtitle}>Preencha os dados para gerar o receituário do paciente.</p>
-          </div>
-        </div>
-
-        <form onSubmit={handleSalvar} style={S.formWrap}>
-
-          {/* Data e Tipo */}
-          <div style={S.formCard}>
-            <div style={S.formCardHeader}>
-              <span style={S.formCardIcon}>{Icons.calendar}</span>
-              <span style={S.formCardTitle}>Data e tipo</span>
-            </div>
-            <div style={S.formGrid2}>
-              <div style={S.fieldGroup}>
-                <label style={S.label}>Data</label>
-                <input
-                  type="date"
-                  name="data"
-                  value={formData.data}
-                  onChange={handleInput}
-                  style={S.input}
-                />
-              </div>
-              <div style={S.fieldGroup}>
-                <label style={S.label}>Tipo</label>
-                <select
-                  name="tipo"
-                  value={formData.tipo}
-                  onChange={handleInput}
-                  style={S.input}
-                >
-                  {TIPO_OPTIONS.filter((opt) => opt.value === "receita").map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* Seções dinâmicas */}
-          {FORM_SECTIONS.map((sec) => (
-            <div key={sec.title} style={S.formCard}>
-              <div style={S.formCardHeader}>
-                <span style={S.formCardIcon}>{sec.icon}</span>
-                <span style={S.formCardTitle}>{sec.title}</span>
-              </div>
-              <div style={sec.fields.length <= 2 ? S.formGrid2 : S.formGrid1}>
-                {sec.fields.map((f) => (
-                  <div key={f.name} style={S.fieldGroup}>
-                    <label style={S.label}>{f.label}</label>
-                    {f.type === "textarea" ? (
-                      <textarea
-                        name={f.name}
-                        value={formData[f.name]}
-                        onChange={handleInput}
-                        placeholder={f.placeholder}
-                        style={S.textarea}
-                        rows={3}
-                      />
-                    ) : (
-                      <input
-                        type="text"
-                        name={f.name}
-                        value={formData[f.name]}
-                        onChange={handleInput}
-                        placeholder={f.placeholder}
-                        style={S.input}
-                      />
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-
-          {/* Erro */}
-          {erroForm && (
-            <div style={S.errorBox}>
-              <span>{erroForm}</span>
-            </div>
-          )}
-
-          {/* Ações */}
-          <div style={S.formActions}>
-            <button
-              type="button"
-              style={{
-                ...S.btnSecondary,
-                ...(hoveredBtn === "cancel-form" ? S.btnSecondaryHover : {}),
-              }}
-              onMouseEnter={() => setHoveredBtn("cancel-form")}
-              onMouseLeave={() => setHoveredBtn(null)}
-              onClick={voltarParaLista}
-              disabled={salvando}
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              style={{
-                ...S.btnPrimary,
-                ...(hoveredBtn === "salvar-form" ? S.btnPrimaryHover : {}),
-              }}
-              onMouseEnter={() => setHoveredBtn("salvar-form")}
-              onMouseLeave={() => setHoveredBtn(null)}
-              disabled={salvando}
-            >
-              {salvando ? "Salvando..." : "Salvar receituário"}
-            </button>
-          </div>
-        </form>
-      </div>
-    );
   }
 
   /* ═══════════════════════════════════════════
@@ -503,7 +308,7 @@ function AbaDocumentos({ pacienteId, paciente }) {
                 style={{ ...S.quickCard, ...(hoveredBtn === "quick-receita" ? S.quickCardHover : {}) }}
                 onMouseEnter={() => setHoveredBtn("quick-receita")}
                 onMouseLeave={() => setHoveredBtn(null)}
-                onClick={() => abrirFormComTipo("receita")}
+                onClick={() => setModalReceituario(true)}
               >
                 <div style={{ ...S.quickIcon, background: "#f0fdf4", color: "#16a34a" }}>
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -670,6 +475,14 @@ function AbaDocumentos({ pacienteId, paciente }) {
             </div>
           </div>
         )}
+
+        {/* Modal de Receituário */}
+        <ModalReceituario
+          aberto={modalReceituario}
+          onFechar={() => setModalReceituario(false)}
+          paciente={paciente}
+          pacienteId={pacienteId}
+        />
 
         {/* Modal Atestado */}
         <ModalAtestado
