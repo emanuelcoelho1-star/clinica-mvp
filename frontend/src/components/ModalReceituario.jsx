@@ -17,6 +17,7 @@ function ModalReceituario({ aberto, onFechar, paciente, pacienteId }) {
   const [medicamentos, setMedicamentos] = useState([]);
   const [buscando, setBuscando] = useState(false);
   const [listaAberta, setListaAberta] = useState(false);
+  const [posicaoLista, setPosicaoLista] = useState({});
   const [modalCadastro, setModalCadastro] = useState(false);
   const [salvandoMedicamento, setSalvandoMedicamento] = useState(false);
   const [erroCadastro, setErroCadastro] = useState("");
@@ -28,6 +29,33 @@ function ModalReceituario({ aberto, onFechar, paciente, pacienteId }) {
   });
   const buscaRef = useRef(null);
   const buscaContainerRef = useRef(null);
+
+  useEffect(() => {
+    if (!listaAberta || !buscaRef.current) return;
+    function posicionarLista() {
+      const campo = buscaRef.current;
+      if (!campo) return;
+      const rect = campo.getBoundingClientRect();
+      const espacoAbaixo = window.innerHeight - rect.bottom - 12;
+      const espacoAcima = rect.top - 12;
+      const abrirAcima = espacoAbaixo < 220 && espacoAcima > espacoAbaixo;
+      setPosicaoLista({
+        position: "fixed",
+        left: rect.left,
+        width: rect.width,
+        top: abrirAcima ? "auto" : rect.bottom + 5,
+        bottom: abrirAcima ? window.innerHeight - rect.top + 5 : "auto",
+        maxHeight: "none",
+      });
+    }
+    posicionarLista();
+    window.addEventListener("resize", posicionarLista);
+    window.addEventListener("scroll", posicionarLista, true);
+    return () => {
+      window.removeEventListener("resize", posicionarLista);
+      window.removeEventListener("scroll", posicionarLista, true);
+    };
+  }, [listaAberta, medicamentos.length, buscando]);
 
   useEffect(() => {
     if (!listaAberta) return;
@@ -260,7 +288,7 @@ function ModalReceituario({ aberto, onFechar, paciente, pacienteId }) {
                     autoComplete="off"
                   />
                   {listaAberta && (
-                    <div className="receituario-sem-barra" style={M.dropdown}>
+                    <div className="receituario-sem-barra" style={{ ...M.dropdown, ...posicaoLista }}>
                       {buscando && <div style={M.dropdownHint}>Buscando medicamentos...</div>}
                       {!buscando && medicamentos.map((medicamento) => (
                         <button type="button" key={medicamento.id} style={M.dropdownItem} onClick={() => selecionarMedicamento(medicamento)}>
@@ -384,7 +412,7 @@ const M = {
   secondary: { border: "1px solid #e2e8f0", borderRadius: "10px", padding: "0 16px", minHeight: "40px", background: "#fff", color: "#475569", fontWeight: "500", cursor: "pointer" },
   digitalInfo: { display: "flex", flexDirection: "column", gap: "14px", alignItems: "flex-start", color: "#64748b", fontSize: "13px" },
   searchWrap: { position: "relative" },
-  dropdown: { position: "absolute", top: "calc(100% + 5px)", left: 0, right: 0, background: "#fff", border: "1px solid #e2e8f0", borderRadius: "11px", boxShadow: "0 14px 35px rgba(15,23,42,0.13)", zIndex: 5, maxHeight: "min(260px, 35dvh)", overflowY: "auto" },
+  dropdown: { position: "absolute", top: "calc(100% + 5px)", left: 0, right: 0, background: "#fff", border: "1px solid #e2e8f0", borderRadius: "11px", boxShadow: "0 14px 35px rgba(15,23,42,0.13)", zIndex: 1100, maxHeight: "none", overflow: "visible" },
   dropdownItem: { width: "100%", border: 0, borderBottom: "1px solid #f1f5f9", background: "#fff", padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", textAlign: "left", cursor: "pointer", color: "#0f172a" },
   dropdownHint: { padding: "12px 14px", color: "#64748b", fontSize: "12px" },
   selectHint: { color: "#2563eb", fontSize: "11px", fontWeight: "600", whiteSpace: "nowrap" },
