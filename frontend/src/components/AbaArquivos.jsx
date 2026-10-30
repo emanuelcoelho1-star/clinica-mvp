@@ -128,6 +128,15 @@ const Icons = {
       <path d="M12 9v4" /><path d="M12 17h.01" />
     </svg>
   ),
+  folderSmall: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></svg>
+  ),
+  folderCard: (
+    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></svg>
+  ),
+  camera: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 4h-4l-2 3H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z" /><circle cx="12" cy="13" r="3" /></svg>
+  ),
   folder: (
     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z" />
@@ -431,22 +440,22 @@ function AbaArquivos({ pacienteId }) {
           <div>
             <h2 style={S.title}>Arquivos</h2>
             <p style={S.subtitle}>
-              {arquivos.length} arquivo{arquivos.length !== 1 ? "s" : ""} armazenado
-              {arquivos.length !== 1 ? "s" : ""}
+              {arquivos.length} arquivo{arquivos.length !== 1 ? "s" : ""} armazenado{arquivos.length !== 1 ? "s" : ""} • {pastas.length} pasta{pastas.length !== 1 ? "s" : ""}
             </p>
           </div>
-          <button
-            style={{
-              ...S.btnPrimary,
-              ...(hoveredBtn === "upload" ? S.btnPrimaryHover : {}),
-            }}
-            onMouseEnter={() => setHoveredBtn("upload")}
-            onMouseLeave={() => setHoveredBtn(null)}
-            onClick={abrirUpload}
-          >
-            {Icons.upload}
-            <span>Enviar arquivo</span>
-          </button>
+          <div style={{ position: "relative" }}>
+            <button type="button" style={{ ...S.btnPrimary, ...(hoveredBtn === "upload" ? S.btnPrimaryHover : {}) }}
+              onMouseEnter={() => setHoveredBtn("upload")} onMouseLeave={() => setHoveredBtn(null)}
+              onClick={() => setMenuNovoAberto((v) => !v)}>
+              {Icons.plus}<span>Novo</span>
+            </button>
+            {menuNovoAberto && <div style={S.newMenu}>
+              <button type="button" style={S.newMenuItem} onClick={() => { setMenuNovoAberto(false); setNomeNovaPasta(""); setModalPastaAberto(true); }}>{Icons.folderSmall}<span>Pasta</span></button>
+              <button type="button" style={S.newMenuItem} onClick={() => abrirUpload("arquivo")}>{Icons.fileSmall}<span>Arquivo</span></button>
+              <button type="button" style={S.newMenuItem} onClick={() => abrirUpload("imagem")}>{Icons.image}<span>Imagem</span></button>
+              <button type="button" style={S.newMenuItem} onClick={() => abrirUpload("camera")}>{Icons.camera}<span>Tirar foto</span></button>
+            </div>}
+          </div>
         </div>
 
         {/* Busca e filtros */}
@@ -500,30 +509,23 @@ function AbaArquivos({ pacienteId }) {
         {/* Erro */}
         {erro && <div style={S.errorBox}><span>{erro}</span></div>}
 
-        {/* Vazio */}
-        {!carregando && !erro && arquivos.length === 0 && (
-          <div style={S.emptyBox}>
-            {Icons.folder}
-            <h3 style={S.emptyTitle}>Nenhum arquivo armazenado</h3>
-            <p style={S.emptyText}>
-              Envie exames, receitas, radiografias e outros documentos do paciente.
-            </p>
-            <button
-              style={{
-                ...S.btnPrimary,
-                marginTop: "4px",
-                ...(hoveredBtn === "upload-empty" ? S.btnPrimaryHover : {}),
-              }}
-              onMouseEnter={() => setHoveredBtn("upload-empty")}
-              onMouseLeave={() => setHoveredBtn(null)}
-              onClick={abrirUpload}
-            >
-              {Icons.upload}
-              <span>Enviar primeiro arquivo</span>
-            </button>
+        {!carregando && !erro && (
+          <div style={S.folderArea}>
+            <div style={S.breadcrumbs}>
+              <button type="button" style={S.breadcrumbButton} onClick={() => setPastaAtualId(null)}>Arquivos</button>
+              {caminhoPastas.map((p) => <span key={p.id} style={S.breadcrumbPart}><span style={S.breadcrumbSlash}>/</span><button type="button" style={S.breadcrumbButton} onClick={() => setPastaAtualId(p.id)}>{p.nome}</button></span>)}
+            </div>
+            {pastasDaPasta.length > 0 && <div style={S.folderGrid}>
+              {pastasDaPasta.map((p) => <button key={p.id} type="button" style={S.folderCard} onClick={() => { setPastaAtualId(p.id); setBusca(""); setFiltroCategoria("todos"); }}>
+                <span style={S.folderCardIcon}>{Icons.folderCard}</span><span style={S.folderCardName}>{p.nome}</span><span style={S.folderCardHint}>Abrir pasta</span>
+              </button>)}
+            </div>}
+            {arquivosFiltrados.length === 0 && pastasDaPasta.length === 0 && <div style={S.emptyBox}>
+              {Icons.folder}<h3 style={S.emptyTitle}>{pastaAtualId ? "Esta pasta está vazia" : "Nenhum arquivo ou pasta"}</h3>
+              <p style={S.emptyText}>Use o botão Novo para criar uma pasta, enviar um arquivo, adicionar uma imagem ou tirar uma foto.</p>
+            </div>}
           </div>
         )}
-
         {/* Sem resultados de filtro */}
         {!carregando && !erro && arquivos.length > 0 && arquivosFiltrados.length === 0 && (
           <div style={S.emptyBox}>
@@ -617,6 +619,21 @@ function AbaArquivos({ pacienteId }) {
           </div>
         )}
 
+        {modalPastaAberto && (
+          <div style={S.overlay} onClick={() => setModalPastaAberto(false)}>
+            <form style={S.modal} onClick={(e) => e.stopPropagation()} onSubmit={criarPasta}>
+              <div style={S.modalIconWrap}>{Icons.folderCard}</div>
+              <h3 style={S.confirmTitle}>Criar nova pasta</h3>
+              <p style={S.confirmText}>A pasta será criada dentro de {caminhoPastas.length ? caminhoPastas[caminhoPastas.length - 1].nome : "Arquivos"}.</p>
+              <input autoFocus value={nomeNovaPasta} onChange={(e) => setNomeNovaPasta(e.target.value)} maxLength={100} placeholder="Nome da pasta" style={{ ...S.input, marginTop: "18px" }} />
+              <div style={S.modalActions}>
+                <button type="button" style={S.btnSecondary} onClick={() => setModalPastaAberto(false)} disabled={salvandoPasta}>Cancelar</button>
+                <button type="submit" style={S.btnPrimary} disabled={salvandoPasta || !nomeNovaPasta.trim()}>{salvandoPasta ? "Criando..." : "Criar pasta"}</button>
+              </div>
+            </form>
+          </div>
+        )}
+
         {/* Modal exclusão */}
         {confirmarExclusao && (
           <div style={S.overlay} onClick={() => setConfirmarExclusao(null)}>
@@ -694,7 +711,7 @@ function AbaArquivos({ pacienteId }) {
               <span>Voltar</span>
             </button>
             <h2 style={S.title}>Enviar arquivos</h2>
-            <p style={S.subtitle}>Selecione os arquivos que deseja enviar para o prontuário.</p>
+            <p style={S.subtitle}>{tipoSelecao === "camera" ? "Tire uma foto para adicionar ao prontuário." : tipoSelecao === "imagem" ? "Selecione imagens para adicionar ao prontuário." : "Selecione os arquivos que deseja enviar para o prontuário."}</p>
           </div>
         </div>
 
@@ -718,7 +735,9 @@ function AbaArquivos({ pacienteId }) {
             <input
               ref={fileInputRef}
               type="file"
-              multiple
+              accept={tipoSelecao === "imagem" || tipoSelecao === "camera" ? "image/*" : ".pdf,.jpg,.jpeg,.png,.gif,.webp,.doc,.docx,.xls,.xlsx,.txt"}
+              capture={tipoSelecao === "camera" ? "environment" : undefined}
+              multiple={tipoSelecao !== "camera"}
               onChange={handleFileSelect}
               style={{ display: "none" }}
             />
