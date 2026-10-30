@@ -11,7 +11,7 @@ const IconClose = <svg width="18" height="18" viewBox="0 0 24 24" fill="none" st
 
 function ModalReceituario({ aberto, onFechar }) {
   const [etapa, setEtapa] = useState("tipo");
-  const [form, setForm] = useState({ profissional: "", data: dataHojeISO(), medicamento: null });
+  const [form, setForm] = useState({ profissional: "", data: dataHojeISO(), medicamentos: [] });
   const [busca, setBusca] = useState("");
   const [medicamentos, setMedicamentos] = useState([]);
   const [buscando, setBuscando] = useState(false);
@@ -72,7 +72,7 @@ function ModalReceituario({ aberto, onFechar }) {
 
   function fechar() {
     setEtapa("tipo");
-    setForm({ profissional: "", data: dataHojeISO(), medicamento: null });
+    setForm({ profissional: "", data: dataHojeISO(), medicamentos: [] });
     setBusca("");
     setListaAberta(false);
     setModalCadastro(false);
@@ -82,7 +82,7 @@ function ModalReceituario({ aberto, onFechar }) {
 
   function voltar() {
     setEtapa("tipo");
-    setForm((atual) => ({ ...atual, medicamento: null }));
+    setForm((atual) => ({ ...atual, medicamentos: [] }));
     setBusca("");
   }
 
@@ -92,9 +92,28 @@ function ModalReceituario({ aberto, onFechar }) {
   }
 
   function selecionarMedicamento(medicamento) {
-    setForm((atual) => ({ ...atual, medicamento }));
-    setBusca(medicamento.nome);
+    setForm((atual) => {
+      const jaAdicionado = atual.medicamentos.some((item) =>
+        item.id != null && medicamento.id != null
+          ? String(item.id) === String(medicamento.id)
+          : item.nome.toLocaleLowerCase() === medicamento.nome.toLocaleLowerCase()
+      );
+      if (jaAdicionado) return atual;
+      return { ...atual, medicamentos: [...atual.medicamentos, medicamento] };
+    });
+    setBusca("");
     setListaAberta(false);
+  }
+
+  function removerMedicamento(medicamento) {
+    setForm((atual) => ({
+      ...atual,
+      medicamentos: atual.medicamentos.filter((item) =>
+        medicamento.id != null && item.id != null
+          ? String(item.id) !== String(medicamento.id)
+          : item.nome !== medicamento.nome
+      ),
+    }));
   }
 
   function atualizarNovoMedicamento(e) {
@@ -181,7 +200,7 @@ function ModalReceituario({ aberto, onFechar }) {
                 <div ref={buscaContainerRef} style={M.searchWrap}>
                   <input
                     ref={buscaRef} type="text" value={busca}
-                    onChange={(e) => { setBusca(e.target.value); setForm((atual) => ({ ...atual, medicamento: null })); setListaAberta(true); }}
+                    onChange={(e) => { setBusca(e.target.value); setListaAberta(true); }}
                     onFocus={() => setListaAberta(true)}
                     placeholder="Digite o nome do medicamento..."
                     style={M.input}
@@ -204,28 +223,32 @@ function ModalReceituario({ aberto, onFechar }) {
                     </div>
                   )}
                 </div>
-                {form.medicamento && (
-                  <div style={M.selectedMedicine}>
+                {form.medicamentos.map((medicamento) => (
+                  <div key={medicamento.id ?? medicamento.nome} style={M.selectedMedicine}>
                     <div style={M.selectedHeader}>
                       <div style={M.selectedIdentity}>
                         <span style={M.selectedEyebrow}>MEDICAMENTO ADICIONADO</span>
-                        <strong style={M.selectedName}>{form.medicamento.nome}</strong>
+                        <strong style={M.selectedName}>{medicamento.nome}</strong>
                         <span style={M.selectedMeta}>
-                          {form.medicamento.tipo_uso === "interno" ? "Uso interno" : "Uso externo"}
-                          {form.medicamento.quantidade ? ` · ${form.medicamento.quantidade} ${form.medicamento.unidade || ""}` : ""}
+                          {medicamento.tipo_uso === "interno" ? "Uso interno" : "Uso externo"}
+                          {medicamento.quantidade ? ` · ${medicamento.quantidade} ${medicamento.unidade || ""}` : ""}
                         </span>
                       </div>
                       <div style={M.selectedActions}>
-                        {Number(form.medicamento.receita_controlada) === 1 && <span style={M.controlledTag}>Receita controlada</span>}
-                        <button type="button" aria-label="Remover medicamento" onClick={() => { setForm((atual) => ({ ...atual, medicamento: null })); setBusca(""); buscaRef.current?.focus(); }} style={M.removeSelection}>×</button>
+                        {Number(medicamento.receita_controlada) === 1 && <span style={M.controlledTag}>Receita controlada</span>}
+                        <button type="button" aria-label={`Remover ${medicamento.nome}`} title="Remover medicamento" onClick={() => removerMedicamento(medicamento)} style={M.removeSelection}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <path d="M3 6h18" /><path d="M8 6V4h8v2" /><path d="m19 6-1 14H6L5 6" /><path d="M10 11v5M14 11v5" />
+                          </svg>
+                        </button>
                       </div>
                     </div>
                     <div style={M.posologyBlock}>
                       <span style={M.posologyLabel}>POSOLOGIA</span>
-                      <p style={M.posologyText}>{form.medicamento.posologia}</p>
+                      <p style={M.posologyText}>{medicamento.posologia}</p>
                     </div>
                   </div>
-                )}
+                ))}
               </div>
             </div>
             <div style={M.footer}>
@@ -316,7 +339,7 @@ const M = {
   posologyLabel: { color: "#64748b", fontSize: "9px", fontWeight: "700", letterSpacing: "0.08em" },
   posologyText: { margin: 0, color: "#334155", fontSize: "13px", lineHeight: 1.6, whiteSpace: "pre-wrap", overflowWrap: "anywhere" },
   controlledTag: { fontSize: "10px", fontWeight: "700", color: "#92400e", background: "#fef3c7", borderRadius: "6px", padding: "5px 7px", whiteSpace: "nowrap" },
-  removeSelection: { border: "1px solid #e2e8f0", background: "#fff", color: "#64748b", width: "27px", height: "27px", borderRadius: "7px", fontSize: "18px", lineHeight: 1, cursor: "pointer" },
+  removeSelection: { border: "1px solid #e2e8f0", background: "#fff", color: "#64748b", width: "30px", height: "30px", borderRadius: "8px", display: "grid", placeItems: "center", cursor: "pointer", flexShrink: 0 },
   gridTwo: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" },
   radioGroup: { display: "flex", flexWrap: "wrap", gap: "18px" },
   radioOption: { display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "#334155", cursor: "pointer" },
