@@ -230,6 +230,8 @@ function ModalReceituario({ aberto, onFechar, paciente, pacienteId }) {
           .receituario-modal-cadastro{width:calc(100vw - 20px)!important;max-height:calc(100dvh - 20px)!important;padding:18px!important}
           .receituario-opcoes{grid-template-columns:1fr!important}
           .receituario-grid-duplo{grid-template-columns:1fr!important}
+          .receituario-campos-horizontal{grid-template-columns:1fr!important}
+          .receituario-campo-busca{grid-column:auto!important}
           .receituario-rodape{flex-wrap:wrap}
         }
       `}</style>
@@ -267,7 +269,7 @@ function ModalReceituario({ aberto, onFechar, paciente, pacienteId }) {
 
         {etapa === "impresso" && (
           <>
-            <div style={M.fields}>
+            <div className="receituario-campos-horizontal" style={M.fieldsHorizontal}>
               <div style={M.field}>
                 <label style={M.label}>Profissional</label>
                 <input type="text" name="profissional" value={form.profissional} onChange={handleInput} placeholder="Nome do profissional responsável" style={M.input} />
@@ -276,7 +278,7 @@ function ModalReceituario({ aberto, onFechar, paciente, pacienteId }) {
                 <label style={M.label}>Data</label>
                 <input type="date" name="data" value={form.data} onChange={handleInput} style={M.input} />
               </div>
-              <div style={M.field}>
+              <div className="receituario-campo-busca" style={M.field}>
                 <label style={M.label}>Buscar medicamento</label>
                 <div ref={buscaContainerRef} style={M.searchWrap}>
                   <input
@@ -391,7 +393,7 @@ function ModalReceituario({ aberto, onFechar, paciente, pacienteId }) {
 const M = {
   overlay: { position: "fixed", inset: 0, background: "rgba(15,23,42,0.4)", backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px", zIndex: 1000 },
   overlayNested: { position: "fixed", inset: 0, background: "rgba(15,23,42,0.45)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px", zIndex: 1010 },
-  modal: { width: "min(560px, calc(100vw - 32px))", maxWidth: "560px", background: "#fff", borderRadius: "16px", padding: "clamp(16px, 3vw, 28px)", boxShadow: "0 24px 64px rgba(15,23,42,0.18)", animation: "documento-fade-in 0.2s ease", display: "flex", flexDirection: "column", gap: "22px", maxHeight: "min(90vh, 900px)", maxHeight: "min(90dvh, 900px)", overflowY: "auto" },
+  modal: { width: "min(920px, calc(100vw - 32px))", maxWidth: "920px", background: "#fff", borderRadius: "16px", padding: "clamp(16px, 3vw, 28px)", boxShadow: "0 24px 64px rgba(15,23,42,0.18)", animation: "documento-fade-in 0.2s ease", display: "flex", flexDirection: "column", gap: "22px", maxHeight: "min(90vh, 900px)", maxHeight: "min(90dvh, 900px)", overflowY: "auto" },
   modalCadastro: { width: "min(540px, calc(100vw - 32px))", maxWidth: "540px", background: "#fff", borderRadius: "16px", padding: "clamp(16px, 3vw, 26px)", boxShadow: "0 24px 64px rgba(15,23,42,0.22)", display: "flex", flexDirection: "column", gap: "16px", maxHeight: "min(90vh, 900px)", maxHeight: "min(90dvh, 900px)", overflowY: "auto" },
   header: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "16px" },
   title: { margin: 0, fontSize: "18px", fontWeight: "700", color: "#0f172a" },
@@ -403,6 +405,7 @@ const M = {
   optionTitle: { fontSize: "14px", color: "#0f172a", fontWeight: "700" },
   optionDescription: { fontSize: "12px", color: "#64748b", lineHeight: 1.5 },
   fields: { display: "flex", flexDirection: "column", gap: "16px" },
+  fieldsHorizontal: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px 20px", alignItems: "start" },
   field: { display: "flex", flexDirection: "column", gap: "7px", minWidth: 0 },
   label: { fontSize: "12px", fontWeight: "600", color: "#64748b" },
   input: { width: "100%", minHeight: "42px", borderRadius: "10px", border: "1px solid #e2e8f0", padding: "0 14px", outline: "none", fontSize: "14px", background: "#fff", boxSizing: "border-box", color: "#0f172a" },
