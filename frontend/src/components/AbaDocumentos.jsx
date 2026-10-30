@@ -428,73 +428,62 @@ function AbaDocumentos({ pacienteId, paciente }) {
             ) : (
               <div style={S.cardGrid}>
                 {documentosDaSecao.map((d) => {
-              const hovered = hoveredCardId === d.id;
-              const camposPreenchidos = contarCamposPreenchidos(d);
-              return (
-                <div
-                  key={d.id}
-                  style={{ ...S.card, ...(hovered ? S.cardHover : {}) }}
-                  onMouseEnter={() => setHoveredCardId(d.id)}
-                  onMouseLeave={() => setHoveredCardId(null)}
-                >
-                  {/* Topo do card */}
-                  <div style={S.cardTop}>
-                    <div style={S.cardDateBadge}>
-                      <span style={{ display: "flex", color: "#2563eb" }}>{Icons.calendar}</span>
-                      {formatarDataBR(d.data)}
-                    </div>
-                    <span style={S.cardId}>#{d.id}</span>
-                  </div>
-
-                  {/* Nome do paciente / título */}
-                  <div style={S.cardSection}>
-                    <span style={S.cardSectionLabel}>{d.tipo === "atestado" ? "Paciente" : "Título"}</span>
-                    <p style={S.cardSectionText}>{d.tipo === "atestado" ? (paciente?.nome || d.titulo) : (d.titulo || TIPO_LABEL[d.tipo] || "Documento")}</p>
-                  </div>
-
-                  {/* Tipo + Profissional pills */}
-                  {(d.tipo || d.profissional) && (
-                    <div style={S.pillRow}>
-                      {d.tipo && <span style={S.pill}>{TIPO_LABEL[d.tipo] || d.tipo}</span>}
-                      {d.profissional && <span style={S.pill}>{d.profissional}</span>}
-                    </div>
-                  )}
-
-                  {/* Campos preenchidos */}
-                  <div style={S.metaRow}>
-                    <span style={S.metaChip}>{camposPreenchidos} campo{camposPreenchidos !== 1 ? "s" : ""} preenchido{camposPreenchidos !== 1 ? "s" : ""}</span>
-                  </div>
-
-                  {/* Ações */}
-                  <div style={S.cardActions}>
-                    <button
-                      style={{
-                        ...S.cardBtn,
-                        ...(hoveredBtn === `ver-${d.id}` ? S.cardBtnHover : {}),
-                      }}
-                      onMouseEnter={() => setHoveredBtn(`ver-${d.id}`)}
-                      onMouseLeave={() => setHoveredBtn(null)}
-                      onClick={() => abrirPdfDocumento(d)}
+                  const hovered = hoveredCardId === d.id;
+                  return (
+                    <div
+                      key={d.id}
+                      style={{ ...S.documentRow, ...(hovered ? S.documentRowHover : {}) }}
+                      onMouseEnter={() => setHoveredCardId(d.id)}
+                      onMouseLeave={() => setHoveredCardId(null)}
                     >
-                      {Icons.eye}
-                      <span>Ver</span>
-                    </button>
-                    <button
-                      style={{
-                        ...S.cardBtn,
-                        ...S.cardBtnDanger,
-                        ...(hoveredBtn === `excluir-${d.id}` ? S.cardBtnDangerHover : {}),
-                      }}
-                      onMouseEnter={() => setHoveredBtn(`excluir-${d.id}`)}
-                      onMouseLeave={() => setHoveredBtn(null)}
-                      onClick={() => setConfirmarExclusao(d)}
-                    >
-                      {Icons.trash}
-                      <span>Excluir</span>
-                    </button>
-                  </div>
-                </div>
-              );
+                      <div style={S.documentRowMain}>
+                        <div style={S.documentFileIcon}>
+                          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v18h16V8z" />
+                            <path d="M14 2v6h6M8 13h8M8 17h8" />
+                          </svg>
+                        </div>
+                        <div style={S.documentRowInfo}>
+                          <span style={S.documentRowTitle}>
+                            {d.tipo === "atestado"
+                              ? (paciente?.nome || d.titulo || "Atestado")
+                              : (d.titulo || TIPO_LABEL[d.tipo] || "Documento")}
+                          </span>
+                          <div style={S.documentRowMeta}>
+                            <span>{TIPO_LABEL[d.tipo] || d.tipo || "Documento"}</span>
+                            <span style={S.documentMetaDot}>•</span>
+                            <span>{formatarDataBR(d.data)}</span>
+                            {d.profissional && <>
+                              <span style={S.documentMetaDot}>•</span>
+                              <span>{d.profissional}</span>
+                            </>}
+                          </div>
+                        </div>
+                      </div>
+                      <div style={S.documentRowActions}>
+                        <button
+                          type="button"
+                          style={{ ...S.listActionBtn, ...(hoveredBtn === `ver-${d.id}` ? S.listActionBtnHover : {}) }}
+                          onMouseEnter={() => setHoveredBtn(`ver-${d.id}`)}
+                          onMouseLeave={() => setHoveredBtn(null)}
+                          onClick={() => abrirPdfDocumento(d)}
+                        >
+                          {Icons.eye}<span>Ver</span>
+                        </button>
+                        <button
+                          type="button"
+                          aria-label="Excluir documento"
+                          title="Excluir documento"
+                          style={{ ...S.listDeleteBtn, ...(hoveredBtn === `excluir-${d.id}` ? S.listDeleteBtnHover : {}) }}
+                          onMouseEnter={() => setHoveredBtn(`excluir-${d.id}`)}
+                          onMouseLeave={() => setHoveredBtn(null)}
+                          onClick={() => setConfirmarExclusao(d)}
+                        >
+                          {Icons.trash}
+                        </button>
+                      </div>
+                    </div>
+                  );
                 })}
               </div>
             )}
@@ -877,10 +866,101 @@ const S = {
 
   /* ── Card Grid ───────────────────────────────────── */
   cardGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))",
-    gap: "16px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "0",
+    background: "#fff",
+    border: "1px solid #eaeef3",
+    borderRadius: "12px",
+    overflow: "hidden",
   },
+  documentRow: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: "18px",
+    padding: "13px 16px",
+    borderBottom: "1px solid #f1f5f9",
+    transition: "background 0.15s ease",
+    minWidth: 0,
+  },
+  documentRowHover: { background: "#fafcff" },
+  documentRowMain: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    minWidth: 0,
+    flex: 1,
+  },
+  documentFileIcon: {
+    width: "38px",
+    height: "38px",
+    borderRadius: "9px",
+    background: "#f8fafc",
+    color: "#64748b",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  documentRowInfo: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "4px",
+    minWidth: 0,
+  },
+  documentRowTitle: {
+    color: "#1e293b",
+    fontSize: "13px",
+    fontWeight: "600",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
+  documentRowMeta: {
+    display: "flex",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: "7px",
+    color: "#94a3b8",
+    fontSize: "11px",
+  },
+  documentMetaDot: { color: "#cbd5e1" },
+  documentRowActions: {
+    display: "flex",
+    alignItems: "center",
+    gap: "7px",
+    flexShrink: 0,
+  },
+  listActionBtn: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "6px",
+    height: "32px",
+    padding: "0 11px",
+    border: "1px solid #e8edf3",
+    borderRadius: "7px",
+    background: "#fff",
+    color: "#475569",
+    fontSize: "12px",
+    fontWeight: "600",
+    cursor: "pointer",
+  },
+  listActionBtnHover: { background: "#f8fafc", borderColor: "#cbd5e1" },
+  listDeleteBtn: {
+    width: "32px",
+    height: "32px",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    border: "1px solid transparent",
+    borderRadius: "7px",
+    background: "transparent",
+    color: "#94a3b8",
+    cursor: "pointer",
+  },
+  listDeleteBtnHover: { color: "#dc2626", background: "#fef2f2", borderColor: "#fee2e2" },
 
   /* ── Card ─────────────────────────────────────────── */
   card: {
