@@ -231,7 +231,9 @@ function ModalReceituario({ aberto, onFechar, paciente, pacienteId }) {
           .receituario-opcoes{grid-template-columns:1fr!important}
           .receituario-grid-duplo{grid-template-columns:1fr!important}
           .receituario-campos-horizontal{grid-template-columns:1fr!important}
-          .receituario-campo-busca{grid-column:auto!important}
+          .receituario-campo-busca{grid-column:1 / -1!important}
+          .receituario-medicamento-adicionado{grid-template-columns:1fr!important;align-items:stretch!important}
+          .receituario-posologia-horizontal{border-top:1px solid #e2e8f0!important;border-left:0!important;padding:11px 0 0!important}
           .receituario-rodape{flex-wrap:wrap}
         }
       `}</style>
@@ -278,7 +280,7 @@ function ModalReceituario({ aberto, onFechar, paciente, pacienteId }) {
                 <label style={M.label}>Data</label>
                 <input type="date" name="data" value={form.data} onChange={handleInput} style={M.input} />
               </div>
-              <div className="receituario-campo-busca" style={M.field}>
+              <div className="receituario-campo-busca" style={M.fieldBusca}>
                 <label style={M.label}>Buscar medicamento</label>
                 <div ref={buscaContainerRef} style={M.searchWrap}>
                   <input
@@ -307,7 +309,7 @@ function ModalReceituario({ aberto, onFechar, paciente, pacienteId }) {
                   )}
                 </div>
                 {form.medicamentos.map((medicamento) => (
-                  <div key={medicamento.id ?? medicamento.nome} style={M.selectedMedicine}>
+                  <div key={medicamento.id ?? medicamento.nome} className="receituario-medicamento-adicionado" style={M.selectedMedicine}>
                     <div style={M.selectedHeader}>
                       <div style={M.selectedIdentity}>
                         <span style={M.selectedEyebrow}>MEDICAMENTO ADICIONADO</span>
@@ -326,7 +328,7 @@ function ModalReceituario({ aberto, onFechar, paciente, pacienteId }) {
                         </button>
                       </div>
                     </div>
-                    <div style={M.posologyBlock}>
+                    <div className="receituario-posologia-horizontal" style={M.posologyBlock}>
                       <span style={M.posologyLabel}>POSOLOGIA</span>
                       <p style={M.posologyText}>{medicamento.posologia}</p>
                     </div>
@@ -407,6 +409,7 @@ const M = {
   fields: { display: "flex", flexDirection: "column", gap: "16px" },
   fieldsHorizontal: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px 20px", alignItems: "start" },
   field: { display: "flex", flexDirection: "column", gap: "7px", minWidth: 0 },
+  fieldBusca: { display: "flex", flexDirection: "column", gap: "7px", minWidth: 0, gridColumn: "1 / -1", width: "100%" },
   label: { fontSize: "12px", fontWeight: "600", color: "#64748b" },
   input: { width: "100%", minHeight: "42px", borderRadius: "10px", border: "1px solid #e2e8f0", padding: "0 14px", outline: "none", fontSize: "14px", background: "#fff", boxSizing: "border-box", color: "#0f172a" },
   textarea: { width: "100%", borderRadius: "10px", border: "1px solid #e2e8f0", padding: "12px 14px", outline: "none", fontSize: "14px", background: "#fff", boxSizing: "border-box", color: "#0f172a", resize: "vertical", fontFamily: "inherit" },
@@ -421,14 +424,14 @@ const M = {
   selectHint: { color: "#2563eb", fontSize: "11px", fontWeight: "600", whiteSpace: "nowrap" },
   addMedicine: { width: "100%", display: "flex", alignItems: "center", gap: "10px", padding: "12px 14px", border: 0, background: "#f8fafc", color: "#1d4ed8", cursor: "pointer", textAlign: "left" },
   plus: { width: "28px", height: "28px", borderRadius: "8px", background: "#dbeafe", display: "grid", placeItems: "center", fontSize: "20px", fontWeight: "500" },
-  selectedMedicine: { marginTop: "10px", padding: "15px", border: "1px solid #dbeafe", background: "#f8fbff", borderRadius: "12px", color: "#0f172a", display: "flex", flexDirection: "column", gap: "13px" },
+  selectedMedicine: { marginTop: "10px", padding: "15px", border: "1px solid #dbeafe", background: "#f8fbff", borderRadius: "12px", color: "#0f172a", display: "grid", gridTemplateColumns: "minmax(0, 0.9fr) minmax(0, 1.1fr)", alignItems: "center", gap: "18px" },
   selectedHeader: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" },
   selectedIdentity: { display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "4px", minWidth: 0 },
   selectedEyebrow: { color: "#64748b", fontSize: "9px", fontWeight: "700", letterSpacing: "0.08em" },
   selectedName: { color: "#0f172a", fontSize: "15px", fontWeight: "700", lineHeight: 1.4, overflowWrap: "anywhere" },
   selectedMeta: { color: "#64748b", fontSize: "11px" },
   selectedActions: { display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 },
-  posologyBlock: { borderTop: "1px solid #e2e8f0", paddingTop: "11px", display: "flex", flexDirection: "column", gap: "5px" },
+  posologyBlock: { borderTop: 0, borderLeft: "1px solid #e2e8f0", padding: "2px 0 2px 18px", display: "flex", flexDirection: "column", gap: "5px", minWidth: 0 },
   posologyLabel: { color: "#64748b", fontSize: "9px", fontWeight: "700", letterSpacing: "0.08em" },
   posologyText: { margin: 0, color: "#334155", fontSize: "13px", lineHeight: 1.6, whiteSpace: "pre-wrap", overflowWrap: "anywhere" },
   controlledTag: { fontSize: "10px", fontWeight: "700", color: "#92400e", background: "#fef3c7", borderRadius: "6px", padding: "5px 7px", whiteSpace: "nowrap" },
