@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API_URL from "../api";
+import FaixaIndicadores from "../components/FaixaIndicadores";
 
 /* ═══════════════════════════════════════════════════════════
    HELPERS
@@ -135,21 +136,6 @@ const Icons = {
 /* ═══════════════════════════════════════════════════════════
    SUB-COMPONENTES
    ══════════════════════════���════════════════════════════════ */
-function StatCard({ label, value, icon, accent, sub }) {
-  return (
-    <div style={S.statCard}>
-      <div style={S.statTop}>
-        <span style={{ ...S.statIconBox, background: accent + "12", color: accent }}>
-          {icon}
-        </span>
-        <span style={S.statLabel}>{label}</span>
-      </div>
-      <strong style={S.statValue}>{value}</strong>
-      {sub && <span style={S.statSub}>{sub}</span>}
-    </div>
-  );
-}
-
 function SectionCard({ title, icon, action, onAction, children, empty }) {
   return (
     <div style={S.card}>
@@ -338,12 +324,11 @@ function Dashboard() {
       </div>
 
       {/* ── Stats Grid ───────────────────────────── */}
-      <div style={S.statsGrid}>
-        <StatCard label="Total de pacientes" value={totalPacientes} icon={Icons.users} accent="#2563eb" sub="cadastrados no sistema" />
-        <StatCard label="Consultas hoje" value={consultasHoje.length} icon={Icons.calendarCheck} accent="#0ea5e9" sub={consultasHoje.length > 0 ? `Próx. às ${consultasHoje[0].horario}` : "Nenhuma agendada"} />
-        <StatCard label="Esta semana" value={consultasSemana} icon={Icons.clock} accent="#8b5cf6" sub="próximos 7 dias" />
-        <StatCard label="Total de consultas" value={consultas.length} icon={Icons.activity} accent="#10b981" sub="registradas no sistema" />
-      </div>
+      <FaixaIndicadores rotulo="Resumo da clínica" itens={[
+        { rotulo: "Consultas hoje", valor: consultasHoje.length, detalhe: consultasHoje.length > 0 ? `próxima às ${consultasHoje[0].horario}` : "nenhuma agendada" },
+        { rotulo: "Próximos 7 dias", valor: consultasSemana, detalhe: "consultas marcadas" },
+        { rotulo: "Pacientes", valor: totalPacientes, detalhe: "cadastrados" },
+      ]} />
 
       {/* ── Grid Principal ───────────────────────── */}
       <div style={S.mainGrid}>

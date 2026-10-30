@@ -1,5 +1,5 @@
 import API_URL from "../api";
-import { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
 /* ── helpers ─────────────────────────────────────────────── */
@@ -203,11 +203,6 @@ function Pacientes() {
   }, [carregarPacientes]);
 
   /* ── Stats ─────────────────────────────────────────── */
-  const stats = useMemo(() => {
-    const comTel = pacientes.filter((p) => p.telefone).length;
-    const comEmail = pacientes.filter((p) => p.email).length;
-    return { total, comTel, comEmail };
-  }, [pacientes, total]);
 
   /* ── Helpers ───────────────────────────────────────── */
   const gerarLinkWhatsApp = (telefone) => {
@@ -430,7 +425,7 @@ function Pacientes() {
             <h1 style={s.headerTitle}>Pacientes</h1>
           </div>
           <p style={s.headerSub}>
-            Gerencie os pacientes cadastrados na clínica
+            {total === 1 ? "1 paciente cadastrado" : `${total} pacientes cadastrados`}
           </p>
         </div>
         <button
@@ -449,29 +444,6 @@ function Pacientes() {
           {Icons.plus}
           <span>Novo paciente</span>
         </button>
-      </div>
-
-      {/* ── Stats ─────────────────────────────────���─────── */}
-      <div className="pac-stats-row" style={s.statsRow}>
-        {[
-          { label: "Total", value: stats.total, accent: "#2563eb", bg: "#eff6ff" },
-          { label: "Com telefone", value: stats.comTel, accent: "#16a34a", bg: "#f0fdf4" },
-          { label: "Com e-mail", value: stats.comEmail, accent: "#9333ea", bg: "#faf5ff" },
-        ].map((stat) => (
-          <div key={stat.label} style={s.statCard}>
-            <span style={{ ...s.statValue, color: stat.accent }}>{stat.value}</span>
-            <span style={s.statLabel}>{stat.label}</span>
-            <div style={{ ...s.statBar, background: stat.bg }}>
-              <div
-                style={{
-                  ...s.statBarFill,
-                  background: stat.accent,
-                  width: stats.total > 0 ? `${(stat.value / stats.total) * 100}%` : "0%",
-                }}
-              />
-            </div>
-          </div>
-        ))}
       </div>
 
       {/* ── Search & Filter Bar ──────────────────────────── */}
@@ -895,7 +867,7 @@ const s = {
   headerSub: {
     margin: 0,
     fontSize: "14px",
-    color: "#94a3b8",
+    color: "#64748b",
     fontWeight: "400",
   },
 

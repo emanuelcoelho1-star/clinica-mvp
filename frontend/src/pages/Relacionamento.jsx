@@ -3,6 +3,7 @@ import Retornos from "../components/relacionamento/Retornos";
 import Inativos from "../components/relacionamento/Inativos";
 import Aniversariantes from "../components/relacionamento/Aniversariantes";
 import { api } from "../components/relacionamento/relacionamento";
+import FaixaIndicadores from "../components/FaixaIndicadores";
 
 /* ═══════════════════════════════════════════════════════════
    ABAS
@@ -40,11 +41,13 @@ function Relacionamento() {
     api("/clinica").then((d) => setNomeClinica(d?.clinica?.nome_fantasia || d?.clinica?.nome || "")).catch(() => setNomeClinica(""));
   }, []);
 
+  // Cor só onde há ação pendente (DESIGN.md §7); clicar abre a aba correspondente
+  const n = (v) => (v ?? "–");
   const indicadores = [
-    { label: "Retornos atrasados", valor: resumo?.retornos_atrasados, aba: "retornos", cor: "#dc2626", bg: "#fef2f2", borda: "#fecaca" },
-    { label: "Retornos nos próximos 7 dias", valor: resumo?.retornos_proximos_7_dias, aba: "retornos", cor: "#c2410c", bg: "#fff7ed", borda: "#fed7aa" },
-    { label: "Inativos há +6 meses", valor: resumo?.inativos, aba: "inativos", cor: "#7c3aed", bg: "#faf5ff", borda: "#ddd6fe" },
-    { label: "Aniversariantes hoje", valor: resumo?.aniversariantes_hoje, aba: "aniversariantes", cor: "#15803d", bg: "#f0fdf4", borda: "#bbf7d0" },
+    { rotulo: "Retornos atrasados", valor: n(resumo?.retornos_atrasados), tom: resumo?.retornos_atrasados > 0 ? "perigo" : undefined, onClick: () => setAba("retornos") },
+    { rotulo: "Retornos em 7 dias", valor: n(resumo?.retornos_proximos_7_dias), tom: resumo?.retornos_proximos_7_dias > 0 ? "alerta" : undefined, onClick: () => setAba("retornos") },
+    { rotulo: "Sem consulta há 6 meses", valor: n(resumo?.inativos), onClick: () => setAba("inativos") },
+    { rotulo: "Aniversariantes hoje", valor: n(resumo?.aniversariantes_hoje), onClick: () => setAba("aniversariantes") },
   ];
 
   const renderConteudo = () => {
@@ -73,15 +76,7 @@ function Relacionamento() {
         </div>
       </div>
 
-      <div style={S.indicadores}>
-        {indicadores.map((i) => (
-          <button key={i.label} type="button" onClick={() => setAba(i.aba)}
-            style={{ ...S.indicador, background: i.bg, borderColor: i.borda }}>
-            <span style={{ ...S.indicadorValor, color: i.cor }}>{i.valor ?? "–"}</span>
-            <span style={S.indicadorLabel}>{i.label}</span>
-          </button>
-        ))}
-      </div>
+      <FaixaIndicadores rotulo="Resumo do relacionamento" itens={indicadores} />
 
       <div style={S.tabsBar}>
         {ABAS.map((a) => {
@@ -116,11 +111,7 @@ const S = {
   headerLeft: { display: "flex", flexDirection: "column", gap: "4px" },
   headerTitleRow: { display: "flex", alignItems: "center", gap: "12px" },
   headerTitle: { margin: 0, fontSize: "28px", fontWeight: "700", color: "#0f172a", letterSpacing: "-0.025em", lineHeight: 1.2 },
-  headerSub: { margin: 0, fontSize: "14px", color: "#94a3b8", fontWeight: "400" },
-  indicadores: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "12px" },
-  indicador: { display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "4px", padding: "14px 16px", borderRadius: "14px", border: "1px solid", cursor: "pointer", textAlign: "left", fontFamily: "inherit" },
-  indicadorValor: { fontSize: "26px", fontWeight: "800", lineHeight: 1 },
-  indicadorLabel: { fontSize: "13px", fontWeight: "600", color: "#475569" },
+  headerSub: { margin: 0, fontSize: "14px", color: "#64748b", fontWeight: "400" },
   tabsBar: { display: "flex", overflowX: "auto", background: "#fff", borderRadius: "16px", border: "1px solid #f1f5f9" },
   tab: { background: "none", border: "none", borderBottom: "2px solid transparent", padding: "14px 16px", fontSize: "13px", fontWeight: "600", cursor: "pointer", transition: "all 0.15s ease", whiteSpace: "nowrap", fontFamily: "inherit" },
 };

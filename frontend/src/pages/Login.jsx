@@ -3,10 +3,16 @@ import API_URL from "../api";
 import { useTheme } from "../contexts/ThemeContext";
 
 /* ── Icons ────────────────────────────────────────────────── */
-const LockIcon = (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
-    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+const SunIcon = (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <circle cx="12" cy="12" r="4" />
+    <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+  </svg>
+);
+
+const MoonIcon = (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
   </svg>
 );
 
@@ -38,12 +44,6 @@ const EyeOffIcon = (
     <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
     <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
     <line x1="2" x2="22" y1="2" y2="22" />
-  </svg>
-);
-
-const ShieldIcon = (
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
   </svg>
 );
 
@@ -146,12 +146,8 @@ function Login() {
   return (
     <div className="login-page" style={S.page}>
       <button type="button" className="login-theme-toggle" onClick={alternarTema} aria-label={tema === "dark" ? "Ativar tema claro" : "Ativar tema escuro"} title={tema === "dark" ? "Ativar tema claro" : "Ativar tema escuro"}>
-        {tema === "dark" ? "☀" : "☾"} <span>{tema === "dark" ? "Modo claro" : "Modo escuro"}</span>
+        {tema === "dark" ? SunIcon : MoonIcon} <span>{tema === "dark" ? "Modo claro" : "Modo escuro"}</span>
       </button>
-      {/* Background decorations */}
-      <div style={S.bgCircle1} />
-      <div style={S.bgCircle2} />
-      <div style={S.bgCircle3} />
 
       <div style={S.wrapper}>
         {/* ── Logo / Header ──────────────────── */}
@@ -170,11 +166,12 @@ function Login() {
         {/* ── Card Principal ─────────────────── */}
         <div className="login-card" style={S.card}>
           <div style={S.cardHeader}>
-            <div style={S.cardIconWrap}>
-              <span style={S.cardIconCircle}>{LockIcon}</span>
-            </div>
-            <h2 style={S.cardTitle}>{modoCadastro ? "Crie sua conta" : "Acesse sua conta"}</h2>
-            <p style={S.cardDesc}>{modoCadastro ? "Preencha os dados para começar" : "Entre com suas credenciais para continuar"}</p>
+            <h2 style={S.cardTitle}>{modoCadastro ? "Cadastre sua clínica" : "Acesse sua clínica"}</h2>
+            <p style={S.cardDesc}>
+              {modoCadastro
+                ? "Quem cria a conta vira o administrador da clínica e convida o resto da equipe depois."
+                : "Use o acesso que a clínica criou para você."}
+            </p>
           </div>
 
           <div className="login-tabs" role="tablist" aria-label="Acesso à conta">
@@ -240,7 +237,6 @@ function Login() {
                   style={S.input}
                   required
                   autoComplete="email"
-                  required
                 />
               </div>
             </div>
@@ -337,7 +333,7 @@ function Login() {
             >
               {carregando ? (
                 <>
-                  <span style={S.spinner} />
+                  <span className="login-spinner" style={S.spinner} />
                   <span>{modoCadastro ? "Criando conta..." : "Entrando..."}</span>
                 </>
               ) : (
@@ -345,21 +341,13 @@ function Login() {
               )}
             </button>
           </form>
-
-          {/* Footer */}
-          <div style={S.cardFooter}>
-            <span style={S.footerIcon}>{ShieldIcon}</span>
-            <span style={S.footerText}>Conexão segura e criptografada</span>
-          </div>
         </div>
-
-        {/* Versão */}
-        <p style={S.version}>OdontoPro v1.0 — © 2025</p>
       </div>
 
-      {/* Keyframes */}
+      {/* Keyframes: o spinner para quando o sistema pede menos movimento */}
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
+        @media (prefers-reduced-motion: reduce) { .login-spinner { animation: none !important; } }
       `}</style>
     </div>
   );
@@ -380,35 +368,6 @@ const S = {
     boxSizing: "border-box",
     position: "relative",
     overflow: "hidden",
-  },
-
-  /* Background circles */
-  bgCircle1: {
-    position: "absolute",
-    width: "500px",
-    height: "500px",
-    borderRadius: "50%",
-    background: "rgba(37, 99, 235, 0.04)",
-    top: "-150px",
-    right: "-100px",
-  },
-  bgCircle2: {
-    position: "absolute",
-    width: "400px",
-    height: "400px",
-    borderRadius: "50%",
-    background: "rgba(37, 99, 235, 0.03)",
-    bottom: "-120px",
-    left: "-80px",
-  },
-  bgCircle3: {
-    position: "absolute",
-    width: "200px",
-    height: "200px",
-    borderRadius: "50%",
-    background: "rgba(37, 99, 235, 0.05)",
-    top: "50%",
-    left: "10%",
   },
 
   wrapper: {
@@ -436,7 +395,6 @@ const S = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    boxShadow: "0 8px 20px rgba(37, 99, 235, 0.25)",
   },
   logoTitle: {
     margin: 0,
@@ -448,7 +406,7 @@ const S = {
   logoSub: {
     margin: "2px 0 0 0",
     fontSize: "13px",
-    color: "#94a3b8",
+    color: "#64748b",
     fontWeight: "500",
   },
 
@@ -466,33 +424,21 @@ const S = {
     textAlign: "center",
     marginBottom: "28px",
   },
-  cardIconWrap: {
-    display: "flex",
-    justifyContent: "center",
-    marginBottom: "16px",
-  },
-  cardIconCircle: {
-    width: "52px",
-    height: "52px",
-    borderRadius: "14px",
-    background: "#f0f4ff",
-    color: "#2563eb",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-  },
   cardTitle: {
     margin: 0,
     fontSize: "20px",
     fontWeight: "700",
     color: "#0f172a",
     letterSpacing: "-0.02em",
+    textWrap: "balance",
   },
   cardDesc: {
     margin: "6px 0 0 0",
     fontSize: "14px",
-    color: "#94a3b8",
+    color: "#64748b",
     fontWeight: "500",
+    lineHeight: 1.5,
+    textWrap: "pretty",
   },
 
   /* Form */
@@ -584,7 +530,6 @@ const S = {
     fontWeight: "600",
     fontSize: "14px",
     cursor: "pointer",
-    boxShadow: "0 4px 12px rgba(37, 99, 235, 0.25)",
     transition: "all 0.2s ease",
     height: "46px",
     width: "100%",
@@ -603,33 +548,6 @@ const S = {
     flexShrink: 0,
   },
 
-  /* Footer do card */
-  cardFooter: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "6px",
-    marginTop: "24px",
-    paddingTop: "18px",
-    borderTop: "1px solid #f1f5f9",
-  },
-  footerIcon: {
-    display: "flex",
-    color: "#22c55e",
-  },
-  footerText: {
-    fontSize: "12px",
-    color: "#94a3b8",
-    fontWeight: "500",
-  },
-
-  /* Versão */
-  version: {
-    margin: 0,
-    fontSize: "12px",
-    color: "#cbd5e1",
-    fontWeight: "500",
-  },
 };
 
 export default Login;
