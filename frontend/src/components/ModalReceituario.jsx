@@ -10,7 +10,7 @@ function dataHojeISO() {
 const UNIDADES = ["Ampola(s)", "Caixa(s)", "Comprimido(s)", "Frasco(s)", "Pacote(s)", "Tubo(s)", "Cápsula(s)"];
 const IconClose = <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>;
 
-function ModalReceituario({ aberto, onFechar, paciente, pacienteId }) {
+function ModalReceituario({ aberto, onFechar, paciente, pacienteId, onDocumentoCriado }) {
   const [etapa, setEtapa] = useState("tipo");
   const [form, setForm] = useState({ profissional: "", data: dataHojeISO(), medicamentos: [] });
   const [busca, setBusca] = useState("");
@@ -201,6 +201,40 @@ function ModalReceituario({ aberto, onFechar, paciente, pacienteId }) {
 
     try {
       setGerandoReceita(true);
+      const token = localStorage.getItem("token");
+      const titulo = possuiMedicamentoControlado ? "Receituário de Controle Especial" : "Receituário";
+      const conteudo = form.medicamentos.map((medicamento) =>
+        `${medicamento.nome} — ${medicamento.quantidade || ""} ${medicamento.unidade || ""} — ${medicamento.posologia || ""}`.trim()
+      ).join("\\n");
+      const metadados = {
+        modelo: "receituario-v1",
+        medicamentos: form.medicamentos.map((medicamento) => ({
+          id: medicamento.id,
+          tipo_uso: medicamento.tipo_uso,
+          nome: medicamento.nome,
+          quantidade: medicamento.quantidade,
+          unidade: medicamento.unidade,
+          posologia: medicamento.posologia,
+          receita_controlada: Number(medicamento.receita_controlada) === 1 ? 1 : 0,
+        })),
+      };
+      const resposta = await fetch(`${API_URL}/documentos`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: token || "" },
+        body: JSON.stringify({
+          paciente_id: Number(pacienteId),
+          data: form.data,
+          tipo: "receita",
+          titulo,
+          conteudo,
+          profissional: form.profissional,
+          observacoes: `__RECEITUARIO__${JSON.stringify(metadados)}`,
+        }),
+      });
+      if (!resposta.ok) {
+        const erro = await resposta.json().catch(() => ({}));
+        throw new Error(erro.erro || "Não foi possível salvar o receituário.");
+      }
       await gerarPdfReceituario({
         paciente,
         pacienteId,
@@ -208,12 +242,14 @@ function ModalReceituario({ aberto, onFechar, paciente, pacienteId }) {
         data: form.data,
         medicamentos: form.medicamentos,
         apiUrl: API_URL,
-        token: localStorage.getItem("token"),
+        token,
         janela,
       });
+      if (onDocumentoCriado) await onDocumentoCriado();
+      fechar();
     } catch (erro) {
-      janela.close();
-      setErroReceita(erro.message || "Não foi possível gerar o receituário.");
+      if (janela && !janela.closed) janela.close();
+      setErroReceita(erro.message || "Não foi possível salvar ou gerar o receituário.");
     } finally {
       setGerandoReceita(false);
     }
