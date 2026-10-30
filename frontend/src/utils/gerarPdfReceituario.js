@@ -136,8 +136,13 @@ export default async function gerarPdfReceituario({
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
 body{font-family:Arial,Helvetica,sans-serif;color:#111;font-size:11pt}
-.pagina{position:relative;width:210mm;height:297mm;padding:10mm 14mm 9mm;page-break-after:always;overflow:hidden}
-.pagina:last-child{page-break-after:auto}
+.pagina{position:relative;width:210mm;height:297mm;padding:10mm 14mm 9mm;page-break-after:always;break-after:page;break-inside:avoid;overflow:hidden}
+.pagina + .pagina{page-break-before:always;break-before:page}
+.pagina:last-child{page-break-after:auto;break-after:auto}
+@media screen{
+  body{background:#e5e7eb;padding:12px 0}
+  .pagina{background:#fff;margin:0 auto 16px;box-shadow:0 2px 12px rgba(0,0,0,.14)}
+}
 .cabecalho{display:grid;grid-template-columns:33mm minmax(0,1fr) auto;column-gap:6mm;align-items:start;height:33mm}
 .logo-wrap{width:33mm;height:33mm;overflow:hidden;border-radius:5mm;clip-path:inset(0 round 5mm);-webkit-mask-image:-webkit-radial-gradient(white,black)}
 .logo{display:block;width:33mm;height:33mm;object-fit:cover;object-position:center;border-radius:5mm;clip-path:inset(0 round 5mm)}
