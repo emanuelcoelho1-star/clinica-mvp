@@ -13,10 +13,12 @@ function esc(v) {
     "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"
   }[c]));
 }
-function enderecoClinica(c) {
-  const l1 = [c.rua, c.numero && ` ${c.numero}`, c.complemento].filter(Boolean).join(", ");
-  const l2 = [c.bairro, c.cidade, c.estado].filter(Boolean).join(" - ");
-  return [l1, l2, c.cep].filter(Boolean).join(" • ");
+function linhasEnderecoClinica(c) {
+  const rua = [c.rua, c.numero].filter(Boolean).join(", ");
+  const cidade = [c.cidade, c.estado].filter(Boolean).join(" - ");
+  return [rua, c.complemento, cidade, c.cep, c.telefone]
+    .filter(Boolean)
+    .map((linha) => esc(linha));
 }
 
 export default async function gerarPdfAtestado({
@@ -34,8 +36,7 @@ export default async function gerarPdfAtestado({
     const retorno = await resposta.json();
     const c = retorno.clinica || {};
     const nomeClinica = c.nome_fantasia || c.nome || c.razao_social || "";
-    const endereco = enderecoClinica(c);
-    const contatos = [c.telefone, c.email_contato, c.site].filter(Boolean).join(" • ");
+    const linhasEndereco = linhasEnderecoClinica(c);
     const logo = c.logo_url ? `<img class="logo" src="${esc(c.logo_url)}" alt="Logo da clínica">` : "";
     const nomePaciente = paciente?.nome || "Paciente";
     const cpf = formatCpf(paciente?.cpf);
@@ -50,27 +51,28 @@ export default async function gerarPdfAtestado({
     w.document.write(`<!DOCTYPE html>
 <html lang="pt-BR"><head><meta charset="utf-8"><title>${esc(titulo)}</title>
 <style>
-@page{size:A4;margin:15mm 14mm}
+@page{size:A4;margin:18pt 30pt}
 *{box-sizing:border-box}
-body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:0;font-size:12pt}
-.cabecalho{display:grid;grid-template-columns:170px 1fr auto;gap:18px;align-items:start;min-height:145px}
-.logo{width:160px;max-height:130px;object-fit:contain;object-position:left top}
-.identidade{padding-top:2px;line-height:1.35}
-.nome-clinica{font-size:16pt;font-weight:700;margin-bottom:8px}
-.dados-clinica{font-size:11pt;line-height:1.35}
-.data{font-size:12pt;white-space:nowrap;text-align:right;padding-top:2px}
-.conteudo{margin-top:155px}
-h1{text-align:center;font-size:18pt;margin:0 auto 32px;padding-bottom:8px;border-bottom:1px solid #bbb;width:max-content;min-width:185px}
-.corpo{font-size:15pt;line-height:1.35;text-align:justify;margin:0 0 12px}
-.cid{font-size:13pt;margin-top:14px}
-.assinatura{text-align:center;font-size:15pt;line-height:1.35;margin-top:165px}
+html,body{margin:0;padding:0}
+body{font-family:Arial,Helvetica,sans-serif;color:#111;font-size:12pt}
+.cabecalho{display:grid;grid-template-columns:94pt minmax(0,1fr) auto;column-gap:17pt;align-items:start;height:94pt;margin:0}
+.logo{display:block;width:94pt;height:94pt;object-fit:contain;object-position:left top}
+.identidade{padding:0;line-height:1.2}
+.nome-clinica{font-size:14pt;font-weight:700;margin:0 0 5pt}
+.dados-clinica{font-size:11pt;line-height:1.2}
+.data{font-size:11pt;white-space:nowrap;text-align:right;padding:0;margin:0}
+.conteudo{margin-top:95pt}
+h1{text-align:center;font-size:18pt;line-height:1.2;margin:0 auto 25pt;padding-bottom:6pt;border-bottom:1px solid #bbb;width:max-content;min-width:110pt}
+.corpo{font-size:14pt;line-height:1.2;text-align:justify;margin:0 0 12pt}
+.cid{font-size:12pt;margin-top:12pt}
+.assinatura{text-align:center;font-size:14pt;line-height:1.25;margin-top:98pt}
 @media print{body{print-color-adjust:exact;-webkit-print-color-adjust:exact}}
 </style></head><body>
 <header class="cabecalho">
   <div>${logo}</div>
   <div class="identidade">
     ${nomeClinica ? `<div class="nome-clinica">${esc(nomeClinica)}</div>` : ""}
-    <div class="dados-clinica">${endereco ? esc(endereco) + "<br>" : ""}${contatos ? esc(contatos) + "<br>" : ""}${c.cnpj ? "CNPJ: " + esc(c.cnpj) : ""}</div>
+    <div class="dados-clinica">${linhasEndereco.map((linha) => `<div>${linha}</div>`).join("")}</div>
   </div>
   <div class="data">${esc(dataBR)}</div>
 </header>
