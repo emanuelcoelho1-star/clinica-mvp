@@ -206,9 +206,24 @@ function ModalReceituario({ aberto, onFechar }) {
                 </div>
                 {form.medicamento && (
                   <div style={M.selectedMedicine}>
-                    <div><strong>{form.medicamento.nome}</strong><small>{form.medicamento.posologia}</small></div>
-                    {Number(form.medicamento.receita_controlada) === 1 && <span style={M.controlledTag}>Receita controlada</span>}
-                    <button type="button" onClick={() => { setForm((atual) => ({ ...atual, medicamento: null })); setBusca(""); buscaRef.current?.focus(); }} style={M.removeSelection}>×</button>
+                    <div style={M.selectedHeader}>
+                      <div style={M.selectedIdentity}>
+                        <span style={M.selectedEyebrow}>MEDICAMENTO ADICIONADO</span>
+                        <strong style={M.selectedName}>{form.medicamento.nome}</strong>
+                        <span style={M.selectedMeta}>
+                          {form.medicamento.tipo_uso === "interno" ? "Uso interno" : "Uso externo"}
+                          {form.medicamento.quantidade ? ` · ${form.medicamento.quantidade} ${form.medicamento.unidade || ""}` : ""}
+                        </span>
+                      </div>
+                      <div style={M.selectedActions}>
+                        {Number(form.medicamento.receita_controlada) === 1 && <span style={M.controlledTag}>Receita controlada</span>}
+                        <button type="button" aria-label="Remover medicamento" onClick={() => { setForm((atual) => ({ ...atual, medicamento: null })); setBusca(""); buscaRef.current?.focus(); }} style={M.removeSelection}>×</button>
+                      </div>
+                    </div>
+                    <div style={M.posologyBlock}>
+                      <span style={M.posologyLabel}>POSOLOGIA</span>
+                      <p style={M.posologyText}>{form.medicamento.posologia}</p>
+                    </div>
                   </div>
                 )}
               </div>
@@ -290,9 +305,18 @@ const M = {
   selectHint: { color: "#2563eb", fontSize: "11px", fontWeight: "600", whiteSpace: "nowrap" },
   addMedicine: { width: "100%", display: "flex", alignItems: "center", gap: "10px", padding: "12px 14px", border: 0, background: "#f8fafc", color: "#1d4ed8", cursor: "pointer", textAlign: "left" },
   plus: { width: "28px", height: "28px", borderRadius: "8px", background: "#dbeafe", display: "grid", placeItems: "center", fontSize: "20px", fontWeight: "500" },
-  selectedMedicine: { marginTop: "8px", padding: "12px", border: "1px solid #bfdbfe", background: "#eff6ff", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", color: "#1e3a8a" },
-  controlledTag: { fontSize: "10px", fontWeight: "700", color: "#b45309", background: "#fef3c7", borderRadius: "6px", padding: "4px 6px", whiteSpace: "nowrap" },
-  removeSelection: { border: 0, background: "transparent", color: "#64748b", fontSize: "20px", cursor: "pointer" },
+  selectedMedicine: { marginTop: "10px", padding: "15px", border: "1px solid #dbeafe", background: "#f8fbff", borderRadius: "12px", color: "#0f172a", display: "flex", flexDirection: "column", gap: "13px" },
+  selectedHeader: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" },
+  selectedIdentity: { display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "4px", minWidth: 0 },
+  selectedEyebrow: { color: "#64748b", fontSize: "9px", fontWeight: "700", letterSpacing: "0.08em" },
+  selectedName: { color: "#0f172a", fontSize: "15px", fontWeight: "700", lineHeight: 1.4, overflowWrap: "anywhere" },
+  selectedMeta: { color: "#64748b", fontSize: "11px" },
+  selectedActions: { display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 },
+  posologyBlock: { borderTop: "1px solid #e2e8f0", paddingTop: "11px", display: "flex", flexDirection: "column", gap: "5px" },
+  posologyLabel: { color: "#64748b", fontSize: "9px", fontWeight: "700", letterSpacing: "0.08em" },
+  posologyText: { margin: 0, color: "#334155", fontSize: "13px", lineHeight: 1.6, whiteSpace: "pre-wrap", overflowWrap: "anywhere" },
+  controlledTag: { fontSize: "10px", fontWeight: "700", color: "#92400e", background: "#fef3c7", borderRadius: "6px", padding: "5px 7px", whiteSpace: "nowrap" },
+  removeSelection: { border: "1px solid #e2e8f0", background: "#fff", color: "#64748b", width: "27px", height: "27px", borderRadius: "7px", fontSize: "18px", lineHeight: 1, cursor: "pointer" },
   gridTwo: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" },
   radioGroup: { display: "flex", flexWrap: "wrap", gap: "18px" },
   radioOption: { display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "#334155", cursor: "pointer" },
