@@ -528,7 +528,8 @@ function FinanceiroDashboard() {
   }, [dados]);
 
   /* ── Gráfico — dados de barras ───────────────────── */
-  const mesesData = dados?.fluxo_mensal || [];
+  // A API devolve os últimos meses em "grafico_mensal"
+  const mesesData = useMemo(() => dados?.grafico_mensal || dados?.fluxo_mensal || [], [dados]);
   const maxVal = useMemo(
     () =>
       Math.max(
@@ -617,7 +618,7 @@ function FinanceiroDashboard() {
                     title={`Despesas: ${fmt(m.despesas)}`}
                   />
                   <span style={S.chartLabel}>
-                    {m.mes || `M${i + 1}`}
+                    {m.mesNome || m.mes || `M${i + 1}`}
                   </span>
                 </div>
               );
