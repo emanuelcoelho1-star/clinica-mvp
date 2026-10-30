@@ -44,6 +44,11 @@ const db = require("./database");
 const app = express();
 const PORT = 3001;
 
+// Atrás de um proxy (Nginx), o IP real do cliente vem em X-Forwarded-For.
+// "loopback" só confia no proxy da própria máquina, então um cliente direto não forja o IP.
+// Sem isso, o limite de tentativas de login trataria a clínica inteira como um único IP.
+app.set("trust proxy", process.env.TRUST_PROXY || "loopback");
+
 // Em desenvolvimento, aceita as origens locais mais comuns do Vite/React.
 // Em produção, defina CORS_ORIGINS com a lista de origens confiáveis separadas por vírgula.
 const defaultOrigins = [
