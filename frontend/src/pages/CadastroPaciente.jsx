@@ -43,19 +43,21 @@ function CadastroPaciente() {
 
     fetch(`${API_URL}/pacientes/${id}`, {
       headers: {
-        Authorization: token,
+        Authorization: token || "",
       },
     })
       .then(async (res) => {
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-          throw new Error(data.erro || "Não foi possível carregar o paciente.");
+          throw new Error(data.erro || data.error || "Não foi possível carregar o paciente.");
         }
         return data;
       })
       .then((paciente) => {
         if (!paciente || String(paciente.id) !== String(id)) {
-          throw new Error("Paciente não encontrado.");
+          setErroModal("Paciente não encontrado.");
+          navigate("/pacientes");
+          return;
         }
 
         setForm({
