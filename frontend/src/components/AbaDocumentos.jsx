@@ -187,53 +187,19 @@ function AbaDocumentos({ pacienteId, paciente }) {
     }
   }
 
-  /* ── Abrir form ──────────────────────────── */
-  function abrirFormNovo() {
-    setEditando(null);
-    setFormData({ ...EMPTY_FORM });
-    setErroForm("");
-    setTela("form");
-  }
-
-  function abrirFormComTipo(tipo) {
-    setEditando(null);
-    setFormData({ ...EMPTY_FORM, tipo, titulo: TIPO_LABEL[tipo] || "" });
-    setErroForm("");
-    setTela("form");
-  }
-
-  function abrirFormEditar(item) {
-    setEditando(item);
-    setFormData({
-      data: item.data || dataHojeISO(),
-      tipo: item.tipo || "atestado",
-      titulo: item.titulo || "",
-      conteudo: item.conteudo || "",
-      profissional: item.profissional || "",
-      observacoes: item.observacoes || "",
-    });
-    setErroForm("");
-    setTela("form");
-  }
-
-  function abrirDetalhes(item) {
-    setDetalhes(item);
-    setTela("detalhes");
-  }
-
-  async function gerarPdfAtual() {
-    if (!detalhes) return;
-    if (detalhes.tipo === "atestado") {
+  async function abrirPdfDocumento(item) {
+    if (!item) return;
+    if (item.tipo === "atestado") {
       let meta = {};
       try {
-        const raw = String(detalhes.observacoes || "");
+        const raw = String(item.observacoes || "");
         if (raw.startsWith("__ATESTADO__")) meta = JSON.parse(raw.slice("__ATESTADO__".length));
       } catch { meta = {}; }
       await gerarPdfAtestado({
         paciente,
-        profissional: detalhes.profissional,
+        profissional: item.profissional,
         tipoAtestado: meta.tipoAtestado || "dias",
-        data: detalhes.data,
+        data: item.data,
         dias: meta.dias,
         cid: meta.cid,
         horaInicial: meta.horaInicial,
@@ -244,54 +210,11 @@ function AbaDocumentos({ pacienteId, paciente }) {
       return;
     }
     await gerarPdfDocumento({
-      documento: detalhes,
+      documento: item,
       paciente,
       apiUrl: API_URL,
       token: localStorage.getItem("token"),
     });
-  }
-
-  function voltarParaLista() {
-    setTela("lista");
-    setEditando(null);
-    setDetalhes(null);
-    setErroForm("");
-  }
-
-  /* ── Salvar ──────────────────────────────── */
-  function handleInput(e) {
-    const { name, value } = e.target;
-    setFormData((p) => ({ ...p, [name]: value }));
-  }
-
-  async function handleSalvar(e) {
-    e.preventDefault();
-    if (!formData.data) { setErroForm("A data é obrigatória."); return; }
-    if (!formData.titulo.trim()) { setErroForm("O título é obrigatório."); return; }
-
-    try {
-      setSalvando(true);
-      setErroForm("");
-      const tk = localStorage.getItem("token");
-      const ed = Boolean(editando);
-      const body = { ...formData, paciente_id: Number(pacienteId) };
-
-      const r = await fetch(
-        ed ? `${API_URL}/documentos/${editando.id}` : `${API_URL}/documentos`,
-        {
-          method: ed ? "PUT" : "POST",
-          headers: { "Content-Type": "application/json", Authorization: tk || "" },
-          body: JSON.stringify(body),
-        }
-      );
-      if (!r.ok) throw new Error();
-      await carregarDocumentos();
-      voltarParaLista();
-    } catch {
-      setErroForm("Não foi possível salvar o documento.");
-    } finally {
-      setSalvando(false);
-    }
   }
 
   /* ── Excluir ─────────────────────────────── */
@@ -341,18 +264,7 @@ function AbaDocumentos({ pacienteId, paciente }) {
               {documentos.length} documento{documentos.length !== 1 ? "s" : ""} registrado{documentos.length !== 1 ? "s" : ""}
             </p>
           </div>
-          <button
-            style={{
-              ...S.btnPrimary,
-              ...(hoveredBtn === "novo" ? S.btnPrimaryHover : {}),
-            }}
-            onMouseEnter={() => setHoveredBtn("novo")}
-            onMouseLeave={() => setHoveredBtn(null)}
-            onClick={abrirFormNovo}
-          >
-            {Icons.plus}
-            <span>Novo documento</span>
-          </button>
+
         </div>
 
         {/* Loading */}
@@ -375,12 +287,10 @@ function AbaDocumentos({ pacienteId, paciente }) {
           </div>
         )}
 
-        {/* Atalhos rápidos — sempre visíveis */}
         {!carregando && !erro && (
           <div style={S.quickSection}>
             <span style={S.quickSectionTitle}>Acesso rápido</span>
             <div style={S.quickGrid}>
-              {/* Atestado — abre modal */}
               <button
                 style={{ ...S.quickCard, ...(hoveredBtn === "quick-atestado" ? S.quickCardHover : {}) }}
                 onMouseEnter={() => setHoveredBtn("quick-atestado")}
@@ -396,53 +306,6 @@ function AbaDocumentos({ pacienteId, paciente }) {
                 </div>
                 <span style={S.quickLabel}>Atestado</span>
               </button>
-              {/* Receituário */}
-              <button
-                style={{ ...S.quickCard, ...(hoveredBtn === "quick-receita" ? S.quickCardHover : {}) }}
-                onMouseEnter={() => setHoveredBtn("quick-receita")}
-                onMouseLeave={() => setHoveredBtn(null)}
-                onClick={() => abrirFormComTipo("receita")}
-              >
-                <div style={{ ...S.quickIcon, background: "#f0fdf4", color: "#16a34a" }}>
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M9 2v4" /><path d="M15 2v4" />
-                    <rect width="18" height="18" x="3" y="4" rx="2" />
-                    <path d="M9 14h6" /><path d="M12 11v6" />
-                  </svg>
-                </div>
-                <span style={S.quickLabel}>Receituário</span>
-              </button>
-              {/* Termos */}
-              <button
-                style={{ ...S.quickCard, ...(hoveredBtn === "quick-termo" ? S.quickCardHover : {}) }}
-                onMouseEnter={() => setHoveredBtn("quick-termo")}
-                onMouseLeave={() => setHoveredBtn(null)}
-                onClick={() => alert("Modal de Termos em breve!")}
-              >
-                <div style={{ ...S.quickIcon, background: "#faf5ff", color: "#9333ea" }}>
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                    <path d="M9 12l2 2 4-4" />
-                  </svg>
-                </div>
-                <span style={S.quickLabel}>Termos</span>
-              </button>
-              {/* Contratos */}
-              <button
-                style={{ ...S.quickCard, ...(hoveredBtn === "quick-contrato" ? S.quickCardHover : {}) }}
-                onMouseEnter={() => setHoveredBtn("quick-contrato")}
-                onMouseLeave={() => setHoveredBtn(null)}
-                onClick={() => alert("Modal de Contratos em breve!")}
-              >
-                <div style={{ ...S.quickIcon, background: "#fff7ed", color: "#ea580c" }}>
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
-                    <polyline points="14 2 14 8 20 8" />
-                    <line x1="16" x2="8" y1="13" y2="13" /><line x1="16" x2="8" y1="17" y2="17" /><line x1="10" x2="8" y1="9" y2="9" />
-                  </svg>
-                </div>
-                <span style={S.quickLabel}>Contratos</span>
-              </button>
             </div>
           </div>
         )}
@@ -452,7 +315,7 @@ function AbaDocumentos({ pacienteId, paciente }) {
           <div style={S.emptyBox}>
             {Icons.clipboard}
             <h3 style={S.emptyTitle}>Nenhum documento registrado</h3>
-            <p style={S.emptyText}>Use os atalhos acima para criar documentos rapidamente.</p>
+            <p style={S.emptyText}>Use o atalho acima para emitir um atestado.</p>
           </div>
         )}
 
@@ -468,6 +331,10 @@ function AbaDocumentos({ pacienteId, paciente }) {
                   style={{ ...S.card, ...(hovered ? S.cardHover : {}) }}
                   onMouseEnter={() => setHoveredCardId(d.id)}
                   onMouseLeave={() => setHoveredCardId(null)}
+                  onClick={() => abrirPdfDocumento(d)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") abrirPdfDocumento(d); }}
                 >
                   {/* Topo do card */}
                   <div style={S.cardTop}>
@@ -478,13 +345,11 @@ function AbaDocumentos({ pacienteId, paciente }) {
                     <span style={S.cardId}>#{d.id}</span>
                   </div>
 
-                  {/* Título */}
-                  {d.titulo && (
-                    <div style={S.cardSection}>
-                      <span style={S.cardSectionLabel}>Título</span>
-                      <p style={S.cardSectionText}>{d.titulo}</p>
-                    </div>
-                  )}
+                  {/* Nome do paciente / título */}
+                  <div style={S.cardSection}>
+                    <span style={S.cardSectionLabel}>{d.tipo === "atestado" ? "Paciente" : "Título"}</span>
+                    <p style={S.cardSectionText}>{d.tipo === "atestado" ? (paciente?.nome || d.titulo) : (d.titulo || TIPO_LABEL[d.tipo] || "Documento")}</p>
+                  </div>
 
                   {/* Tipo + Profissional pills */}
                   {(d.tipo || d.profissional) && (
@@ -499,32 +364,8 @@ function AbaDocumentos({ pacienteId, paciente }) {
                     <span style={S.metaChip}>{camposPreenchidos} campo{camposPreenchidos !== 1 ? "s" : ""} preenchido{camposPreenchidos !== 1 ? "s" : ""}</span>
                   </div>
 
-                  {/* Ações */}
+                  {/* Ação de exclusão; clicar no card abre o PDF */}
                   <div style={S.cardActions}>
-                    <button
-                      style={{
-                        ...S.cardBtn,
-                        ...(hoveredBtn === `ver-${d.id}` ? S.cardBtnHover : {}),
-                      }}
-                      onMouseEnter={() => setHoveredBtn(`ver-${d.id}`)}
-                      onMouseLeave={() => setHoveredBtn(null)}
-                      onClick={() => abrirDetalhes(d)}
-                    >
-                      {Icons.eye}
-                      <span>Ver</span>
-                    </button>
-                    <button
-                      style={{
-                        ...S.cardBtn,
-                        ...(hoveredBtn === `editar-${d.id}` ? S.cardBtnHover : {}),
-                      }}
-                      onMouseEnter={() => setHoveredBtn(`editar-${d.id}`)}
-                      onMouseLeave={() => setHoveredBtn(null)}
-                      onClick={() => abrirFormEditar(d)}
-                    >
-                      {Icons.edit}
-                      <span>Editar</span>
-                    </button>
                     <button
                       style={{
                         ...S.cardBtn,
@@ -533,7 +374,7 @@ function AbaDocumentos({ pacienteId, paciente }) {
                       }}
                       onMouseEnter={() => setHoveredBtn(`excluir-${d.id}`)}
                       onMouseLeave={() => setHoveredBtn(null)}
-                      onClick={() => setConfirmarExclusao(d)}
+                      onClick={(e) => { e.stopPropagation(); setConfirmarExclusao(d); }}
                     >
                       {Icons.trash}
                       <span>Excluir</span>
@@ -603,300 +444,6 @@ function AbaDocumentos({ pacienteId, paciente }) {
             to { opacity: 1; transform: translateY(0); }
           }
         `}</style>
-      </div>
-    );
-  }
-
-  /* ═══════════════════════════════════════════
-     RENDER — FORMULÁRIO
-     ═══════════════════════════════════════════ */
-  if (tela === "form") {
-    return (
-      <div style={S.wrapper}>
-
-        {/* Header */}
-        <div style={S.header}>
-          <div>
-            <button
-              style={{
-                ...S.backBtn,
-                ...(hoveredBtn === "back-form" ? S.backBtnHover : {}),
-              }}
-              onMouseEnter={() => setHoveredBtn("back-form")}
-              onMouseLeave={() => setHoveredBtn(null)}
-              onClick={voltarParaLista}
-            >
-              {Icons.arrowLeft}
-              <span>Voltar</span>
-            </button>
-            <h2 style={S.title}>{editando ? "Editar documento" : "Novo documento"}</h2>
-            <p style={S.subtitle}>{editando ? "Altere os dados do documento." : "Preencha as informações do documento."}</p>
-          </div>
-        </div>
-
-        <form onSubmit={handleSalvar} style={S.formWrap}>
-
-          {/* Data e Tipo */}
-          <div style={S.formCard}>
-            <div style={S.formCardHeader}>
-              <span style={S.formCardIcon}>{Icons.calendar}</span>
-              <span style={S.formCardTitle}>Data e tipo</span>
-            </div>
-            <div style={S.formGrid2}>
-              <div style={S.fieldGroup}>
-                <label style={S.label}>Data</label>
-                <input
-                  type="date"
-                  name="data"
-                  value={formData.data}
-                  onChange={handleInput}
-                  style={S.input}
-                />
-              </div>
-              <div style={S.fieldGroup}>
-                <label style={S.label}>Tipo</label>
-                <select
-                  name="tipo"
-                  value={formData.tipo}
-                  onChange={handleInput}
-                  style={S.input}
-                >
-                  {TIPO_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* Seções dinâmicas */}
-          {FORM_SECTIONS.map((sec) => (
-            <div key={sec.title} style={S.formCard}>
-              <div style={S.formCardHeader}>
-                <span style={S.formCardIcon}>{sec.icon}</span>
-                <span style={S.formCardTitle}>{sec.title}</span>
-              </div>
-              <div style={sec.fields.length <= 2 ? S.formGrid2 : S.formGrid1}>
-                {sec.fields.map((f) => (
-                  <div key={f.name} style={S.fieldGroup}>
-                    <label style={S.label}>{f.label}</label>
-                    {f.type === "textarea" ? (
-                      <textarea
-                        name={f.name}
-                        value={formData[f.name]}
-                        onChange={handleInput}
-                        placeholder={f.placeholder}
-                        style={S.textarea}
-                        rows={3}
-                      />
-                    ) : (
-                      <input
-                        type="text"
-                        name={f.name}
-                        value={formData[f.name]}
-                        onChange={handleInput}
-                        placeholder={f.placeholder}
-                        style={S.input}
-                      />
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-
-          {/* Erro */}
-          {erroForm && (
-            <div style={S.errorBox}>
-              <span>{erroForm}</span>
-            </div>
-          )}
-
-          {/* Ações */}
-          <div style={S.formActions}>
-            <button
-              type="button"
-              style={{
-                ...S.btnSecondary,
-                ...(hoveredBtn === "cancel-form" ? S.btnSecondaryHover : {}),
-              }}
-              onMouseEnter={() => setHoveredBtn("cancel-form")}
-              onMouseLeave={() => setHoveredBtn(null)}
-              onClick={voltarParaLista}
-              disabled={salvando}
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              style={{
-                ...S.btnPrimary,
-                ...(hoveredBtn === "salvar-form" ? S.btnPrimaryHover : {}),
-              }}
-              onMouseEnter={() => setHoveredBtn("salvar-form")}
-              onMouseLeave={() => setHoveredBtn(null)}
-              disabled={salvando}
-            >
-              {salvando ? "Salvando..." : editando ? "Salvar alterações" : "Salvar documento"}
-            </button>
-          </div>
-        </form>
-      </div>
-    );
-  }
-
-  /* ═══════════════════════════════════════════
-     RENDER — DETALHES
-     ═══════════════════════════════════════════ */
-  if (tela === "detalhes" && detalhes) {
-    return (
-      <div style={S.wrapper}>
-
-        {/* Header */}
-        <div style={S.header}>
-          <div>
-            <button
-              style={{
-                ...S.backBtn,
-                ...(hoveredBtn === "back-det" ? S.backBtnHover : {}),
-              }}
-              onMouseEnter={() => setHoveredBtn("back-det")}
-              onMouseLeave={() => setHoveredBtn(null)}
-              onClick={voltarParaLista}
-            >
-              {Icons.arrowLeft}
-              <span>Voltar</span>
-            </button>
-            <h2 style={S.title}>Documento #{detalhes.id}</h2>
-            <p style={S.subtitle}>Registrado em {formatarDataBR(detalhes.data)}</p>
-          </div>
-          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-            <button
-              style={{
-                ...S.btnSecondary,
-                ...(hoveredBtn === "pdf-det" ? S.btnSecondaryHover : {}),
-              }}
-              onMouseEnter={() => setHoveredBtn("pdf-det")}
-              onMouseLeave={() => setHoveredBtn(null)}
-              onClick={gerarPdfAtual}
-            >
-              <span>Imprimir / salvar PDF</span>
-            </button>
-            <button
-              style={{
-                ...S.btnSecondary,
-                ...(hoveredBtn === "editar-det" ? S.btnSecondaryHover : {}),
-              }}
-              onMouseEnter={() => setHoveredBtn("editar-det")}
-              onMouseLeave={() => setHoveredBtn(null)}
-              onClick={() => abrirFormEditar(detalhes)}
-            >
-              {Icons.edit}
-              <span>Editar</span>
-            </button>
-            <button
-              style={{
-                ...S.btnDanger,
-                ...(hoveredBtn === "excluir-det" ? S.btnDangerHover : {}),
-              }}
-              onMouseEnter={() => setHoveredBtn("excluir-det")}
-              onMouseLeave={() => setHoveredBtn(null)}
-              onClick={() => setConfirmarExclusao(detalhes)}
-            >
-              {Icons.trash}
-              <span>Excluir</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Conteúdo */}
-        <div style={S.detailGrid}>
-          {/* Info geral */}
-          <div style={S.formCard}>
-            <div style={S.formCardHeader}>
-              <span style={S.formCardIcon}>{Icons.calendar}</span>
-              <span style={S.formCardTitle}>Dados gerais</span>
-            </div>
-            <div style={S.detailItems}>
-              <div style={S.detailItem}>
-                <span style={S.detailLabel}>Tipo</span>
-                <span style={S.detailValue}>{TIPO_LABEL[detalhes.tipo] || detalhes.tipo}</span>
-              </div>
-              <div style={S.detailItem}>
-                <span style={S.detailLabel}>Título</span>
-                <span style={S.detailValue}>{detalhes.titulo}</span>
-              </div>
-              {detalhes.profissional && (
-                <div style={S.detailItem}>
-                  <span style={S.detailLabel}>Profissional</span>
-                  <span style={S.detailValue}>{detalhes.profissional}</span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Seções dinâmicas */}
-          {FORM_SECTIONS.filter((sec) => sec.title !== "Identificação").map((sec) => {
-            const preenchidos = sec.fields.filter((f) => detalhes[f.name]);
-            if (preenchidos.length === 0) return null;
-            return (
-              <div key={sec.title} style={S.formCard}>
-                <div style={S.formCardHeader}>
-                  <span style={S.formCardIcon}>{sec.icon}</span>
-                  <span style={S.formCardTitle}>{sec.title}</span>
-                </div>
-                <div style={S.detailItems}>
-                  {preenchidos.map((f) => (
-                    <div key={f.name} style={S.detailItem}>
-                      <span style={S.detailLabel}>{f.label}</span>
-                      <span style={S.detailValue}>{detalhes[f.name]}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Modal confirmar exclusão */}
-        {confirmarExclusao && (
-          <div style={S.overlay} onClick={() => setConfirmarExclusao(null)}>
-            <div style={S.modal} onClick={(e) => e.stopPropagation()}>
-              <div style={S.modalIconWrap}>{Icons.alertTriangle}</div>
-              <h3 style={S.confirmTitle}>Excluir documento #{confirmarExclusao.id}?</h3>
-              <p style={S.confirmText}>Esta ação é irreversível. Todos os dados deste documento serão permanentemente removidos.</p>
-              <div style={S.modalActions}>
-                <button
-                  style={{
-                    ...S.btnSecondary,
-                    ...(hoveredBtn === "cancel-modal-det" ? S.btnSecondaryHover : {}),
-                  }}
-                  onMouseEnter={() => setHoveredBtn("cancel-modal-det")}
-                  onMouseLeave={() => setHoveredBtn(null)}
-                  onClick={() => setConfirmarExclusao(null)}
-                  disabled={excluindo}
-                >
-                  Cancelar
-                </button>
-                <button
-                  style={{
-                    ...S.btnDanger,
-                    ...(hoveredBtn === "confirm-modal-det" ? S.btnDangerHover : {}),
-                  }}
-                  onMouseEnter={() => setHoveredBtn("confirm-modal-det")}
-                  onMouseLeave={() => setHoveredBtn(null)}
-                  onClick={handleExcluir}
-                  disabled={excluindo}
-                >
-                  {Icons.trash}
-                  <span>{excluindo ? "Excluindo..." : "Confirmar exclusão"}</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     );
   }
