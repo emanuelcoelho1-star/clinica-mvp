@@ -100,6 +100,12 @@ function ModalAtestado({ aberto, onFechar, paciente, pacienteId, onDocumentoCria
       horaFinal: form.horaFinal,
     };
 
+    const janelaPdf = window.open("", "_blank", "width=900,height=1100");
+    if (!janelaPdf) {
+      alert("Pop-up bloqueado! Permita pop-ups para gerar o PDF.");
+      return;
+    }
+
     try {
       setSalvando(true);
       const resposta = await fetch(`${API_URL}/documentos`, {
@@ -116,6 +122,7 @@ function ModalAtestado({ aberto, onFechar, paciente, pacienteId, onDocumentoCria
         }),
       });
       if (!resposta.ok) {
+        janelaPdf.close();
         const erro = await resposta.json().catch(() => ({}));
         throw new Error(erro.erro || "Não foi possível salvar o atestado.");
       }
@@ -131,10 +138,12 @@ function ModalAtestado({ aberto, onFechar, paciente, pacienteId, onDocumentoCria
         horaFinal: form.horaFinal,
         apiUrl: API_URL,
         token: tk,
+        janela: janelaPdf,
       });
       if (onDocumentoCriado) await onDocumentoCriado();
       fechar();
     } catch (erro) {
+      if (janelaPdf && !janelaPdf.closed) janelaPdf.close();
       alert(erro.message || "Não foi possível salvar o atestado. Tente novamente.");
     } finally {
       setSalvando(false);
