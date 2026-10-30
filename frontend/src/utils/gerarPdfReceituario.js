@@ -12,7 +12,7 @@ function formatarDataBR(data) {
 }
 
 function formatarCpf(cpf) {
-  const numeros = String(cpf || "").replace(/\\D/g, "");
+  const numeros = String(cpf || "").replace(/\D/g, "");
   return numeros.length === 11
     ? `${numeros.slice(0, 3)}.${numeros.slice(3, 6)}.${numeros.slice(6, 9)}-${numeros.slice(9)}`
     : (cpf || "");
@@ -39,7 +39,7 @@ function montarMedicamentos(medicamentos) {
           <strong>${esc(medicamento.nome)}</strong>
           <span>${esc(medicamento.quantidade)} ${esc(medicamento.unidade)}</span>
         </div>
-        <p class="posologia">${esc(medicamento.posologia).replace(/\\n/g, "<br>")}</p>
+        <p class="posologia">${esc(medicamento.posologia).replace(/\n/g, "<br>")}</p>
       </section>`;
   }).join("");
 }
