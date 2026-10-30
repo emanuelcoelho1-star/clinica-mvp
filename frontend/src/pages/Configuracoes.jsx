@@ -5,6 +5,7 @@ import RbacUsuarios from "./configuracoes/RbacUsuarios";
 import RbacRoles from "./configuracoes/RbacRoles";
 import RbacPermissoes from "./configuracoes/RbacPermissoes";
 import { API } from "./configuracoes/rbacHelpers";
+import ClinicaForm from "../components/ClinicaForm";
 
 /* ── Icons (mesmos SVGs do prontuário) ────────────────────── */
 const Icons = {
@@ -80,7 +81,7 @@ function InfoItem({ label, value, icon }) {
 }
 
 /* ═══════════════════════════════════════════════════════════ */
-function Configuracoes() {
+function Configuracoes({ administrador = false }) {
   const navigate = useNavigate();
   const [usuario, setUsuario] = useState({ nome: "", email: "" });
   const [senhaAtual, setSenhaAtual] = useState("");
@@ -126,10 +127,10 @@ function Configuracoes() {
 
   /* ── Carregar dados RBAC quando a aba ativar ─── */
   useEffect(() => {
-    if (abaAtiva === "rbac") {
+    if (abaAtiva === "rbac" && administrador) {
       carregarDadosRbac();
     }
-  }, [abaAtiva]);
+  }, [abaAtiva, administrador]);
 
   const carregarDadosRbac = async () => {
     try {
@@ -248,7 +249,8 @@ function Configuracoes() {
   const ABAS = [
     { id: "perfil", label: "Perfil" },
     { id: "seguranca", label: "Segurança" },
-    { id: "rbac", label: "Permissões & Acessos" },
+    ...(administrador ? [{ id: "clinica", label: "Clínica" }] : []),
+    ...(administrador ? [{ id: "rbac", label: "Permissões & Acessos" }] : []),
   ];
 
   /* ── Render ─────────────────────────────────── */
@@ -287,7 +289,7 @@ function Configuracoes() {
               </span>
               <span style={S.chip}>
                 <span style={S.chipIcon}>{Icons.shield}</span>
-                Administrador
+                {administrador ? "Administrador" : "Usuário"}
               </span>
             </div>
           </div>
@@ -332,7 +334,7 @@ function Configuracoes() {
             <div style={S.infoGrid}>
               <InfoItem label="Nome completo" value={usuario.nome || "Administrador"} />
               <InfoItem label="E-mail" value={usuario.email} />
-              <InfoItem label="Perfil" value="Administrador" />
+              <InfoItem label="Perfil" value={administrador ? "Administrador" : "Usuário"} />
             </div>
           </div>
 
@@ -363,7 +365,7 @@ function Configuracoes() {
                 <input
                   type="email"
                   value={usuario.email || ""}
-                  style={{ ...S.input, background: "#f8fafc", color: "#94a3b8", cursor: "not-allowed" }}
+                  style={{ ...S.input, background: "#f8fafc", color: "var(--text-muted)", cursor: "not-allowed" }}
                   disabled
                 />
                 <span style={S.inputHint}>O e-mail não pode ser alterado.</span>
@@ -487,6 +489,11 @@ function Configuracoes() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* ═══ Aba: Dados da clínica ═════════════════ */}
+      {abaAtiva === "clinica" && administrador && (
+        <ClinicaForm />
       )}
 
       {/* ═══ Aba: RBAC — Permissões & Acessos ══════ */}
@@ -656,7 +663,7 @@ const S = {
   chipIcon: {
     display: "flex",
     alignItems: "center",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
   },
 
   /* ── Tabs ─────────────────────────────────────── */
@@ -706,7 +713,7 @@ const S = {
   },
   cardIcon: {
     display: "flex",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
   },
   cardTitle: {
     margin: 0,
@@ -738,7 +745,7 @@ const S = {
     gap: "6px",
     fontSize: "11px",
     fontWeight: "600",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     textTransform: "uppercase",
     letterSpacing: "0.06em",
   },
@@ -788,7 +795,7 @@ const S = {
   },
   inputHint: {
     fontSize: "11px",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     fontWeight: "500",
   },
 

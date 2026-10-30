@@ -1,9 +1,12 @@
 import { useState, useEffect } from "react";
+import { useTheme } from "../../contexts/ThemeContext";
 import S from "./rbacStyles";
 import Icons from "./RbacIcons";
 import { MODULOS_LABELS, ACOES_LABELS, API } from "./rbacHelpers";
 
 function RbacPermissoes({ roles, permissoes, token, onMsg, onErro }) {
+  const { tema } = useTheme();
+  const isDark = tema === "dark";
   const [roleSelecionada, setRoleSelecionada] = useState(null);
   const [permissoesDaRole, setPermissoesDaRole] = useState([]);
   const [salvando, setSalvando] = useState(false);
@@ -107,7 +110,20 @@ function RbacPermissoes({ roles, permissoes, token, onMsg, onErro }) {
   };
 
   /* ── Agrupar permissões por módulo ───────────── */
-  const modulos = [...new Set(permissoes.map((p) => p.modulo))];
+  const ordemModulos = [
+    "pacientes", "anamneses", "orcamentos", "tratamentos",
+    "pagamentos", "evolucoes", "documentos", "arquivos",
+    "agenda", "relacionamento", "financeiro", "relatorios", "configuracoes",
+  ];
+  const modulos = [...new Set(permissoes.map((p) => p.modulo))].sort((a, b) => {
+    const ia = ordemModulos.indexOf(a);
+    const ib = ordemModulos.indexOf(b);
+    return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+  });
+  const modulosAbasProntuario = new Set([
+    "anamneses", "orcamentos", "tratamentos", "pagamentos",
+    "evolucoes", "documentos", "arquivos",
+  ]);
 
   /* ── Colunas de ações que realmente existem ──── */
   const acoesExistentes = [...new Set(permissoes.map((p) => p.acao))];
@@ -195,9 +211,42 @@ function RbacPermissoes({ roles, permissoes, token, onMsg, onErro }) {
         </div>
       )}
 
+      {/* ── Orientação sobre permissões ───────────── */}
+      <div
+        role="note"
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          gap: "12px",
+          padding: "14px 16px",
+          marginBottom: "18px",
+          borderRadius: "10px",
+          border: isDark ? "1px solid #334155" : "1px solid #bfdbfe",
+          background: isDark ? "#1e293b" : "#eff6ff",
+          color: isDark ? "#e2e8f0" : "#1e3a8a",
+          fontSize: "13px",
+          lineHeight: 1.55,
+        }}
+      >
+        <span style={{ flexShrink: 0, marginTop: "1px" }}>{Icons.info || Icons.key}</span>
+        <div>
+          <strong style={{ display: "block", marginBottom: "4px", color: isDark ? "#f8fafc" : "#1e3a8a" }}>
+            Importante: as abas do prontuário têm permissões próprias
+          </strong>
+          Marcar <strong>Pacientes</strong> libera as ações da lista/cadastro de pacientes e a permissão
+          específica de acesso ao prontuário. Para que o usuário veja e utilize as abas dentro do prontuário,
+          marque também <strong>Anamneses, Orçamentos, Tratamentos, Pagamentos, Evoluções, Documentos</strong>
+          e <strong>Arquivos de pacientes</strong>, conforme o acesso que deseja conceder.
+          <div style={{ marginTop: "6px" }}>
+            <strong>Dica:</strong> clique no nome de um módulo para marcar ou desmarcar todas as ações dele.
+            As caixas individuais controlam cada ação (listar, criar, editar ou excluir).
+          </div>
+        </div>
+      </div>
+
       {/* ── Tabela de permissões ────────────────── */}
       {carregando ? (
-        <div style={{ textAlign: "center", padding: "40px", color: "#94a3b8" }}>
+        <div style={{ textAlign: "center", padding: "40px", color: "var(--text-muted)" }}>
           Carregando permissões...
         </div>
       ) : (
@@ -205,7 +254,7 @@ function RbacPermissoes({ roles, permissoes, token, onMsg, onErro }) {
           <table style={S.table}>
             <thead>
               <tr>
-                <th style={{ ...S.th, width: "200px" }}>Módulo</th>
+                <th style={{ ...S.th, width: "260px" }}>Módulo / área</th>
                 {acoesExistentes.map((acao) => (
                   <th key={acao} style={{ ...S.th, textAlign: "center", width: "90px" }}>
                     {ACOES_LABELS[acao] || acao}
@@ -222,9 +271,23 @@ function RbacPermissoes({ roles, permissoes, token, onMsg, onErro }) {
                 const algumasAtivas =
                   !todasAtivas && permsDoModulo.some((p) => permissoesDaRole.includes(p.id));
 
+                const abaProntuario = modulosAbasProntuario.has(modulo);
+                const rotuloModulo =
+                  modulo === "pacientes"
+                    ? "Pacientes e visão geral"
+                    : MODULOS_LABELS[modulo] || modulo;
+
                 return (
-                  <tr key={modulo} style={S.tr}>
-                    <td style={S.td}>
+                  <tr key={modulo} style={{
+                    ...S.tr,
+                    background: abaProntuario ? (isDark ? "#111827" : "#fbfdff") : "transparent",
+                  }}>
+                    <td style={{
+                      ...S.td,
+                      color: isDark ? "#e2e8f0" : "#0f172a",
+                      paddingLeft: abaProntuario ? "34px" : "16px",
+                      borderLeft: abaProntuario ? (isDark ? "3px solid #475569" : "3px solid #bfdbfe") : "3px solid transparent",
+                    }}>
                       <button
                         type="button"
                         onClick={() => toggleModulo(modulo)}
@@ -239,8 +302,11 @@ function RbacPermissoes({ roles, permissoes, token, onMsg, onErro }) {
                           fontFamily: "inherit",
                         }}
                       >
-                        <span style={{ fontSize: "14px", fontWeight: "600", color: "#0f172a" }}>
-                          {MODULOS_LABELS[modulo] || modulo}
+                        {abaProntuario && (
+                          <span style={{ color: isDark ? "#94a3b8" : "#64748b", fontSize: "12px" }}>↳</span>
+                        )}
+                        <span style={{ fontSize: "14px", fontWeight: abaProntuario ? "500" : "600", color: isDark ? "#e2e8f0" : "#0f172a" }}>
+                          {rotuloModulo}
                         </span>
                         {todasAtivas && (
                           <span
@@ -273,6 +339,28 @@ function RbacPermissoes({ roles, permissoes, token, onMsg, onErro }) {
                           </span>
                         )}
                       </button>
+                      <button
+                        type="button"
+                        onClick={() => toggleModulo(modulo)}
+                        disabled={Boolean(roleSelecionada?.protegido)}
+                        style={{
+                          marginTop: "7px",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "5px",
+                          padding: "4px 8px",
+                          borderRadius: "6px",
+                          border: isDark ? "1px solid #475569" : "1px solid #cbd5e1",
+                          background: isDark ? "#1e293b" : "#f8fafc",
+                          color: isDark ? "#e2e8f0" : "#475569",
+                          fontSize: "11px",
+                          fontWeight: "600",
+                          cursor: roleSelecionada?.protegido ? "default" : "pointer",
+                          opacity: roleSelecionada?.protegido ? 0.6 : 1,
+                        }}
+                      >
+                        {todasAtivas ? "Desmarcar todas" : "Marcar todas"}
+                      </button>
                     </td>
                     {acoesExistentes.map((acao) => {
                       const perm = permsDoModulo.find((p) => p.acao === acao);
@@ -296,8 +384,8 @@ function RbacPermissoes({ roles, permissoes, token, onMsg, onErro }) {
                             title={perm.descricao || `${MODULOS_LABELS[modulo] || modulo} - ${ACOES_LABELS[acao] || acao}`}
                             style={{
                               ...S.permCheckbox,
-                              background: ativa ? "#2563eb" : "#fff",
-                              borderColor: ativa ? "#2563eb" : "#d1d5db",
+                              background: ativa ? "#2563eb" : (isDark ? "#0f172a" : "#fff"),
+                              borderColor: ativa ? "#2563eb" : (isDark ? "#475569" : "#d1d5db"),
                               cursor: protegido ? "default" : "pointer",
                               opacity: protegido ? 0.6 : 1,
                             }}
@@ -314,7 +402,7 @@ function RbacPermissoes({ roles, permissoes, token, onMsg, onErro }) {
                 <tr>
                   <td
                     colSpan={1 + acoesExistentes.length}
-                    style={{ ...S.td, textAlign: "center", color: "#94a3b8", padding: "40px" }}
+                    style={{ ...S.td, textAlign: "center", color: "var(--text-muted)", padding: "40px" }}
                   >
                     Nenhuma permissão encontrada.
                   </td>

@@ -257,7 +257,7 @@ function RbacRoles({ roles, token, onReload, onMsg, onErro }) {
                 <span style={{ fontSize: "14px", fontWeight: "600", color: "#0f172a" }}>
                   {form.nome || "Nome do perfil"}
                 </span>
-                <span style={{ fontSize: "12px", color: "#94a3b8", marginLeft: "auto" }}>
+                <span style={{ fontSize: "12px", color: "var(--text-muted)", marginLeft: "auto" }}>
                   Preview
                 </span>
               </div>

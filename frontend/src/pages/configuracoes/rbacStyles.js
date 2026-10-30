@@ -25,7 +25,7 @@ const S = {
   },
   cardIcon: {
     display: "flex",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
   },
   cardTitle: {
     margin: 0,
@@ -108,7 +108,7 @@ const S = {
     textAlign: "left",
     fontSize: "11px",
     fontWeight: "600",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     textTransform: "uppercase",
     letterSpacing: "0.06em",
     background: "#fafbfc",
@@ -268,7 +268,7 @@ const S = {
     background: "transparent",
     border: "none",
     cursor: "pointer",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     display: "flex",
     padding: "4px",
     borderRadius: "8px",
@@ -414,7 +414,7 @@ const S = {
   emptyState: {
     textAlign: "center",
     padding: "40px 20px",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     fontSize: "14px",
   },
 };

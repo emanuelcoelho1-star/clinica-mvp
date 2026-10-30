@@ -48,15 +48,13 @@ function CadastroPaciente() {
     })
       .then(async (res) => {
         const data = await res.json().catch(() => ({}));
-
         if (!res.ok) {
           throw new Error(data.erro || data.error || "Não foi possível carregar o paciente.");
         }
-
         return data;
       })
       .then((paciente) => {
-        if (!paciente || !paciente.id) {
+        if (!paciente || String(paciente.id) !== String(id)) {
           setErroModal("Paciente não encontrado.");
           navigate("/pacientes");
           return;

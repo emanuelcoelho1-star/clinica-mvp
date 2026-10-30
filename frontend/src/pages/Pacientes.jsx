@@ -1,5 +1,5 @@
 import API_URL from "../api";
-import { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
 /* ── helpers ─────────────────────────────────────────────── */
@@ -203,11 +203,6 @@ function Pacientes() {
   }, [carregarPacientes]);
 
   /* ── Stats ─────────────────────────────────────────── */
-  const stats = useMemo(() => {
-    const comTel = pacientes.filter((p) => p.telefone).length;
-    const comEmail = pacientes.filter((p) => p.email).length;
-    return { total, comTel, comEmail };
-  }, [pacientes, total]);
 
   /* ── Helpers ───────────────────────────────────────── */
   const gerarLinkWhatsApp = (telefone) => {
@@ -225,11 +220,14 @@ function Pacientes() {
         method: "DELETE",
         headers: { Authorization: token },
       });
-      if (!resposta.ok) throw new Error("Erro ao excluir paciente");
+      if (!resposta.ok) {
+        const dados = await resposta.json().catch(() => ({}));
+        throw new Error(dados.erro || "Não foi possível excluir o paciente.");
+      }
       carregarPacientes();
     } catch (erro) {
       console.error(erro);
-      alert("Não foi possível excluir o paciente.");
+      alert(erro.message || "Não foi possível excluir o paciente.");
     }
   };
 
@@ -425,10 +423,9 @@ function Pacientes() {
         <div style={s.headerLeft}>
           <div style={s.headerTitleRow}>
             <h1 style={s.headerTitle}>Pacientes</h1>
-            <span style={s.headerCount}>{total}</span>
           </div>
           <p style={s.headerSub}>
-            Gerencie os pacientes cadastrados na clínica
+            {total === 1 ? "1 paciente cadastrado" : `${total} pacientes cadastrados`}
           </p>
         </div>
         <button
@@ -447,29 +444,6 @@ function Pacientes() {
           {Icons.plus}
           <span>Novo paciente</span>
         </button>
-      </div>
-
-      {/* ── Stats ─────────────────────────────────���─────── */}
-      <div className="pac-stats-row" style={s.statsRow}>
-        {[
-          { label: "Total", value: stats.total, accent: "#2563eb", bg: "#eff6ff" },
-          { label: "Com telefone", value: stats.comTel, accent: "#16a34a", bg: "#f0fdf4" },
-          { label: "Com e-mail", value: stats.comEmail, accent: "#9333ea", bg: "#faf5ff" },
-        ].map((stat) => (
-          <div key={stat.label} style={s.statCard}>
-            <span style={{ ...s.statValue, color: stat.accent }}>{stat.value}</span>
-            <span style={s.statLabel}>{stat.label}</span>
-            <div style={{ ...s.statBar, background: stat.bg }}>
-              <div
-                style={{
-                  ...s.statBarFill,
-                  background: stat.accent,
-                  width: stats.total > 0 ? `${(stat.value / stats.total) * 100}%` : "0%",
-                }}
-              />
-            </div>
-          </div>
-        ))}
       </div>
 
       {/* ── Search & Filter Bar ──────────────────────────── */}
@@ -607,7 +581,7 @@ function Pacientes() {
                   <div className="pac-cell-tel" style={{ ...s.rowCell, width: "140px" }}>
                     {p.telefone ? (
                       <span style={{ ...s.cellText, display: "flex", alignItems: "center", gap: "6px" }}>
-                        <span style={{ color: "#94a3b8", display: "flex" }}>{Icons.phone}</span>
+                        <span style={{ color: "var(--text-muted)", display: "flex" }}>{Icons.phone}</span>
                         {p.telefone}
                       </span>
                     ) : (
@@ -619,7 +593,7 @@ function Pacientes() {
                   <div className="pac-cell-email" style={{ ...s.rowCell, width: "180px" }}>
                     {p.email ? (
                       <span style={{ ...s.cellText, display: "flex", alignItems: "center", gap: "6px" }}>
-                        <span style={{ color: "#94a3b8", display: "flex" }}>{Icons.mail}</span>
+                        <span style={{ color: "var(--text-muted)", display: "flex" }}>{Icons.mail}</span>
                         <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           {p.email}
                         </span>
@@ -848,7 +822,7 @@ const s = {
   loadingText: {
     fontSize: "14px",
     fontWeight: "500",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     letterSpacing: "0.02em",
   },
 
@@ -893,7 +867,7 @@ const s = {
   headerSub: {
     margin: 0,
     fontSize: "14px",
-    color: "#94a3b8",
+    color: "#64748b",
     fontWeight: "400",
   },
 
@@ -957,7 +931,7 @@ const s = {
   },
   statLabel: {
     fontSize: "13px",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     fontWeight: "500",
   },
   statBar: {
@@ -1016,7 +990,7 @@ const s = {
     borderRadius: "50%",
     border: "none",
     background: "#f1f5f9",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     fontSize: "10px",
     cursor: "pointer",
     flexShrink: 0,
@@ -1042,7 +1016,7 @@ const s = {
   thCell: {
     fontSize: "11px",
     fontWeight: "600",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     textTransform: "uppercase",
     letterSpacing: "0.06em",
   },
@@ -1102,7 +1076,7 @@ const s = {
   },
   profession: {
     fontSize: "12px",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     fontWeight: "400",
     lineHeight: 1.3,
   },
@@ -1154,7 +1128,7 @@ const s = {
   },
   emptyText: {
     margin: 0,
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     fontSize: "14px",
     fontWeight: "400",
     textAlign: "center",
@@ -1175,7 +1149,7 @@ const s = {
   },
   footerText: {
     fontSize: "13px",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     fontWeight: "400",
   },
 
@@ -1219,7 +1193,7 @@ const s = {
     width: "34px",
     height: "34px",
     fontSize: "14px",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     fontWeight: "500",
     userSelect: "none",
   },

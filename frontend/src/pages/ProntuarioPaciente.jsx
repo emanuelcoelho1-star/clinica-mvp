@@ -165,13 +165,13 @@ const Icons = {
 /* ── Tab config ──────────────────────────────────────────── */
 const ABAS = [
   { id: "visao-geral", label: "Visão geral", icon: Icons.user },
-  { id: "anamneses", label: "Anamneses", icon: Icons.fileText },
-  { id: "orcamentos", label: "Orçamentos", icon: Icons.id },
-  { id: "tratamentos", label: "Tratamentos", icon: Icons.calendar },
-  { id: "pagamentos", label: "Pagamentos", icon: Icons.dollarSign },
-  { id: "evolucoes", label: "Evoluções", icon: Icons.fileText },
-  { id: "documentos", label: "Documentos", icon: Icons.fileText },
-  { id: "arquivos", label: "Arquivos", icon: Icons.fileText },
+  { id: "anamneses", label: "Anamneses", modulo: "anamneses", icon: Icons.fileText },
+  { id: "orcamentos", label: "Orçamentos", modulo: "orcamentos", icon: Icons.id },
+  { id: "tratamentos", label: "Tratamentos", modulo: "tratamentos", icon: Icons.calendar },
+  { id: "pagamentos", label: "Pagamentos", modulo: "pagamentos", icon: Icons.dollarSign },
+  { id: "evolucoes", label: "Evoluções", modulo: "evolucoes", icon: Icons.fileText },
+  { id: "documentos", label: "Documentos", modulo: "documentos", icon: Icons.fileText },
+  { id: "arquivos", label: "Arquivos", modulo: "arquivos", icon: Icons.fileText },
 ];
 
 /* ── InfoCard component ──────────────────────────────────── */
@@ -213,11 +213,17 @@ function ProntuarioPaciente() {
         const resPaciente = await fetch(`${API_URL}/pacientes/${id}`, {
           headers: { Authorization: token },
         });
-        if (!resPaciente.ok) throw new Error("Paciente não encontrado");
+
+        if (!resPaciente.ok) {
+          const erro = await resPaciente.json().catch(() => ({}));
+          throw new Error(erro.erro || "Não foi possível carregar o paciente.");
+        }
+
         const pacienteData = await resPaciente.json();
         setPaciente(pacienteData);
+
       } catch (error) {
-        console.error("Erro ao carregar paciente:", error);
+        console.error("Erro ao carregar prontuário:", error);
         setPaciente(null);
       } finally {
         setCarregando(false);
@@ -560,7 +566,7 @@ const s = {
     width: "10px", height: "10px", borderRadius: "50%", background: "#2563eb",
     animation: "pulse-dot 1.4s ease-in-out infinite", animationDelay: "0.4s",
   },
-  loadingText: { fontSize: "14px", fontWeight: "500", color: "#94a3b8", letterSpacing: "0.02em" },
+  loadingText: { fontSize: "14px", fontWeight: "500", color: "var(--text-muted)", letterSpacing: "0.02em" },
 
   /* ── Not Found ────────────────────────────────────── */
   notFoundWrap: {
@@ -568,7 +574,7 @@ const s = {
     justifyContent: "center", gap: "16px", minHeight: "400px",
   },
   notFoundTitle: { margin: 0, fontSize: "18px", fontWeight: "600", color: "#0f172a" },
-  notFoundText: { margin: 0, fontSize: "14px", color: "#94a3b8", textAlign: "center" },
+  notFoundText: { margin: 0, fontSize: "14px", color: "var(--text-muted)", textAlign: "center" },
 
   /* ── Top Bar / Breadcrumb ─────────────────────────── */
   topBar: {
@@ -630,7 +636,7 @@ const s = {
     letterSpacing: "-0.02em", lineHeight: 1.2,
   },
   profileId: {
-    fontSize: "13px", fontWeight: "500", color: "#94a3b8",
+    fontSize: "13px", fontWeight: "500", color: "var(--text-muted)",
     background: "#f8fafc", borderRadius: "6px", padding: "2px 8px",
   },
 
@@ -645,7 +651,7 @@ const s = {
     border: "1px solid #f1f5f9",
   },
   chipIcon: {
-    display: "flex", alignItems: "center", color: "#94a3b8",
+    display: "flex", alignItems: "center", color: "var(--text-muted)",
   },
 
   /* ── Alerta Aniversário ──────────────────────────── */
@@ -702,7 +708,7 @@ const s = {
     marginBottom: "18px",
   },
   cardTitleRow: { display: "flex", alignItems: "center", gap: "10px" },
-  cardIcon: { display: "flex", color: "#94a3b8" },
+  cardIcon: { display: "flex", color: "var(--text-muted)" },
   cardTitle: {
     margin: 0, fontSize: "15px", fontWeight: "600", color: "#0f172a",
     letterSpacing: "-0.01em",
@@ -720,7 +726,7 @@ const s = {
     padding: "14px 16px", background: "#fafbfc",
   },
   infoLabel: {
-    fontSize: "11px", fontWeight: "600", color: "#94a3b8",
+    fontSize: "11px", fontWeight: "600", color: "var(--text-muted)",
     textTransform: "uppercase", letterSpacing: "0.06em",
   },
   infoValue: {
@@ -755,7 +761,7 @@ const s = {
     gap: "12px", textAlign: "center",
   },
   placeholderTitle: { margin: 0, fontSize: "16px", fontWeight: "600", color: "#0f172a" },
-  placeholderText: { margin: 0, fontSize: "14px", color: "#94a3b8", lineHeight: 1.5 },
+  placeholderText: { margin: 0, fontSize: "14px", color: "var(--text-muted)", lineHeight: 1.5 },
 };
 
 export default ProntuarioPaciente;

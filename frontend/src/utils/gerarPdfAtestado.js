@@ -1,159 +1,93 @@
-/* ═══════════════════════════════════════════════════════════
-   Geração de PDF — Atestado / Declaração de Comparecimento
-   ═══════════════════════════════════════════════════════════ */
-
+/* Geração do atestado no padrão visual fornecido, usando os dados da clínica. */
 function formatarDataBR(iso) {
   if (!iso) return "—";
-  const p = iso.split("-");
-  if (p.length !== 3) return iso;
-  return `${p[2]}/${p[1]}/${p[0]}`;
+  const p = String(iso).split("-");
+  return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : iso;
 }
-
 function formatCpf(cpf) {
-  if (!cpf) return "";
-  const digits = cpf.replace(/\D/g, "");
-  if (digits.length === 11) {
-    return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
-  }
-  return cpf;
+  const d = String(cpf || "").replace(/\D/g, "");
+  return d.length === 11 ? `${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6,9)}-${d.slice(9)}` : (cpf || "");
+}
+function esc(v) {
+  return String(v ?? "").replace(/[&<>"']/g, c => ({
+    "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"
+  }[c]));
+}
+function linhasEnderecoClinica(c) {
+  const rua = [c.rua, c.numero].filter(Boolean).join(", ");
+  const cidade = [c.cidade, c.estado].filter(Boolean).join(" - ");
+  return [rua, c.complemento, cidade, c.cep, c.telefone]
+    .filter(Boolean)
+    .map((linha) => esc(linha));
 }
 
-function formatTelefone(tel) {
-  if (!tel) return "";
-  const d = String(tel).replace(/\D/g, "");
-  if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
-  if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
-  return tel;
-}
-
-/**
- * Gera e abre janela de impressão com o Atestado / Declaração de Comparecimento.
- *
- * @param {Object} opts
- * @param {Object} opts.paciente         — { nome, cpf, telefone, cro }
- * @param {string} opts.profissional     — nome do profissional
- * @param {string} opts.tipoAtestado     — "dias" | "presenca"
- * @param {string} opts.data             — ISO (YYYY-MM-DD)
- * @param {string} opts.dias             — quantidade de dias
- * @param {string} opts.cid              — código CID (opcional)
- * @param {string} opts.horaInicial      — HH:MM
- * @param {string} opts.horaFinal        — HH:MM
- */
-export default function gerarPdfAtestado({
-  paciente,
-  profissional,
-  tipoAtestado,
-  data,
-  dias,
-  cid,
-  horaInicial,
-  horaFinal,
+export default async function gerarPdfAtestado({
+  paciente, profissional, tipoAtestado, data, dias, cid, horaInicial, horaFinal,
+  apiUrl, token, janela,
 }) {
-  const nomePac = paciente?.nome || "Paciente";
-  const cpfPac = formatCpf(paciente?.cpf || "");
-  const telPac = formatTelefone(paciente?.telefone || "");
-  const dataFormatada = formatarDataBR(data);
-
-  let titulo = "";
-  let corpo = "";
-
-  if (tipoAtestado === "dias") {
-    titulo = "ATESTADO";
-    corpo =
-      `Atesto, com o fim específico de dispensa de atividades trabalhistas (ou ` +
-      `escolares, ou judiciárias), que <strong>${nomePac}</strong>, portador(a) do CPF ` +
-      `<strong>${cpfPac}</strong> esteve sob meus cuidados profissionais no dia ` +
-      `<strong>${dataFormatada}</strong> devendo permanecer em repouso por ` +
-      `<strong>${dias || "___"}</strong> dias.`;
-    if (cid) corpo += `\n\nCID: ${cid}`;
-  } else {
-    titulo = "DECLARAÇÃO DE COMPARECIMENTO";
-    corpo =
-      `Atesto, com o fim específico de dispensa de atividades trabalhistas (ou ` +
-      `escolares, ou judiciárias), que <strong>${nomePac}</strong>, portador(a) do CPF ` +
-      `<strong>${cpfPac}</strong> esteve sob meus cuidados profissionais no dia ` +
-      `<strong>${dataFormatada}</strong> das <strong>${horaInicial || "__:__"}</strong> ` +
-      `às <strong>${horaFinal || "__:__"}</strong> horas.`;
-    if (cid) corpo += `\n\nCID: ${cid}`;
-  }
-
-  const w = window.open("", "_blank", "width=800,height=1000");
+  const w = janela || window.open("", "_blank", "width=900,height=1100");
   if (!w) {
     alert("Pop-up bloqueado! Permita pop-ups para gerar o PDF.");
-    return;
+    return false;
   }
+  try {
+    const resposta = await fetch(`${apiUrl}/clinica`, { headers: { Authorization: token || "" } });
+    if (!resposta.ok) throw new Error("Não foi possível carregar os dados da clínica.");
+    const retorno = await resposta.json();
+    const c = retorno.clinica || {};
+    const nomeClinica = c.nome_fantasia || c.nome || c.razao_social || "";
+    const linhasEndereco = linhasEnderecoClinica(c);
+    const logo = c.logo_url ? `<img class="logo" src="${esc(c.logo_url)}" alt="Logo da clínica">` : "";
+    const nomePaciente = paciente?.nome || "Paciente";
+    const cpf = formatCpf(paciente?.cpf);
+    const dataBR = formatarDataBR(data);
+    const titulo = tipoAtestado === "presenca" ? "DECLARAÇÃO DE COMPARECIMENTO" : "ATESTADO";
+    const corpo = tipoAtestado === "presenca"
+      ? `Atesto, com o fim específico de comprovação de comparecimento, que ${esc(nomePaciente)}, portador(a) do CPF ${esc(cpf)}, esteve sob meus cuidados profissionais no dia ${esc(dataBR)}, das ${esc(horaInicial)} às ${esc(horaFinal)}.`
+      : `Atesto, com o fim específico de dispensa de atividades trabalhistas (ou escolares, ou judiciárias), que ${esc(nomePaciente)}, portador(a) do CPF ${esc(cpf)} esteve sob meus cuidados profissionais no dia ${esc(dataBR)} devendo permanecer em repouso por ${esc(dias)} dias.`;
+    const linhaCid = cid ? `<p class="cid">CID: ${esc(cid)}</p>` : "";
 
-  w.document.write(`<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>${titulo}</title>
-  <style>
-    @page { size: A4; margin: 20mm 25mm 20mm 25mm; }
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: 'Times New Roman', Times, serif;
-      font-size: 14px;
-      color: #000;
-      line-height: 1.6;
-      padding: 40px;
-    }
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 40px;
-    }
-    .header-prof { font-weight: bold; font-size: 15px; }
-    .header-date { font-size: 14px; }
-    .header-tel  { font-size: 14px; margin-top: 20px; }
-    .title {
-      text-align: center;
-      margin-top: 60px;
-      margin-bottom: 30px;
-    }
-    .title h1 {
-      font-size: 22px;
-      font-weight: bold;
-      text-decoration: underline;
-      text-underline-offset: 6px;
-    }
-    .body-text {
-      text-align: justify;
-      text-indent: 2em;
-      font-size: 14px;
-      line-height: 1.8;
-      margin-bottom: 20px;
-      white-space: pre-wrap;
-    }
-    .signature {
-      text-align: center;
-      margin-top: 100px;
-      line-height: 1.6;
-      font-size: 14px;
-    }
-    @media print { body { padding: 0; } }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <div class="header-prof">${profissional || ""}</div>
-    <div class="header-date">${dataFormatada}</div>
+    w.document.open();
+    w.document.write(`<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>${esc(titulo)}</title>
+<style>
+@page{size:A4;margin:0}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:Arial,Helvetica,sans-serif;color:#111;font-size:12pt;padding:18pt 30pt 30pt}
+.cabecalho{display:grid;grid-template-columns:94pt minmax(0,1fr) auto;column-gap:17pt;align-items:start;height:94pt;margin:0}
+.cabecalho>div:first-child{width:94pt;height:94pt;overflow:hidden;border-radius:14pt;clip-path:inset(0 round 14pt);-webkit-mask-image:-webkit-radial-gradient(white,black)}
+.logo{display:block;width:94pt;height:94pt;object-fit:cover;object-position:center;border-radius:14pt !important;clip-path:inset(0 round 14pt);-webkit-mask-image:-webkit-radial-gradient(white,black)}
+.identidade{padding:0;line-height:1.2}
+.nome-clinica{font-size:14pt;font-weight:700;margin:0 0 5pt}
+.dados-clinica{font-size:11pt;line-height:1.2}
+.data{font-size:11pt;white-space:nowrap;text-align:right;padding:0;margin:0}
+.conteudo{margin-top:95pt}
+h1{text-align:center;font-size:18pt;line-height:1.2;margin:0 auto 25pt;padding-bottom:6pt;border-bottom:1px solid #bbb;width:max-content;min-width:110pt}
+.corpo{font-size:14pt;line-height:1.2;text-align:justify;margin:0 0 12pt}
+.cid{font-size:12pt;margin-top:12pt}
+.assinatura{text-align:center;font-size:14pt;line-height:1.25;margin-top:98pt}
+@media print{body{print-color-adjust:exact;-webkit-print-color-adjust:exact}}
+</style></head><body>
+<header class="cabecalho">
+  <div>${logo}</div>
+  <div class="identidade">
+    ${nomeClinica ? `<div class="nome-clinica">${esc(nomeClinica)}</div>` : ""}
+    <div class="dados-clinica">${linhasEndereco.map((linha) => `<div>${linha}</div>`).join("")}</div>
   </div>
-  ${telPac ? `<div class="header-tel">${telPac}</div>` : ""}
-
-  <div class="title"><h1>${titulo}</h1></div>
-
-  <div class="body-text">${corpo}</div>
-
-  <div class="signature">
-    Atenciosamente,<br>
-    ${profissional || ""}<br>
-    ${paciente?.cro || ""}
-  </div>
-</body>
-</html>`);
-
-  w.document.close();
-  setTimeout(() => w.print(), 400);
+  <div class="data">${esc(dataBR)}</div>
+</header>
+<main class="conteudo">
+  <h1>${esc(titulo)}</h1>
+  <p class="corpo">${corpo}</p>${linhaCid}
+  <div class="assinatura">Atenciosamente,<br>${esc(profissional || "")}<br>${esc(c.cro ? `CRO/PI ${c.cro}` : "")}</div>
+</main>
+<script>window.onload=()=>window.print();</script></body></html>`);
+    w.document.close();
+    return true;
+  } catch (erro) {
+    w.close();
+    alert(erro.message || "Não foi possível gerar o atestado.");
+    return false;
+  }
 }

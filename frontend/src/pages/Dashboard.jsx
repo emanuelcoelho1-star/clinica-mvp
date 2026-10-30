@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API_URL from "../api";
+import FaixaIndicadores from "../components/FaixaIndicadores";
 
 /* ═══════════════════════════════════════════════════════════
    HELPERS
@@ -135,21 +136,6 @@ const Icons = {
 /* ═══════════════════════════════════════════════════════════
    SUB-COMPONENTES
    ══════════════════════════���════════════════════════════════ */
-function StatCard({ label, value, icon, accent, sub }) {
-  return (
-    <div style={S.statCard}>
-      <div style={S.statTop}>
-        <span style={{ ...S.statIconBox, background: accent + "12", color: accent }}>
-          {icon}
-        </span>
-        <span style={S.statLabel}>{label}</span>
-      </div>
-      <strong style={S.statValue}>{value}</strong>
-      {sub && <span style={S.statSub}>{sub}</span>}
-    </div>
-  );
-}
-
 function SectionCard({ title, icon, action, onAction, children, empty }) {
   return (
     <div style={S.card}>
@@ -197,6 +183,7 @@ function StatusBadge({ status }) {
 function Dashboard() {
   const navigate = useNavigate();
   const [pacientes, setPacientes] = useState([]);
+  const [totalPacientes, setTotalPacientes] = useState(0);
   const [consultas, setConsultas] = useState([]);
   const [carregando, setCarregando] = useState(true);
 
@@ -205,14 +192,35 @@ function Dashboard() {
     const headers = { Authorization: token };
 
     Promise.all([
-      fetch(`${API_URL}/pacientes`, { headers }).then((r) => r.json()),
-      fetch(`${API_URL}/consultas`, { headers }).then((r) => r.json()),
+      // A API de pacientes retorna { dados, paginacao }, não um array direto.
+      fetch(`${API_URL}/pacientes?limit=5`, { headers }).then((r) => {
+        if (!r.ok) throw new Error("Não foi possível carregar os pacientes.");
+        return r.json();
+      }),
+      fetch(`${API_URL}/consultas`, { headers }).then((r) => {
+        if (!r.ok) throw new Error("Não foi possível carregar as consultas.");
+        return r.json();
+      }),
     ])
-      .then(([p, c]) => {
-        setPacientes(Array.isArray(p) ? p : []);
-        setConsultas(Array.isArray(c) ? c : []);
+      .then(([respostaPacientes, respostaConsultas]) => {
+        const listaPacientes = Array.isArray(respostaPacientes)
+          ? respostaPacientes
+          : Array.isArray(respostaPacientes?.dados)
+            ? respostaPacientes.dados
+            : Array.isArray(respostaPacientes?.pacientes)
+              ? respostaPacientes.pacientes
+              : [];
+
+        // A lista usa os cinco pacientes mais recentes; o total vem da paginação da API.
+        setPacientes(listaPacientes);
+        setTotalPacientes(
+          Array.isArray(respostaPacientes)
+            ? respostaPacientes.length
+            : Number(respostaPacientes?.paginacao?.total ?? respostaPacientes?.total ?? listaPacientes.length)
+        );
+        setConsultas(Array.isArray(respostaConsultas) ? respostaConsultas : []);
       })
-      .catch((err) => console.error("Erro ao buscar dados:", err))
+      .catch((err) => console.error("Erro ao buscar dados do dashboard:", err))
       .finally(() => setCarregando(false));
   }, []);
 
@@ -242,16 +250,16 @@ function Dashboard() {
   const ultimosPacientes = pacientes.slice(0, 5);
 
   const agora = new Date();
-  const dataFormatada = agora.toLocaleDateString("pt-BR", {
-    weekday: "long", day: "numeric", month: "long",
-  });
+  // "sexta-feira, 30 de outubro" → "Sexta-feira, 30 de outubro" (só a primeira letra)
+  const dataLonga = agora.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" });
+  const dataFormatada = dataLonga.charAt(0).toUpperCase() + dataLonga.slice(1);
 
   const nomeUsuario = (() => {
     try {
       const u = JSON.parse(localStorage.getItem("usuario"));
-      return u?.nome?.split(" ")[0] || "Doutor(a)";
+      return u?.nome?.trim().split(" ")[0] || "";
     } catch {
-      return "Doutor(a)";
+      return "";
     }
   })();
 
@@ -282,15 +290,9 @@ function Dashboard() {
       <div style={S.heroCard}>
         <div style={S.heroTop}>
           <div style={S.heroLeft}>
-            <div style={S.heroDateChip}>
-              <span style={S.heroDateIcon}>{Icons.calendar}</span>
-              <span>{dataFormatada}</span>
-            </div>
-            <h1 style={S.heroTitle}>{saudacao()}, {nomeUsuario}</h1>
-            <p style={S.heroSub}>
-              Você tem <strong style={{ color: "#2563eb" }}>{consultasHoje.length} consulta{consultasHoje.length !== 1 ? "s" : ""}</strong> agendada{consultasHoje.length !== 1 ? "s" : ""} para hoje
-              {consultasHoje.length > 0 ? ` — próxima às ${consultasHoje[0].horario}.` : "."}
-            </p>
+            <h1 style={S.heroTitle}>{nomeUsuario ? `${saudacao()}, ${nomeUsuario}` : saudacao()}</h1>
+            {/* A faixa abaixo já mostra as consultas do dia; aqui fica só a data */}
+            <p style={S.heroSub}>{dataFormatada}</p>
           </div>
           <div style={S.heroRight}>
             <button
@@ -316,12 +318,11 @@ function Dashboard() {
       </div>
 
       {/* ── Stats Grid ───────────────────────────── */}
-      <div style={S.statsGrid}>
-        <StatCard label="Total de pacientes" value={pacientes.length} icon={Icons.users} accent="#2563eb" sub="cadastrados no sistema" />
-        <StatCard label="Consultas hoje" value={consultasHoje.length} icon={Icons.calendarCheck} accent="#0ea5e9" sub={consultasHoje.length > 0 ? `Próx. às ${consultasHoje[0].horario}` : "Nenhuma agendada"} />
-        <StatCard label="Esta semana" value={consultasSemana} icon={Icons.clock} accent="#8b5cf6" sub="próximos 7 dias" />
-        <StatCard label="Total de consultas" value={consultas.length} icon={Icons.activity} accent="#10b981" sub="registradas no sistema" />
-      </div>
+      <FaixaIndicadores rotulo="Resumo da clínica" itens={[
+        { rotulo: "Consultas hoje", valor: consultasHoje.length, detalhe: consultasHoje.length > 0 ? `próxima às ${consultasHoje[0].horario}` : "nenhuma agendada" },
+        { rotulo: "Próximos 7 dias", valor: consultasSemana, detalhe: "consultas marcadas" },
+        { rotulo: "Pacientes", valor: totalPacientes, detalhe: "cadastrados" },
+      ]} />
 
       {/* ── Grid Principal ───────────────────────── */}
       <div style={S.mainGrid}>
@@ -430,56 +431,6 @@ function Dashboard() {
           </ul>
         </SectionCard>
 
-        {/* Ações rápidas */}
-        <div style={S.quickCard}>
-          <div style={S.quickBadge}>
-            <span style={{ display: "flex" }}>{Icons.zap}</span>
-            <span>AÇÕES RÁPIDAS</span>
-          </div>
-          <h2 style={S.quickTitle}>O que deseja fazer agora?</h2>
-          <p style={S.quickSub}>Acesse as principais funcionalidades do sistema rapidamente.</p>
-          <div style={S.quickActions}>
-            <button
-              style={S.quickBtn}
-              onClick={() => navigate("/pacientes/novo")}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.12)")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")}
-            >
-              <span style={S.quickBtnIcon}>{Icons.userPlus}</span>
-              <div style={S.quickBtnInfo}>
-                <span style={S.quickBtnLabel}>Cadastrar paciente</span>
-                <span style={S.quickBtnDesc}>Adicione um novo paciente ao sistema</span>
-              </div>
-              <span style={S.quickBtnArrow}>{Icons.arrowRight}</span>
-            </button>
-            <button
-              style={S.quickBtn}
-              onClick={() => navigate("/agenda")}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.12)")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")}
-            >
-              <span style={S.quickBtnIcon}>{Icons.calendar}</span>
-              <div style={S.quickBtnInfo}>
-                <span style={S.quickBtnLabel}>Abrir agenda</span>
-                <span style={S.quickBtnDesc}>Gerencie seus compromissos</span>
-              </div>
-              <span style={S.quickBtnArrow}>{Icons.arrowRight}</span>
-            </button>
-            <button
-              style={S.quickBtn}
-              onClick={() => navigate("/pacientes")}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.12)")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")}
-            >
-              <span style={S.quickBtnIcon}>{Icons.list}</span>
-              <div style={S.quickBtnInfo}>
-                <span style={S.quickBtnLabel}>Listar pacientes</span>
-                <span style={S.quickBtnDesc}>Veja todos os pacientes cadastrados</span>
-              </div>
-              <span style={S.quickBtnArrow}>{Icons.arrowRight}</span>
-            </button>
-          </div>
-        </div>
       </div>
     </div>
   );
@@ -518,7 +469,7 @@ const S = {
     animation: "pulse-dot 1.4s ease-in-out infinite", animationDelay: "0.4s",
   },
   loadingText: {
-    fontSize: "14px", fontWeight: "500", color: "#94a3b8", letterSpacing: "0.02em",
+    fontSize: "14px", fontWeight: "500", color: "var(--text-muted)", letterSpacing: "0.02em",
   },
 
   /* ── Hero Card ─────────────────────────────────── */
@@ -540,25 +491,6 @@ const S = {
     display: "flex",
     flexDirection: "column",
     gap: "8px",
-  },
-  heroDateChip: {
-    display: "inline-flex",
-    alignItems: "center",
-    gap: "6px",
-    fontSize: "12px",
-    fontWeight: "600",
-    color: "#2563eb",
-    background: "#eff6ff",
-    borderRadius: "8px",
-    padding: "5px 12px",
-    border: "1px solid #dbeafe",
-    textTransform: "capitalize",
-    width: "fit-content",
-  },
-  heroDateIcon: {
-    display: "flex",
-    alignItems: "center",
-    color: "#60a5fa",
   },
   heroTitle: {
     margin: 0,
@@ -661,7 +593,7 @@ const S = {
   },
   statSub: {
     fontSize: "12px",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     fontWeight: "500",
   },
 
@@ -686,7 +618,7 @@ const S = {
   },
   cardIcon: {
     display: "flex",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
   },
   cardTitle: {
     margin: 0,
@@ -776,7 +708,7 @@ const S = {
   dateMes: {
     fontSize: "10px",
     fontWeight: "700",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     textTransform: "uppercase",
     letterSpacing: "0.04em",
   },
@@ -799,7 +731,7 @@ const S = {
   },
   rowSub: {
     fontSize: "12px",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     fontWeight: "500",
     whiteSpace: "nowrap",
     overflow: "hidden",
@@ -825,7 +757,7 @@ const S = {
   rowChipIcon: {
     display: "flex",
     alignItems: "center",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
   },
 
   /* ── Avatar ─────────────────────────────────────── */
@@ -884,104 +816,12 @@ const S = {
   },
   emptyText: {
     margin: 0,
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     fontSize: "13px",
     fontWeight: "500",
   },
 
   /* ── Quick Actions Card ─────────────────────────── */
-  quickCard: {
-    background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
-    borderRadius: "16px",
-    padding: "28px",
-    color: "#fff",
-    display: "flex",
-    flexDirection: "column",
-    gap: "14px",
-  },
-  quickBadge: {
-    display: "inline-flex",
-    alignItems: "center",
-    alignSelf: "flex-start",
-    gap: "6px",
-    background: "rgba(255,255,255,0.08)",
-    border: "1px solid rgba(255,255,255,0.1)",
-    borderRadius: "8px",
-    padding: "5px 12px",
-    fontSize: "11px",
-    fontWeight: "700",
-    letterSpacing: "0.06em",
-    color: "#93c5fd",
-  },
-  quickTitle: {
-    margin: 0,
-    fontSize: "20px",
-    fontWeight: "700",
-    letterSpacing: "-0.02em",
-    lineHeight: 1.2,
-  },
-  quickSub: {
-    margin: 0,
-    fontSize: "14px",
-    color: "#94a3b8",
-    lineHeight: 1.5,
-    fontWeight: "500",
-  },
-  quickActions: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "8px",
-    marginTop: "4px",
-  },
-  quickBtn: {
-    display: "flex",
-    alignItems: "center",
-    gap: "14px",
-    background: "rgba(255,255,255,0.06)",
-    border: "1px solid rgba(255,255,255,0.08)",
-    borderRadius: "12px",
-    padding: "14px 16px",
-    color: "#f1f5f9",
-    fontSize: "14px",
-    fontWeight: "600",
-    cursor: "pointer",
-    textAlign: "left",
-    transition: "all 0.15s ease",
-    fontFamily: "inherit",
-  },
-  quickBtnIcon: {
-    width: "36px",
-    height: "36px",
-    borderRadius: "10px",
-    background: "rgba(255,255,255,0.08)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-    color: "#93c5fd",
-  },
-  quickBtnInfo: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "2px",
-    flex: 1,
-  },
-  quickBtnLabel: {
-    fontSize: "14px",
-    fontWeight: "600",
-    color: "#f1f5f9",
-  },
-  quickBtnDesc: {
-    fontSize: "12px",
-    fontWeight: "500",
-    color: "#64748b",
-  },
-  quickBtnArrow: {
-    display: "flex",
-    alignItems: "center",
-    color: "#475569",
-    flexShrink: 0,
-  },
 };
 
 export default Dashboard;

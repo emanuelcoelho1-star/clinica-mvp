@@ -26,7 +26,7 @@ function getExtensao(nome) {
 
 function isImagem(nome) {
   const ext = getExtensao(nome);
-  return ["jpg", "jpeg", "png", "gif", "webp", "svg", "bmp"].includes(ext);
+  return ["jpg", "jpeg", "png", "gif", "webp"].includes(ext);
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -128,6 +128,15 @@ const Icons = {
       <path d="M12 9v4" /><path d="M12 17h.01" />
     </svg>
   ),
+  folderSmall: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></svg>
+  ),
+  folderCard: (
+    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></svg>
+  ),
+  camera: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 4h-4l-2 3H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z" /><circle cx="12" cy="13" r="3" /></svg>
+  ),
   folder: (
     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z" />
@@ -201,11 +210,19 @@ function FileIcon({ nome }) {
    ═══════════════════════════════════════════════════════════ */
 function AbaArquivos({ pacienteId }) {
   const [arquivos, setArquivos] = useState([]);
+  const [pastas, setPastas] = useState([]);
+  const [pastaAtualId, setPastaAtualId] = useState(null);
   const [carregando, setCarregando] = useState(true);
+  const [menuNovoAberto, setMenuNovoAberto] = useState(false);
+  const [modalPastaAberto, setModalPastaAberto] = useState(false);
+  const [nomeNovaPasta, setNomeNovaPasta] = useState("");
+  const [salvandoPasta, setSalvandoPasta] = useState(false);
+  const [tipoSelecao, setTipoSelecao] = useState("arquivo");
   const [erro, setErro] = useState("");
 
   const [tela, setTela] = useState("lista"); // "lista" | "upload" | "preview"
   const [preview, setPreview] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState("");
 
   // Upload
   const [selectedFiles, setSelectedFiles] = useState([]);
@@ -223,6 +240,8 @@ function AbaArquivos({ pacienteId }) {
   // Excluir
   const [confirmarExclusao, setConfirmarExclusao] = useState(null);
   const [excluindo, setExcluindo] = useState(false);
+  const [confirmarExclusaoPasta, setConfirmarExclusaoPasta] = useState(null);
+  const [excluindoPasta, setExcluindoPasta] = useState(false);
 
   // Hover
   const [hoveredCardId, setHoveredCardId] = useState(null);
@@ -230,8 +249,62 @@ function AbaArquivos({ pacienteId }) {
 
   /* ── Carregar ────────────────────────────── */
   useEffect(() => {
+    setPastaAtualId(null);
     carregarArquivos();
+    carregarPastas();
   }, [pacienteId]);
+
+  useEffect(() => {
+    if (!preview || tela !== "preview") {
+      setPreviewUrl("");
+      return undefined;
+    }
+
+    let cancelled = false;
+    let objectUrl = "";
+    const tk = localStorage.getItem("token");
+    setPreviewUrl("");
+
+    fetch(`${API_URL}/arquivos/${preview.id}/download`, {
+      headers: { Authorization: tk || "" },
+    })
+      .then((response) => {
+        if (!response.ok) throw new Error("Não foi possível carregar o arquivo.");
+        return response.blob();
+      })
+      .then((blob) => {
+        objectUrl = URL.createObjectURL(blob);
+        if (cancelled) {
+          URL.revokeObjectURL(objectUrl);
+        } else {
+          setPreviewUrl(objectUrl);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setErro("Não foi possível carregar o arquivo.");
+      });
+
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [preview, tela]);
+
+  async function carregarPastas() {
+    try {
+      const tk = localStorage.getItem("token");
+      const r = await fetch(`${API_URL}/arquivos/pastas/paciente/${pacienteId}`, {
+        headers: { Authorization: tk || "" },
+      });
+      if (!r.ok) throw new Error();
+      const data = await r.json();
+      setPastas(Array.isArray(data) ? data : []);
+    } catch {
+      // A ausência ou indisponibilidade da listagem de pastas não deve
+      // esconder a apresentação da aba Arquivos nem impedir a lista de arquivos.
+      setPastas([]);
+    }
+  }
 
   async function carregarArquivos() {
     try {
@@ -252,7 +325,15 @@ function AbaArquivos({ pacienteId }) {
   }
 
   /* ── Filtrar ─────────────────────────────── */
-  const arquivosFiltrados = arquivos.filter((a) => {
+  const arquivosDaPasta = arquivos.filter((a) => Number(a.pasta_id || 0) === Number(pastaAtualId || 0));
+  const pastasDaPasta = pastas.filter((p) => Number(p.pasta_pai_id || 0) === Number(pastaAtualId || 0));
+  const caminhoPastas = [];
+  let pastaCaminho = pastas.find((p) => Number(p.id) === Number(pastaAtualId));
+  while (pastaCaminho) {
+    caminhoPastas.unshift(pastaCaminho);
+    pastaCaminho = pastas.find((p) => Number(p.id) === Number(pastaCaminho.pasta_pai_id));
+  }
+  const arquivosFiltrados = arquivosDaPasta.filter((a) => {
     const matchBusca =
       !busca ||
       (a.nome_original || "").toLowerCase().includes(busca.toLowerCase()) ||
@@ -263,12 +344,40 @@ function AbaArquivos({ pacienteId }) {
   });
 
   /* ── Upload ──────────────────────────────── */
-  function abrirUpload() {
+  function abrirUpload(tipo = "arquivo") {
     setSelectedFiles([]);
     setCategoria("outro");
     setDescricao("");
     setErroUpload("");
+    setTipoSelecao(tipo);
+    setMenuNovoAberto(false);
     setTela("upload");
+  }
+
+  async function criarPasta(e) {
+    e.preventDefault();
+    const nome = nomeNovaPasta.trim();
+    if (!nome) return;
+    try {
+      setSalvandoPasta(true);
+      const tk = localStorage.getItem("token");
+      const r = await fetch(`${API_URL}/arquivos/pastas`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: tk || "" },
+        body: JSON.stringify({ paciente_id: pacienteId, nome, pasta_pai_id: pastaAtualId || null }),
+      });
+      if (!r.ok) {
+        const data = await r.json().catch(() => ({}));
+        throw new Error(data.erro || "Não foi possível criar a pasta.");
+      }
+      setNomeNovaPasta("");
+      setModalPastaAberto(false);
+      await carregarPastas();
+    } catch (err) {
+      setErro(err.message || "Não foi possível criar a pasta.");
+    } finally {
+      setSalvandoPasta(false);
+    }
   }
 
   function handleFileSelect(e) {
@@ -305,6 +414,7 @@ function AbaArquivos({ pacienteId }) {
         formData.append("paciente_id", pacienteId);
         formData.append("categoria", categoria);
         formData.append("descricao", descricao);
+        if (pastaAtualId) formData.append("pasta_id", pastaAtualId);
 
         const r = await fetch(`${API_URL}/arquivos`, {
           method: "POST",
@@ -315,6 +425,7 @@ function AbaArquivos({ pacienteId }) {
       }
 
       await carregarArquivos();
+      await carregarPastas();
       voltarParaLista();
     } catch {
       setErroUpload("Não foi possível enviar o(s) arquivo(s).");
@@ -337,10 +448,29 @@ function AbaArquivos({ pacienteId }) {
   }
 
   /* ── Baixar ──────────────────────────────── */
-  function baixarArquivo(arquivo) {
-    const tk = localStorage.getItem("token");
-    const url = `${API_URL}/arquivos/${arquivo.id}/download?token=${encodeURIComponent(tk || "")}`;
-    window.open(url, "_blank");
+  async function baixarArquivo(arquivo) {
+    const tab = window.open("about:blank", "_blank");
+    try {
+      const tk = localStorage.getItem("token");
+      const response = await fetch(`${API_URL}/arquivos/${arquivo.id}/download`, {
+        headers: { Authorization: tk || "" },
+      });
+      if (!response.ok) throw new Error("Não foi possível baixar o arquivo.");
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      if (tab) {
+        tab.location.href = url;
+      } else {
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = arquivo.nome_original || "arquivo";
+        link.click();
+      }
+      window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch {
+      if (tab) tab.close();
+      setErro("Não foi possível baixar o arquivo. Tente novamente.");
+    }
   }
 
   /* ── Excluir ─────────────────────────────── */
@@ -364,6 +494,27 @@ function AbaArquivos({ pacienteId }) {
     }
   }
 
+  async function handleExcluirPasta() {
+    if (!confirmarExclusaoPasta?.id) return;
+    try {
+      setExcluindoPasta(true);
+      const tk = localStorage.getItem("token");
+      const r = await fetch(`${API_URL}/arquivos/pastas/${confirmarExclusaoPasta.id}`, {
+        method: "DELETE",
+        headers: { Authorization: tk || "" },
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(data.erro || "Não foi possível excluir a pasta.");
+      setConfirmarExclusaoPasta(null);
+      await carregarPastas();
+    } catch (err) {
+      setErro(err.message || "Não foi possível excluir a pasta.");
+      setConfirmarExclusaoPasta(null);
+    } finally {
+      setExcluindoPasta(false);
+    }
+  }
+
   /* ═══════════════════════════════════════════
      RENDER — LISTA
      ═══════════════════════════════════════════ */
@@ -375,22 +526,22 @@ function AbaArquivos({ pacienteId }) {
           <div>
             <h2 style={S.title}>Arquivos</h2>
             <p style={S.subtitle}>
-              {arquivos.length} arquivo{arquivos.length !== 1 ? "s" : ""} armazenado
-              {arquivos.length !== 1 ? "s" : ""}
+              {arquivos.length} arquivo{arquivos.length !== 1 ? "s" : ""} armazenado{arquivos.length !== 1 ? "s" : ""} • {pastas.length} pasta{pastas.length !== 1 ? "s" : ""}
             </p>
           </div>
-          <button
-            style={{
-              ...S.btnPrimary,
-              ...(hoveredBtn === "upload" ? S.btnPrimaryHover : {}),
-            }}
-            onMouseEnter={() => setHoveredBtn("upload")}
-            onMouseLeave={() => setHoveredBtn(null)}
-            onClick={abrirUpload}
-          >
-            {Icons.upload}
-            <span>Enviar arquivo</span>
-          </button>
+          <div style={{ position: "relative" }}>
+            <button type="button" style={{ ...S.btnPrimary, ...(hoveredBtn === "upload" ? S.btnPrimaryHover : {}) }}
+              onMouseEnter={() => setHoveredBtn("upload")} onMouseLeave={() => setHoveredBtn(null)}
+              onClick={() => setMenuNovoAberto((v) => !v)}>
+              {Icons.plus}<span>Novo</span>
+            </button>
+            {menuNovoAberto && <div style={S.newMenu}>
+              <button type="button" style={S.newMenuItem} onClick={() => { setMenuNovoAberto(false); setNomeNovaPasta(""); setModalPastaAberto(true); }}>{Icons.folderSmall}<span>Pasta</span></button>
+              <button type="button" style={S.newMenuItem} onClick={() => abrirUpload("arquivo")}>{Icons.fileSmall}<span>Arquivo</span></button>
+              <button type="button" style={S.newMenuItem} onClick={() => abrirUpload("imagem")}>{Icons.image}<span>Imagem</span></button>
+              <button type="button" style={S.newMenuItem} onClick={() => abrirUpload("camera")}>{Icons.camera}<span>Tirar foto</span></button>
+            </div>}
+          </div>
         </div>
 
         {/* Busca e filtros */}
@@ -444,42 +595,35 @@ function AbaArquivos({ pacienteId }) {
         {/* Erro */}
         {erro && <div style={S.errorBox}><span>{erro}</span></div>}
 
-        {/* Vazio */}
-        {!carregando && !erro && arquivos.length === 0 && (
-          <div style={S.emptyBox}>
-            {Icons.folder}
-            <h3 style={S.emptyTitle}>Nenhum arquivo armazenado</h3>
-            <p style={S.emptyText}>
-              Envie exames, receitas, radiografias e outros documentos do paciente.
-            </p>
-            <button
-              style={{
-                ...S.btnPrimary,
-                marginTop: "4px",
-                ...(hoveredBtn === "upload-empty" ? S.btnPrimaryHover : {}),
-              }}
-              onMouseEnter={() => setHoveredBtn("upload-empty")}
-              onMouseLeave={() => setHoveredBtn(null)}
-              onClick={abrirUpload}
-            >
-              {Icons.upload}
-              <span>Enviar primeiro arquivo</span>
-            </button>
-          </div>
-        )}
+        {!carregando && !erro && (
+          <div style={S.folderArea}>
+            <div style={S.breadcrumbs}>
+              <button type="button" style={S.breadcrumbButton} onClick={() => setPastaAtualId(null)}>Arquivos</button>
+              {caminhoPastas.map((p) => <span key={p.id} style={S.breadcrumbPart}><span style={S.breadcrumbSlash}>/</span><button type="button" style={S.breadcrumbButton} onClick={() => setPastaAtualId(p.id)}>{p.nome}</button></span>)}
+            </div>
 
-        {/* Sem resultados de filtro */}
-        {!carregando && !erro && arquivos.length > 0 && arquivosFiltrados.length === 0 && (
-          <div style={S.emptyBox}>
-            <span style={{ color: "#94a3b8" }}>{Icons.search}</span>
-            <h3 style={S.emptyTitle}>Nenhum resultado encontrado</h3>
-            <p style={S.emptyText}>Tente ajustar o filtro ou termo de busca.</p>
-          </div>
-        )}
+            {/* Área de conteúdo no estilo do explorador de arquivos do Windows */}
+            <div style={S.contentPanel}>
+              {pastasDaPasta.length > 0 && <div style={S.folderGrid}>
+                {pastasDaPasta.map((p) => <div key={p.id} style={S.folderCard}>
+                  <button type="button" style={S.folderOpenButton} onClick={() => { setPastaAtualId(p.id); setBusca(""); setFiltroCategoria("todos"); }}>
+                    <span style={S.folderCardIcon}>{Icons.folderCard}</span><span style={S.folderCardName}>{p.nome}</span><span style={S.folderCardHint}>Abrir pasta</span>
+                  </button>
+                  <button type="button" title="Excluir pasta" aria-label={`Excluir pasta ${p.nome}`} style={S.folderDeleteButton}
+                    onClick={() => setConfirmarExclusaoPasta(p)}>{Icons.trash}<span>Excluir</span></button>
+                </div>)}
+              </div>}
 
-        {/* Lista de cards */}
-        {!carregando && !erro && arquivosFiltrados.length > 0 && (
-          <div style={S.cardGrid}>
+              {arquivosDaPasta.length > 0 && arquivosFiltrados.length === 0 && (
+                <div style={S.panelEmptyHint}>
+                  <span style={{ color: "var(--text-muted)" }}>{Icons.search}</span>
+                  <span>Nenhum resultado encontrado. Tente ajustar o filtro ou termo de busca.</span>
+                </div>
+              )}
+
+              {arquivosFiltrados.length > 0 && (
+                <div style={S.cardGrid}>
+
             {arquivosFiltrados.map((a) => {
               const hovered = hoveredCardId === a.id;
               return (
@@ -558,6 +702,53 @@ function AbaArquivos({ pacienteId }) {
                 </div>
               );
             })}
+                </div>
+              )}
+
+              {arquivosFiltrados.length === 0 && pastasDaPasta.length === 0 && (
+                <div style={S.emptyBox}>
+                  {Icons.folder}
+                  <h3 style={S.emptyTitle}>{pastaAtualId ? "Esta pasta está vazia" : "Nenhum arquivo armazenado"}</h3>
+                  <p style={S.emptyText}>
+                    {pastaAtualId
+                      ? "Adicione arquivos ou crie novas pastas usando o botão Novo."
+                      : "Envie exames, receitas, radiografias e outros documentos do paciente. Você também pode organizar tudo em pastas."}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+        {confirmarExclusaoPasta && (
+          <div style={S.overlay} onClick={() => !excluindoPasta && setConfirmarExclusaoPasta(null)}>
+            <div style={S.modal} onClick={(e) => e.stopPropagation()}>
+              <div style={S.modalIconWrap}>{Icons.alertTriangle}</div>
+              <h3 style={S.confirmTitle}>Excluir pasta?</h3>
+              <p style={S.confirmText}>
+                A pasta <strong>{confirmarExclusaoPasta.nome}</strong> será excluída. Para evitar perda de conteúdo, ela precisa estar vazia, sem arquivos ou subpastas.
+              </p>
+              <div style={S.modalActions}>
+                <button type="button" style={S.btnSecondary} onClick={() => setConfirmarExclusaoPasta(null)} disabled={excluindoPasta}>Cancelar</button>
+                <button type="button" style={S.btnDanger} onClick={handleExcluirPasta} disabled={excluindoPasta}>
+                  {Icons.trash}<span>{excluindoPasta ? "Excluindo..." : "Excluir pasta"}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {modalPastaAberto && (
+          <div style={S.overlay} onClick={() => setModalPastaAberto(false)}>
+            <form style={S.modal} onClick={(e) => e.stopPropagation()} onSubmit={criarPasta}>
+              <div style={S.modalIconWrap}>{Icons.folderCard}</div>
+              <h3 style={S.confirmTitle}>Criar nova pasta</h3>
+              <p style={S.confirmText}>A pasta será criada dentro de {caminhoPastas.length ? caminhoPastas[caminhoPastas.length - 1].nome : "Arquivos"}.</p>
+              <input autoFocus value={nomeNovaPasta} onChange={(e) => setNomeNovaPasta(e.target.value)} maxLength={100} placeholder="Nome da pasta" style={{ ...S.input, marginTop: "18px" }} />
+              <div style={S.modalActions}>
+                <button type="button" style={S.btnSecondary} onClick={() => setModalPastaAberto(false)} disabled={salvandoPasta}>Cancelar</button>
+                <button type="submit" style={S.btnPrimary} disabled={salvandoPasta || !nomeNovaPasta.trim()}>{salvandoPasta ? "Criando..." : "Criar pasta"}</button>
+              </div>
+            </form>
           </div>
         )}
 
@@ -638,7 +829,7 @@ function AbaArquivos({ pacienteId }) {
               <span>Voltar</span>
             </button>
             <h2 style={S.title}>Enviar arquivos</h2>
-            <p style={S.subtitle}>Selecione os arquivos que deseja enviar para o prontuário.</p>
+            <p style={S.subtitle}>{tipoSelecao === "camera" ? "Tire uma foto para adicionar ao prontuário." : tipoSelecao === "imagem" ? "Selecione imagens para adicionar ao prontuário." : "Selecione os arquivos que deseja enviar para o prontuário."}</p>
           </div>
         </div>
 
@@ -662,7 +853,9 @@ function AbaArquivos({ pacienteId }) {
             <input
               ref={fileInputRef}
               type="file"
-              multiple
+              accept={tipoSelecao === "imagem" || tipoSelecao === "camera" ? "image/*" : ".pdf,.jpg,.jpeg,.png,.gif,.webp,.doc,.docx,.xls,.xlsx,.txt"}
+              capture={tipoSelecao === "camera" ? "environment" : undefined}
+              multiple={tipoSelecao !== "camera"}
               onChange={handleFileSelect}
               style={{ display: "none" }}
             />
@@ -785,8 +978,7 @@ function AbaArquivos({ pacienteId }) {
      RENDER — PREVIEW
      ═══════════════════════════════════════════ */
   if (tela === "preview" && preview) {
-    const tk = localStorage.getItem("token");
-    const imgUrl = `${API_URL}/arquivos/${preview.id}/download?token=${encodeURIComponent(tk || "")}`;
+    const imgUrl = previewUrl;
 
     return (
       <div style={S.wrapper}>
@@ -920,6 +1112,22 @@ function AbaArquivos({ pacienteId }) {
    STYLES — Ultra Premium Minimal SaaS
    ═══════════════════════════════════════════════════════════ */
 const S = {
+  folderArea: { display: "flex", flexDirection: "column", gap: "16px" },
+  contentPanel: { minHeight: "260px", padding: "24px", background: "#fff", border: "1px solid #f1f5f9", borderRadius: "16px", display: "flex", flexDirection: "column", gap: "20px" },
+  panelEmptyHint: { display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", padding: "28px 16px", color: "var(--text-muted)", fontSize: "13px" },
+  breadcrumbs: { display: "flex", alignItems: "center", flexWrap: "wrap", gap: "8px", minHeight: "28px", color: "var(--text-muted)", fontSize: "13px" },
+  breadcrumbPart: { display: "inline-flex", alignItems: "center", gap: "8px" },
+  breadcrumbSlash: { color: "#cbd5e1" },
+  breadcrumbButton: { border: "none", background: "transparent", color: "#64748b", padding: "4px 0", fontSize: "13px", fontWeight: "600", cursor: "pointer" },
+  folderGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(190px, 1fr))", gap: "12px" },
+  folderCard: { position: "relative", display: "flex", flexDirection: "column", alignItems: "stretch", gap: "10px", padding: "14px", minHeight: "126px", textAlign: "left", background: "#fff", border: "1px solid #e8edf4", borderRadius: "14px", transition: "all .18s ease" },
+  folderOpenButton: { display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "8px", width: "100%", padding: "4px", border: "none", background: "transparent", textAlign: "left", cursor: "pointer" },
+  folderDeleteButton: { display: "inline-flex", alignItems: "center", justifyContent: "center", alignSelf: "flex-end", gap: "6px", padding: "6px 9px", border: "1px solid #fee2e2", borderRadius: "8px", background: "#fff", color: "#dc2626", fontSize: "12px", fontWeight: "600", cursor: "pointer" },
+  folderCardIcon: { display: "flex", alignItems: "center", justifyContent: "center", width: "48px", height: "42px", borderRadius: "10px", background: "#eff6ff", color: "#3b82f6" },
+  folderCardName: { color: "#1e293b", fontSize: "14px", fontWeight: "650", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" },
+  folderCardHint: { color: "var(--text-muted)", fontSize: "12px" },
+  newMenu: { position: "absolute", top: "calc(100% + 8px)", right: 0, zIndex: 30, width: "190px", padding: "6px", background: "#fff", border: "1px solid #e2e8f0", borderRadius: "12px", boxShadow: "0 12px 32px rgba(15,23,42,.12)" },
+  newMenuItem: { display: "flex", alignItems: "center", gap: "10px", width: "100%", padding: "10px 12px", border: "none", borderRadius: "8px", background: "transparent", color: "#334155", fontSize: "13px", fontWeight: "550", textAlign: "left", cursor: "pointer" },
   wrapper: {
     display: "flex",
     flexDirection: "column",
@@ -946,7 +1154,7 @@ const S = {
   subtitle: {
     margin: "6px 0 0",
     fontSize: "14px",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     fontWeight: "500",
     lineHeight: 1.4,
     display: "flex",
@@ -1013,14 +1221,14 @@ const S = {
     background: "#fff", border: "1px solid #e2e8f0", borderRadius: "10px",
     padding: "0 14px", height: "40px", transition: "border-color 0.2s",
   },
-  searchIcon: { display: "flex", color: "#94a3b8", flexShrink: 0 },
+  searchIcon: { display: "flex", color: "var(--text-muted)", flexShrink: 0 },
   searchInput: {
     flex: 1, border: "none", outline: "none", fontSize: "14px",
     color: "#0f172a", background: "transparent",
   },
   searchClear: {
     display: "flex", alignItems: "center", justifyContent: "center",
-    background: "none", border: "none", color: "#94a3b8", cursor: "pointer",
+    background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer",
     padding: "4px", borderRadius: "6px", transition: "all 0.15s",
   },
   filterSelect: {
@@ -1048,7 +1256,7 @@ const S = {
     width: "10px", height: "10px", borderRadius: "50%", background: "#2563eb",
     animation: "arquivo-pulse-dot 1.4s ease-in-out infinite", animationDelay: "0.4s",
   },
-  feedbackText: { fontSize: "14px", color: "#94a3b8", fontWeight: "500" },
+  feedbackText: { fontSize: "14px", color: "var(--text-muted)", fontWeight: "500" },
   errorBox: {
     display: "flex", alignItems: "center", gap: "12px",
     background: "#fef2f2", border: "1px solid #fecaca", color: "#b91c1c",
@@ -1062,7 +1270,7 @@ const S = {
     border: "1px solid #f1f5f9", textAlign: "center",
   },
   emptyTitle: { margin: 0, fontSize: "16px", fontWeight: "600", color: "#0f172a" },
-  emptyText: { margin: 0, fontSize: "14px", color: "#94a3b8", lineHeight: 1.5, maxWidth: "360px" },
+  emptyText: { margin: 0, fontSize: "14px", color: "var(--text-muted)", lineHeight: 1.5, maxWidth: "360px" },
 
   /* ── Card Grid ───────────────────────────────── */
   cardGrid: {
@@ -1084,7 +1292,7 @@ const S = {
   },
   fileMeta: {
     display: "flex", alignItems: "center", gap: "6px",
-    fontSize: "12px", color: "#94a3b8", fontWeight: "500", marginTop: "2px",
+    fontSize: "12px", color: "var(--text-muted)", fontWeight: "500", marginTop: "2px",
   },
   cardDesc: {
     margin: 0, fontSize: "13px", color: "#64748b", lineHeight: 1.5,
@@ -1164,7 +1372,7 @@ const S = {
   },
   dropLink: { color: "#2563eb", textDecoration: "underline" },
   dropHint: {
-    margin: 0, fontSize: "13px", color: "#94a3b8",
+    margin: 0, fontSize: "13px", color: "var(--text-muted)",
   },
 
   /* ── File row ────────────────────────────────── */
@@ -1176,7 +1384,7 @@ const S = {
   removeFileBtn: {
     display: "flex", alignItems: "center", justifyContent: "center",
     width: "28px", height: "28px", borderRadius: "6px",
-    border: "1px solid #f1f5f9", background: "#fff", color: "#94a3b8",
+    border: "1px solid #f1f5f9", background: "#fff", color: "var(--text-muted)",
     cursor: "pointer", flexShrink: 0, transition: "all 0.15s ease",
   },
   removeFileBtnHover: { background: "#fef2f2", borderColor: "#fecaca", color: "#ef4444" },

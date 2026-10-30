@@ -58,6 +58,7 @@ const IconPdf = (
 function ModalAtestado({ aberto, onFechar, paciente, pacienteId, onDocumentoCriado }) {
   const [form, setForm] = useState({ ...INITIAL_STATE });
   const [hoveredBtn, setHoveredBtn] = useState(null);
+  const [salvando, setSalvando] = useState(false);
 
   if (!aberto) return null;
 
@@ -71,13 +72,13 @@ function ModalAtestado({ aberto, onFechar, paciente, pacienteId, onDocumentoCria
     onFechar();
   }
 
-  function handleGerar() {
+  async function handleGerar() {
     if (!form.profissional.trim()) {
       alert("Informe o profissional.");
       return;
     }
-    if (form.tipoAtestado === "dias" && !form.dias) {
-      alert("Informe a quantidade de dias.");
+    if (form.tipoAtestado === "dias" && (!form.dias || Number(form.dias) < 1)) {
+      alert("Informe uma quantidade válida de dias.");
       return;
     }
     if (form.tipoAtestado === "presenca" && (!form.horaInicial || !form.horaFinal)) {
@@ -85,51 +86,68 @@ function ModalAtestado({ aberto, onFechar, paciente, pacienteId, onDocumentoCria
       return;
     }
 
-    // Gerar PDF
-    gerarPdfAtestado({
-      paciente,
-      profissional: form.profissional,
+    const tk = localStorage.getItem("token");
+    const titulo = form.tipoAtestado === "dias" ? "Atestado de Dias" : "Declaração de Comparecimento";
+    const conteudo = form.tipoAtestado === "dias"
+      ? `Atesto que ${paciente?.nome || "Paciente"}, CPF ${formatCpf(paciente?.cpf)}, esteve sob meus cuidados profissionais no dia ${formatarDataBR(form.data)}, devendo permanecer em repouso por ${form.dias} dias.`
+      : `Declaro que ${paciente?.nome || "Paciente"}, CPF ${formatCpf(paciente?.cpf)}, esteve sob meus cuidados profissionais no dia ${formatarDataBR(form.data)}, das ${form.horaInicial} às ${form.horaFinal} horas.`;
+    const metadados = {
+      modelo: "atestado-v1",
       tipoAtestado: form.tipoAtestado,
-      data: form.data,
       dias: form.dias,
       cid: form.cid,
       horaInicial: form.horaInicial,
       horaFinal: form.horaFinal,
-    });
+    };
 
-    // Salvar no banco como documento
-    const tk = localStorage.getItem("token");
-    const titulo =
-      form.tipoAtestado === "dias"
-        ? "Atestado de Dias"
-        : "Declaração de Comparecimento";
-    const conteudo =
-      form.tipoAtestado === "dias"
-        ? `Atestado de ${form.dias} dias. Data: ${formatarDataBR(form.data)}. CID: ${form.cid || "N/A"}`
-        : `Comparecimento em ${formatarDataBR(form.data)} das ${form.horaInicial} às ${form.horaFinal}. CID: ${form.cid || "N/A"}`;
+    const janelaPdf = window.open("", "_blank", "width=900,height=1100");
+    if (!janelaPdf) {
+      alert("Pop-up bloqueado! Permita pop-ups para gerar o PDF.");
+      return;
+    }
 
-    fetch(`${API_URL}/documentos`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: tk || "",
-      },
-      body: JSON.stringify({
-        paciente_id: Number(pacienteId),
-        data: form.data,
-        tipo: "atestado",
-        titulo,
-        conteudo,
+    try {
+      setSalvando(true);
+      const resposta = await fetch(`${API_URL}/documentos`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: tk || "" },
+        body: JSON.stringify({
+          paciente_id: Number(pacienteId),
+          data: form.data,
+          tipo: "atestado",
+          titulo,
+          conteudo,
+          profissional: form.profissional,
+          observacoes: `__ATESTADO__${JSON.stringify(metadados)}`,
+        }),
+      });
+      if (!resposta.ok) {
+        janelaPdf.close();
+        const erro = await resposta.json().catch(() => ({}));
+        throw new Error(erro.erro || "Não foi possível salvar o atestado.");
+      }
+
+      await gerarPdfAtestado({
+        paciente,
         profissional: form.profissional,
-        observacoes: "",
-      }),
-    })
-      .then(() => {
-        if (onDocumentoCriado) onDocumentoCriado();
-      })
-      .catch(() => {});
-
-    fechar();
+        tipoAtestado: form.tipoAtestado,
+        data: form.data,
+        dias: form.dias,
+        cid: form.cid,
+        horaInicial: form.horaInicial,
+        horaFinal: form.horaFinal,
+        apiUrl: API_URL,
+        token: tk,
+        janela: janelaPdf,
+      });
+      if (onDocumentoCriado) await onDocumentoCriado();
+      fechar();
+    } catch (erro) {
+      if (janelaPdf && !janelaPdf.closed) janelaPdf.close();
+      alert(erro.message || "Não foi possível salvar o atestado. Tente novamente.");
+    } finally {
+      setSalvando(false);
+    }
   }
 
   return (
@@ -294,17 +312,6 @@ function ModalAtestado({ aberto, onFechar, paciente, pacienteId, onDocumentoCria
           </div>
         )}
 
-        {/* ── Pré-visualização ───────────────── */}
-        <div style={M.previewBox}>
-          <span style={M.previewLabel}>Pré-visualização</span>
-          <p style={M.previewText}>
-            {form.tipoAtestado === "dias"
-              ? `Atesto que ${paciente?.nome || "Paciente"}, CPF ${formatCpf(paciente?.cpf)}, esteve sob cuidados profissionais no dia ${formatarDataBR(form.data)}, devendo permanecer em repouso por ${form.dias || "___"} dias.${form.cid ? ` CID: ${form.cid}` : ""}`
-              : `Atesto que ${paciente?.nome || "Paciente"}, CPF ${formatCpf(paciente?.cpf)}, esteve sob cuidados profissionais no dia ${formatarDataBR(form.data)} das ${form.horaInicial || "__:__"} às ${form.horaFinal || "__:__"} horas.${form.cid ? ` CID: ${form.cid}` : ""}`
-            }
-          </p>
-        </div>
-
         {/* ── Ações ──────────────────────────── */}
         <div style={M.footerActions}>
           <button
@@ -326,9 +333,10 @@ function ModalAtestado({ aberto, onFechar, paciente, pacienteId, onDocumentoCria
             onMouseEnter={() => setHoveredBtn("gerar")}
             onMouseLeave={() => setHoveredBtn(null)}
             onClick={handleGerar}
+            disabled={salvando}
           >
             {IconPdf}
-            <span>Gerar PDF</span>
+            <span>{salvando ? "Salvando..." : "Gerar PDF"}</span>
           </button>
         </div>
       </div>
@@ -469,7 +477,7 @@ const M = {
   previewLabel: {
     fontSize: "11px",
     fontWeight: "600",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     textTransform: "uppercase",
     letterSpacing: "0.06em",
     display: "block",

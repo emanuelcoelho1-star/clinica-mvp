@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from "react";
    CONFIG
    ═══════════════════════════════════════════════════════════ */
 import API_URL from "../../api";
+import FaixaIndicadores from "../FaixaIndicadores";
 const API = API_URL;
 
 function headers() {
@@ -99,7 +100,7 @@ const STATUS_RECEBER = {
   pago:      { label: "Recebido",  bg: "#f0fdf4", color: "#16a34a", dot: "#4ade80" },
   recebido:  { label: "Recebido",  bg: "#f0fdf4", color: "#16a34a", dot: "#4ade80" },
   atrasado:  { label: "Atrasado",  bg: "#fef2f2", color: "#dc2626", dot: "#f87171" },
-  cancelado: { label: "Cancelado", bg: "#f8fafc", color: "#94a3b8", dot: "#cbd5e1" },
+  cancelado: { label: "Cancelado", bg: "#f8fafc", color: "var(--text-muted)", dot: "#cbd5e1" },
 };
 
 const STATUS_PAGAR = {
@@ -107,7 +108,7 @@ const STATUS_PAGAR = {
   parcial:   { label: "Parcial",   bg: "#fef3c7", color: "#d97706", dot: "#fbbf24" },
   pago:      { label: "Pago",      bg: "#f0fdf4", color: "#16a34a", dot: "#4ade80" },
   atrasado:  { label: "Atrasado",  bg: "#fef2f2", color: "#dc2626", dot: "#f87171" },
-  cancelado: { label: "Cancelado", bg: "#f8fafc", color: "#94a3b8", dot: "#cbd5e1" },
+  cancelado: { label: "Cancelado", bg: "#f8fafc", color: "var(--text-muted)", dot: "#cbd5e1" },
 };
 
 /* ═══════════════════════════════════════════════════════════
@@ -135,7 +136,7 @@ const S = {
   loadingText: {
     fontSize: "14px",
     fontWeight: "500",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     letterSpacing: "0.02em",
   },
 
@@ -184,7 +185,7 @@ const S = {
   },
   statSub: {
     fontSize: "12px",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     fontWeight: "500",
   },
 
@@ -214,7 +215,7 @@ const S = {
   },
   cardIcon: {
     display: "flex",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
   },
   cardTitle: {
     margin: 0,
@@ -269,7 +270,7 @@ const S = {
   },
   cellSub: {
     fontSize: "12px",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     fontWeight: "500",
   },
 
@@ -324,7 +325,7 @@ const S = {
   chartLabel: {
     fontSize: "10px",
     fontWeight: "600",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     textTransform: "uppercase",
     letterSpacing: "0.04em",
   },
@@ -370,7 +371,7 @@ const S = {
   },
   emptyText: {
     margin: 0,
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     fontSize: "14px",
     fontWeight: "400",
     textAlign: "center",
@@ -404,31 +405,6 @@ function Loading({ text = "Carregando" }) {
 }
 
 /* ── StatCard ──────────────────────────────────────── */
-function StatCard({ label, value, icon, accent, sub }) {
-  return (
-    <div style={S.statCard}>
-      <div style={S.statTop}>
-        <span style={S.statIconBox(accent)}>{icon}</span>
-        <span style={S.statLabel}>{label}</span>
-      </div>
-      <strong style={S.statValue}>{value}</strong>
-      {sub && <span style={S.statSub}>{sub}</span>}
-    </div>
-  );
-}
-
-/* ── StatusBadge ───────────────────────────────────── */
-function StatusBadge({ status, config }) {
-  const cfg = config[status] || config.pendente || Object.values(config)[0];
-  return (
-    <span style={S.badge(cfg.bg, cfg.color)}>
-      <span style={S.badgeDot(cfg.dot)} />
-      {cfg.label}
-    </span>
-  );
-}
-
-/* ── SectionCard ───────────────────────────────────── */
 function SectionCard({ title, icon, action, onAction, children, empty }) {
   return (
     <div style={S.card}>
@@ -528,7 +504,8 @@ function FinanceiroDashboard() {
   }, [dados]);
 
   /* ── Gráfico — dados de barras ───────────────────── */
-  const mesesData = dados?.fluxo_mensal || [];
+  // A API devolve os últimos meses em "grafico_mensal"
+  const mesesData = useMemo(() => dados?.grafico_mensal || dados?.fluxo_mensal || [], [dados]);
   const maxVal = useMemo(
     () =>
       Math.max(
@@ -549,36 +526,12 @@ function FinanceiroDashboard() {
       {/* ══════════════════════════════════════════════
           STATS GRID — 4 KPIs
           ══════════════════════════════════════════════ */}
-      <div style={S.statsGrid}>
-        <StatCard
-          label="Total a receber"
-          value={fmt(kpis.totalReceber)}
-          icon={Icons.trendingUp}
-          accent="#16a34a"
-          sub="receitas pendentes"
-        />
-        <StatCard
-          label="Total a pagar"
-          value={fmt(kpis.totalPagar)}
-          icon={Icons.trendingDown}
-          accent="#dc2626"
-          sub="despesas pendentes"
-        />
-        <StatCard
-          label="Saldo projetado"
-          value={fmt(kpis.saldo)}
-          icon={Icons.arrowUpDown}
-          accent="#2563eb"
-          sub={kpis.saldo >= 0 ? "saldo positivo" : "saldo negativo"}
-        />
-        <StatCard
-          label="Inadimplentes"
-          value={kpis.inadimplentes}
-          icon={Icons.alertTriangle}
-          accent="#ea580c"
-          sub="contas em atraso"
-        />
-      </div>
+      <FaixaIndicadores rotulo="Resumo financeiro" itens={[
+        { rotulo: "A receber", valor: fmt(kpis.totalReceber), detalhe: "receitas pendentes" },
+        { rotulo: "A pagar", valor: fmt(kpis.totalPagar), detalhe: "despesas pendentes" },
+        { rotulo: "Saldo projetado", valor: fmt(kpis.saldo), detalhe: "a receber menos a pagar", tom: kpis.saldo < 0 ? "perigo" : undefined },
+        { rotulo: "Contas em atraso", valor: kpis.inadimplentes, detalhe: kpis.inadimplentes > 0 ? "cobrar em Inadimplência" : "nenhuma", tom: kpis.inadimplentes > 0 ? "perigo" : undefined },
+      ]} />
 
       {/* ══════════════════════════════════════════════
           GRID 2 COLUNAS — Gráfico + Receber
@@ -617,7 +570,7 @@ function FinanceiroDashboard() {
                     title={`Despesas: ${fmt(m.despesas)}`}
                   />
                   <span style={S.chartLabel}>
-                    {m.mes || `M${i + 1}`}
+                    {m.mesNome || m.mes || `M${i + 1}`}
                   </span>
                 </div>
               );

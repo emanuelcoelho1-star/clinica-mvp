@@ -21,7 +21,7 @@
 
   --text-primary: #0f172a;
   --text-secondary: #475569;
-  --text-muted: #94a3b8;
+  --text-muted: #64748b; /* #94a3b8 não passa 4.5:1 sobre branco (DESIGN.md) */
   --text-link: #2563eb;
 
   --accent: #2563eb;
@@ -50,31 +50,33 @@
    TEMA ESCURO
    ═══════════════════════════════════════════════════════════ */
 [data-theme="dark"] {
-  --bg-page: #0f172a;
-  --bg-card: #1e293b;
-  --bg-card-hover: #253347;
-  --bg-input: #1e293b;
-  --bg-input-alt: #172033;
-  --bg-header: rgba(30, 41, 59, 0.9);
-  --bg-table-header: #172033;
-  --bg-table-stripe: #1a2537;
-  --bg-badge: #334155;
-  --bg-overlay: rgba(0, 0, 0, 0.6);
-  --bg-dropdown: #1e293b;
+  /* Tema preto/grafite: sem o fundo azul-marinho anterior */
+  --bg-page: #090909;
+  --bg-card: #141414;
+  --bg-card-hover: #1c1c1c;
+  --bg-input: #111111;
+  --bg-input-alt: #191919;
+  --bg-header: rgba(15, 15, 15, 0.96);
+  --bg-table-header: #171717;
+  --bg-table-stripe: #101010;
+  --bg-badge: #242424;
+  --bg-overlay: rgba(0, 0, 0, 0.78);
+  --bg-dropdown: #141414;
 
-  --border-primary: #334155;
-  --border-input: #475569;
-  --border-hover: #64748b;
+  --border-primary: #292929;
+  --border-input: #383838;
+  --border-hover: #525252;
 
-  --text-primary: #f1f5f9;
-  --text-secondary: #cbd5e1;
-  --text-muted: #64748b;
-  --text-link: #60a5fa;
+  --text-primary: #f5f5f5;
+  --text-secondary: #d4d4d4;
+  --text-muted: #a3a3a3;
+  --text-link: #93c5fd;
 
+  /* Azul mantido apenas como cor de ação/realce */
   --accent: #3b82f6;
   --accent-hover: #2563eb;
-  --accent-bg: rgba(59, 130, 246, 0.15);
-  --accent-border: rgba(59, 130, 246, 0.3);
+  --accent-bg: rgba(59, 130, 246, 0.12);
+  --accent-border: rgba(59, 130, 246, 0.32);
 
   --success: #4ade80;
   --success-bg: rgba(74, 222, 128, 0.1);
@@ -608,4 +610,295 @@
 [data-theme="dark"] input[style*="border: 1px solid #dbe3ee"],
 [data-theme="dark"] textarea[style*="border: 1px solid #dbe3ee"] {
   border-color: var(--border-input) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   COBERTURA GLOBAL DO TEMA ESCURO
+   Corrige componentes com estilos inline que não eram
+   alcançados pelos seletores específicos acima.
+   ═══════════════════════════════════════════════════════════ */
+
+[data-theme="dark"] body,
+[data-theme="dark"] #root {
+  background-color: var(--bg-page) !important;
+  color: var(--text-primary);
+  color-scheme: dark;
+}
+
+/* Fundos neutros claros em qualquer componente, não só divs */
+[data-theme="dark"] [style*="background: #fff"],
+[data-theme="dark"] [style*="background:#fff"],
+[data-theme="dark"] [style*="background: #ffffff"],
+[data-theme="dark"] [style*="background:#ffffff"],
+[data-theme="dark"] [style*="background: white"],
+[data-theme="dark"] [style*="background-color: #fff"],
+[data-theme="dark"] [style*="background-color:#fff"],
+[data-theme="dark"] [style*="background-color: #ffffff"],
+[data-theme="dark"] [style*="background-color:#ffffff"],
+[data-theme="dark"] [style*="background-color: white"],
+[data-theme="dark"] [style*="background: rgb(255, 255, 255)"],
+[data-theme="dark"] [style*="background-color: rgb(255, 255, 255)"] {
+  background-color: var(--bg-card) !important;
+}
+
+/* Cinzas muito claros usados em cabeçalhos, linhas e painéis */
+[data-theme="dark"] [style*="background: #f8fafc"],
+[data-theme="dark"] [style*="background:#f8fafc"],
+[data-theme="dark"] [style*="background-color: #f8fafc"],
+[data-theme="dark"] [style*="background: #fafbfc"],
+[data-theme="dark"] [style*="background:#fafbfc"],
+[data-theme="dark"] [style*="background-color: #fafbfc"],
+[data-theme="dark"] [style*="background: #f0f4fa"],
+[data-theme="dark"] [style*="background-color: #f0f4fa"],
+[data-theme="dark"] [style*="background: #f1f5f9"],
+[data-theme="dark"] [style*="background-color: #f1f5f9"],
+[data-theme="dark"] [style*="background: rgb(248, 250, 252)"],
+[data-theme="dark"] [style*="background-color: rgb(248, 250, 252)"],
+[data-theme="dark"] [style*="background: rgb(250, 251, 252)"],
+[data-theme="dark"] [style*="background-color: rgb(250, 251, 252)"] {
+  background-color: var(--bg-card) !important;
+}
+
+/* Textos inline escuros em qualquer tipo de elemento */
+[data-theme="dark"] [style*="color: #0f172a"],
+[data-theme="dark"] [style*="color:#0f172a"],
+[data-theme="dark"] [style*="color: rgb(15, 23, 42)"],
+[data-theme="dark"] [style*="color: #1e293b"],
+[data-theme="dark"] [style*="color:#1e293b"],
+[data-theme="dark"] [style*="color: rgb(30, 41, 59)"] {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] [style*="color: #475569"],
+[data-theme="dark"] [style*="color:#475569"],
+[data-theme="dark"] [style*="color: rgb(71, 85, 105)"],
+[data-theme="dark"] [style*="color: #334155"],
+[data-theme="dark"] [style*="color:#334155"],
+[data-theme="dark"] [style*="color: rgb(51, 65, 85)"] {
+  color: var(--text-secondary) !important;
+}
+
+/* Campos de formulário e seletores nativos */
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+  accent-color: var(--accent);
+}
+
+[data-theme="dark"] input:disabled,
+[data-theme="dark"] select:disabled,
+[data-theme="dark"] textarea:disabled {
+  background-color: var(--bg-input-alt) !important;
+  color: var(--text-muted) !important;
+  opacity: 1;
+}
+
+/* Separadores e bordas de componentes que usam cinzas fixos */
+[data-theme="dark"] [style*="border-color: #e2e8f0"],
+[data-theme="dark"] [style*="border-color:#e2e8f0"],
+[data-theme="dark"] [style*="border: 1px solid #e2e8f0"],
+[data-theme="dark"] [style*="border: 1px solid #f1f5f9"],
+[data-theme="dark"] [style*="border-bottom: 1px solid #f1f5f9"],
+[data-theme="dark"] [style*="border-top: 1px solid #f1f5f9"] {
+  border-color: var(--border-primary) !important;
+}
+
+/* Preferência de cor dos controles nativos do navegador */
+[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+
+/* Ajustes finais: superfícies neutras em preto/grafite no tema escuro.
+   Mantém cores de status e ações (azul, verde, vermelho) como realces. */
+[data-theme="dark"] body,
+[data-theme="dark"] #root {
+  background: var(--bg-page) !important;
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] #root main,
+[data-theme="dark"] #root section,
+[data-theme="dark"] #root article,
+[data-theme="dark"] #root aside,
+[data-theme="dark"] #root nav {
+  border-color: var(--border-primary);
+}
+
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+  background-color: var(--bg-input) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-input) !important;
+}
+
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder {
+  color: var(--text-muted) !important;
+}
+
+/* Neutraliza estilos inline claros comuns sem transformar alertas coloridos em cinza. */
+[data-theme="dark"] [style*="background-color: rgb(255, 255, 255)"],
+[data-theme="dark"] [style*="background: rgb(255, 255, 255)"],
+[data-theme="dark"] [style*="background-color: rgb(250, 251, 252)"],
+[data-theme="dark"] [style*="background: rgb(250, 251, 252)"],
+[data-theme="dark"] [style*="background-color: rgb(248, 250, 252)"],
+[data-theme="dark"] [style*="background: rgb(248, 250, 252)"],
+[data-theme="dark"] [style*="background-color: rgb(241, 245, 249)"],
+[data-theme="dark"] [style*="background: rgb(241, 245, 249)"] {
+  background-color: var(--bg-card) !important;
+}
+
+[data-theme="dark"] [style*="color: rgb(15, 23, 42)"],
+[data-theme="dark"] [style*="color: rgb(30, 41, 59)"],
+[data-theme="dark"] [style*="color: #0f172a"],
+[data-theme="dark"] [style*="color: #1e293b"] {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] [style*="border-color: rgb(226, 232, 240)"],
+[data-theme="dark"] [style*="border: 1px solid rgb(226, 232, 240)"] {
+  border-color: var(--border-primary) !important;
+}
+
+
+/* LOGIN: tema escuro completo e alternância acessível antes de autenticar */
+[data-theme="dark"] .login-page {
+  background: #090909 !important;
+  color: var(--text-primary);
+}
+[data-theme="dark"] .login-card {
+  background: #141414 !important;
+  border-color: #292929 !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+}
+[data-theme="dark"] .login-page h1,
+[data-theme="dark"] .login-page h2 {
+  color: var(--text-primary) !important;
+}
+[data-theme="dark"] .login-page label {
+  color: var(--text-secondary) !important;
+}
+[data-theme="dark"] .login-page p,
+[data-theme="dark"] .login-page .login-card span {
+  color: var(--text-secondary);
+}
+[data-theme="dark"] .login-page div[style*="background: rgb(250, 251, 252)"],
+[data-theme="dark"] .login-page div[style*="background: #fafbfc"] {
+  background: #111111 !important;
+  border-color: #383838 !important;
+}
+[data-theme="dark"] .login-page input {
+  background: transparent !important;
+  color: #f5f5f5 !important;
+}
+[data-theme="dark"] .login-page input::placeholder {
+  color: #a3a3a3 !important;
+}
+[data-theme="dark"] .login-page .login-theme-toggle {
+  color: #f5f5f5;
+  background: #171717;
+  border-color: #383838;
+}
+[data-theme="light"] .login-page .login-theme-toggle {
+  color: #0f172a;
+  background: #ffffff;
+  border-color: #e2e8f0;
+}
+.login-page .login-theme-toggle {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 13px;
+  border: 1px solid;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0,0,0,.08);
+  transition: background .2s ease, color .2s ease, border-color .2s ease;
+}
+.login-page .login-theme-toggle:hover {
+  filter: brightness(1.12);
+}
+@media (max-width: 480px) {
+  .login-page .login-theme-toggle {
+    top: 12px;
+    right: 12px;
+    padding: 8px 10px;
+  }
+}
+
+
+/* Abas de acesso da tela de login */
+.login-page .login-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  margin: -8px 0 22px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+.login-page .login-tab {
+  min-height: 38px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #64748b;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .2s ease, color .2s ease, box-shadow .2s ease;
+}
+.login-page .login-tab.active {
+  background: #ffffff;
+  color: #2563eb;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, .10);
+}
+.login-page .login-success {
+  margin: -4px 0 18px;
+  padding: 11px 13px;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  background: #f0fdf4;
+  color: #166534;
+  font-size: 13px;
+  font-weight: 600;
+}
+[data-theme="dark"] .login-page .login-tabs {
+  background: #101010;
+  border-color: #383838;
+}
+[data-theme="dark"] .login-page .login-tab {
+  color: #a3a3a3;
+}
+[data-theme="dark"] .login-page .login-tab.active {
+  background: #242424;
+  color: #93c5fd;
+  box-shadow: none;
+}
+[data-theme="dark"] .login-page .login-success {
+  background: #102318;
+  border-color: #22543a;
+  color: #86efac;
+}
+
+/* ── Movimento reduzido: loaders e transições param para quem pediu ── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

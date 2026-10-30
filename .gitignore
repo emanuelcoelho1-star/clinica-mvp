@@ -3,5 +3,11 @@ node_modules/
 *.log
 dist/
 build/
-database.dbnode_modules/
+database.db
 *.db
+
+# Arquivos enviados de pacientes (dados sensíveis / LGPD)
+backend/uploads/
+
+# Segredo JWT local gerado em versões anteriores
+backend/.jwt-secret

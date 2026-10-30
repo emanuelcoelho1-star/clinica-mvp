@@ -2,6 +2,10 @@ const express = require("express");
 const router = express.Router();
 const db = require("../database");
 const auth = require("../middleware/auth");
+const requirePermission = require("../middleware/requirePermission");
+
+// A autorização é validada na API, não apenas na interface.
+router.use(auth, requirePermission("orcamentos"));
 
 
 // =========================
@@ -11,11 +15,11 @@ router.get("/paciente/:paciente_id", auth, (req, res) => {
   const { paciente_id } = req.params;
 
   db.all(
-    "SELECT * FROM orcamentos WHERE paciente_id = ? ORDER BY data DESC, id DESC",
-    [paciente_id],
+    "SELECT * FROM orcamentos WHERE paciente_id = ? AND clinica_id = ? ORDER BY data DESC, id DESC",
+    [paciente_id, req.user.clinica_id],
     (err, orcamentos) => {
       if (err) {
-        return res.status(500).json({ erro: err.message });
+        return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
       }
 
       if (orcamentos.length === 0) {
@@ -30,7 +34,7 @@ router.get("/paciente/:paciente_id", auth, (req, res) => {
         ids,
         (errItens, itens) => {
           if (errItens) {
-            return res.status(500).json({ erro: errItens.message });
+            return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
           }
 
           const resultado = orcamentos.map((o) => ({
@@ -52,9 +56,9 @@ router.get("/paciente/:paciente_id", auth, (req, res) => {
 router.get("/:id", auth, (req, res) => {
   const { id } = req.params;
 
-  db.get("SELECT * FROM orcamentos WHERE id = ?", [id], (err, orcamento) => {
+  db.get("SELECT * FROM orcamentos WHERE id = ? AND clinica_id = ?", [id, req.user.clinica_id], (err, orcamento) => {
     if (err) {
-      return res.status(500).json({ erro: err.message });
+      return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
     }
     if (!orcamento) {
       return res.status(404).json({ erro: "Orçamento não encontrado." });
@@ -65,7 +69,7 @@ router.get("/:id", auth, (req, res) => {
       [id],
       (errItens, itens) => {
         if (errItens) {
-          return res.status(500).json({ erro: errItens.message });
+          return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
         }
 
         res.json({ ...orcamento, itens: itens || [] });
@@ -90,17 +94,19 @@ router.post("/", auth, (req, res) => {
   }
 
   const sqlOrcamento = `
-    INSERT INTO orcamentos (paciente_id, data, status, desconto, observacoes)
-    VALUES (?, ?, ?, ?, ?)
+    INSERT INTO orcamentos (paciente_id, data, status, desconto, observacoes, clinica_id)
+    SELECT p.id, ?, ?, ?, ?, ? FROM pacientes p WHERE p.id = ? AND p.clinica_id = ?
   `;
 
   db.run(
     sqlOrcamento,
-    [paciente_id, data, status || "pendente", desconto || 0, observacoes || ""],
+    [data, status || "pendente", desconto || 0, observacoes || "", req.user.clinica_id, paciente_id, req.user.clinica_id],
     function (err) {
       if (err) {
-        return res.status(500).json({ erro: err.message });
+        return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
       }
+
+      if (this.changes === 0) return res.status(404).json({ erro: "Paciente não encontrado nesta clínica." });
 
       const orcamentoId = this.lastID;
 
@@ -127,7 +133,7 @@ router.post("/", auth, (req, res) => {
           function (errItem) {
             if (errItem) {
               erroInsercao = true;
-              return res.status(500).json({ erro: errItem.message });
+              return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
             }
 
             inseridos += 1;
@@ -164,15 +170,16 @@ router.put("/:id", auth, (req, res) => {
   const sqlUpdate = `
     UPDATE orcamentos SET
       paciente_id = ?, data = ?, status = ?, desconto = ?, observacoes = ?
-    WHERE id = ?
+    WHERE id = ? AND clinica_id = ?
+      AND EXISTS (SELECT 1 FROM pacientes p WHERE p.id = ? AND p.clinica_id = ?)
   `;
 
   db.run(
     sqlUpdate,
-    [paciente_id, data, status || "pendente", desconto || 0, observacoes || "", id],
+    [paciente_id, data, status || "pendente", desconto || 0, observacoes || "", id, req.user.clinica_id, paciente_id, req.user.clinica_id],
     function (err) {
       if (err) {
-        return res.status(500).json({ erro: err.message });
+        return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
       }
 
       if (this.changes === 0) {
@@ -185,7 +192,7 @@ router.put("/:id", auth, (req, res) => {
         [id],
         function (errDel) {
           if (errDel) {
-            return res.status(500).json({ erro: errDel.message });
+            return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
           }
 
           const sqlItem = `
@@ -211,7 +218,7 @@ router.put("/:id", auth, (req, res) => {
               function (errItem) {
                 if (errItem) {
                   erroInsercao = true;
-                  return res.status(500).json({ erro: errItem.message });
+                  return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
                 }
 
                 inseridos += 1;
@@ -245,9 +252,9 @@ router.patch("/:id/status", auth, (req, res) => {
   }
 
   // 1) Busca o orçamento atual (precisa saber o status anterior)
-  db.get("SELECT * FROM orcamentos WHERE id = ?", [id], (err, orcamento) => {
+  db.get("SELECT * FROM orcamentos WHERE id = ? AND clinica_id = ?", [id, req.user.clinica_id], (err, orcamento) => {
     if (err) {
-      return res.status(500).json({ erro: err.message });
+      return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
     }
     if (!orcamento) {
       return res.status(404).json({ erro: "Orçamento não encontrado." });
@@ -255,11 +262,11 @@ router.patch("/:id/status", auth, (req, res) => {
 
     // 2) Atualiza o status
     db.run(
-      "UPDATE orcamentos SET status = ? WHERE id = ?",
-      [status, id],
+      "UPDATE orcamentos SET status = ? WHERE id = ? AND clinica_id = ?",
+      [status, id, req.user.clinica_id],
       function (errUpdate) {
         if (errUpdate) {
-          return res.status(500).json({ erro: errUpdate.message });
+          return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
         }
         if (this.changes === 0) {
           return res.status(404).json({ erro: "Orçamento não encontrado." });
@@ -267,7 +274,7 @@ router.patch("/:id/status", auth, (req, res) => {
 
         // 3) Se está sendo APROVADO (e não estava aprovado antes), gera contas a receber
         if (status === "aprovado" && orcamento.status !== "aprovado") {
-          gerarContasReceber(id, orcamento.paciente_id, (erroFinanceiro) => {
+          gerarContasReceber(id, orcamento.paciente_id, req.user.clinica_id, (erroFinanceiro) => {
             if (erroFinanceiro) {
               console.error("Erro ao gerar contas a receber:", erroFinanceiro);
               // Retorna sucesso no status, mas avisa sobre o erro financeiro
@@ -293,27 +300,30 @@ router.patch("/:id/status", auth, (req, res) => {
 // =========================
 // FUNÇÃO: GERAR CONTAS A RECEBER A PARTIR DO ORÇAMENTO
 // =========================
-function gerarContasReceber(orcamentoId, pacienteId, callback) {
-  // Busca os itens do orçamento
+function gerarContasReceber(orcamentoId, pacienteId, clinicaId, callback) {
+  // Busca os itens apenas se o orçamento pertencer à clínica autenticada.
   db.all(
-    "SELECT * FROM orcamento_itens WHERE orcamento_id = ? ORDER BY id ASC",
-    [orcamentoId],
+    `SELECT oi.* FROM orcamento_itens oi
+     INNER JOIN orcamentos o ON o.id = oi.orcamento_id
+     WHERE oi.orcamento_id = ? AND o.clinica_id = ?
+     ORDER BY oi.id ASC`,
+    [orcamentoId, clinicaId],
     (err, itens) => {
       if (err) return callback(err.message);
       if (!itens || itens.length === 0) return callback("Orçamento sem itens.");
 
       // Busca o orçamento para pegar o desconto
       db.get(
-        "SELECT * FROM orcamentos WHERE id = ?",
-        [orcamentoId],
+        "SELECT * FROM orcamentos WHERE id = ? AND clinica_id = ? AND paciente_id = ?",
+        [orcamentoId, clinicaId, pacienteId],
         (errOrc, orcamento) => {
           if (errOrc) return callback(errOrc.message);
           if (!orcamento) return callback("Orçamento não encontrado.");
 
           // Verifica se já existem contas vinculadas a este orçamento (evita duplicatas)
           db.get(
-            "SELECT COUNT(*) as total FROM contas_receber WHERE orcamento_id = ?",
-            [orcamentoId],
+            "SELECT COUNT(*) as total FROM contas_receber WHERE orcamento_id = ? AND clinica_id = ?",
+            [orcamentoId, clinicaId],
             (errCheck, row) => {
               if (errCheck) return callback(errCheck.message);
 
@@ -350,11 +360,13 @@ function gerarContasReceber(orcamentoId, pacienteId, callback) {
                 `INSERT INTO contas_receber
                    (paciente_id, orcamento_id, descricao, procedimento, valor,
                     desconto, data_emissao, data_vencimento, forma_pagamento,
-                    status, parcela_atual, total_parcelas, observacoes)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'dinheiro', 'pendente', 1, 1, ?)`,
+                    status, parcela_atual, total_parcelas, observacoes, clinica_id)
+                 SELECT p.id, o.id, ?, ?, ?, ?, ?, ?, 'dinheiro', 'pendente', 1, 1, ?, ?
+                 FROM pacientes p
+                 INNER JOIN orcamentos o ON o.paciente_id = p.id
+                 WHERE p.id = ? AND p.clinica_id = ?
+                   AND o.id = ? AND o.clinica_id = ?`,
                 [
-                  pacienteId,
-                  orcamentoId,
                   descricao,
                   procedimentos || null,
                   totalLiquido,
@@ -362,9 +374,15 @@ function gerarContasReceber(orcamentoId, pacienteId, callback) {
                   hojeStr,
                   vencimentoStr,
                   `Gerado automaticamente ao aprovar orçamento #${orcamentoId}`,
+                  clinicaId,
+                  pacienteId,
+                  clinicaId,
+                  orcamentoId,
+                  clinicaId,
                 ],
                 function (errInsert) {
                   if (errInsert) return callback(errInsert.message);
+                  if (this.changes === 0) return callback("Paciente ou orçamento não pertence a esta clínica.");
                   callback(null);
                 }
               );
@@ -383,33 +401,60 @@ function gerarContasReceber(orcamentoId, pacienteId, callback) {
 router.delete("/:id", auth, (req, res) => {
   const { id } = req.params;
 
-  // 1) Remove lançamentos do fluxo de caixa vinculados às contas deste orçamento
-  db.run(
-    `DELETE FROM fluxo_caixa WHERE conta_receber_id IN
-       (SELECT id FROM contas_receber WHERE orcamento_id = ?)`,
-    [id],
-    function () {
-      // 2) Remove comissões vinculadas às contas deste orçamento
+  // Confirma a propriedade antes de tocar em qualquer registro financeiro.
+  db.get(
+    "SELECT id FROM orcamentos WHERE id = ? AND clinica_id = ?",
+    [id, req.user.clinica_id],
+    (errBusca, orcamento) => {
+      if (errBusca) {
+        return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
+      }
+      if (!orcamento) {
+        return res.status(404).json({ erro: "Orçamento não encontrado." });
+      }
+
+      // Só remove registros financeiros vinculados a contas da mesma clínica.
       db.run(
-        `DELETE FROM comissoes WHERE conta_receber_id IN
-           (SELECT id FROM contas_receber WHERE orcamento_id = ?)`,
-        [id],
-        function () {
-          // 3) Remove as contas a receber vinculadas ao orçamento
+        `DELETE FROM fluxo_caixa WHERE conta_receber_id IN
+           (SELECT id FROM contas_receber WHERE orcamento_id = ? AND clinica_id = ?)`,
+        [id, req.user.clinica_id],
+        (errFluxo) => {
+          if (errFluxo) {
+            return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
+          }
+
           db.run(
-            "DELETE FROM contas_receber WHERE orcamento_id = ?",
-            [id],
-            function () {
-              // 4) Remove o orçamento (itens saem por CASCADE)
-              db.run("DELETE FROM orcamentos WHERE id = ?", [id], function (err) {
-                if (err) {
-                  return res.status(500).json({ erro: err.message });
+            `DELETE FROM comissoes WHERE conta_receber_id IN
+               (SELECT id FROM contas_receber WHERE orcamento_id = ? AND clinica_id = ?)`,
+            [id, req.user.clinica_id],
+            (errComissoes) => {
+              if (errComissoes) {
+                return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
+              }
+
+              db.run(
+                "DELETE FROM contas_receber WHERE orcamento_id = ? AND clinica_id = ?",
+                [id, req.user.clinica_id],
+                (errContas) => {
+                  if (errContas) {
+                    return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
+                  }
+
+                  db.run(
+                    "DELETE FROM orcamentos WHERE id = ? AND clinica_id = ?",
+                    [id, req.user.clinica_id],
+                    function (errDelete) {
+                      if (errDelete) {
+                        return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
+                      }
+                      if (this.changes === 0) {
+                        return res.status(404).json({ erro: "Orçamento não encontrado." });
+                      }
+                      res.json({ mensagem: "Orçamento e registros financeiros excluídos com sucesso." });
+                    }
+                  );
                 }
-                if (this.changes === 0) {
-                  return res.status(404).json({ erro: "Orçamento não encontrado." });
-                }
-                res.json({ mensagem: "Orçamento e registros financeiros excluídos com sucesso." });
-              });
+              );
             }
           );
         }
@@ -417,6 +462,5 @@ router.delete("/:id", auth, (req, res) => {
     }
   );
 });
-
 
 module.exports = router;

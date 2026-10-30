@@ -2,6 +2,21 @@ const express = require("express");
 const router = express.Router();
 const db = require("../database");
 const auth = require("../middleware/auth");
+const requirePermission = require("../middleware/requirePermission");
+const fs = require("fs");
+const path = require("path");
+
+// A autorização é validada na API, não apenas na interface.
+router.use(auth, requirePermission("pacientes", (req) => {
+  if (req.method === "GET" && req.path === "/") return "listar";
+  if (req.method === "GET" && req.path.includes("/odontograma")) return "ver_prontuario";
+  if (req.method === "GET") return "ver_prontuario";
+  if (req.method === "PUT" && req.path.includes("/odontograma")) return "editar";
+  if (req.method === "POST") return "criar";
+  if (req.method === "PUT" || req.method === "PATCH") return "editar";
+  if (req.method === "DELETE") return "excluir";
+  return null;
+}));
 
 
 // =========================
@@ -13,18 +28,18 @@ router.get("/", auth, (req, res) => {
   const busca = (req.query.busca || "").trim();
   const offset = (page - 1) * limit;
 
-  let whereClause = "";
-  let params = [];
+  let whereClause = "WHERE clinica_id = ?";
+  let params = [req.user.clinica_id];
 
   if (busca) {
-    whereClause = `
-      WHERE nome LIKE ? 
-         OR cpf LIKE ? 
-         OR telefone LIKE ? 
-         OR email LIKE ?
-    `;
+    whereClause += ` AND (
+      nome LIKE ?
+      OR cpf LIKE ?
+      OR telefone LIKE ?
+      OR email LIKE ?
+    )`;
     const termo = `%${busca}%`;
-    params = [termo, termo, termo, termo];
+    params.push(termo, termo, termo, termo);
   }
 
   // 1) Conta o total de registros (com ou sem filtro)
@@ -32,7 +47,7 @@ router.get("/", auth, (req, res) => {
 
   db.get(countSql, params, (err, countRow) => {
     if (err) {
-      return res.status(500).json({ erro: err.message });
+      return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
     }
 
     const total = countRow.total;
@@ -48,7 +63,7 @@ router.get("/", auth, (req, res) => {
 
     db.all(dataSql, [...params, limit, offset], (err, rows) => {
       if (err) {
-        return res.status(500).json({ erro: err.message });
+        return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
       }
 
       res.json({
@@ -73,9 +88,9 @@ router.get("/", auth, (req, res) => {
 router.get("/:id", auth, (req, res) => {
   const { id } = req.params;
 
-  db.get("SELECT * FROM pacientes WHERE id = ?", [id], (err, row) => {
+  db.get("SELECT * FROM pacientes WHERE id = ? AND clinica_id = ?", [id, req.user.clinica_id], (err, row) => {
     if (err) {
-      return res.status(500).json({ erro: err.message });
+      return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
     }
 
     if (!row) {
@@ -94,14 +109,22 @@ router.get("/:id/odontograma", auth, (req, res) => {
   const { id } = req.params;
 
   db.get(
-    "SELECT mapa FROM odontogramas WHERE paciente_id = ?",
-    [id],
+    `SELECT o.mapa
+     FROM pacientes p
+     LEFT JOIN odontogramas o
+       ON o.paciente_id = p.id AND o.clinica_id = p.clinica_id
+     WHERE p.id = ? AND p.clinica_id = ?`,
+    [id, req.user.clinica_id],
     (err, row) => {
       if (err) {
-        return res.status(500).json({ erro: err.message });
+        return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
       }
 
-      if (!row || !row.mapa) {
+      if (!row) {
+        return res.status(404).json({ erro: "Paciente não encontrado" });
+      }
+
+      if (!row.mapa) {
         return res.json({});
       }
 
@@ -124,39 +147,53 @@ router.put("/:id/odontograma", auth, (req, res) => {
 
   const mapaString = JSON.stringify(mapa || {});
 
+  // Confirma que o paciente pertence à clínica autenticada antes de ler ou gravar.
   db.get(
-    "SELECT id FROM odontogramas WHERE paciente_id = ?",
-    [id],
-    (err, row) => {
-      if (err) {
-        return res.status(500).json({ erro: err.message });
+    "SELECT id FROM pacientes WHERE id = ? AND clinica_id = ?",
+    [id, req.user.clinica_id],
+    (patientErr, patient) => {
+      if (patientErr) {
+        return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
+      }
+      if (!patient) {
+        return res.status(404).json({ erro: "Paciente não encontrado" });
       }
 
-      if (row) {
-        db.run(
-          "UPDATE odontogramas SET mapa = ? WHERE paciente_id = ?",
-          [mapaString, id],
-          function (updateErr) {
-            if (updateErr) {
-              return res.status(500).json({ erro: updateErr.message });
-            }
-
-            res.json({ message: "Odontograma atualizado com sucesso" });
+      db.get(
+        "SELECT id FROM odontogramas WHERE paciente_id = ? AND clinica_id = ?",
+        [id, req.user.clinica_id],
+        (err, row) => {
+          if (err) {
+            return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
           }
-        );
-      } else {
-        db.run(
-          "INSERT INTO odontogramas (paciente_id, mapa) VALUES (?, ?)",
-          [id, mapaString],
-          function (insertErr) {
-            if (insertErr) {
-              return res.status(500).json({ erro: insertErr.message });
-            }
 
-            res.json({ message: "Odontograma salvo com sucesso" });
+          if (row) {
+            db.run(
+              "UPDATE odontogramas SET mapa = ? WHERE paciente_id = ? AND clinica_id = ?",
+              [mapaString, id, req.user.clinica_id],
+              function (updateErr) {
+                if (updateErr) {
+                  return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
+                }
+
+                res.json({ message: "Odontograma atualizado com sucesso" });
+              }
+            );
+          } else {
+            db.run(
+              "INSERT INTO odontogramas (paciente_id, mapa, clinica_id) VALUES (?, ?, ?)",
+              [id, mapaString, req.user.clinica_id],
+              function (insertErr) {
+                if (insertErr) {
+                  return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
+                }
+
+                res.json({ message: "Odontograma salvo com sucesso" });
+              }
+            );
           }
-        );
-      }
+        }
+      );
     }
   );
 });
@@ -222,9 +259,10 @@ router.post("/", auth, (req, res) => {
       responsavel_nome,
       responsavel_cpf,
       responsavel_data_nascimento,
-      responsavel_telefone
+      responsavel_telefone,
+      clinica_id
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
   db.run(
@@ -250,10 +288,11 @@ router.post("/", auth, (req, res) => {
       responsavelCpf || "",
       responsavelDataNascimento || "",
       responsavelTelefone || "",
+      req.user.clinica_id,
     ],
     function (err) {
       if (err) {
-        return res.status(500).json({ erro: err.message });
+        return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
       }
 
       res.status(201).json({
@@ -329,7 +368,7 @@ router.put("/:id", auth, (req, res) => {
       responsavel_cpf = ?,
       responsavel_data_nascimento = ?,
       responsavel_telefone = ?
-    WHERE id = ?
+    WHERE id = ? AND clinica_id = ?
   `;
 
   db.run(
@@ -356,10 +395,15 @@ router.put("/:id", auth, (req, res) => {
       responsavelDataNascimento || "",
       responsavelTelefone || "",
       id,
+      req.user.clinica_id,
     ],
     function (err) {
       if (err) {
-        return res.status(500).json({ erro: err.message });
+        return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
+      }
+
+      if (!this.changes) {
+        return res.status(404).json({ erro: "Paciente não encontrado nesta clínica." });
       }
 
       res.json({ message: "Paciente atualizado com sucesso" });
@@ -371,16 +415,77 @@ router.put("/:id", auth, (req, res) => {
 // =========================
 // DELETAR PACIENTE
 // =========================
-router.delete("/:id", auth, (req, res) => {
-  const { id } = req.params;
+// =========================
+// EXCLUIR PACIENTE
+// Bloqueia se houver lançamentos financeiros (preserva o histórico contábil);
+// caso contrário remove junto os dados clínicos, a agenda e os arquivos do paciente,
+// sempre restrito à clínica do usuário.
+// =========================
+function dbGet(sql, params = []) {
+  return new Promise((resolve, reject) => db.get(sql, params, (err, row) => (err ? reject(err) : resolve(row))));
+}
+function dbAll(sql, params = []) {
+  return new Promise((resolve, reject) => db.all(sql, params, (err, rows) => (err ? reject(err) : resolve(rows || []))));
+}
+function dbRun(sql, params = []) {
+  return new Promise((resolve, reject) => db.run(sql, params, function (err) { return err ? reject(err) : resolve(this); }));
+}
 
-  db.run("DELETE FROM pacientes WHERE id = ?", [id], function (err) {
-    if (err) {
-      return res.status(500).json({ erro: err.message });
+const uploadDir = path.join(__dirname, "..", "uploads");
+
+// Tabelas clínicas apagadas junto com o paciente (todas têm paciente_id e clinica_id)
+const TABELAS_DO_PACIENTE = ["contatos_paciente", "retornos", "consultas", "tratamentos", "evolucoes", "anamneses", "documentos", "arquivos", "pastas_arquivos", "odontogramas"];
+
+router.delete("/:id", auth, async (req, res) => {
+  const { id } = req.params;
+  const clinicaId = req.user.clinica_id;
+
+  try {
+    const paciente = await dbGet("SELECT id FROM pacientes WHERE id = ? AND clinica_id = ?", [id, clinicaId]);
+    if (!paciente) return res.status(404).json({ erro: "Paciente não encontrado nesta clínica." });
+
+    const financeiro = await dbGet(
+      `SELECT
+         (SELECT COUNT(*) FROM pagamentos WHERE paciente_id = ? AND clinica_id = ?) +
+         (SELECT COUNT(*) FROM contas_receber WHERE paciente_id = ? AND clinica_id = ?) +
+         (SELECT COUNT(*) FROM comissoes WHERE paciente_id = ? AND clinica_id = ?) AS total`,
+      [id, clinicaId, id, clinicaId, id, clinicaId]
+    );
+    if (financeiro.total > 0) {
+      return res.status(409).json({
+        erro: `Este paciente tem ${financeiro.total} lançamento(s) financeiro(s). Para preservar o histórico, ele não pode ser excluído.`,
+      });
+    }
+
+    const arquivos = await dbAll("SELECT nome_salvo FROM arquivos WHERE paciente_id = ? AND clinica_id = ?", [id, clinicaId]);
+
+    await dbRun("BEGIN TRANSACTION");
+    try {
+      await dbRun(
+        "DELETE FROM orcamento_itens WHERE orcamento_id IN (SELECT id FROM orcamentos WHERE paciente_id = ? AND clinica_id = ?)",
+        [id, clinicaId]
+      );
+      await dbRun("DELETE FROM orcamentos WHERE paciente_id = ? AND clinica_id = ?", [id, clinicaId]);
+      for (const tabela of TABELAS_DO_PACIENTE) {
+        await dbRun(`DELETE FROM ${tabela} WHERE paciente_id = ? AND clinica_id = ?`, [id, clinicaId]);
+      }
+      await dbRun("DELETE FROM pacientes WHERE id = ? AND clinica_id = ?", [id, clinicaId]);
+      await dbRun("COMMIT");
+    } catch (err) {
+      await dbRun("ROLLBACK").catch(() => {});
+      throw err;
+    }
+
+    // Arquivos físicos só são apagados depois que o banco confirmou a exclusão
+    for (const a of arquivos) {
+      const caminho = path.join(uploadDir, path.basename(a.nome_salvo || ""));
+      if (a.nome_salvo && fs.existsSync(caminho)) fs.unlinkSync(caminho);
     }
 
     res.json({ message: "Paciente deletado com sucesso" });
-  });
+  } catch {
+    res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
+  }
 });
 
 

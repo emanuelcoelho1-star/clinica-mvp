@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import API_URL from "../api";
 import ModalAtestado from "./ModalAtestado";
+import ModalReceituario from "./ModalReceituario";
+import gerarPdfDocumento from "../utils/gerarPdfDocumento";
+import gerarPdfAtestado from "../utils/gerarPdfAtestado";
+import gerarPdfReceituario from "../utils/gerarPdfReceituario";
 
 /* ═══════════════════════════════════════════════════════════
    HELPERS
@@ -143,16 +147,10 @@ const Icons = {
    ═══════════════════════════════════════════════════════════ */
 function AbaDocumentos({ pacienteId, paciente }) {
   const [documentos, setDocumentos] = useState([]);
+  const [secaoAtiva, setSecaoAtiva] = useState("atestados");
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
 
-  const [tela, setTela] = useState("lista");
-  const [editando, setEditando] = useState(null);
-  const [detalhes, setDetalhes] = useState(null);
-
-  const [formData, setFormData] = useState({ ...EMPTY_FORM });
-  const [salvando, setSalvando] = useState(false);
-  const [erroForm, setErroForm] = useState("");
 
   const [confirmarExclusao, setConfirmarExclusao] = useState(null);
   const [excluindo, setExcluindo] = useState(false);
@@ -161,6 +159,7 @@ function AbaDocumentos({ pacienteId, paciente }) {
   const [hoveredBtn, setHoveredBtn] = useState(null);
 
   const [modalAtestado, setModalAtestado] = useState(false);
+  const [modalReceituario, setModalReceituario] = useState(false);
 
   /* ── Carregar ────────────────────────────── */
   useEffect(() => {
@@ -185,81 +184,55 @@ function AbaDocumentos({ pacienteId, paciente }) {
     }
   }
 
-  /* ── Abrir form ──────────────────────────── */
-  function abrirFormNovo() {
-    setEditando(null);
-    setFormData({ ...EMPTY_FORM });
-    setErroForm("");
-    setTela("form");
-  }
-
-  function abrirFormComTipo(tipo) {
-    setEditando(null);
-    setFormData({ ...EMPTY_FORM, tipo, titulo: TIPO_LABEL[tipo] || "" });
-    setErroForm("");
-    setTela("form");
-  }
-
-  function abrirFormEditar(item) {
-    setEditando(item);
-    setFormData({
-      data: item.data || dataHojeISO(),
-      tipo: item.tipo || "atestado",
-      titulo: item.titulo || "",
-      conteudo: item.conteudo || "",
-      profissional: item.profissional || "",
-      observacoes: item.observacoes || "",
-    });
-    setErroForm("");
-    setTela("form");
-  }
-
-  function abrirDetalhes(item) {
-    setDetalhes(item);
-    setTela("detalhes");
-  }
-
-  function voltarParaLista() {
-    setTela("lista");
-    setEditando(null);
-    setDetalhes(null);
-    setErroForm("");
-  }
-
-  /* ── Salvar ──────────────────────────────── */
-  function handleInput(e) {
-    const { name, value } = e.target;
-    setFormData((p) => ({ ...p, [name]: value }));
-  }
-
-  async function handleSalvar(e) {
-    e.preventDefault();
-    if (!formData.data) { setErroForm("A data é obrigatória."); return; }
-    if (!formData.titulo.trim()) { setErroForm("O título é obrigatório."); return; }
-
-    try {
-      setSalvando(true);
-      setErroForm("");
-      const tk = localStorage.getItem("token");
-      const ed = Boolean(editando);
-      const body = { ...formData, paciente_id: Number(pacienteId) };
-
-      const r = await fetch(
-        ed ? `${API_URL}/documentos/${editando.id}` : `${API_URL}/documentos`,
-        {
-          method: ed ? "PUT" : "POST",
-          headers: { "Content-Type": "application/json", Authorization: tk || "" },
-          body: JSON.stringify(body),
-        }
-      );
-      if (!r.ok) throw new Error();
-      await carregarDocumentos();
-      voltarParaLista();
-    } catch {
-      setErroForm("Não foi possível salvar o documento.");
-    } finally {
-      setSalvando(false);
+  async function abrirPdfDocumento(item) {
+    if (!item) return;
+    if (item.tipo === "receita") {
+      let meta = {};
+      try {
+        const raw = String(item.observacoes || "");
+        if (raw.startsWith("__RECEITUARIO__")) meta = JSON.parse(raw.slice("__RECEITUARIO__".length));
+      } catch { meta = {}; }
+      if (!Array.isArray(meta.medicamentos) || meta.medicamentos.length === 0) {
+        alert("Não foi possível recuperar os medicamentos deste receituário.");
+        return;
+      }
+      await gerarPdfReceituario({
+        paciente,
+        pacienteId,
+        profissional: item.profissional,
+        data: item.data,
+        medicamentos: meta.medicamentos,
+        apiUrl: API_URL,
+        token: localStorage.getItem("token"),
+      });
+      return;
     }
+    if (item.tipo === "atestado") {
+      let meta = {};
+      try {
+        const raw = String(item.observacoes || "");
+        if (raw.startsWith("__ATESTADO__")) meta = JSON.parse(raw.slice("__ATESTADO__".length));
+      } catch { meta = {}; }
+      await gerarPdfAtestado({
+        paciente,
+        profissional: item.profissional,
+        tipoAtestado: meta.tipoAtestado || "dias",
+        data: item.data,
+        dias: meta.dias,
+        cid: meta.cid,
+        horaInicial: meta.horaInicial,
+        horaFinal: meta.horaFinal,
+        apiUrl: API_URL,
+        token: localStorage.getItem("token"),
+      });
+      return;
+    }
+    await gerarPdfDocumento({
+      documento: item,
+      paciente,
+      apiUrl: API_URL,
+      token: localStorage.getItem("token"),
+    });
   }
 
   /* ── Excluir ─────────────────────────────── */
@@ -275,7 +248,7 @@ function AbaDocumentos({ pacienteId, paciente }) {
       if (!r.ok) throw new Error();
       setConfirmarExclusao(null);
       await carregarDocumentos();
-      if (tela !== "lista") voltarParaLista();
+      
     } catch {
       setErro("Erro ao excluir documento.");
     } finally {
@@ -294,11 +267,20 @@ function AbaDocumentos({ pacienteId, paciente }) {
     return total;
   }
 
+  const secoesDocumentos = [
+    { id: "atestados", label: "Atestados", filtro: (d) => d.tipo === "atestado" },
+    { id: "receitas", label: "Receitas", filtro: (d) => d.tipo === "receita" },
+    { id: "termos", label: "Termos", filtro: (d) => ["termo", "termos"].includes(String(d.tipo || "").toLowerCase()) },
+    { id: "contratos", label: "Contratos", filtro: (d) => ["contrato", "contratos"].includes(String(d.tipo || "").toLowerCase()) },
+  ];
+  const documentosDaSecao = documentos.filter(
+    (documento) => secoesDocumentos.find((secao) => secao.id === secaoAtiva).filtro(documento)
+  );
+
   /* ═══════════════════════════════════════════
      RENDER — LISTA
      ═══════════════════════════════════════════ */
-  if (tela === "lista") {
-    return (
+  return (
       <div style={S.wrapper}>
 
         {/* Header */}
@@ -309,18 +291,7 @@ function AbaDocumentos({ pacienteId, paciente }) {
               {documentos.length} documento{documentos.length !== 1 ? "s" : ""} registrado{documentos.length !== 1 ? "s" : ""}
             </p>
           </div>
-          <button
-            style={{
-              ...S.btnPrimary,
-              ...(hoveredBtn === "novo" ? S.btnPrimaryHover : {}),
-            }}
-            onMouseEnter={() => setHoveredBtn("novo")}
-            onMouseLeave={() => setHoveredBtn(null)}
-            onClick={abrirFormNovo}
-          >
-            {Icons.plus}
-            <span>Novo documento</span>
-          </button>
+
         </div>
 
         {/* Loading */}
@@ -369,7 +340,7 @@ function AbaDocumentos({ pacienteId, paciente }) {
                 style={{ ...S.quickCard, ...(hoveredBtn === "quick-receita" ? S.quickCardHover : {}) }}
                 onMouseEnter={() => setHoveredBtn("quick-receita")}
                 onMouseLeave={() => setHoveredBtn(null)}
-                onClick={() => alert("Modal de Receituário em breve!")}
+                onClick={() => setModalReceituario(true)}
               >
                 <div style={{ ...S.quickIcon, background: "#f0fdf4", color: "#16a34a" }}>
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -415,101 +386,107 @@ function AbaDocumentos({ pacienteId, paciente }) {
           </div>
         )}
 
-        {/* Vazio */}
-        {!carregando && !erro && documentos.length === 0 && (
-          <div style={S.emptyBox}>
-            {Icons.clipboard}
-            <h3 style={S.emptyTitle}>Nenhum documento registrado</h3>
-            <p style={S.emptyText}>Use os atalhos acima para criar documentos rapidamente.</p>
-          </div>
-        )}
+        {/* Separação por categoria */}
+        {!carregando && !erro && (
+          <div style={S.documentSections}>
+            <div style={S.sectionTabs}>
+              {secoesDocumentos.map((secao) => {
+                const quantidade = documentos.filter(secao.filtro).length;
+                const ativa = secaoAtiva === secao.id;
+                return (
+                  <button
+                    key={secao.id}
+                    type="button"
+                    style={{ ...S.sectionTab, ...(ativa ? S.sectionTabActive : {}) }}
+                    onClick={() => setSecaoAtiva(secao.id)}
+                  >
+                    <span>{secao.label}</span>
+                    <span style={{ ...S.sectionCount, ...(ativa ? S.sectionCountActive : {}) }}>{quantidade}</span>
+                  </button>
+                );
+              })}
+            </div>
 
-        {/* Lista de cards */}
-        {!carregando && !erro && documentos.length > 0 && (
-          <div style={S.cardGrid}>
-            {documentos.map((d) => {
-              const hovered = hoveredCardId === d.id;
-              const camposPreenchidos = contarCamposPreenchidos(d);
-              return (
-                <div
-                  key={d.id}
-                  style={{ ...S.card, ...(hovered ? S.cardHover : {}) }}
-                  onMouseEnter={() => setHoveredCardId(d.id)}
-                  onMouseLeave={() => setHoveredCardId(null)}
-                >
-                  {/* Topo do card */}
-                  <div style={S.cardTop}>
-                    <div style={S.cardDateBadge}>
-                      <span style={{ display: "flex", color: "#2563eb" }}>{Icons.calendar}</span>
-                      {formatarDataBR(d.data)}
-                    </div>
-                    <span style={S.cardId}>#{d.id}</span>
-                  </div>
-
-                  {/* Título */}
-                  {d.titulo && (
-                    <div style={S.cardSection}>
-                      <span style={S.cardSectionLabel}>Título</span>
-                      <p style={S.cardSectionText}>{d.titulo}</p>
-                    </div>
-                  )}
-
-                  {/* Tipo + Profissional pills */}
-                  {(d.tipo || d.profissional) && (
-                    <div style={S.pillRow}>
-                      {d.tipo && <span style={S.pill}>{TIPO_LABEL[d.tipo] || d.tipo}</span>}
-                      {d.profissional && <span style={S.pill}>{d.profissional}</span>}
-                    </div>
-                  )}
-
-                  {/* Campos preenchidos */}
-                  <div style={S.metaRow}>
-                    <span style={S.metaChip}>{camposPreenchidos} campo{camposPreenchidos !== 1 ? "s" : ""} preenchido{camposPreenchidos !== 1 ? "s" : ""}</span>
-                  </div>
-
-                  {/* Ações */}
-                  <div style={S.cardActions}>
-                    <button
-                      style={{
-                        ...S.cardBtn,
-                        ...(hoveredBtn === `ver-${d.id}` ? S.cardBtnHover : {}),
-                      }}
-                      onMouseEnter={() => setHoveredBtn(`ver-${d.id}`)}
-                      onMouseLeave={() => setHoveredBtn(null)}
-                      onClick={() => abrirDetalhes(d)}
+            {documentosDaSecao.length === 0 ? (
+              <div style={S.emptyBox}>
+                {Icons.clipboard}
+                <h3 style={S.emptyTitle}>
+                  {documentos.length === 0 ? "Nenhum documento registrado" : "Nenhum item nesta seção"}
+                </h3>
+                <p style={S.emptyText}>
+                  {secaoAtiva === "atestados"
+                    ? "Os atestados emitidos para este paciente aparecerão aqui."
+                    : secaoAtiva === "receitas"
+                    ? "As receitas emitidas para este paciente aparecerão aqui."
+                    : secaoAtiva === "termos"
+                    ? "Os termos de consentimento e outros termos aparecerão aqui."
+                    : secaoAtiva === "contratos"
+                    ? "Os contratos deste paciente aparecerão aqui."
+                    : "Laudos, encaminhamentos, declarações e outros documentos aparecerão aqui."}
+                </p>
+              </div>
+            ) : (
+              <div style={S.cardGrid}>
+                {documentosDaSecao.map((d) => {
+                  const hovered = hoveredCardId === d.id;
+                  return (
+                    <div
+                      key={d.id}
+                      style={{ ...S.documentRow, ...(hovered ? S.documentRowHover : {}) }}
+                      onMouseEnter={() => setHoveredCardId(d.id)}
+                      onMouseLeave={() => setHoveredCardId(null)}
                     >
-                      {Icons.eye}
-                      <span>Ver</span>
-                    </button>
-                    <button
-                      style={{
-                        ...S.cardBtn,
-                        ...(hoveredBtn === `editar-${d.id}` ? S.cardBtnHover : {}),
-                      }}
-                      onMouseEnter={() => setHoveredBtn(`editar-${d.id}`)}
-                      onMouseLeave={() => setHoveredBtn(null)}
-                      onClick={() => abrirFormEditar(d)}
-                    >
-                      {Icons.edit}
-                      <span>Editar</span>
-                    </button>
-                    <button
-                      style={{
-                        ...S.cardBtn,
-                        ...S.cardBtnDanger,
-                        ...(hoveredBtn === `excluir-${d.id}` ? S.cardBtnDangerHover : {}),
-                      }}
-                      onMouseEnter={() => setHoveredBtn(`excluir-${d.id}`)}
-                      onMouseLeave={() => setHoveredBtn(null)}
-                      onClick={() => setConfirmarExclusao(d)}
-                    >
-                      {Icons.trash}
-                      <span>Excluir</span>
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
+                      <div style={S.documentRowMain}>
+                        <div style={S.documentFileIcon}>
+                          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v18h16V8z" />
+                            <path d="M14 2v6h6M8 13h8M8 17h8" />
+                          </svg>
+                        </div>
+                        <div style={S.documentRowInfo}>
+                          <span style={S.documentRowTitle}>
+                            {d.tipo === "atestado"
+                              ? (paciente?.nome || d.titulo || "Atestado")
+                              : (d.titulo || TIPO_LABEL[d.tipo] || "Documento")}
+                          </span>
+                          <div style={S.documentRowMeta}>
+                            <span>{TIPO_LABEL[d.tipo] || d.tipo || "Documento"}</span>
+                            <span style={S.documentMetaDot}>•</span>
+                            <span>{formatarDataBR(d.data)}</span>
+                            {d.profissional && <>
+                              <span style={S.documentMetaDot}>•</span>
+                              <span>{d.profissional}</span>
+                            </>}
+                          </div>
+                        </div>
+                      </div>
+                      <div style={S.documentRowActions}>
+                        <button
+                          type="button"
+                          style={{ ...S.listActionBtn, ...(hoveredBtn === `ver-${d.id}` ? S.listActionBtnHover : {}) }}
+                          onMouseEnter={() => setHoveredBtn(`ver-${d.id}`)}
+                          onMouseLeave={() => setHoveredBtn(null)}
+                          onClick={() => abrirPdfDocumento(d)}
+                        >
+                          {Icons.eye}<span>Ver</span>
+                        </button>
+                        <button
+                          type="button"
+                          aria-label="Excluir documento"
+                          title="Excluir documento"
+                          style={{ ...S.listDeleteBtn, ...(hoveredBtn === `excluir-${d.id}` ? S.listDeleteBtnHover : {}) }}
+                          onMouseEnter={() => setHoveredBtn(`excluir-${d.id}`)}
+                          onMouseLeave={() => setHoveredBtn(null)}
+                          onClick={() => setConfirmarExclusao(d)}
+                        >
+                          {Icons.trash}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
@@ -551,6 +528,15 @@ function AbaDocumentos({ pacienteId, paciente }) {
           </div>
         )}
 
+        {/* Modal de Receituário */}
+        <ModalReceituario
+          aberto={modalReceituario}
+          onFechar={() => setModalReceituario(false)}
+          paciente={paciente}
+          pacienteId={pacienteId}
+          onDocumentoCriado={carregarDocumentos}
+        />
+
         {/* Modal Atestado */}
         <ModalAtestado
           aberto={modalAtestado}
@@ -573,292 +559,6 @@ function AbaDocumentos({ pacienteId, paciente }) {
         `}</style>
       </div>
     );
-  }
-
-  /* ═══════════════════════════════════════════
-     RENDER — FORMULÁRIO
-     ═══════════════════════════════════════════ */
-  if (tela === "form") {
-    return (
-      <div style={S.wrapper}>
-
-        {/* Header */}
-        <div style={S.header}>
-          <div>
-            <button
-              style={{
-                ...S.backBtn,
-                ...(hoveredBtn === "back-form" ? S.backBtnHover : {}),
-              }}
-              onMouseEnter={() => setHoveredBtn("back-form")}
-              onMouseLeave={() => setHoveredBtn(null)}
-              onClick={voltarParaLista}
-            >
-              {Icons.arrowLeft}
-              <span>Voltar</span>
-            </button>
-            <h2 style={S.title}>{editando ? "Editar documento" : "Novo documento"}</h2>
-            <p style={S.subtitle}>{editando ? "Altere os dados do documento." : "Preencha as informações do documento."}</p>
-          </div>
-        </div>
-
-        <form onSubmit={handleSalvar} style={S.formWrap}>
-
-          {/* Data e Tipo */}
-          <div style={S.formCard}>
-            <div style={S.formCardHeader}>
-              <span style={S.formCardIcon}>{Icons.calendar}</span>
-              <span style={S.formCardTitle}>Data e tipo</span>
-            </div>
-            <div style={S.formGrid2}>
-              <div style={S.fieldGroup}>
-                <label style={S.label}>Data</label>
-                <input
-                  type="date"
-                  name="data"
-                  value={formData.data}
-                  onChange={handleInput}
-                  style={S.input}
-                />
-              </div>
-              <div style={S.fieldGroup}>
-                <label style={S.label}>Tipo</label>
-                <select
-                  name="tipo"
-                  value={formData.tipo}
-                  onChange={handleInput}
-                  style={S.input}
-                >
-                  {TIPO_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* Seções dinâmicas */}
-          {FORM_SECTIONS.map((sec) => (
-            <div key={sec.title} style={S.formCard}>
-              <div style={S.formCardHeader}>
-                <span style={S.formCardIcon}>{sec.icon}</span>
-                <span style={S.formCardTitle}>{sec.title}</span>
-              </div>
-              <div style={sec.fields.length <= 2 ? S.formGrid2 : S.formGrid1}>
-                {sec.fields.map((f) => (
-                  <div key={f.name} style={S.fieldGroup}>
-                    <label style={S.label}>{f.label}</label>
-                    {f.type === "textarea" ? (
-                      <textarea
-                        name={f.name}
-                        value={formData[f.name]}
-                        onChange={handleInput}
-                        placeholder={f.placeholder}
-                        style={S.textarea}
-                        rows={3}
-                      />
-                    ) : (
-                      <input
-                        type="text"
-                        name={f.name}
-                        value={formData[f.name]}
-                        onChange={handleInput}
-                        placeholder={f.placeholder}
-                        style={S.input}
-                      />
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-
-          {/* Erro */}
-          {erroForm && (
-            <div style={S.errorBox}>
-              <span>{erroForm}</span>
-            </div>
-          )}
-
-          {/* Ações */}
-          <div style={S.formActions}>
-            <button
-              type="button"
-              style={{
-                ...S.btnSecondary,
-                ...(hoveredBtn === "cancel-form" ? S.btnSecondaryHover : {}),
-              }}
-              onMouseEnter={() => setHoveredBtn("cancel-form")}
-              onMouseLeave={() => setHoveredBtn(null)}
-              onClick={voltarParaLista}
-              disabled={salvando}
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              style={{
-                ...S.btnPrimary,
-                ...(hoveredBtn === "salvar-form" ? S.btnPrimaryHover : {}),
-              }}
-              onMouseEnter={() => setHoveredBtn("salvar-form")}
-              onMouseLeave={() => setHoveredBtn(null)}
-              disabled={salvando}
-            >
-              {salvando ? "Salvando..." : editando ? "Salvar alterações" : "Salvar documento"}
-            </button>
-          </div>
-        </form>
-      </div>
-    );
-  }
-
-  /* ═══════════════════════════════════════════
-     RENDER — DETALHES
-     ═══════════════════════════════════════════ */
-  if (tela === "detalhes" && detalhes) {
-    return (
-      <div style={S.wrapper}>
-
-        {/* Header */}
-        <div style={S.header}>
-          <div>
-            <button
-              style={{
-                ...S.backBtn,
-                ...(hoveredBtn === "back-det" ? S.backBtnHover : {}),
-              }}
-              onMouseEnter={() => setHoveredBtn("back-det")}
-              onMouseLeave={() => setHoveredBtn(null)}
-              onClick={voltarParaLista}
-            >
-              {Icons.arrowLeft}
-              <span>Voltar</span>
-            </button>
-            <h2 style={S.title}>Documento #{detalhes.id}</h2>
-            <p style={S.subtitle}>Registrado em {formatarDataBR(detalhes.data)}</p>
-          </div>
-          <div style={{ display: "flex", gap: "8px" }}>
-            <button
-              style={{
-                ...S.btnSecondary,
-                ...(hoveredBtn === "editar-det" ? S.btnSecondaryHover : {}),
-              }}
-              onMouseEnter={() => setHoveredBtn("editar-det")}
-              onMouseLeave={() => setHoveredBtn(null)}
-              onClick={() => abrirFormEditar(detalhes)}
-            >
-              {Icons.edit}
-              <span>Editar</span>
-            </button>
-            <button
-              style={{
-                ...S.btnDanger,
-                ...(hoveredBtn === "excluir-det" ? S.btnDangerHover : {}),
-              }}
-              onMouseEnter={() => setHoveredBtn("excluir-det")}
-              onMouseLeave={() => setHoveredBtn(null)}
-              onClick={() => setConfirmarExclusao(detalhes)}
-            >
-              {Icons.trash}
-              <span>Excluir</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Conteúdo */}
-        <div style={S.detailGrid}>
-          {/* Info geral */}
-          <div style={S.formCard}>
-            <div style={S.formCardHeader}>
-              <span style={S.formCardIcon}>{Icons.calendar}</span>
-              <span style={S.formCardTitle}>Dados gerais</span>
-            </div>
-            <div style={S.detailItems}>
-              <div style={S.detailItem}>
-                <span style={S.detailLabel}>Tipo</span>
-                <span style={S.detailValue}>{TIPO_LABEL[detalhes.tipo] || detalhes.tipo}</span>
-              </div>
-              <div style={S.detailItem}>
-                <span style={S.detailLabel}>Título</span>
-                <span style={S.detailValue}>{detalhes.titulo}</span>
-              </div>
-              {detalhes.profissional && (
-                <div style={S.detailItem}>
-                  <span style={S.detailLabel}>Profissional</span>
-                  <span style={S.detailValue}>{detalhes.profissional}</span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Seções dinâmicas */}
-          {FORM_SECTIONS.filter((sec) => sec.title !== "Identificação").map((sec) => {
-            const preenchidos = sec.fields.filter((f) => detalhes[f.name]);
-            if (preenchidos.length === 0) return null;
-            return (
-              <div key={sec.title} style={S.formCard}>
-                <div style={S.formCardHeader}>
-                  <span style={S.formCardIcon}>{sec.icon}</span>
-                  <span style={S.formCardTitle}>{sec.title}</span>
-                </div>
-                <div style={S.detailItems}>
-                  {preenchidos.map((f) => (
-                    <div key={f.name} style={S.detailItem}>
-                      <span style={S.detailLabel}>{f.label}</span>
-                      <span style={S.detailValue}>{detalhes[f.name]}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Modal confirmar exclusão */}
-        {confirmarExclusao && (
-          <div style={S.overlay} onClick={() => setConfirmarExclusao(null)}>
-            <div style={S.modal} onClick={(e) => e.stopPropagation()}>
-              <div style={S.modalIconWrap}>{Icons.alertTriangle}</div>
-              <h3 style={S.confirmTitle}>Excluir documento #{confirmarExclusao.id}?</h3>
-              <p style={S.confirmText}>Esta ação é irreversível. Todos os dados deste documento serão permanentemente removidos.</p>
-              <div style={S.modalActions}>
-                <button
-                  style={{
-                    ...S.btnSecondary,
-                    ...(hoveredBtn === "cancel-modal-det" ? S.btnSecondaryHover : {}),
-                  }}
-                  onMouseEnter={() => setHoveredBtn("cancel-modal-det")}
-                  onMouseLeave={() => setHoveredBtn(null)}
-                  onClick={() => setConfirmarExclusao(null)}
-                  disabled={excluindo}
-                >
-                  Cancelar
-                </button>
-                <button
-                  style={{
-                    ...S.btnDanger,
-                    ...(hoveredBtn === "confirm-modal-det" ? S.btnDangerHover : {}),
-                  }}
-                  onMouseEnter={() => setHoveredBtn("confirm-modal-det")}
-                  onMouseLeave={() => setHoveredBtn(null)}
-                  onClick={handleExcluir}
-                  disabled={excluindo}
-                >
-                  {Icons.trash}
-                  <span>{excluindo ? "Excluindo..." : "Confirmar exclusão"}</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  return null;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -891,7 +591,7 @@ const S = {
   subtitle: {
     margin: "6px 0 0",
     fontSize: "14px",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     fontWeight: "500",
     lineHeight: 1.4,
   },
@@ -1012,7 +712,7 @@ const S = {
   },
   feedbackText: {
     fontSize: "14px",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     fontWeight: "500",
   },
   errorBox: {
@@ -1049,9 +749,67 @@ const S = {
   emptyText: {
     margin: 0,
     fontSize: "14px",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     lineHeight: 1.5,
     maxWidth: "360px",
+  },
+
+  /* ── Separação por categoria ───────────────────── */
+  documentSections: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "18px",
+  },
+  sectionTabs: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    padding: "6px",
+    background: "#f8fafc",
+    border: "1px solid #e2e8f0",
+    borderRadius: "14px",
+    width: "fit-content",
+    maxWidth: "100%",
+    flexWrap: "wrap",
+  },
+  sectionTab: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "9px",
+    border: "none",
+    outline: "none",
+    borderRadius: "10px",
+    padding: "10px 14px",
+    background: "transparent",
+    color: "#64748b",
+    fontSize: "13px",
+    fontWeight: "600",
+    cursor: "pointer",
+    transition: "all 0.18s ease",
+  },
+  sectionTabActive: {
+    background: "#fff",
+    color: "#1d4ed8",
+    borderColor: "#dbeafe",
+    boxShadow: "0 1px 3px rgba(15,23,42,0.07)",
+  },
+  sectionCount: {
+    minWidth: "22px",
+    height: "22px",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "0 6px",
+    borderRadius: "7px",
+    background: "#e2e8f0",
+    color: "#64748b",
+    fontSize: "11px",
+    fontWeight: "700",
+  },
+  sectionCountActive: {
+    background: "#eff6ff",
+    color: "#2563eb",
   },
 
   /* ── Quick Access Section ──────────────────────── */
@@ -1063,7 +821,7 @@ const S = {
   quickSectionTitle: {
     fontSize: "12px",
     fontWeight: "600",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     textTransform: "uppercase",
     letterSpacing: "0.06em",
   },
@@ -1080,7 +838,8 @@ const S = {
     alignItems: "center",
     gap: "10px",
     padding: "20px 12px",
-    border: "1px solid #f1f5f9",
+    border: "none",
+    outline: "none",
     borderRadius: "14px",
     background: "#fff",
     cursor: "pointer",
@@ -1109,10 +868,101 @@ const S = {
 
   /* ── Card Grid ───────────────────────────────────── */
   cardGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))",
-    gap: "16px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "0",
+    background: "#fff",
+    border: "1px solid #eaeef3",
+    borderRadius: "12px",
+    overflow: "hidden",
   },
+  documentRow: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: "18px",
+    padding: "13px 16px",
+    borderBottom: "1px solid #f1f5f9",
+    transition: "background 0.15s ease",
+    minWidth: 0,
+  },
+  documentRowHover: { background: "#fafcff" },
+  documentRowMain: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    minWidth: 0,
+    flex: 1,
+  },
+  documentFileIcon: {
+    width: "38px",
+    height: "38px",
+    borderRadius: "9px",
+    background: "#f8fafc",
+    color: "#64748b",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  documentRowInfo: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "4px",
+    minWidth: 0,
+  },
+  documentRowTitle: {
+    color: "#1e293b",
+    fontSize: "13px",
+    fontWeight: "600",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
+  documentRowMeta: {
+    display: "flex",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: "7px",
+    color: "var(--text-muted)",
+    fontSize: "11px",
+  },
+  documentMetaDot: { color: "#cbd5e1" },
+  documentRowActions: {
+    display: "flex",
+    alignItems: "center",
+    gap: "7px",
+    flexShrink: 0,
+  },
+  listActionBtn: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "6px",
+    height: "32px",
+    padding: "0 11px",
+    border: "1px solid #e8edf3",
+    borderRadius: "7px",
+    background: "#fff",
+    color: "#475569",
+    fontSize: "12px",
+    fontWeight: "600",
+    cursor: "pointer",
+  },
+  listActionBtnHover: { background: "#f8fafc", borderColor: "#cbd5e1" },
+  listDeleteBtn: {
+    width: "32px",
+    height: "32px",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    border: "1px solid transparent",
+    borderRadius: "7px",
+    background: "transparent",
+    color: "var(--text-muted)",
+    cursor: "pointer",
+  },
+  listDeleteBtnHover: { color: "#dc2626", background: "#fef2f2", borderColor: "#fee2e2" },
 
   /* ── Card ─────────────────────────────────────────── */
   card: {
@@ -1164,7 +1014,7 @@ const S = {
   cardSectionLabel: {
     fontSize: "11px",
     fontWeight: "600",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     textTransform: "uppercase",
     letterSpacing: "0.06em",
   },
@@ -1206,7 +1056,7 @@ const S = {
   metaChip: {
     fontSize: "12px",
     fontWeight: "500",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
   },
 
   /* ── Card Actions ────────────────────────────────── */
@@ -1409,7 +1259,7 @@ const S = {
   detailLabel: {
     fontSize: "11px",
     fontWeight: "600",
-    color: "#94a3b8",
+    color: "var(--text-muted)",
     textTransform: "uppercase",
     letterSpacing: "0.06em",
   },

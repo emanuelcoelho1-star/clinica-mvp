@@ -2,6 +2,10 @@ const express = require("express");
 const router = express.Router();
 const db = require("../database");
 const auth = require("../middleware/auth");
+const requirePermission = require("../middleware/requirePermission");
+
+// A autorização é validada na API, não apenas na interface.
+router.use(auth, requirePermission("financeiro"));
 
 /* ══════════════════════════════════════════════════════════════
    HELPERS
@@ -50,24 +54,24 @@ router.get("/dashboard", auth, async (req, res) => {
     const receitas = await dbGet(
       `SELECT COALESCE(SUM(valor_recebido), 0) as total
        FROM contas_receber
-       WHERE status = 'pago' AND strftime('%Y-%m', data_recebimento) = ?`,
-      [periodo]
+       WHERE clinica_id = ? AND status = 'pago' AND strftime('%Y-%m', data_recebimento) = ?`,
+      [req.user.clinica_id, periodo]
     );
 
     // Receitas dos pagamentos legados
     const receitasLegado = await dbGet(
       `SELECT COALESCE(SUM(valor), 0) as total
        FROM pagamentos
-       WHERE status = 'confirmado' AND strftime('%Y-%m', data) = ?`,
-      [periodo]
+       WHERE clinica_id = ? AND status = 'confirmado' AND strftime('%Y-%m', data) = ?`,
+      [req.user.clinica_id, periodo]
     );
 
     // Despesas do mês (contas_pagar pagas)
     const despesas = await dbGet(
       `SELECT COALESCE(SUM(valor_pago), 0) as total
        FROM contas_pagar
-       WHERE status = 'pago' AND strftime('%Y-%m', data_pagamento) = ?`,
-      [periodo]
+       WHERE clinica_id = ? AND status = 'pago' AND strftime('%Y-%m', data_pagamento) = ?`,
+      [req.user.clinica_id, periodo]
     );
 
     // Contas a receber pendentes
@@ -75,15 +79,14 @@ router.get("/dashboard", auth, async (req, res) => {
       `SELECT COALESCE(SUM(valor - valor_recebido), 0) as total,
               COUNT(*) as quantidade
        FROM contas_receber
-       WHERE status IN ('pendente', 'parcial')`
-    );
+       WHERE clinica_id = ? AND status IN ('pendente', 'parcial')`, [req.user.clinica_id]);
 
     // Contas a pagar pendentes
     const pagarPendente = await dbGet(
       `SELECT COALESCE(SUM(valor - valor_pago), 0) as total,
               COUNT(*) as quantidade
        FROM contas_pagar
-       WHERE status IN ('pendente', 'parcial')`
+       WHERE clinica_id = ? AND status IN ('pendente', 'parcial')`, [req.user.clinica_id]
     );
 
     // Contas vencidas (a pagar)
@@ -91,7 +94,7 @@ router.get("/dashboard", auth, async (req, res) => {
       `SELECT COALESCE(SUM(valor - valor_pago), 0) as total,
               COUNT(*) as quantidade
        FROM contas_pagar
-       WHERE status IN ('pendente', 'parcial') AND data_vencimento < date('now')`
+       WHERE clinica_id = ? AND status IN ('pendente', 'parcial') AND data_vencimento < date('now')`, [req.user.clinica_id]
     );
 
     // Contas vencidas (a receber)
@@ -99,7 +102,7 @@ router.get("/dashboard", auth, async (req, res) => {
       `SELECT COALESCE(SUM(valor - valor_recebido), 0) as total,
               COUNT(*) as quantidade
        FROM contas_receber
-       WHERE status IN ('pendente', 'parcial') AND data_vencimento < date('now')`
+       WHERE clinica_id = ? AND status IN ('pendente', 'parcial') AND data_vencimento < date('now')`, [req.user.clinica_id]
     );
 
     // Receitas vs Despesas últimos 6 meses
@@ -113,20 +116,20 @@ router.get("/dashboard", auth, async (req, res) => {
       const rec = await dbGet(
         `SELECT COALESCE(SUM(valor_recebido), 0) as total
          FROM contas_receber
-         WHERE status = 'pago' AND strftime('%Y-%m', data_recebimento) = ?`,
-        [p]
+         WHERE clinica_id = ? AND status = 'pago' AND strftime('%Y-%m', data_recebimento) = ?`,
+        [req.user.clinica_id, p]
       );
       const recLeg = await dbGet(
         `SELECT COALESCE(SUM(valor), 0) as total
          FROM pagamentos
-         WHERE status = 'confirmado' AND strftime('%Y-%m', data) = ?`,
-        [p]
+         WHERE clinica_id = ? AND status = 'confirmado' AND strftime('%Y-%m', data) = ?`,
+        [req.user.clinica_id, p]
       );
       const desp = await dbGet(
         `SELECT COALESCE(SUM(valor_pago), 0) as total
          FROM contas_pagar
-         WHERE status = 'pago' AND strftime('%Y-%m', data_pagamento) = ?`,
-        [p]
+         WHERE clinica_id = ? AND status = 'pago' AND strftime('%Y-%m', data_pagamento) = ?`,
+        [req.user.clinica_id, p]
       );
 
       ultimos6Meses.push({
@@ -141,14 +144,14 @@ router.get("/dashboard", auth, async (req, res) => {
     const porFormaPagamento = await dbAll(
       `SELECT forma_pagamento, COALESCE(SUM(valor_recebido), 0) as total
        FROM contas_receber
-       WHERE status = 'pago' AND strftime('%Y-%m', data_recebimento) = ?
+       WHERE clinica_id = ? AND status = 'pago' AND strftime('%Y-%m', data_recebimento) = ?
        GROUP BY forma_pagamento
        UNION ALL
        SELECT forma_pagamento, COALESCE(SUM(valor), 0) as total
        FROM pagamentos
-       WHERE status = 'confirmado' AND strftime('%Y-%m', data) = ?
+       WHERE clinica_id = ? AND status = 'confirmado' AND strftime('%Y-%m', data) = ?
        GROUP BY forma_pagamento`,
-      [periodo, periodo]
+      [req.user.clinica_id, periodo, req.user.clinica_id, periodo]
     );
 
     // Agrupar formas de pagamento
@@ -160,8 +163,8 @@ router.get("/dashboard", auth, async (req, res) => {
 
     // Meta do mês
     const meta = await dbGet(
-      `SELECT * FROM metas_financeiras WHERE mes = ? AND ano = ? AND tipo = 'receita'`,
-      [mes, ano]
+      `SELECT * FROM metas_financeiras WHERE clinica_id = ? AND mes = ? AND ano = ? AND tipo = 'receita'`,
+      [req.user.clinica_id, mes, ano]
     );
 
     const totalReceitas = (receitas?.total || 0) + (receitasLegado?.total || 0);
@@ -201,8 +204,8 @@ router.get("/dashboard", auth, async (req, res) => {
 router.get("/categorias", auth, async (req, res) => {
   try {
     const { tipo } = req.query;
-    let sql = "SELECT * FROM categorias_financeiras WHERE ativo = 1";
-    const params = [];
+    let sql = "SELECT * FROM categorias_financeiras WHERE ativo = 1 AND clinica_id = ?";
+    const params = [req.user.clinica_id];
 
     if (tipo) {
       sql += " AND tipo = ?";
@@ -226,8 +229,8 @@ router.post("/categorias", auth, async (req, res) => {
     }
 
     const result = await dbRun(
-      "INSERT INTO categorias_financeiras (nome, tipo, cor, icone) VALUES (?, ?, ?, ?)",
-      [nome, tipo, cor || "#64748b", icone || "tag"]
+      "INSERT INTO categorias_financeiras (nome, tipo, cor, icone, clinica_id) VALUES (?, ?, ?, ?, ?)",
+      [nome, tipo, cor || "#64748b", icone || "tag", req.user.clinica_id]
     );
 
     res.status(201).json({ id: result.lastID, mensagem: "Categoria criada." });
@@ -243,8 +246,8 @@ router.put("/categorias/:id", auth, async (req, res) => {
     await dbRun(
       `UPDATE categorias_financeiras
        SET nome = ?, tipo = ?, cor = ?, icone = ?, ativo = ?
-       WHERE id = ?`,
-      [nome, tipo, cor, icone, ativo !== undefined ? ativo : 1, req.params.id]
+       WHERE id = ? AND clinica_id = ?`,
+      [nome, tipo, cor, icone, ativo !== undefined ? ativo : 1, req.params.id, req.user.clinica_id]
     );
     res.json({ mensagem: "Categoria atualizada." });
   } catch (error) {
@@ -255,7 +258,7 @@ router.put("/categorias/:id", auth, async (req, res) => {
 // DELETE /financeiro/categorias/:id
 router.delete("/categorias/:id", auth, async (req, res) => {
   try {
-    await dbRun("UPDATE categorias_financeiras SET ativo = 0 WHERE id = ?", [req.params.id]);
+    await dbRun("UPDATE categorias_financeiras SET ativo = 0 WHERE id = ? AND clinica_id = ?", [req.params.id, req.user.clinica_id]);
     res.json({ mensagem: "Categoria desativada." });
   } catch (error) {
     res.status(500).json({ erro: "Erro ao desativar categoria." });
@@ -273,10 +276,10 @@ router.get("/contas-pagar", auth, async (req, res) => {
     let sql = `
       SELECT cp.*, cf.nome as categoria_nome, cf.cor as categoria_cor
       FROM contas_pagar cp
-      LEFT JOIN categorias_financeiras cf ON cp.categoria_id = cf.id
-      WHERE 1=1
+      LEFT JOIN categorias_financeiras cf ON cp.categoria_id = cf.id AND cf.clinica_id = cp.clinica_id
+      WHERE cp.clinica_id = ?
     `;
-    const params = [];
+    const params = [req.user.clinica_id];
 
     if (status) {
       sql += " AND cp.status = ?";
@@ -310,7 +313,8 @@ router.get("/contas-pagar", auth, async (req, res) => {
         COALESCE(SUM(CASE WHEN status IN ('pendente','parcial') AND data_vencimento < date('now') THEN valor - valor_pago ELSE 0 END), 0) as total_vencido,
         COUNT(CASE WHEN status IN ('pendente','parcial') AND data_vencimento < date('now') THEN 1 END) as qtd_vencidas
       FROM contas_pagar
-    `);
+      WHERE clinica_id = ?
+    `, [req.user.clinica_id]);
 
     res.json({ contas, resumo });
   } catch (error) {
@@ -324,9 +328,9 @@ router.get("/contas-pagar/:id", auth, async (req, res) => {
     const conta = await dbGet(
       `SELECT cp.*, cf.nome as categoria_nome, cf.cor as categoria_cor
        FROM contas_pagar cp
-       LEFT JOIN categorias_financeiras cf ON cp.categoria_id = cf.id
-       WHERE cp.id = ?`,
-      [req.params.id]
+       LEFT JOIN categorias_financeiras cf ON cp.categoria_id = cf.id AND cf.clinica_id = cp.clinica_id
+       WHERE cp.id = ? AND cp.clinica_id = ?`,
+      [req.params.id, req.user.clinica_id]
     );
     if (!conta) return res.status(404).json({ erro: "Conta não encontrada." });
     res.json(conta);
@@ -349,6 +353,14 @@ router.post("/contas-pagar", auth, async (req, res) => {
       return res.status(400).json({ erro: "Descrição, valor e vencimento são obrigatórios." });
     }
 
+    if (categoria_id) {
+      const categoria = await dbGet(
+        "SELECT id FROM categorias_financeiras WHERE id = ? AND clinica_id = ? AND ativo = 1",
+        [categoria_id, req.user.clinica_id]
+      );
+      if (!categoria) return res.status(400).json({ erro: "Categoria inválida para esta clínica." });
+    }
+
     const parcelas = total_parcelas || 1;
     const valorParcela = valor / parcelas;
 
@@ -363,8 +375,8 @@ router.post("/contas-pagar", auth, async (req, res) => {
            (descricao, categoria_id, fornecedor, valor, data_emissao,
             data_vencimento, forma_pagamento, recorrente, recorrencia_tipo,
             recorrencia_fim, parcela_atual, total_parcelas,
-            numero_documento, codigo_barras, observacoes)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            numero_documento, codigo_barras, observacoes, clinica_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           parcelas > 1 ? `${descricao} (${i + 1}/${parcelas})` : descricao,
           categoria_id || null, fornecedor || null, valorParcela,
@@ -372,7 +384,7 @@ router.post("/contas-pagar", auth, async (req, res) => {
           vencStr, forma_pagamento || null, recorrente || 0,
           recorrencia_tipo || null, recorrencia_fim || null,
           i + 1, parcelas, numero_documento || null,
-          codigo_barras || null, observacoes || null,
+          codigo_barras || null, observacoes || null, req.user.clinica_id,
         ]
       );
     }
@@ -393,16 +405,24 @@ router.put("/contas-pagar/:id", auth, async (req, res) => {
       codigo_barras, observacoes,
     } = req.body;
 
+    if (categoria_id) {
+      const categoria = await dbGet(
+        "SELECT id FROM categorias_financeiras WHERE id = ? AND clinica_id = ? AND ativo = 1",
+        [categoria_id, req.user.clinica_id]
+      );
+      if (!categoria) return res.status(400).json({ erro: "Categoria inválida para esta clínica." });
+    }
+
     await dbRun(
       `UPDATE contas_pagar
        SET descricao = ?, categoria_id = ?, fornecedor = ?, valor = ?,
            data_emissao = ?, data_vencimento = ?, forma_pagamento = ?,
            numero_documento = ?, codigo_barras = ?, observacoes = ?
-       WHERE id = ?`,
+       WHERE id = ? AND clinica_id = ?`,
       [
         descricao, categoria_id, fornecedor, valor, data_emissao,
         data_vencimento, forma_pagamento, numero_documento,
-        codigo_barras, observacoes, req.params.id,
+        codigo_barras, observacoes, req.params.id, req.user.clinica_id,
       ]
     );
 
@@ -416,7 +436,7 @@ router.put("/contas-pagar/:id", auth, async (req, res) => {
 router.put("/contas-pagar/:id/pagar", auth, async (req, res) => {
   try {
     const { valor_pago, data_pagamento, forma_pagamento } = req.body;
-    const conta = await dbGet("SELECT * FROM contas_pagar WHERE id = ?", [req.params.id]);
+    const conta = await dbGet("SELECT * FROM contas_pagar WHERE id = ? AND clinica_id = ?", [req.params.id, req.user.clinica_id]);
     if (!conta) return res.status(404).json({ erro: "Conta não encontrada." });
 
     const novoValorPago = (conta.valor_pago || 0) + (valor_pago || conta.valor);
@@ -425,20 +445,21 @@ router.put("/contas-pagar/:id/pagar", auth, async (req, res) => {
     await dbRun(
       `UPDATE contas_pagar
        SET valor_pago = ?, data_pagamento = ?, forma_pagamento = ?, status = ?
-       WHERE id = ?`,
+       WHERE id = ? AND clinica_id = ?`,
       [
         novoValorPago,
         data_pagamento || new Date().toISOString().split("T")[0],
         forma_pagamento || conta.forma_pagamento,
         novoStatus,
         req.params.id,
+        req.user.clinica_id,
       ]
     );
 
     // Registrar no fluxo de caixa
     await dbRun(
-      `INSERT INTO fluxo_caixa (tipo, categoria_id, conta_pagar_id, descricao, valor, data, forma_pagamento)
-       VALUES ('saida', ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO fluxo_caixa (tipo, categoria_id, conta_pagar_id, descricao, valor, data, forma_pagamento, clinica_id)
+       VALUES ('saida', ?, ?, ?, ?, ?, ?, ?)`,
       [
         conta.categoria_id,
         conta.id,
@@ -446,6 +467,7 @@ router.put("/contas-pagar/:id/pagar", auth, async (req, res) => {
         valor_pago || conta.valor,
         data_pagamento || new Date().toISOString().split("T")[0],
         forma_pagamento || conta.forma_pagamento,
+        req.user.clinica_id,
       ]
     );
 
@@ -458,14 +480,14 @@ router.put("/contas-pagar/:id/pagar", auth, async (req, res) => {
 // DELETE /financeiro/contas-pagar/:id
 router.delete("/contas-pagar/:id", auth, async (req, res) => {
   try {
-    const conta = await dbGet("SELECT * FROM contas_pagar WHERE id = ?", [req.params.id]);
+    const conta = await dbGet("SELECT * FROM contas_pagar WHERE id = ? AND clinica_id = ?", [req.params.id, req.user.clinica_id]);
     if (!conta) return res.status(404).json({ erro: "Conta não encontrada." });
 
     // Remove lançamentos do fluxo de caixa vinculados
-    await dbRun("DELETE FROM fluxo_caixa WHERE conta_pagar_id = ?", [req.params.id]);
+    await dbRun("DELETE FROM fluxo_caixa WHERE conta_pagar_id = ? AND clinica_id = ?", [req.params.id, req.user.clinica_id]);
 
     // Remove a conta
-    await dbRun("DELETE FROM contas_pagar WHERE id = ?", [req.params.id]);
+    await dbRun("DELETE FROM contas_pagar WHERE id = ? AND clinica_id = ?", [req.params.id, req.user.clinica_id]);
 
     res.json({ mensagem: "Conta excluída com sucesso." });
   } catch (error) {
@@ -485,11 +507,11 @@ router.get("/contas-receber", auth, async (req, res) => {
     let sql = `
       SELECT cr.*, p.nome as paciente_nome, prof.nome as profissional_nome
       FROM contas_receber cr
-      LEFT JOIN pacientes p ON cr.paciente_id = p.id
-      LEFT JOIN profissionais prof ON cr.profissional_id = prof.id
-      WHERE 1=1
+      LEFT JOIN pacientes p ON cr.paciente_id = p.id AND p.clinica_id = cr.clinica_id
+      LEFT JOIN profissionais prof ON cr.profissional_id = prof.id AND prof.clinica_id = cr.clinica_id
+      WHERE cr.clinica_id = ?
     `;
-    const params = [];
+    const params = [req.user.clinica_id];
 
     if (status) { sql += " AND cr.status = ?"; params.push(status); }
     if (paciente_id) { sql += " AND cr.paciente_id = ?"; params.push(paciente_id); }
@@ -511,7 +533,8 @@ router.get("/contas-receber", auth, async (req, res) => {
         COALESCE(SUM(CASE WHEN status IN ('pendente','parcial') AND data_vencimento < date('now') THEN valor - valor_recebido ELSE 0 END), 0) as total_vencido,
         COUNT(CASE WHEN status IN ('pendente','parcial') AND data_vencimento < date('now') THEN 1 END) as qtd_vencidas
       FROM contas_receber
-    `);
+      WHERE clinica_id = ?
+    `, [req.user.clinica_id]);
 
     res.json({ contas, resumo });
   } catch (error) {
@@ -532,6 +555,23 @@ router.post("/contas-receber", auth, async (req, res) => {
       return res.status(400).json({ erro: "Descrição, valor e vencimento são obrigatórios." });
     }
 
+    if (paciente_id) {
+      const paciente = await dbGet("SELECT id FROM pacientes WHERE id = ? AND clinica_id = ?", [paciente_id, req.user.clinica_id]);
+      if (!paciente) return res.status(400).json({ erro: "Paciente inválido para esta clínica." });
+    }
+    if (profissional_id) {
+      const profissional = await dbGet("SELECT id FROM profissionais WHERE id = ? AND clinica_id = ?", [profissional_id, req.user.clinica_id]);
+      if (!profissional) return res.status(400).json({ erro: "Profissional inválido para esta clínica." });
+    }
+    if (orcamento_id) {
+      const orcamento = await dbGet("SELECT id FROM orcamentos WHERE id = ? AND clinica_id = ?", [orcamento_id, req.user.clinica_id]);
+      if (!orcamento) return res.status(400).json({ erro: "Orçamento inválido para esta clínica." });
+    }
+    if (tratamento_id) {
+      const tratamento = await dbGet("SELECT id FROM tratamentos WHERE id = ? AND clinica_id = ?", [tratamento_id, req.user.clinica_id]);
+      if (!tratamento) return res.status(400).json({ erro: "Tratamento inválido para esta clínica." });
+    }
+
     const parcelas = total_parcelas || 1;
     const valorComDesconto = valor - (desconto || 0);
     const valorParcela = valorComDesconto / parcelas;
@@ -546,8 +586,8 @@ router.post("/contas-receber", auth, async (req, res) => {
            (paciente_id, orcamento_id, tratamento_id, profissional_id,
             descricao, procedimento, valor, desconto, data_emissao,
             data_vencimento, forma_pagamento, status,
-            parcela_atual, total_parcelas, numero_nota, observacoes)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendente', ?, ?, ?, ?)`,
+            parcela_atual, total_parcelas, numero_nota, observacoes, clinica_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendente', ?, ?, ?, ?, ?)`,
         [
           paciente_id || null, orcamento_id || null, tratamento_id || null,
           profissional_id || null,
@@ -555,7 +595,7 @@ router.post("/contas-receber", auth, async (req, res) => {
           procedimento || null, valorParcela, i === 0 ? (desconto || 0) : 0,
           data_emissao || new Date().toISOString().split("T")[0],
           vencStr, forma_pagamento || "dinheiro",
-          i + 1, parcelas, numero_nota || null, observacoes || null,
+          i + 1, parcelas, numero_nota || null, observacoes || null, req.user.clinica_id,
         ]
       );
     }
@@ -581,11 +621,15 @@ router.put("/contas-receber/:id", auth, async (req, res) => {
        SET descricao = ?, procedimento = ?, valor = ?, desconto = ?,
            data_emissao = ?, data_vencimento = ?, forma_pagamento = ?,
            numero_nota = ?, observacoes = ?, paciente_id = ?, profissional_id = ?
-       WHERE id = ?`,
+       WHERE id = ? AND clinica_id = ?
+         AND EXISTS (SELECT 1 FROM pacientes p WHERE p.id = ? AND p.clinica_id = ?)
+         AND ( ? IS NULL OR EXISTS (SELECT 1 FROM profissionais pr WHERE pr.id = ? AND pr.clinica_id = ?) )`,
       [
         descricao, procedimento, valor, desconto, data_emissao,
         data_vencimento, forma_pagamento, numero_nota, observacoes,
-        paciente_id, profissional_id, req.params.id,
+        paciente_id, profissional_id, req.params.id, req.user.clinica_id,
+        paciente_id, req.user.clinica_id,
+        profissional_id || null, profissional_id || null, req.user.clinica_id,
       ]
     );
 
@@ -599,7 +643,7 @@ router.put("/contas-receber/:id", auth, async (req, res) => {
 router.put("/contas-receber/:id/receber", auth, async (req, res) => {
   try {
     const { valor_recebido, data_recebimento, forma_pagamento } = req.body;
-    const conta = await dbGet("SELECT * FROM contas_receber WHERE id = ?", [req.params.id]);
+    const conta = await dbGet("SELECT * FROM contas_receber WHERE id = ? AND clinica_id = ?", [req.params.id, req.user.clinica_id]);
     if (!conta) return res.status(404).json({ erro: "Conta não encontrada." });
 
     const novoValorRecebido = (conta.valor_recebido || 0) + (valor_recebido || conta.valor);
@@ -608,32 +652,34 @@ router.put("/contas-receber/:id/receber", auth, async (req, res) => {
     await dbRun(
       `UPDATE contas_receber
        SET valor_recebido = ?, data_recebimento = ?, forma_pagamento = ?, status = ?
-       WHERE id = ?`,
+       WHERE id = ? AND clinica_id = ?`,
       [
         novoValorRecebido,
         data_recebimento || new Date().toISOString().split("T")[0],
         forma_pagamento || conta.forma_pagamento,
         novoStatus,
         req.params.id,
+        req.user.clinica_id,
       ]
     );
 
     // Registrar no fluxo de caixa
     await dbRun(
-      `INSERT INTO fluxo_caixa (tipo, conta_receber_id, descricao, valor, data, forma_pagamento)
-       VALUES ('entrada', ?, ?, ?, ?, ?)`,
+      `INSERT INTO fluxo_caixa (tipo, conta_receber_id, descricao, valor, data, forma_pagamento, clinica_id)
+       VALUES ('entrada', ?, ?, ?, ?, ?, ?)`,
       [
         conta.id,
         `Receb: ${conta.descricao}`,
         valor_recebido || conta.valor,
         data_recebimento || new Date().toISOString().split("T")[0],
         forma_pagamento || conta.forma_pagamento,
+        req.user.clinica_id,
       ]
     );
 
     // Gerar comissão automaticamente se houver profissional
     if (conta.profissional_id && novoStatus === "pago") {
-      const prof = await dbGet("SELECT * FROM profissionais WHERE id = ?", [conta.profissional_id]);
+      const prof = await dbGet("SELECT * FROM profissionais WHERE id = ? AND clinica_id = ?", [conta.profissional_id, req.user.clinica_id]);
       if (prof && prof.ativo) {
         let valorComissao = 0;
         if (prof.tipo_comissao === "percentual") {
@@ -646,12 +692,13 @@ router.put("/contas-receber/:id/receber", auth, async (req, res) => {
           await dbRun(
             `INSERT INTO comissoes
                (profissional_id, conta_receber_id, paciente_id, procedimento,
-                valor_procedimento, percentual, valor_comissao, data_referencia, status)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pendente')`,
+                valor_procedimento, percentual, valor_comissao, data_referencia, status, clinica_id)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pendente', ?)`,
             [
               prof.id, conta.id, conta.paciente_id, conta.procedimento,
               conta.valor, prof.percentual_comissao, valorComissao,
               data_recebimento || new Date().toISOString().split("T")[0],
+              req.user.clinica_id,
             ]
           );
         }
@@ -667,17 +714,17 @@ router.put("/contas-receber/:id/receber", auth, async (req, res) => {
 // DELETE /financeiro/contas-receber/:id
 router.delete("/contas-receber/:id", auth, async (req, res) => {
   try {
-    const conta = await dbGet("SELECT * FROM contas_receber WHERE id = ?", [req.params.id]);
+    const conta = await dbGet("SELECT * FROM contas_receber WHERE id = ? AND clinica_id = ?", [req.params.id, req.user.clinica_id]);
     if (!conta) return res.status(404).json({ erro: "Conta não encontrada." });
 
     // Remove comissões vinculadas a esta conta (se houver)
-    await dbRun("DELETE FROM comissoes WHERE conta_receber_id = ?", [req.params.id]);
+    await dbRun("DELETE FROM comissoes WHERE conta_receber_id = ? AND clinica_id = ?", [req.params.id, req.user.clinica_id]);
 
     // Remove lançamentos do fluxo de caixa vinculados
-    await dbRun("DELETE FROM fluxo_caixa WHERE conta_receber_id = ?", [req.params.id]);
+    await dbRun("DELETE FROM fluxo_caixa WHERE conta_receber_id = ? AND clinica_id = ?", [req.params.id, req.user.clinica_id]);
 
     // Remove a conta
-    await dbRun("DELETE FROM contas_receber WHERE id = ?", [req.params.id]);
+    await dbRun("DELETE FROM contas_receber WHERE id = ? AND clinica_id = ?", [req.params.id, req.user.clinica_id]);
 
     res.json({ mensagem: "Conta excluída com sucesso." });
   } catch (error) {
@@ -708,17 +755,17 @@ router.get("/fluxo-caixa", auth, async (req, res) => {
 
       movimentacoes = await dbAll(
         `SELECT * FROM fluxo_caixa
-         WHERE data >= ?
+         WHERE clinica_id = ? AND data >= ?
          ORDER BY data ASC, id ASC`,
-        [dataInicioStr]
+        [req.user.clinica_id, dataInicioStr]
       );
     } else {
       const mesStr = String(mes).padStart(2, "0");
       movimentacoes = await dbAll(
         `SELECT * FROM fluxo_caixa
-         WHERE strftime('%Y-%m', data) = ?
+         WHERE clinica_id = ? AND strftime('%Y-%m', data) = ?
          ORDER BY data ASC, id ASC`,
-        [`${ano}-${mesStr}`]
+        [req.user.clinica_id, `${ano}-${mesStr}`]
       );
     }
 
@@ -761,19 +808,19 @@ router.get("/fluxo-caixa", auth, async (req, res) => {
     const projecaoReceber = await dbGet(
       `SELECT COALESCE(SUM(valor - valor_recebido), 0) as total
        FROM contas_receber
-       WHERE status IN ('pendente','parcial')
+       WHERE clinica_id = ? AND status IN ('pendente','parcial')
          AND strftime('%Y-%m', data_vencimento) = ?
          AND data_vencimento >= ?`,
-      [`${ano}-${mesStr}`, hoje]
+      [req.user.clinica_id, `${ano}-${mesStr}`, hoje]
     );
 
     const projecaoPagar = await dbGet(
       `SELECT COALESCE(SUM(valor - valor_pago), 0) as total
        FROM contas_pagar
-       WHERE status IN ('pendente','parcial')
+       WHERE clinica_id = ? AND status IN ('pendente','parcial')
          AND strftime('%Y-%m', data_vencimento) = ?
          AND data_vencimento >= ?`,
-      [`${ano}-${mesStr}`, hoje]
+      [req.user.clinica_id, `${ano}-${mesStr}`, hoje]
     );
 
     res.json({
@@ -806,10 +853,18 @@ router.post("/fluxo-caixa", auth, async (req, res) => {
       return res.status(400).json({ erro: "Tipo, descrição, valor e data são obrigatórios." });
     }
 
+    if (categoria_id) {
+      const categoria = await dbGet(
+        "SELECT id FROM categorias_financeiras WHERE id = ? AND clinica_id = ? AND ativo = 1",
+        [categoria_id, req.user.clinica_id]
+      );
+      if (!categoria) return res.status(400).json({ erro: "Categoria inválida para esta clínica." });
+    }
+
     const result = await dbRun(
-      `INSERT INTO fluxo_caixa (tipo, categoria_id, descricao, valor, data, forma_pagamento, observacoes)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [tipo, categoria_id || null, descricao, valor, data, forma_pagamento || null, observacoes || null]
+      `INSERT INTO fluxo_caixa (tipo, categoria_id, descricao, valor, data, forma_pagamento, observacoes, clinica_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [tipo, categoria_id || null, descricao, valor, data, forma_pagamento || null, observacoes || null, req.user.clinica_id]
     );
 
     res.status(201).json({ id: result.lastID, mensagem: "Lançamento registrado." });
@@ -821,7 +876,7 @@ router.post("/fluxo-caixa", auth, async (req, res) => {
 // DELETE /financeiro/fluxo-caixa/:id
 router.delete("/fluxo-caixa/:id", auth, async (req, res) => {
   try {
-    await dbRun("DELETE FROM fluxo_caixa WHERE id = ?", [req.params.id]);
+    await dbRun("DELETE FROM fluxo_caixa WHERE id = ? AND clinica_id = ?", [req.params.id, req.user.clinica_id]);
     res.json({ mensagem: "Lançamento excluído." });
   } catch (error) {
     res.status(500).json({ erro: "Erro ao excluir lançamento." });
@@ -848,12 +903,12 @@ router.get("/inadimplencia", auth, async (req, res) => {
         MAX(cr.data_vencimento) as vencimento_mais_recente,
         CAST(julianday('now') - julianday(MIN(cr.data_vencimento)) AS INTEGER) as dias_atraso_max
       FROM contas_receber cr
-      INNER JOIN pacientes p ON cr.paciente_id = p.id
-      WHERE cr.status IN ('pendente', 'parcial')
+      INNER JOIN pacientes p ON cr.paciente_id = p.id AND p.clinica_id = cr.clinica_id
+       WHERE cr.clinica_id = ? AND cr.status IN ('pendente', 'parcial')
         AND cr.data_vencimento < date('now')
       GROUP BY p.id
       ORDER BY valor_total_devido DESC
-    `);
+     `, [req.user.clinica_id]);
 
     // Classificar por gravidade
     const classificados = inadimplentes.map((i) => {
@@ -886,10 +941,10 @@ router.get("/inadimplencia", auth, async (req, res) => {
                 data_vencimento, forma_pagamento,
                 CAST(julianday('now') - julianday(data_vencimento) AS INTEGER) as dias_atraso
          FROM contas_receber
-         WHERE paciente_id = ? AND status IN ('pendente', 'parcial')
-           AND data_vencimento < date('now')
-         ORDER BY data_vencimento ASC`,
-        [inad.paciente_id]
+         WHERE paciente_id = ? AND clinica_id = ? AND status IN ('pendente', 'parcial')
+            AND data_vencimento < date('now')
+          ORDER BY data_vencimento ASC`,
+        [inad.paciente_id, req.user.clinica_id]
       );
     }
 
@@ -908,7 +963,7 @@ router.get("/inadimplencia", auth, async (req, res) => {
 router.get("/profissionais", auth, async (req, res) => {
   try {
     const profissionais = await dbAll(
-      "SELECT * FROM profissionais WHERE ativo = 1 ORDER BY nome"
+      "SELECT * FROM profissionais WHERE ativo = 1 AND clinica_id = ? ORDER BY nome", [req.user.clinica_id]
     );
     res.json(profissionais);
   } catch (error) {
@@ -929,13 +984,13 @@ router.post("/profissionais", auth, async (req, res) => {
     const result = await dbRun(
       `INSERT INTO profissionais
          (nome, cpf, cro, especialidade, telefone, email, tipo,
-          percentual_comissao, valor_fixo_comissao, tipo_comissao, observacoes)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          percentual_comissao, valor_fixo_comissao, tipo_comissao, observacoes, clinica_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         nome, cpf || null, cro || null, especialidade || null,
         telefone || null, email || null, tipo || "dentista",
         percentual_comissao || 0, valor_fixo_comissao || 0,
-        tipo_comissao || "percentual", observacoes || null,
+        tipo_comissao || "percentual", observacoes || null, req.user.clinica_id,
       ]
     );
 
@@ -958,11 +1013,11 @@ router.put("/profissionais/:id", auth, async (req, res) => {
        SET nome = ?, cpf = ?, cro = ?, especialidade = ?, telefone = ?,
            email = ?, tipo = ?, percentual_comissao = ?, valor_fixo_comissao = ?,
            tipo_comissao = ?, observacoes = ?
-       WHERE id = ?`,
+       WHERE id = ? AND clinica_id = ?`,
       [
         nome, cpf, cro, especialidade, telefone, email, tipo,
         percentual_comissao, valor_fixo_comissao, tipo_comissao,
-        observacoes, req.params.id,
+        observacoes, req.params.id, req.user.clinica_id,
       ]
     );
 
@@ -975,7 +1030,7 @@ router.put("/profissionais/:id", auth, async (req, res) => {
 // DELETE /financeiro/profissionais/:id (soft delete)
 router.delete("/profissionais/:id", auth, async (req, res) => {
   try {
-    await dbRun("UPDATE profissionais SET ativo = 0 WHERE id = ?", [req.params.id]);
+    await dbRun("UPDATE profissionais SET ativo = 0 WHERE id = ? AND clinica_id = ?", [req.params.id, req.user.clinica_id]);
     res.json({ mensagem: "Profissional desativado." });
   } catch (error) {
     res.status(500).json({ erro: "Erro ao desativar profissional." });
@@ -994,11 +1049,11 @@ router.get("/comissoes", auth, async (req, res) => {
       SELECT c.*, pr.nome as profissional_nome, pr.cro as profissional_cro,
              p.nome as paciente_nome
       FROM comissoes c
-      INNER JOIN profissionais pr ON c.profissional_id = pr.id
-      LEFT JOIN pacientes p ON c.paciente_id = p.id
-      WHERE 1=1
+      INNER JOIN profissionais pr ON c.profissional_id = pr.id AND pr.clinica_id = c.clinica_id
+      LEFT JOIN pacientes p ON c.paciente_id = p.id AND p.clinica_id = c.clinica_id
+      WHERE c.clinica_id = ?
     `;
-    const params = [];
+    const params = [req.user.clinica_id];
 
     if (profissional_id) { sql += " AND c.profissional_id = ?"; params.push(profissional_id); }
     if (status) { sql += " AND c.status = ?"; params.push(status); }
@@ -1049,22 +1104,23 @@ router.get("/comissoes", auth, async (req, res) => {
 router.put("/comissoes/:id/pagar", auth, async (req, res) => {
   try {
     const { data_pagamento } = req.body;
-    const comissao = await dbGet("SELECT * FROM comissoes WHERE id = ?", [req.params.id]);
+    const comissao = await dbGet("SELECT * FROM comissoes WHERE id = ? AND clinica_id = ?", [req.params.id, req.user.clinica_id]);
     if (!comissao) return res.status(404).json({ erro: "Comissão não encontrada." });
 
     await dbRun(
-      "UPDATE comissoes SET status = 'pago', data_pagamento = ? WHERE id = ?",
-      [data_pagamento || new Date().toISOString().split("T")[0], req.params.id]
+      "UPDATE comissoes SET status = 'pago', data_pagamento = ? WHERE id = ? AND clinica_id = ?",
+      [data_pagamento || new Date().toISOString().split("T")[0], req.params.id, req.user.clinica_id]
     );
 
     // Registrar saída no fluxo
     await dbRun(
-      `INSERT INTO fluxo_caixa (tipo, descricao, valor, data, forma_pagamento)
-       VALUES ('saida', ?, ?, ?, 'transferencia')`,
+      `INSERT INTO fluxo_caixa (tipo, descricao, valor, data, forma_pagamento, clinica_id)
+       VALUES ('saida', ?, ?, ?, 'transferencia', ?)`,
       [
         `Comissão: ${comissao.procedimento || "Procedimento"}`,
         comissao.valor_comissao,
         data_pagamento || new Date().toISOString().split("T")[0],
+        req.user.clinica_id,
       ]
     );
 
@@ -1083,13 +1139,13 @@ router.put("/comissoes/pagar-lote", auth, async (req, res) => {
     const dataPgto = data_pagamento || new Date().toISOString().split("T")[0];
 
     for (const id of ids) {
-      const comissao = await dbGet("SELECT * FROM comissoes WHERE id = ? AND status = 'pendente'", [id]);
+      const comissao = await dbGet("SELECT * FROM comissoes WHERE id = ? AND status = 'pendente' AND clinica_id = ?", [id, req.user.clinica_id]);
       if (comissao) {
-        await dbRun("UPDATE comissoes SET status = 'pago', data_pagamento = ? WHERE id = ?", [dataPgto, id]);
+        await dbRun("UPDATE comissoes SET status = 'pago', data_pagamento = ? WHERE id = ? AND clinica_id = ?", [dataPgto, id, req.user.clinica_id]);
         await dbRun(
-          `INSERT INTO fluxo_caixa (tipo, descricao, valor, data, forma_pagamento)
-           VALUES ('saida', ?, ?, ?, 'transferencia')`,
-          [`Comissão: ${comissao.procedimento || "Procedimento"}`, comissao.valor_comissao, dataPgto]
+          `INSERT INTO fluxo_caixa (tipo, descricao, valor, data, forma_pagamento, clinica_id)
+           VALUES ('saida', ?, ?, ?, 'transferencia', ?)`,
+          [`Comissão: ${comissao.procedimento || "Procedimento"}`, comissao.valor_comissao, dataPgto, req.user.clinica_id]
         );
       }
     }
@@ -1108,7 +1164,7 @@ router.put("/comissoes/pagar-lote", auth, async (req, res) => {
 router.get("/formas-pagamento", auth, async (req, res) => {
   try {
     const formas = await dbAll(
-      "SELECT * FROM formas_pagamento_config WHERE ativo = 1 ORDER BY nome"
+      "SELECT * FROM formas_pagamento_config WHERE ativo = 1 AND clinica_id = ? ORDER BY nome", [req.user.clinica_id]
     );
     res.json(formas);
   } catch (error) {
@@ -1124,9 +1180,9 @@ router.post("/formas-pagamento", auth, async (req, res) => {
 
     const result = await dbRun(
       `INSERT INTO formas_pagamento_config
-         (nome, tipo, taxa_percentual, taxa_fixa, prazo_recebimento, max_parcelas)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [nome, tipo || "outros", taxa_percentual || 0, taxa_fixa || 0, prazo_recebimento || 0, max_parcelas || 1]
+         (nome, tipo, taxa_percentual, taxa_fixa, prazo_recebimento, max_parcelas, clinica_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [nome, tipo || "outros", taxa_percentual || 0, taxa_fixa || 0, prazo_recebimento || 0, max_parcelas || 1, req.user.clinica_id]
     );
 
     res.status(201).json({ id: result.lastID, mensagem: "Forma de pagamento criada." });
@@ -1143,8 +1199,8 @@ router.put("/formas-pagamento/:id", auth, async (req, res) => {
       `UPDATE formas_pagamento_config
        SET nome = ?, tipo = ?, taxa_percentual = ?, taxa_fixa = ?,
            prazo_recebimento = ?, max_parcelas = ?
-       WHERE id = ?`,
-      [nome, tipo, taxa_percentual, taxa_fixa, prazo_recebimento, max_parcelas, req.params.id]
+       WHERE id = ? AND clinica_id = ?`,
+      [nome, tipo, taxa_percentual, taxa_fixa, prazo_recebimento, max_parcelas, req.params.id, req.user.clinica_id]
     );
     res.json({ mensagem: "Forma de pagamento atualizada." });
   } catch (error) {
@@ -1155,7 +1211,7 @@ router.put("/formas-pagamento/:id", auth, async (req, res) => {
 // DELETE /financeiro/formas-pagamento/:id
 router.delete("/formas-pagamento/:id", auth, async (req, res) => {
   try {
-    await dbRun("UPDATE formas_pagamento_config SET ativo = 0 WHERE id = ?", [req.params.id]);
+    await dbRun("UPDATE formas_pagamento_config SET ativo = 0 WHERE id = ? AND clinica_id = ?", [req.params.id, req.user.clinica_id]);
     res.json({ mensagem: "Forma de pagamento desativada." });
   } catch (error) {
     res.status(500).json({ erro: "Erro ao desativar forma de pagamento." });
@@ -1170,7 +1226,7 @@ router.delete("/formas-pagamento/:id", auth, async (req, res) => {
 router.get("/metas", auth, async (req, res) => {
   try {
     const ano = parseInt(req.query.ano) || new Date().getFullYear();
-    const metas = await dbAll("SELECT * FROM metas_financeiras WHERE ano = ? ORDER BY mes", [ano]);
+    const metas = await dbAll("SELECT * FROM metas_financeiras WHERE ano = ? AND clinica_id = ? ORDER BY mes", [ano, req.user.clinica_id]);
     res.json(metas);
   } catch (error) {
     res.status(500).json({ erro: "Erro ao listar metas." });
@@ -1187,22 +1243,22 @@ router.post("/metas", auth, async (req, res) => {
 
     // Verificar se já existe meta para o mesmo mês/ano/tipo
     const existente = await dbGet(
-      "SELECT id FROM metas_financeiras WHERE mes = ? AND ano = ? AND tipo = ?",
-      [mes, ano, tipo || "receita"]
+      "SELECT id FROM metas_financeiras WHERE mes = ? AND ano = ? AND tipo = ? AND clinica_id = ?",
+      [mes, ano, tipo || "receita", req.user.clinica_id]
     );
 
     if (existente) {
       await dbRun(
-        "UPDATE metas_financeiras SET titulo = ?, valor_meta = ?, observacoes = ? WHERE id = ?",
-        [titulo, valor_meta, observacoes || null, existente.id]
+        "UPDATE metas_financeiras SET titulo = ?, valor_meta = ?, observacoes = ? WHERE id = ? AND clinica_id = ?",
+        [titulo, valor_meta, observacoes || null, existente.id, req.user.clinica_id]
       );
       return res.json({ mensagem: "Meta atualizada." });
     }
 
     const result = await dbRun(
-      `INSERT INTO metas_financeiras (titulo, tipo, valor_meta, mes, ano, observacoes)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [titulo, tipo || "receita", valor_meta, mes, ano, observacoes || null]
+      `INSERT INTO metas_financeiras (titulo, tipo, valor_meta, mes, ano, observacoes, clinica_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [titulo, tipo || "receita", valor_meta, mes, ano, observacoes || null, req.user.clinica_id]
     );
 
     res.status(201).json({ id: result.lastID, mensagem: "Meta criada." });
@@ -1214,7 +1270,7 @@ router.post("/metas", auth, async (req, res) => {
 // DELETE /financeiro/metas/:id
 router.delete("/metas/:id", auth, async (req, res) => {
   try {
-    await dbRun("DELETE FROM metas_financeiras WHERE id = ?", [req.params.id]);
+    await dbRun("DELETE FROM metas_financeiras WHERE id = ? AND clinica_id = ?", [req.params.id, req.user.clinica_id]);
     res.json({ mensagem: "Meta excluída." });
   } catch (error) {
     res.status(500).json({ erro: "Erro ao excluir meta." });
@@ -1240,10 +1296,10 @@ router.get("/dre", auth, async (req, res) => {
          COALESCE(cr.procedimento, 'Outros') as categoria,
          COALESCE(SUM(cr.valor_recebido), 0) as total
        FROM contas_receber cr
-       WHERE cr.status = 'pago' AND strftime('%Y-%m', cr.data_recebimento) = ?
+       WHERE cr.clinica_id = ? AND cr.status = 'pago' AND strftime('%Y-%m', cr.data_recebimento) = ?
        GROUP BY cr.procedimento
        ORDER BY total DESC`,
-      [periodo]
+      [req.user.clinica_id, periodo]
     );
 
     // Receitas legadas
@@ -1252,10 +1308,10 @@ router.get("/dre", auth, async (req, res) => {
          COALESCE(pg.descricao, 'Procedimento') as categoria,
          COALESCE(SUM(pg.valor), 0) as total
        FROM pagamentos pg
-       WHERE pg.status = 'confirmado' AND strftime('%Y-%m', pg.data) = ?
+       WHERE pg.clinica_id = ? AND pg.status = 'confirmado' AND strftime('%Y-%m', pg.data) = ?
        GROUP BY pg.descricao
        ORDER BY total DESC`,
-      [periodo]
+      [req.user.clinica_id, periodo]
     );
 
     // Despesas por categoria
@@ -1265,19 +1321,19 @@ router.get("/dre", auth, async (req, res) => {
          cf.cor,
          COALESCE(SUM(cp.valor_pago), 0) as total
        FROM contas_pagar cp
-       LEFT JOIN categorias_financeiras cf ON cp.categoria_id = cf.id
-       WHERE cp.status = 'pago' AND strftime('%Y-%m', cp.data_pagamento) = ?
+       LEFT JOIN categorias_financeiras cf ON cp.categoria_id = cf.id AND cf.clinica_id = cp.clinica_id
+       WHERE cp.clinica_id = ? AND cp.status = 'pago' AND strftime('%Y-%m', cp.data_pagamento) = ?
        GROUP BY cp.categoria_id
        ORDER BY total DESC`,
-      [periodo]
+      [req.user.clinica_id, periodo]
     );
 
     // Comissões do mês
     const comissoes = await dbGet(
       `SELECT COALESCE(SUM(valor_comissao), 0) as total
        FROM comissoes
-       WHERE strftime('%Y-%m', data_referencia) = ?`,
-      [periodo]
+       WHERE clinica_id = ? AND strftime('%Y-%m', data_referencia) = ?`,
+      [req.user.clinica_id, periodo]
     );
 
     const totalReceitas = receitas.reduce((s, r) => s + r.total, 0)
@@ -1328,8 +1384,8 @@ router.get("/kpis", auth, async (req, res) => {
          COUNT(*) as total_recebimentos,
          COALESCE(AVG(valor_recebido), 0) as ticket_medio
        FROM contas_receber
-       WHERE status = 'pago' AND strftime('%Y-%m', data_recebimento) = ?`,
-      [periodo]
+       WHERE clinica_id = ? AND status = 'pago' AND strftime('%Y-%m', data_recebimento) = ?`,
+      [req.user.clinica_id, periodo]
     );
 
     // Taxa de conversão (orçamentos aprovados vs total)
@@ -1338,8 +1394,8 @@ router.get("/kpis", auth, async (req, res) => {
          COUNT(*) as total,
          COUNT(CASE WHEN status = 'aprovado' THEN 1 END) as aprovados
        FROM orcamentos
-       WHERE strftime('%Y-%m', data) = ?`,
-      [periodo]
+       WHERE clinica_id = ? AND strftime('%Y-%m', data) = ?`,
+      [req.user.clinica_id, periodo]
     );
 
     // Receita por procedimento (top 5)
@@ -1350,11 +1406,11 @@ router.get("/kpis", auth, async (req, res) => {
          COALESCE(SUM(valor_recebido), 0) as receita_total,
          COALESCE(AVG(valor_recebido), 0) as valor_medio
        FROM contas_receber
-       WHERE status = 'pago' AND strftime('%Y-%m', data_recebimento) = ?
+       WHERE clinica_id = ? AND status = 'pago' AND strftime('%Y-%m', data_recebimento) = ?
        GROUP BY procedimento
        ORDER BY receita_total DESC
        LIMIT 5`,
-      [periodo]
+      [req.user.clinica_id, periodo]
     );
 
     // Receita por profissional
@@ -1364,19 +1420,19 @@ router.get("/kpis", auth, async (req, res) => {
          COUNT(cr.id) as atendimentos,
          COALESCE(SUM(cr.valor_recebido), 0) as receita_total
        FROM contas_receber cr
-       INNER JOIN profissionais pr ON cr.profissional_id = pr.id
-       WHERE cr.status = 'pago' AND strftime('%Y-%m', cr.data_recebimento) = ?
+       INNER JOIN profissionais pr ON cr.profissional_id = pr.id AND pr.clinica_id = cr.clinica_id
+       WHERE cr.clinica_id = ? AND cr.status = 'pago' AND strftime('%Y-%m', cr.data_recebimento) = ?
        GROUP BY cr.profissional_id
        ORDER BY receita_total DESC`,
-      [periodo]
+      [req.user.clinica_id, periodo]
     );
 
     // Pacientes novos no mês
     const pacientesNovos = await dbGet(
       `SELECT COUNT(*) as total
        FROM pacientes
-       WHERE strftime('%Y-%m', COALESCE(data_nascimento, '')) != ?`,
-      [periodo]
+       WHERE clinica_id = ? AND strftime('%Y-%m', COALESCE(data_nascimento, '')) != ?`,
+      [req.user.clinica_id, periodo]
     );
 
     // Comparativo com mês anterior
@@ -1387,15 +1443,15 @@ router.get("/kpis", auth, async (req, res) => {
     const receitaMesAnterior = await dbGet(
       `SELECT COALESCE(SUM(valor_recebido), 0) as total
        FROM contas_receber
-       WHERE status = 'pago' AND strftime('%Y-%m', data_recebimento) = ?`,
-      [periodoAnterior]
+       WHERE clinica_id = ? AND status = 'pago' AND strftime('%Y-%m', data_recebimento) = ?`,
+      [req.user.clinica_id, periodoAnterior]
     );
 
     const receitaMesAtual = await dbGet(
       `SELECT COALESCE(SUM(valor_recebido), 0) as total
        FROM contas_receber
-       WHERE status = 'pago' AND strftime('%Y-%m', data_recebimento) = ?`,
-      [periodo]
+       WHERE clinica_id = ? AND status = 'pago' AND strftime('%Y-%m', data_recebimento) = ?`,
+      [req.user.clinica_id, periodo]
     );
 
     const variacaoReceita = receitaMesAnterior?.total > 0
@@ -1405,17 +1461,17 @@ router.get("/kpis", auth, async (req, res) => {
     // Taxa de inadimplência
     const totalFaturado = await dbGet(
       `SELECT COALESCE(SUM(valor), 0) as total FROM contas_receber
-       WHERE strftime('%Y-%m', data_vencimento) = ?`,
-      [periodo]
+       WHERE clinica_id = ? AND strftime('%Y-%m', data_vencimento) = ?`,
+      [req.user.clinica_id, periodo]
     );
 
     const totalInadimplente = await dbGet(
       `SELECT COALESCE(SUM(valor - valor_recebido), 0) as total
        FROM contas_receber
-       WHERE status IN ('pendente','parcial')
+       WHERE clinica_id = ? AND status IN ('pendente','parcial')
          AND data_vencimento < date('now')
          AND strftime('%Y-%m', data_vencimento) = ?`,
-      [periodo]
+      [req.user.clinica_id, periodo]
     );
 
     const taxaInadimplencia = totalFaturado?.total > 0
@@ -1461,10 +1517,10 @@ router.get("/exportar/contas-pagar", auth, async (req, res) => {
              cp.data_vencimento, cp.data_pagamento, cp.forma_pagamento,
              cp.status, cf.nome as categoria
       FROM contas_pagar cp
-      LEFT JOIN categorias_financeiras cf ON cp.categoria_id = cf.id
-      WHERE 1=1
+      LEFT JOIN categorias_financeiras cf ON cp.categoria_id = cf.id AND cf.clinica_id = cp.clinica_id
+      WHERE cp.clinica_id = ?
     `;
-    const params = [];
+    const params = [req.user.clinica_id];
 
     if (mes && ano) {
       sql += " AND strftime('%Y-%m', cp.data_vencimento) = ?";
@@ -1497,10 +1553,10 @@ router.get("/exportar/contas-receber", auth, async (req, res) => {
              cr.valor_recebido, cr.desconto, cr.data_vencimento,
              cr.data_recebimento, cr.forma_pagamento, cr.status
       FROM contas_receber cr
-      LEFT JOIN pacientes p ON cr.paciente_id = p.id
-      WHERE 1=1
+      LEFT JOIN pacientes p ON cr.paciente_id = p.id AND p.clinica_id = cr.clinica_id
+      WHERE cr.clinica_id = ?
     `;
-    const params = [];
+    const params = [req.user.clinica_id];
 
     if (mes && ano) {
       sql += " AND strftime('%Y-%m', cr.data_vencimento) = ?";
@@ -1536,9 +1592,9 @@ router.get("/exportar/fluxo-caixa", auth, async (req, res) => {
     const rows = await dbAll(
       `SELECT tipo, descricao, valor, data, forma_pagamento
        FROM fluxo_caixa
-       WHERE strftime('%Y-%m', data) = ?
+       WHERE clinica_id = ? AND strftime('%Y-%m', data) = ?
        ORDER BY data ASC`,
-      [periodo]
+      [req.user.clinica_id, periodo]
     );
 
     const header = "Tipo;Descrição;Valor;Data;Forma Pgto\n";
@@ -1565,11 +1621,11 @@ router.get("/exportar/inadimplencia", auth, async (req, res) => {
         cr.data_vencimento,
         CAST(julianday('now') - julianday(cr.data_vencimento) AS INTEGER) as dias_atraso
       FROM contas_receber cr
-      INNER JOIN pacientes p ON cr.paciente_id = p.id
-      WHERE cr.status IN ('pendente', 'parcial')
+      INNER JOIN pacientes p ON cr.paciente_id = p.id AND p.clinica_id = cr.clinica_id
+      WHERE cr.clinica_id = ? AND cr.status IN ('pendente', 'parcial')
         AND cr.data_vencimento < date('now')
       ORDER BY dias_atraso DESC
-    `);
+    `, [req.user.clinica_id]);
 
     const header = "Paciente;Telefone;Email;Descrição;Valor;Recebido;Restante;Vencimento;Dias Atraso\n";
     const csv = header + rows.map((r) =>
@@ -1593,11 +1649,11 @@ router.get("/exportar/comissoes", auth, async (req, res) => {
              p.nome as paciente, c.valor_procedimento, c.percentual,
              c.valor_comissao, c.data_referencia, c.status, c.data_pagamento
       FROM comissoes c
-      INNER JOIN profissionais pr ON c.profissional_id = pr.id
-      LEFT JOIN pacientes p ON c.paciente_id = p.id
-      WHERE 1=1
-    `;
-    const params = [];
+      INNER JOIN profissionais pr ON c.profissional_id = pr.id AND pr.clinica_id = c.clinica_id
+       LEFT JOIN pacientes p ON c.paciente_id = p.id AND p.clinica_id = c.clinica_id
+       WHERE c.clinica_id = ?
+     `;
+     const params = [req.user.clinica_id];
 
     if (mes && ano) {
       sql += " AND strftime('%Y-%m', c.data_referencia) = ?";
