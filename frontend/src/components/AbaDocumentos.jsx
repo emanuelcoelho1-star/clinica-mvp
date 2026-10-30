@@ -272,7 +272,6 @@ function AbaDocumentos({ pacienteId, paciente }) {
     { id: "receitas", label: "Receitas", filtro: (d) => d.tipo === "receita" },
     { id: "termos", label: "Termos", filtro: (d) => ["termo", "termos"].includes(String(d.tipo || "").toLowerCase()) },
     { id: "contratos", label: "Contratos", filtro: (d) => ["contrato", "contratos"].includes(String(d.tipo || "").toLowerCase()) },
-    { id: "outros", label: "Outros arquivos", filtro: (d) => !["atestado", "receita", "termo", "termos", "contrato", "contratos"].includes(String(d.tipo || "").toLowerCase()) },
   ];
   const documentosDaSecao = documentos.filter(
     (documento) => secoesDocumentos.find((secao) => secao.id === secaoAtiva).filtro(documento)
