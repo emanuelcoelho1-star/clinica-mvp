@@ -51,10 +51,7 @@
     gap: 8px !important;
   }
 
-  /* Agenda — scroll horizontal */
-  div[style*="grid-template-columns: 68px repeat(6"] {
-    grid-template-columns: 50px repeat(6, 120px) !important;
-  }
+  /* Agenda: no celular a própria página mostra 1 dia por vez (Agenda.jsx) */
   div[style*="border-radius: 16px"][style*="overflow: hidden"] {
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch;

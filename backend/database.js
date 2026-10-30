@@ -691,6 +691,13 @@ db.serialize(() => {
   adicionarColunaSeNaoExistir("usuarios", "nome", "TEXT DEFAULT 'Administrador'");
   adicionarColunaSeNaoExistir("usuarios", "created_at", "TEXT");
   adicionarColunaSeNaoExistir("usuarios", "role_id", "INTEGER DEFAULT 1"); // ← NOVO: RBAC
+
+  // Agenda: profissional, duração e confirmação por WhatsApp
+  adicionarColunaSeNaoExistir("consultas", "profissional_id", "INTEGER REFERENCES profissionais(id)");
+  adicionarColunaSeNaoExistir("consultas", "duracao", "INTEGER DEFAULT 30");
+  adicionarColunaSeNaoExistir("consultas", "observacoes", "TEXT");
+  adicionarColunaSeNaoExistir("consultas", "lembrete_enviado_em", "TEXT");
+  adicionarColunaSeNaoExistir("consultas", "confirmado_em", "TEXT");
 });
 
 module.exports = db;
