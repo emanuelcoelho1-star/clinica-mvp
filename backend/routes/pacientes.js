@@ -434,7 +434,7 @@ function dbRun(sql, params = []) {
 const uploadDir = path.join(__dirname, "..", "uploads");
 
 // Tabelas clínicas apagadas junto com o paciente (todas têm paciente_id e clinica_id)
-const TABELAS_DO_PACIENTE = ["consultas", "tratamentos", "evolucoes", "anamneses", "documentos", "arquivos", "pastas_arquivos", "odontogramas"];
+const TABELAS_DO_PACIENTE = ["contatos_paciente", "retornos", "consultas", "tratamentos", "evolucoes", "anamneses", "documentos", "arquivos", "pastas_arquivos", "odontogramas"];
 
 router.delete("/:id", auth, async (req, res) => {
   const { id } = req.params;
