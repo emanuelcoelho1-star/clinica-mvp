@@ -380,6 +380,16 @@ function AbaArquivos({ pacienteId }) {
     return matchBusca && matchCategoria;
   });
 
+  // Pastas e arquivos compartilham a mesma grade e são ordenados pela data de criação.
+  const itensOrdenados = [
+    ...pastasDaPasta.map((item) => ({ ...item, tipoItem: "pasta" })),
+    ...arquivosFiltrados.map((item) => ({ ...item, tipoItem: "arquivo" })),
+  ].sort((a, b) => {
+    const dataA = new Date(a.created_at || a.data_criacao || a.data || 0).getTime() || 0;
+    const dataB = new Date(b.created_at || b.data_criacao || b.data || 0).getTime() || 0;
+    return dataA - dataB || (Number(a.id) - Number(b.id));
+  });
+
   function iniciarSelecaoArquivo(tipo) {
     setTipoSelecao(tipo);
     setMenuNovoAberto(false);
@@ -628,31 +638,59 @@ function AbaArquivos({ pacienteId }) {
 
             {/* Área de conteúdo no estilo do explorador de arquivos do Windows */}
             <div style={S.contentPanel}>
-              {pastasDaPasta.length > 0 && <div style={S.folderGrid}>
-                {pastasDaPasta.map((p) => {
-                  const hovered = hoveredCardId === `pasta-${p.id}`;
-                  const abrirPasta = () => { setPastaAtualId(p.id); setBusca(""); setFiltroCategoria("todos"); };
-                  return (
-                    <div
-                      key={p.id}
-                      style={{ ...S.folderCard, ...(hovered ? S.fileExplorerItemHover : {}) }}
-                      onMouseEnter={() => setHoveredCardId(`pasta-${p.id}`)}
-                      onMouseLeave={() => setHoveredCardId(null)}
-                    >
-                      <button type="button" style={S.folderOpenButton} onClick={abrirPasta} title={`Abrir pasta ${p.nome}`}>
-                        <span style={S.folderCardIcon}>{Icons.folderCard}</span>
-                        <span style={S.folderCardName}>{p.nome}</span>
-                      </button>
-                      {hovered && (
-                        <div style={S.fileTileActions}>
-                          <button type="button" title="Abrir pasta" aria-label={`Abrir pasta ${p.nome}`} style={S.fileTileAction} onClick={abrirPasta}>{Icons.folderSmall}</button>
-                          <button type="button" title="Excluir pasta" aria-label={`Excluir pasta ${p.nome}`} style={{ ...S.fileTileAction, color: "#dc2626" }} onClick={() => setConfirmarExclusaoPasta(p)}>{Icons.trash}</button>
+              {itensOrdenados.length > 0 && (
+                <div style={S.fileExplorerGrid}>
+                  {itensOrdenados.map((item) => {
+                    if (item.tipoItem === "pasta") {
+                      const p = item;
+                      const hovered = hoveredCardId === `pasta-${p.id}`;
+                      const abrirPasta = () => { setPastaAtualId(p.id); setBusca(""); setFiltroCategoria("todos"); };
+                      return (
+                        <div
+                          key={`pasta-${p.id}`}
+                          style={{ ...S.folderCard, ...(hovered ? S.fileExplorerItemHover : {}) }}
+                          onMouseEnter={() => setHoveredCardId(`pasta-${p.id}`)}
+                          onMouseLeave={() => setHoveredCardId(null)}
+                        >
+                          <button type="button" style={S.folderOpenButton} onClick={abrirPasta} title={`Abrir pasta ${p.nome}`}>
+                            <span style={S.folderCardIcon}>{Icons.folderCard}</span>
+                            <span style={S.folderCardName}>{p.nome}</span>
+                          </button>
+                          {hovered && (
+                            <div style={S.fileTileActions}>
+                              <button type="button" title="Abrir pasta" aria-label={`Abrir pasta ${p.nome}`} style={S.fileTileAction} onClick={abrirPasta}>{Icons.folderSmall}</button>
+                              <button type="button" title="Excluir pasta" aria-label={`Excluir pasta ${p.nome}`} style={{ ...S.fileTileAction, color: "#dc2626" }} onClick={() => setConfirmarExclusaoPasta(p)}>{Icons.trash}</button>
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>}
+                      );
+                    }
+
+                    const a = item;
+                    const hovered = hoveredCardId === a.id;
+                    return (
+                      <div
+                        key={`arquivo-${a.id}`}
+                        style={{ ...S.fileExplorerItem, ...(hovered ? S.fileExplorerItemHover : {}) }}
+                        onMouseEnter={() => setHoveredCardId(a.id)}
+                        onMouseLeave={() => setHoveredCardId(null)}
+                      >
+                        <button type="button" style={S.fileTileButton}
+                          onClick={() => abrirPreview(a)}
+                          title={a.nome_original || "Visualizar arquivo"}>
+                          <FileIcon arquivo={a} />
+                        </button>
+                        <div style={S.fileTileName} title={a.nome_original || "Arquivo"}>{a.nome_original || "Arquivo"}</div>
+                        <div style={S.fileTileMeta}>{formatarDataBR(a.created_at || a.data)}</div>
+                        {hovered && <div style={S.fileTileActions}>
+                          <button type="button" title="Baixar" style={S.fileTileAction} onClick={() => baixarArquivo(a)}>{Icons.download}</button>
+                          <button type="button" title="Excluir" style={{ ...S.fileTileAction, color: "#dc2626" }} onClick={() => setConfirmarExclusao(a)}>{Icons.trash}</button>
+                        </div>}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
 
               {arquivosDaPasta.length > 0 && arquivosFiltrados.length === 0 && (
                 <div style={S.panelEmptyHint}>
@@ -689,7 +727,7 @@ function AbaArquivos({ pacienteId }) {
                 </div>
               )}
 
-              {arquivosFiltrados.length === 0 && pastasDaPasta.length === 0 && (
+              {itensOrdenados.length === 0 && (
                 <div style={S.emptyBox}>
                   {Icons.folder}
                   <h3 style={S.emptyTitle}>{pastaAtualId ? "Esta pasta está vazia" : "Nenhum arquivo armazenado"}</h3>
