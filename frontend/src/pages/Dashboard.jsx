@@ -245,13 +245,29 @@ function Dashboard() {
     [consultas, hoje]
   );
 
+  const agoraISO = (() => {
+    const agora = new Date();
+    const data = [agora.getFullYear(), String(agora.getMonth() + 1).padStart(2, "0"), String(agora.getDate()).padStart(2, "0")].join("-");
+    const horario = String(agora.getHours()).padStart(2, "0") + ":" + String(agora.getMinutes()).padStart(2, "0");
+    return data + "T" + horario;
+  })();
+
   const proximasConsultas = useMemo(
     () =>
       [...consultas]
-        .filter((c) => c.data >= hoje)
-        .sort((a, b) => `${a.data}T${a.horario}`.localeCompare(`${b.data}T${b.horario}`))
+        .filter((c) => c.status === "agendado" && (c.data + "T" + (c.horario || "").slice(0, 5)) >= agoraISO)
+        .sort((a, b) => (a.data + "T" + a.horario).localeCompare(b.data + "T" + b.horario))
         .slice(0, 6),
-    [consultas, hoje]
+    [consultas, agoraISO]
+  );
+
+  const ultimasConsultas = useMemo(
+    () =>
+      [...consultas]
+        .filter((c) => c.status !== "cancelado" && (c.data + "T" + (c.horario || "").slice(0, 5)) < agoraISO)
+        .sort((a, b) => (b.data + "T" + b.horario).localeCompare(a.data + "T" + a.horario))
+        .slice(0, 6),
+    [consultas, agoraISO]
   );
 
   const consultasSemana = useMemo(() => {
@@ -398,8 +414,31 @@ function Dashboard() {
         </SectionCard>
       </div>
 
-      {/* ── Grid Inferior ────────────────────────── */}
+      {/* ── Últimas consultas ────────────────────── */}
       <div style={S.mainGrid}>
+        <SectionCard
+          title="Últimas consultas"
+          icon={Icons.activity}
+          action="Ver agenda completa"
+          onAction={() => navigate("/agenda")}
+          empty={ultimasConsultas.length === 0 ? "Nenhuma consulta anterior encontrada." : null}
+        >
+          <ul style={S.listUl}>
+            {ultimasConsultas.map((c, i) => (
+              <li key={c.id} style={{ ...S.listRow, borderBottom: i < ultimasConsultas.length - 1 ? "1px solid #f1f5f9" : "none" }}>
+                <div style={S.dateBox}>
+                  <span style={S.dateDia}>{c.data.split("-")[2]}</span>
+                  <span style={S.dateMes}>{new Date(c.data + "T00:00:00").toLocaleDateString("pt-BR", { month: "short" }).replace(".", "")}</span>
+                </div>
+                <div style={S.rowInfo}>
+                  <strong style={S.rowNome}>{c.paciente_nome || "Paciente"}</strong>
+                  <span style={S.rowSub}>{(c.horario || "").slice(0, 5)} · {c.procedimento || "Sem procedimento"}</span>
+                </div>
+                <StatusBadge status={c.status} />
+              </li>
+            ))}
+          </ul>
+        </SectionCard>
 
         {/* Últimos pacientes */}
         <SectionCard
