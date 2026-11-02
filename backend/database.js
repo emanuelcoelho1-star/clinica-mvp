@@ -670,6 +670,7 @@ db.serialize(() => {
   adicionarColunaSeNaoExistir("orcamentos", "descricao", "TEXT");
   adicionarColunaSeNaoExistir("orcamentos", "dentista_responsavel", "TEXT");
   adicionarColunaSeNaoExistir("orcamentos", "plano_id", "INTEGER");
+  adicionarColunaSeNaoExistir("orcamento_itens", "faces", "TEXT");
   adicionarColunaSeNaoExistir("pacientes", "telefone", "TEXT");
   adicionarColunaSeNaoExistir("pacientes", "email", "TEXT");
   adicionarColunaSeNaoExistir("pacientes", "como_conheceu", "TEXT");
