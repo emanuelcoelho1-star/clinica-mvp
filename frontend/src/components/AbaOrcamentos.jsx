@@ -674,7 +674,6 @@ function AbaOrcamentos({ pacienteId, pacienteNome }) {
                       </div>
                       </div>
                     </div>
-                  </div>
                   <div style={S.documentRowActions}>
                     {o.status === "pendente" && <>
                       <button type="button" style={{ ...S.listActionBtn, color: "#15803d" }}
