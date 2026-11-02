@@ -892,3 +892,41 @@
   border-color: #22543a;
   color: #86efac;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   SCROLLBAR GLOBAL — padrão fino e discreto em toda a aplicação
+   ═══════════════════════════════════════════════════════════ */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+[data-theme="dark"] * {
+  scrollbar-color: #525252 transparent;
+}
+
+[data-theme="dark"] *::-webkit-scrollbar-thumb {
+  background: #525252;
+}
+
+[data-theme="dark"] *::-webkit-scrollbar-thumb:hover {
+  background: #737373;
+}
