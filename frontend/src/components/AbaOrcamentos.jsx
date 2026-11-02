@@ -646,7 +646,12 @@ function AbaOrcamentos({ pacienteId }) {
      ═══════════════════════════════════════════ */
   if (tela === "form") {
     return (
-      <div style={S.wrapper}>
+      <div
+        style={S.formOverlay}
+        onClick={(e) => { if (e.target === e.currentTarget && !salvando) voltarParaLista(); }}
+      >
+        <div style={S.formModal} onClick={(e) => e.stopPropagation()}>
+          <div style={S.wrapper}>
         {/* Header */}
         <div style={S.header}>
           <div>
@@ -881,7 +886,8 @@ function AbaOrcamentos({ pacienteId }) {
             </button>
           </div>
         </form>
-      </div>
+          </div>
+        </div>
     );
   }
 
@@ -1487,6 +1493,32 @@ const S = {
     justifyContent: "center",
     gap: "10px",
     marginTop: "24px",
+  },
+
+  /* ── Modal do formulário ─────────────────────────── */
+  formOverlay: {
+    position: "fixed",
+    inset: 0,
+    zIndex: 1000,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "24px",
+    background: "rgba(15,23,42,0.48)",
+    backdropFilter: "blur(5px)",
+    boxSizing: "border-box",
+  },
+  formModal: {
+    width: "100%",
+    maxWidth: "1080px",
+    maxHeight: "92vh",
+    overflowY: "auto",
+    background: "#f8fafc",
+    borderRadius: "18px",
+    padding: "28px",
+    boxShadow: "0 24px 80px rgba(15,23,42,0.24)",
+    boxSizing: "border-box",
+    animation: "orcamento-fade-in 0.2s ease",
   },
 
   /* ── Form ────────────────────────────────────────── */
