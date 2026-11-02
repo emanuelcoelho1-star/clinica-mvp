@@ -285,6 +285,20 @@ function ProntuarioPaciente() {
 
   const palette = useMemo(() => getAvatarColor(paciente?.nome), [paciente?.nome]);
 
+  const agoraConsultas = new Date();
+  const dataHoraAtual = `${agoraConsultas.getFullYear()}-${String(agoraConsultas.getMonth() + 1).padStart(2, "0")}-${String(agoraConsultas.getDate()).padStart(2, "0")}T${String(agoraConsultas.getHours()).padStart(2, "0")}:${String(agoraConsultas.getMinutes()).padStart(2, "0")}`;
+  const consultasRealizadas = consultasPaciente
+    .filter((consulta) => consulta.status === "realizado")
+    .sort((a, b) => (b.data + "T" + b.horario).localeCompare(a.data + "T" + a.horario));
+  const consultasFuturas = consultasPaciente
+    .filter((consulta) => consulta.status === "agendado" && (consulta.data + "T" + (consulta.horario || "").slice(0, 5)) >= dataHoraAtual)
+    .sort((a, b) => (a.data + "T" + a.horario).localeCompare(b.data + "T" + b.horario));
+  const formatarDataConsulta = (data) => {
+    if (!data) return "—";
+    const [ano, mes, dia] = data.split("-");
+    return ano && mes && dia ? `${dia}/${mes}/${ano}` : data;
+  };
+
   const dadosPrincipais = [
     { label: "Nome completo", value: paciente?.nome },
     { label: "CPF", value: formatCpf(paciente?.cpf) },
@@ -512,6 +526,73 @@ function ProntuarioPaciente() {
                 )}
               </div>
             </div>
+            </div>
+          </section>
+
+          {/* ── CONSULTAS DO PACIENTE ───────────────────── */}
+          <section style={s.consultasSection}>
+            <div style={s.sectionHeading}>
+              <div><h2 style={s.sectionTitle}>Consultas</h2></div>
+            </div>
+            <div style={s.consultasGrid}>
+              <div style={s.consultasCard}>
+                <div style={s.consultasCardHeader}>
+                  <div>
+                    <h3 style={s.consultasCardTitle}>Consultas realizadas</h3>
+                    <span style={s.consultasCount}>{consultasRealizadas.length} registro{consultasRealizadas.length !== 1 ? "s" : ""}</span>
+                  </div>
+                  <span style={s.consultaIcon}>✓</span>
+                </div>
+                {carregandoConsultas ? (
+                  <p style={s.consultasEmpty}>Carregando consultas...</p>
+                ) : consultasRealizadas.length === 0 ? (
+                  <p style={s.consultasEmpty}>Nenhuma consulta realizada registrada.</p>
+                ) : (
+                  <ul style={s.consultasList}>
+                    {consultasRealizadas.map((consulta) => (
+                      <li key={consulta.id} style={s.consultaRow}>
+                        <div style={s.consultaDate}>
+                          <strong>{formatarDataConsulta(consulta.data)}</strong>
+                          <span>{(consulta.horario || "").slice(0, 5)}</span>
+                        </div>
+                        <div style={s.consultaInfo}>
+                          <strong>{consulta.procedimento || "Consulta"}</strong>
+                          <span>Realizada</span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div style={s.consultasCard}>
+                <div style={s.consultasCardHeader}>
+                  <div>
+                    <h3 style={s.consultasCardTitle}>Próximas consultas</h3>
+                    <span style={s.consultasCount}>{consultasFuturas.length} agendada{consultasFuturas.length !== 1 ? "s" : ""}</span>
+                  </div>
+                  <span style={s.consultaIconFuture}>◷</span>
+                </div>
+                {carregandoConsultas ? (
+                  <p style={s.consultasEmpty}>Carregando consultas...</p>
+                ) : consultasFuturas.length === 0 ? (
+                  <p style={s.consultasEmpty}>Não há consultas futuras agendadas.</p>
+                ) : (
+                  <ul style={s.consultasList}>
+                    {consultasFuturas.map((consulta) => (
+                      <li key={consulta.id} style={s.consultaRow}>
+                        <div style={s.consultaDateFuture}>
+                          <strong>{formatarDataConsulta(consulta.data)}</strong>
+                          <span>{(consulta.horario || "").slice(0, 5)}</span>
+                        </div>
+                        <div style={s.consultaInfo}>
+                          <strong>{consulta.procedimento || "Consulta"}</strong>
+                          <span>Agendada</span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
           </section>
 
@@ -775,6 +856,22 @@ const s = {
   },
   obsEmpty: { color: "#c1c9d4", fontStyle: "italic" },
 
+  /* ── Consultas do paciente ───────────────────────── */
+  consultasSection: { display: "flex", flexDirection: "column", gap: "14px" },
+  consultasGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "20px" },
+  consultasCard: { background: "#fff", border: "1px solid #f1f5f9", borderRadius: "16px", padding: "22px 24px", minWidth: 0 },
+  consultasCardHeader: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", marginBottom: "14px" },
+  consultasCardTitle: { margin: 0, color: "#0f172a", fontSize: "15px", fontWeight: "600" },
+  consultasCount: { display: "block", marginTop: "4px", color: "#94a3b8", fontSize: "12px", fontWeight: "500" },
+  consultaIcon: { display: "flex", alignItems: "center", justifyContent: "center", width: "34px", height: "34px", borderRadius: "10px", background: "#f0fdf4", color: "#16a34a", fontSize: "19px", fontWeight: "700" },
+  consultaIconFuture: { display: "flex", alignItems: "center", justifyContent: "center", width: "34px", height: "34px", borderRadius: "10px", background: "#eff6ff", color: "#2563eb", fontSize: "22px", fontWeight: "700" },
+  consultasEmpty: { margin: 0, padding: "18px 0 8px", color: "#94a3b8", fontSize: "13px" },
+  consultasList: { listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column" },
+  consultaRow: { display: "flex", alignItems: "center", gap: "14px", padding: "12px 0", borderTop: "1px solid #f1f5f9" },
+  consultaDate: { display: "flex", flexDirection: "column", gap: "3px", minWidth: "88px", color: "#16a34a", fontSize: "12px" },
+  consultaDateFuture: { display: "flex", flexDirection: "column", gap: "3px", minWidth: "88px", color: "#2563eb", fontSize: "12px" },
+  consultaInfo: { display: "flex", flexDirection: "column", gap: "3px", minWidth: 0, flex: 1 },
+  consultaInfoTitle: { color: "#0f172a", fontSize: "13px", fontWeight: "600" },
   /* ── Odontograma Card ─────────────────────────────── */
   odontogramaCard: {
     background: "#fff",
