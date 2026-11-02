@@ -662,7 +662,7 @@ function AbaArquivos({ pacienteId }) {
                             <span style={S.folderCardName}>{p.nome}</span>
                           </button>
                           {hovered && (
-                            <div style={S.fileTileActions}>
+                            <div style={{ ...S.fileTileActions, ...(isDark ? S.fileTileActionsDark : {}) }}>
                               <button type="button" title="Abrir pasta" aria-label={`Abrir pasta ${p.nome}`} style={S.fileTileAction} onClick={abrirPasta}>{Icons.folderSmall}</button>
                               <button type="button" title="Excluir pasta" aria-label={`Excluir pasta ${p.nome}`} style={{ ...S.fileTileAction, color: "#dc2626" }} onClick={() => setConfirmarExclusaoPasta(p)}>{Icons.trash}</button>
                             </div>
