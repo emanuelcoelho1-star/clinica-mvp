@@ -14,7 +14,7 @@ function Planos() {
   const [planoSelecionado, setPlanoSelecionado] = useState(null);
   const [valores, setValores] = useState({});
   const [nomePlano, setNomePlano] = useState("");
-  const [tipoPlano, setTipoPlano] = useState("padrao");
+  const [tipoPlano, setTipoPlano] = useState([]);
   const [descricaoPlano, setDescricaoPlano] = useState("");
   const [nomeProcedimento, setNomeProcedimento] = useState("");
   const [codigoProcedimento, setCodigoProcedimento] = useState("");
@@ -90,7 +90,7 @@ function Planos() {
       });
       setNomePlano("");
       setDescricaoPlano("");
-      setTipoPlano("padrao");
+      setTipoPlano([]);
       setMostrarFormPlano(false);
       setMensagem("Plano criado com sucesso.");
       await carregar(resultado.id);
@@ -223,19 +223,24 @@ function Planos() {
             <label style={labelStyle}>Nome do plano<input autoFocus style={campo} value={nomePlano} onChange={(e) => setNomePlano(e.target.value)} placeholder="Ex.: Convênio Hapvida" required maxLength={120} /></label>
             <fieldset style={{ border: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "9px" }}>
               <legend style={{ ...labelStyle, marginBottom: "9px" }}>Tipo de plano</legend>
-              {TIPOS.map((tipo) => (
-                <label key={tipo.value} style={{ display: "flex", alignItems: "center", gap: "9px", color: "#334155", fontSize: "13px", fontWeight: 500, cursor: "pointer" }}>
-                  <input
-                    type="radio"
-                    name="tipoPlano"
-                    value={tipo.value}
-                    checked={tipoPlano === tipo.value}
-                    onChange={(e) => setTipoPlano(e.target.value)}
-                    style={{ width: "16px", height: "16px", margin: 0, accentColor: "#2563eb", cursor: "pointer" }}
-                  />
-                  {tipo.label}
-                </label>
-              ))}
+              <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "22px" }}>
+                {TIPOS.map((tipo) => {
+                  const marcado = tipoPlano.includes(tipo.value);
+                  return (
+                    <label key={tipo.value} style={{ display: "inline-flex", alignItems: "center", gap: "8px", color: "#334155", fontSize: "13px", fontWeight: 500, cursor: "pointer" }}>
+                      <input
+                        type="checkbox"
+                        name="tipoPlano"
+                        value={tipo.value}
+                        checked={marcado}
+                        onChange={() => setTipoPlano((atual) => marcado ? atual.filter((valor) => valor !== tipo.value) : [...atual, tipo.value])}
+                        style={{ appearance: "none", width: "17px", height: "17px", flex: "0 0 17px", margin: 0, border: marcado ? "5px solid #2563eb" : "1.5px solid #cbd5e1", borderRadius: "50%", background: "#fff", cursor: "pointer", boxSizing: "border-box" }}
+                      />
+                      {tipo.label}
+                    </label>
+                  );
+                })}
+              </div>
             </fieldset>
             <label style={labelStyle}>Descrição (opcional)<input style={campo} value={descricaoPlano} onChange={(e) => setDescricaoPlano(e.target.value)} placeholder="Informações sobre o plano" /></label>
             <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", paddingTop: "5px" }}>
@@ -263,7 +268,7 @@ function Planos() {
               cursor: "pointer", fontFamily: "inherit",
             }}>
               <strong style={{ display: "block", color: "#1e293b", fontSize: "13px" }}>{plano.nome}</strong>
-              <span style={{ display: "block", marginTop: "4px", color: "#94a3b8", fontSize: "11px" }}>{plano.tipo === "convenio" ? "Pago pelo convênio" : "Plano padrão"}</span>
+              <span style={{ display: "block", marginTop: "4px", color: "#94a3b8", fontSize: "11px" }}>{(() => { let tipos = []; try { tipos = Array.isArray(plano.tipo) ? plano.tipo : JSON.parse(plano.tipo || "[]"); } catch { tipos = plano.tipo ? [plano.tipo] : []; } return TIPOS.filter((tipo) => tipos.includes(tipo.value)).map((tipo) => tipo.label).join(" · ") || "Sem classificação"; })()}</span>
             </button>
           ))}
         </section>
