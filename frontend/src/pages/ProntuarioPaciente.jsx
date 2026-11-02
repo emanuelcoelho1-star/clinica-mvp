@@ -456,12 +456,19 @@ function ProntuarioPaciente() {
       {/* ── Tab: Visão geral ─────────────────────────────── */}
       {abaAtiva === "visao-geral" && (
         <>
-          <div style={s.grid}>
-            <InfoCard title="Dados principais" icon={Icons.user} items={dadosPrincipais} />
-            <InfoCard title="Endereço" icon={Icons.mapPin} items={dadosEndereco} />
-            <InfoCard title="Responsável" icon={Icons.users} items={dadosResponsavel} />
-            <InfoCard title="Alergias a medicamentos" icon={Icons.fileText} items={[{ label: "Alergias registradas na primeira anamnese", value: anamneseInicial?.alergias }]} />
-            <InfoCard title="Histórico clínico" icon={Icons.fileText} items={dadosHistoricoClinico} />
+          <section style={s.overviewSection}>
+            <div style={s.sectionHeading}>
+              <div>
+                <h2 style={s.sectionTitle}>Resumo do paciente</h2>
+                <p style={s.sectionDescription}>Informações cadastrais e histórico clínico em um só lugar.</p>
+              </div>
+            </div>
+            <div style={s.grid}>
+              <InfoCard title="Dados principais" icon={Icons.user} items={dadosPrincipais} />
+              <InfoCard title="Endereço" icon={Icons.mapPin} items={dadosEndereco} />
+              {possuiResponsavel && <InfoCard title="Responsável" icon={Icons.users} items={dadosResponsavel} />}
+              <InfoCard title="Alergias a medicamentos" icon={Icons.fileText} items={[{ label: "Alergias registradas na primeira anamnese", value: anamneseInicial?.alergias }]} />
+              <InfoCard title="Histórico clínico" icon={Icons.fileText} items={dadosHistoricoClinico} />
 
             {/* Observações */}
             <div style={s.card}>
@@ -477,7 +484,7 @@ function ProntuarioPaciente() {
                 )}
               </div>
             </div>
-          </div>
+          </section>
 
           {/* ── ODONTOGRAMA ──────────────────────────────── */}
           <div style={s.odontogramaCard}>
