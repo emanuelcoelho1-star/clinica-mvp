@@ -219,7 +219,9 @@ function AbaOrcamentos({ pacienteId, pacienteNome }) {
   const [formData, setFormData] = useState({ ...EMPTY_FORM, itens: [] });
   const [tipoDesconto, setTipoDesconto] = useState("valor");
   const [itemAtual, setItemAtual] = useState({ ...EMPTY_ITEM });
+  const [planosDisponiveis, setPlanosDisponiveis] = useState([]);
   const [planoPadrao, setPlanoPadrao] = useState(null);
+  const [planoSelecionadoId, setPlanoSelecionadoId] = useState("");
   const [procedimentosPlanoPadrao, setProcedimentosPlanoPadrao] = useState([]);
   const [salvando, setSalvando] = useState(false);
   const [erroForm, setErroForm] = useState("");
@@ -281,17 +283,42 @@ function AbaOrcamentos({ pacienteId, pacienteNome }) {
   }
 
   /* ── Abrir form ──────────────────────────── */
-  async function abrirFormNovo() {
-    setEditando(null);
+  async function carregarPlanosOrcamento(planoIdPreferido = null) {
     try {
       const tk = localStorage.getItem("token");
-      const resposta = await fetch(`${API_URL}/planos/padrao`, { headers: { Authorization: `Bearer ${tk || ""}` } });
-      if (resposta.ok) {
-        const dados = await resposta.json();
-        setPlanoPadrao(dados.plano || null);
-        setProcedimentosPlanoPadrao(Array.isArray(dados.procedimentos) ? dados.procedimentos.filter((p) => Number(p.usar_na_frente) === 1) : []);
-      } else { setPlanoPadrao(null); setProcedimentosPlanoPadrao([]); }
-    } catch { setPlanoPadrao(null); setProcedimentosPlanoPadrao([]); }
+      const resposta = await fetch(`${API_URL}/planos/opcoes-orcamento`, { headers: { Authorization: `Bearer ${tk || ""}` } });
+      if (!resposta.ok) throw new Error("Não foi possível carregar os planos.");
+      const lista = await resposta.json();
+      const ativos = Array.isArray(lista) ? lista : [];
+      setPlanosDisponiveis(ativos);
+      const selecionado = ativos.find((plano) => Number(plano.id) === Number(planoIdPreferido))
+        || ativos.find((plano) => Array.isArray(plano.tipo) && plano.tipo.includes("padrao"))
+        || null;
+      setPlanoPadrao(selecionado);
+      setPlanoSelecionadoId(selecionado ? String(selecionado.id) : "");
+      setProcedimentosPlanoPadrao(selecionado ? (selecionado.procedimentos || []).filter((p) => Number(p.usar_na_frente) === 1) : []);
+      return ativos;
+    } catch (error) {
+      setPlanosDisponiveis([]);
+      setPlanoPadrao(null);
+      setPlanoSelecionadoId("");
+      setProcedimentosPlanoPadrao([]);
+      console.error("Erro ao carregar planos para orçamento:", error);
+      return [];
+    }
+  }
+
+  function handleSelecionarPlano(valor) {
+    const selecionado = planosDisponiveis.find((plano) => String(plano.id) === String(valor)) || null;
+    setPlanoPadrao(selecionado);
+    setPlanoSelecionadoId(selecionado ? String(selecionado.id) : "");
+    setProcedimentosPlanoPadrao(selecionado ? (selecionado.procedimentos || []).filter((p) => Number(p.usar_na_frente) === 1) : []);
+    setItemAtual({ ...EMPTY_ITEM });
+  }
+
+  async function abrirFormNovo() {
+    setEditando(null);
+    await carregarPlanosOrcamento();
     setFormData({ ...EMPTY_FORM, descricao: `Plano de Tratamento de ${pacienteNome || ""}`.trim(), itens: [] });
     carregarDentistaResponsavel();
     setTipoDesconto("valor");
@@ -300,8 +327,9 @@ function AbaOrcamentos({ pacienteId, pacienteNome }) {
     setTela("form");
   }
 
-  function abrirFormEditar(item) {
+  async function abrirFormEditar(item) {
     setEditando(item);
+    await carregarPlanosOrcamento(item.plano_id || null);
     setDentistaResponsavel(item.dentista_responsavel || "");
     setItemAtual({ ...EMPTY_ITEM });
     setTipoDesconto("valor");
@@ -388,6 +416,7 @@ function AbaOrcamentos({ pacienteId, pacienteNome }) {
         descricao: formData.descricao || "",
         desconto: descontoForm,
         dentista_responsavel: dentistaResponsavel,
+        plano_id: planoSelecionadoId ? Number(planoSelecionadoId) : null,
         itens: itensValidos.map((i) => ({
           dente: i.dente || "",
           procedimento: i.procedimento,
@@ -784,6 +813,17 @@ function AbaOrcamentos({ pacienteId, pacienteNome }) {
                   style={{ ...S.textarea, height: "42px", minHeight: "42px", padding: "10px 14px", resize: "none", lineHeight: "20px" }}
                   rows={1}
                 />
+              </div>
+              <div style={{ ...S.fieldGroup, gridColumn: "1 / -1" }}>
+                <label style={S.label}>Plano do orçamento</label>
+                <CustomDropdown
+                  value={planoSelecionadoId}
+                  onChange={handleSelecionarPlano}
+                  options={planosDisponiveis.map((plano) => ({ value: String(plano.id), label: plano.nome }))}
+                  placeholder={planosDisponiveis.length ? "Selecione o plano" : "Nenhum plano ativo cadastrado"}
+                  maxHeight="240px"
+                />
+                {planoPadrao && <span style={{ fontSize: "11px", color: "#64748b" }}>Plano selecionado: {planoPadrao.nome}. Os valores dos procedimentos serão preenchidos conforme esta tabela.</span>}
               </div>
               <div style={S.fieldGroup}>
                 <label style={S.label}>Dentista responsável</label>
