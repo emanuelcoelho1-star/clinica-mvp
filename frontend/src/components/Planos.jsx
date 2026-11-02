@@ -425,8 +425,8 @@ function Planos() {
                             <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "440px" }}>
                             <thead><tr style={{ background: "#f8fafc" }}>
                               <th style={thStyle}>Procedimento</th>
-                              <th style={{ ...thStyle, width: "125px" }}>Custo do tratamento</th>
                               <th style={{ ...thStyle, width: "150px" }}>Valor neste plano</th>
+                              <th style={{ ...thStyle, width: "125px" }}>Custo do tratamento</th>
                               <th style={{ ...thStyle, width: "90px" }}>Usar</th>
                               <th style={{ ...thStyle, width: "70px" }}></th>
                             </tr></thead>
@@ -438,6 +438,12 @@ function Planos() {
                                   <td style={tdStyle}>
                                     <strong style={{ display: "block", color: "#334155", fontSize: "13px", fontWeight: 600 }}>{item.nome}</strong>
                                     {item.codigo && <span style={{ display: "block", color: "#94a3b8", fontSize: "11px", marginTop: "3px" }}>Código: {item.codigo}</span>}
+                                  </td>
+                                  <td style={tdStyle}>
+                                    <div style={{ position: "relative" }}>
+                                      <span style={{ position: "absolute", left: "10px", top: "10px", color: "#94a3b8", fontSize: "12px" }}>R$</span>
+                                      <input aria-label={`Valor de ${item.nome}`} style={{ ...campo, padding: "9px 9px 9px 34px", fontSize: "13px" }} type="number" min="0" step="0.01" placeholder="Não definido" value={valores[item.id] ?? ""} onChange={(e) => setValores((atual) => ({ ...atual, [item.id]: e.target.value }))} />
+                                    </div>
                                   </td>
                                   <td style={tdStyle}>
                                     <div style={{ position: "relative" }}>
@@ -462,12 +468,6 @@ function Planos() {
                                           } catch (error) { setErro(error.message); }
                                         }}
                                       />
-                                    </div>
-                                  </td>
-                                  <td style={tdStyle}>
-                                    <div style={{ position: "relative" }}>
-                                      <span style={{ position: "absolute", left: "10px", top: "10px", color: "#94a3b8", fontSize: "12px" }}>R$</span>
-                                      <input aria-label={`Valor de ${item.nome}`} style={{ ...campo, padding: "9px 9px 9px 34px", fontSize: "13px" }} type="number" min="0" step="0.01" placeholder="Não definido" value={valores[item.id] ?? ""} onChange={(e) => setValores((atual) => ({ ...atual, [item.id]: e.target.value }))} />
                                     </div>
                                   </td>
                                   <td style={tdStyle}>
