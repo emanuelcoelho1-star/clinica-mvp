@@ -247,6 +247,22 @@ router.put("/procedimentos/:id", (req, res) => {
   );
 });
 
+router.patch("/procedimentos/:id/custo", (req, res) => {
+  const custo = Number(req.body?.custo_tratamento);
+  if (!Number.isFinite(custo) || custo < 0 || custo > 99999999) {
+    return res.status(400).json({ erro: "Informe um custo de tratamento válido." });
+  }
+  db.run(
+    "UPDATE procedimentos_catalogo SET custo_tratamento = ? WHERE id = ? AND clinica_id = ?",
+    [custo, req.params.id, clinicaId(req)],
+    function (err) {
+      if (err) return erroInterno(res);
+      if (!this.changes) return res.status(404).json({ erro: "Procedimento não encontrado nesta clínica." });
+      res.json({ mensagem: "Custo do tratamento atualizado." });
+    }
+  );
+});
+
 router.patch("/procedimentos/:id/usar-na-frente", (req, res) => {
   const usarNaFrente = req.body?.usar_na_frente;
   if (![true, false, 0, 1].includes(usarNaFrente)) {
