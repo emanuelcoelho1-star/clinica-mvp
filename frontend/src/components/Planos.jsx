@@ -342,7 +342,7 @@ function Planos() {
         </div>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(220px, 0.75fr) minmax(0, 2fr)", gap: "18px", alignItems: "start" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(180px, 0.55fr) minmax(0, 2.45fr)", gap: "18px", alignItems: "start" }}>
         <section style={cardStyle}>
           <div style={{ padding: "17px 18px", borderBottom: "1px solid #f1f5f9" }}>
             <strong style={{ fontSize: "14px", color: "#0f172a" }}>Planos cadastrados</strong>
