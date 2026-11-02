@@ -99,17 +99,14 @@ router.post("/", auth, (req, res) => {
   }
 
   const nomeDentista = typeof dentista_responsavel === "string" && dentista_responsavel.trim() ? dentista_responsavel.trim() : req.user.nome || "";
-  db.get("SELECT id FROM usuarios WHERE nome = ? AND clinica_id = ?", [nomeDentista, req.user.clinica_id], (errDentista, dentista) => {
-    if (errDentista) return res.status(500).json({ erro: "Erro ao validar dentista responsável." });
-    if (!dentista) return res.status(400).json({ erro: "Selecione um profissional cadastrado nesta clínica." });
   const sqlOrcamento = `
     INSERT INTO orcamentos (paciente_id, data, status, desconto, observacoes, descricao, dentista_responsavel, clinica_id)
-    SELECT p.id, ?, ?, ?, '', ?, ?, ? FROM pacientes p WHERE p.id = ? AND p.clinica_id = ?
+    SELECT p.id, ?, ?, ?, '', ?, ?, ? FROM pacientes p WHERE p.id = ? AND p.clinica_id = ? AND EXISTS (SELECT 1 FROM usuarios u WHERE u.nome = ? AND u.clinica_id = ?)
   `;
 
   db.run(
     sqlOrcamento,
-    [data, "pendente", Math.max(0, Number(desconto) || 0), descricao || "", nomeDentista, req.user.clinica_id, paciente_id, req.user.clinica_id],
+    [data, "pendente", Math.max(0, Number(desconto) || 0), descricao || "", nomeDentista, req.user.clinica_id, paciente_id, req.user.clinica_id, nomeDentista, req.user.clinica_id],
     function (err) {
       if (err) {
         return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
@@ -160,8 +157,6 @@ router.post("/", auth, (req, res) => {
   );
 });
 
-  });
-});
 
 // =========================
 // ATUALIZAR ORÇAMENTO
@@ -179,19 +174,16 @@ router.put("/:id", auth, (req, res) => {
   }
 
   const nomeDentista = typeof dentista_responsavel === "string" && dentista_responsavel.trim() ? dentista_responsavel.trim() : req.user.nome || "";
-  db.get("SELECT id FROM usuarios WHERE nome = ? AND clinica_id = ?", [nomeDentista, req.user.clinica_id], (errDentista, dentista) => {
-    if (errDentista) return res.status(500).json({ erro: "Erro ao validar dentista responsável." });
-    if (!dentista) return res.status(400).json({ erro: "Selecione um profissional cadastrado nesta clínica." });
   const sqlUpdate = `
     UPDATE orcamentos SET
       paciente_id = ?, data = ?, descricao = ?, desconto = ?, dentista_responsavel = ?
     WHERE id = ? AND clinica_id = ?
-      AND EXISTS (SELECT 1 FROM pacientes p WHERE p.id = ? AND p.clinica_id = ?)
+      AND EXISTS (SELECT 1 FROM pacientes p WHERE p.id = ? AND p.clinica_id = ? AND EXISTS (SELECT 1 FROM usuarios u WHERE u.nome = ? AND u.clinica_id = ?))
   `;
 
   db.run(
     sqlUpdate,
-    [paciente_id, data, descricao || "", Math.max(0, Number(desconto) || 0), nomeDentista, id, req.user.clinica_id, paciente_id, req.user.clinica_id],
+    [paciente_id, data, descricao || "", Math.max(0, Number(desconto) || 0), nomeDentista, id, req.user.clinica_id, paciente_id, req.user.clinica_id, nomeDentista, req.user.clinica_id],
     function (err) {
       if (err) {
         return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
@@ -250,8 +242,6 @@ router.put("/:id", auth, (req, res) => {
   );
 });
 
-  });
-});
 
 // =========================
 // ATUALIZAR STATUS DO ORÇAMENTO
