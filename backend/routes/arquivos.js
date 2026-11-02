@@ -282,11 +282,24 @@ router.get("/:id/download", (req, res) => {
           return res.status(404).json({ erro: "Arquivo não encontrado no disco." });
         }
 
-        // Apenas formatos seguros para visualização inline; demais tipos são baixados.
+        // Determina o MIME pela extensão original quando registros antigos
+        // não possuem mimetype confiável no banco.
+        const mimePorExtensao = {
+          ".pdf": "application/pdf",
+          ".jpg": "image/jpeg",
+          ".jpeg": "image/jpeg",
+          ".png": "image/png",
+          ".gif": "image/gif",
+          ".webp": "image/webp",
+        };
         const inlineTypes = new Set(["application/pdf", "image/jpeg", "image/png", "image/gif", "image/webp"]);
         const storedType = String(row.mimetype || "").toLowerCase().split(";")[0].trim();
-        const contentType = inlineTypes.has(storedType) ? storedType : "application/octet-stream";
-        const disposition = inlineTypes.has(storedType) ? "inline" : "attachment";
+        const extensao = path.extname(row.nome_original || row.nome_salvo || "").toLowerCase();
+        const mimeDaExtensao = mimePorExtensao[extensao];
+        const contentType = inlineTypes.has(storedType)
+          ? storedType
+          : (mimeDaExtensao || "application/octet-stream");
+        const disposition = inlineTypes.has(contentType) ? "inline" : "attachment";
         const originalName = String(row.nome_original || "arquivo").replace(/[\\r\\n\\0]/g, "").slice(0, 180);
         const fallbackName = originalName.replace(/[^\\x20-\\x7E]/g, "_").replace(/["\\\\]/g, "_") || "arquivo";
 
