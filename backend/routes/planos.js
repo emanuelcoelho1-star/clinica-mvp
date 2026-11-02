@@ -2,27 +2,14 @@ const express = require("express");
 const router = express.Router();
 const db = require("../database");
 const auth = require("../middleware/auth");
+const requirePermission = require("../middleware/requirePermission");
 
 router.use(auth);
 
-// O gerenciamento de planos e tabelas de preços é exclusivo do administrador
-// da clínica. Todas as consultas também são limitadas pelo clinica_id da sessão.
+// Essas consultas são usadas internamente pelos orçamentos e não abrem o módulo de gestão.
 router.use((req, res, next) => {
   if (req.method === "GET" && ["/padrao", "/opcoes-orcamento"].includes(req.path)) return next();
-  db.get(
-    `SELECT r.protegido
-     FROM usuarios u
-     INNER JOIN roles r ON r.id = u.role_id
-     WHERE u.id = ? AND u.clinica_id = ? AND r.ativo = 1`,
-    [req.user.id, req.user.clinica_id],
-    (err, row) => {
-      if (err) return res.status(500).json({ erro: "Não foi possível validar o acesso." });
-      if (!row || Number(row.protegido) !== 1) {
-        return res.status(403).json({ erro: "Acesso restrito ao administrador da clínica." });
-      }
-      next();
-    }
-  );
+  return requirePermission("planos")(req, res, next);
 });
 
 const ESPECIALIDADES = [
