@@ -124,6 +124,39 @@ router.get("/:id", auth, (req, res) => {
 
 
 // =========================
+// CONSULTAS DO PACIENTE
+// =========================
+router.get("/:id/consultas", auth, (req, res) => {
+  const { id } = req.params;
+  db.get(
+    "SELECT id FROM pacientes WHERE id = ? AND clinica_id = ?",
+    [id, req.user.clinica_id],
+    (patientErr, paciente) => {
+      if (patientErr) {
+        return res.status(500).json({ erro: "Não foi possível carregar as consultas." });
+      }
+      if (!paciente) {
+        return res.status(404).json({ erro: "Paciente não encontrado." });
+      }
+
+      db.all(
+        `SELECT id, data, horario, procedimento, status
+         FROM consultas
+         WHERE paciente_id = ? AND clinica_id = ?
+         ORDER BY data DESC, horario DESC`,
+        [id, req.user.clinica_id],
+        (err, rows) => {
+          if (err) {
+            return res.status(500).json({ erro: "Não foi possível carregar as consultas." });
+          }
+          res.json(rows || []);
+        }
+      );
+    }
+  );
+});
+
+// =========================
 // BUSCAR ODONTOGRAMA
 // =========================
 router.get("/:id/odontograma", auth, (req, res) => {
