@@ -40,6 +40,7 @@ function Planos() {
   const [codigoProcedimento, setCodigoProcedimento] = useState("");
   const [aceitaFaces, setAceitaFaces] = useState(false);
   const [custoTratamento, setCustoTratamento] = useState("");
+  const [valorTratamento, setValorTratamento] = useState("");
   const [categoriaProcedimento, setCategoriaProcedimento] = useState("");
   const [especialidadeAberta, setEspecialidadeAberta] = useState("Cirurgia");
   const [busca, setBusca] = useState("");
@@ -138,14 +139,21 @@ function Planos() {
     setSalvando(true);
     setErro("");
     try {
-      await requisicao("/procedimentos", {
+      const novoProcedimento = await requisicao("/procedimentos", {
         method: "POST",
         body: JSON.stringify({ nome: nomeProcedimento, categoria: categoriaProcedimento, aceita_faces: aceitaFaces, custo_tratamento: custoTratamento === "" ? 0 : Number(String(custoTratamento).replace(",", ".")) }),
       });
+      if (planoAtual && valorTratamento !== "") {
+        await requisicao(`/${planoAtual.id}/valores`, {
+          method: "PUT",
+          body: JSON.stringify({ valores: [{ procedimento_id: novoProcedimento.id, valor: Number(String(valorTratamento).replace(",", ".")) }] }),
+        });
+      }
       setNomeProcedimento("");
       setCodigoProcedimento("");
       setAceitaFaces(false);
       setCustoTratamento("");
+      setValorTratamento("");
       setCategoriaProcedimento("");
       setMostrarFormProcedimento(false);
       setMensagem("Procedimento adicionado ao catálogo.");
@@ -308,6 +316,12 @@ function Planos() {
               <input type="checkbox" checked={aceitaFaces} onChange={(e) => setAceitaFaces(e.target.checked)} style={{ width: "17px", height: "17px", margin: 0, accentColor: "#2563eb" }} />
               Aceita faces
             </label>
+            <label style={labelStyle}>Valor do tratamento {planoAtual ? `(plano: ${planoAtual.nome})` : ""}
+              <div style={{ position: "relative" }}>
+                <span style={{ position: "absolute", left: "12px", top: "11px", color: "#94a3b8", fontSize: "13px" }}>R$</span>
+                <input style={{ ...campo, paddingLeft: "36px" }} type="number" min="0" max="99999999" step="0.01" value={valorTratamento} onChange={(e) => setValorTratamento(e.target.value)} placeholder="0,00" required />
+              </div>
+            </label>
             <label style={labelStyle}>Custo do tratamento
               <div style={{ position: "relative" }}>
                 <span style={{ position: "absolute", left: "12px", top: "11px", color: "#94a3b8", fontSize: "13px" }}>R$</span>
@@ -316,7 +330,7 @@ function Planos() {
             </label>
             <div style={{ padding: "10px 12px", borderRadius: "9px", background: "#f8fafc", color: "#64748b", fontSize: "12px", lineHeight: 1.5 }}>
               <div>Especialidade: <strong style={{ color: "#334155" }}>{categoriaProcedimento}</strong></div>
-              <div style={{ marginTop: "5px" }}>O valor do tratamento será definido separadamente em cada plano, na tabela de preços.</div>
+              <div style={{ marginTop: "5px" }}>O valor informado será aplicado somente ao plano selecionado. Em outros planos, o preço poderá ser diferente.</div>
             </div>
             <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", paddingTop: "4px" }}>
               <button type="button" style={botaoSecundario} disabled={salvando} onClick={() => setMostrarFormProcedimento(false)}>Cancelar</button>
@@ -390,6 +404,7 @@ function Planos() {
                             setCodigoProcedimento("");
                             setAceitaFaces(false);
                             setCustoTratamento("");
+                            setValorTratamento("");
                             setMostrarFormProcedimento(true);
                             setErro("");
                           }}>+ Novo procedimento</button>
