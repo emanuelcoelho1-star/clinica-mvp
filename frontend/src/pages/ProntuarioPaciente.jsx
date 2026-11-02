@@ -296,12 +296,12 @@ function ProntuarioPaciente() {
     leitor.onload = () => {
       const imagem = new Image();
       imagem.onload = () => {
-        const escala = Math.min(1, 480 / Math.max(imagem.width, imagem.height));
+        const escala = Math.min(1, 1200 / Math.max(imagem.width, imagem.height));
         const canvas = document.createElement("canvas");
         canvas.width = Math.round(imagem.width * escala);
         canvas.height = Math.round(imagem.height * escala);
         canvas.getContext("2d").drawImage(imagem, 0, 0, canvas.width, canvas.height);
-        setFotoSelecionada(canvas.toDataURL("image/jpeg", 0.68));
+        setFotoSelecionada(canvas.toDataURL("image/jpeg", 0.86));
       };
       imagem.onerror = () => setErroFoto("Não foi possível processar esta imagem.");
       imagem.src = leitor.result;
@@ -983,12 +983,12 @@ const s = {
     display: "flex", flexDirection: "column", alignItems: "center", gap: "7px", flexShrink: 0,
   },
   avatar: {
-    width: "72px", height: "72px", borderRadius: "16px",
+    width: "104px", height: "104px", borderRadius: "18px",
     display: "flex", alignItems: "center", justifyContent: "center",
-    fontSize: "28px", fontWeight: "700", flexShrink: 0,
+    fontSize: "34px", fontWeight: "700", flexShrink: 0,
     letterSpacing: "0.02em", overflow: "hidden",
   },
-  avatarImage: { width: "100%", height: "100%", objectFit: "cover" },
+  avatarImage: { display: "block", width: "100%", height: "100%", objectFit: "cover", objectPosition: "center" },
   profileInfo: {
     display: "flex", flexDirection: "column", gap: "10px",
     flex: 1, minWidth: "260px",
