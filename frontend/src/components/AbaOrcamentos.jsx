@@ -88,12 +88,14 @@ function CustomDropdown({ value, options, onChange, placeholder = "Selecione", m
 function ProcedimentoAutocomplete({ value, options, onChange, placeholder = "Digite ou selecione um procedimento", maxHeight = "240px" }) {
   const [aberto, setAberto] = useState(false);
   const ref = useRef(null);
-  const termoBusca = String(value || "").trim().normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLocaleLowerCase("pt-BR");
+  const normalizarBusca = (texto) => String(texto || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("pt-BR")
+    .trim();
+  const termoBusca = normalizarBusca(value);
   const filtradas = termoBusca
-    ? options.filter((opcao) => {
-        const nome = String(opcao.label || "").normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLocaleLowerCase("pt-BR").trim();
-        return nome.startsWith(termoBusca);
-      })
+    ? options.filter((opcao) => normalizarBusca(opcao.label).includes(termoBusca))
     : [];
 
   useEffect(() => {
