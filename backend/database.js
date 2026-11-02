@@ -211,6 +211,47 @@ db.serialize(() => {
   `);
 
   db.run(`
+    CREATE TABLE IF NOT EXISTS planos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      clinica_id INTEGER NOT NULL,
+      nome TEXT NOT NULL,
+      tipo TEXT NOT NULL DEFAULT 'particular',
+      descricao TEXT,
+      ativo INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT DEFAULT (datetime('now','localtime')),
+      UNIQUE(clinica_id, nome)
+    )
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS procedimentos_catalogo (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      clinica_id INTEGER NOT NULL,
+      nome TEXT NOT NULL,
+      codigo TEXT,
+      categoria TEXT,
+      descricao TEXT,
+      ativo INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT DEFAULT (datetime('now','localtime')),
+      UNIQUE(clinica_id, nome)
+    )
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS plano_procedimentos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      clinica_id INTEGER NOT NULL,
+      plano_id INTEGER NOT NULL,
+      procedimento_id INTEGER NOT NULL,
+      valor REAL NOT NULL DEFAULT 0 CHECK (valor >= 0),
+      created_at TEXT DEFAULT (datetime('now','localtime')),
+      UNIQUE(clinica_id, plano_id, procedimento_id),
+      FOREIGN KEY (plano_id) REFERENCES planos(id) ON DELETE CASCADE,
+      FOREIGN KEY (procedimento_id) REFERENCES procedimentos_catalogo(id) ON DELETE CASCADE
+    )
+  `);
+
+  db.run(`
     CREATE TABLE IF NOT EXISTS pagamentos (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       paciente_id INTEGER NOT NULL,
@@ -769,6 +810,9 @@ function executarMigracaoSaaS(onComplete = () => {}) {
       ["centros_custo", "clinica_id", "INTEGER"],
       ["formas_pagamento_config", "clinica_id", "INTEGER"],
       ["metas_financeiras", "clinica_id", "INTEGER"],
+      ["planos", "clinica_id", "INTEGER"],
+      ["procedimentos_catalogo", "clinica_id", "INTEGER"],
+      ["plano_procedimentos", "clinica_id", "INTEGER"],
       ["roles", "clinica_id", "INTEGER"],
       ["permissoes", "clinica_id", "INTEGER"],
       ["role_permissoes", "clinica_id", "INTEGER"]
