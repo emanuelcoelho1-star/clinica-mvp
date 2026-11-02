@@ -175,7 +175,7 @@ const ABAS = [
 ];
 
 /* ── InfoCard component ──────────────────────────────────── */
-function InfoCard({ title, icon, items }) {
+function InfoCard({ title, icon, items, style }) {
   return (
     <div style={s.card}>
       <div style={s.cardHeader}>
