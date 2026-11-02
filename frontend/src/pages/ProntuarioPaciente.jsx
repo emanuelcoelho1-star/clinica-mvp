@@ -641,26 +641,37 @@ function ProntuarioPaciente() {
                   </button>
                 )}
               </div>
-              {editandoObservacoes ? (
-                <div style={s.obsEditor}>
-                  <textarea
-                    style={s.obsTextarea}
-                    value={textoObservacoes}
-                    onChange={(e) => setTextoObservacoes(e.target.value)}
-                    placeholder="Digite as observações sobre o paciente..."
-                    rows={5}
-                  />
-                  {erroObservacoes && <p style={s.obsError}>{erroObservacoes}</p>}
-                  <div style={s.obsEditorActions}>
-                    <button type="button" style={s.obsCancelBtn} disabled={salvandoObservacoes} onClick={() => setEditandoObservacoes(false)}>Cancelar</button>
-                    <button type="button" style={s.obsSaveBtn} disabled={salvandoObservacoes} onClick={salvarObservacoes}>{salvandoObservacoes ? "Salvando..." : "Salvar observações"}</button>
+              <div style={s.obsBox}>
+                {paciente.observacoes || (
+                  <span style={s.obsEmpty}>Nenhuma observação cadastrada.</span>
+                )}
+              </div>
+              {editandoObservacoes && (
+                <div style={s.modalOverlay} onMouseDown={(e) => { if (e.target === e.currentTarget && !salvandoObservacoes) setEditandoObservacoes(false); }}>
+                  <div style={s.obsModal} role="dialog" aria-modal="true" aria-labelledby="obs-modal-title">
+                    <div style={s.obsModalHeader}>
+                      <div>
+                        <h2 id="obs-modal-title" style={s.obsModalTitle}>{paciente.observacoes ? "Editar observações" : "Adicionar observação"}</h2>
+                        <p style={s.obsModalSubtitle}>Registre informações importantes sobre o paciente.</p>
+                      </div>
+                      <button type="button" style={s.obsModalClose} disabled={salvandoObservacoes} onClick={() => setEditandoObservacoes(false)} aria-label="Fechar">×</button>
+                    </div>
+                    <div style={s.obsModalBody}>
+                      <textarea
+                        autoFocus
+                        style={s.obsTextarea}
+                        value={textoObservacoes}
+                        onChange={(e) => setTextoObservacoes(e.target.value)}
+                        placeholder="Digite as observações sobre o paciente..."
+                        rows={7}
+                      />
+                      {erroObservacoes && <p style={s.obsError}>{erroObservacoes}</p>}
+                    </div>
+                    <div style={s.obsModalFooter}>
+                      <button type="button" style={s.obsCancelBtn} disabled={salvandoObservacoes} onClick={() => setEditandoObservacoes(false)}>Cancelar</button>
+                      <button type="button" style={s.obsSaveBtn} disabled={salvandoObservacoes} onClick={salvarObservacoes}>{salvandoObservacoes ? "Salvando..." : "Salvar observações"}</button>
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div style={s.obsBox}>
-                  {paciente.observacoes || (
-                    <span style={s.obsEmpty}>Nenhuma observação cadastrada.</span>
-                  )}
                 </div>
               )}
             </div>
@@ -938,7 +949,14 @@ const s = {
   },
   obsEmpty: { color: "#c1c9d4", fontStyle: "italic" },
   obsActionBtn: { display: "inline-flex", alignItems: "center", gap: "7px", padding: "7px 11px", border: "1px solid #dbeafe", borderRadius: "8px", background: "#eff6ff", color: "#2563eb", fontSize: "12px", fontWeight: "600", cursor: "pointer" },
-  obsEditor: { display: "flex", flexDirection: "column", gap: "10px" },
+  modalOverlay: { position: "fixed", inset: 0, zIndex: 1200, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px", background: "rgba(15, 23, 42, 0.48)", backdropFilter: "blur(3px)" },
+  obsModal: { width: "100%", maxWidth: "560px", background: "#fff", borderRadius: "16px", boxShadow: "0 24px 70px rgba(15, 23, 42, 0.22)", overflow: "hidden" },
+  obsModalHeader: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "16px", padding: "22px 24px 16px", borderBottom: "1px solid #edf1f5" },
+  obsModalTitle: { margin: 0, color: "#0f172a", fontSize: "17px", fontWeight: "650" },
+  obsModalSubtitle: { margin: "6px 0 0", color: "#94a3b8", fontSize: "12px" },
+  obsModalClose: { border: 0, background: "transparent", color: "#94a3b8", fontSize: "25px", lineHeight: 1, cursor: "pointer" },
+  obsModalBody: { padding: "20px 24px" },
+  obsModalFooter: { display: "flex", justifyContent: "flex-end", gap: "8px", padding: "14px 24px 20px", borderTop: "1px solid #edf1f5" },
   obsTextarea: { width: "100%", boxSizing: "border-box", resize: "vertical", minHeight: "120px", padding: "12px 14px", border: "1px solid #dbe3ed", borderRadius: "10px", outline: "none", background: "#fff", color: "#1e293b", font: "inherit", fontSize: "13px", lineHeight: 1.6 },
   obsEditorActions: { display: "flex", justifyContent: "flex-end", gap: "8px" },
   obsCancelBtn: { padding: "8px 13px", border: "1px solid #e2e8f0", borderRadius: "8px", background: "#fff", color: "#64748b", fontSize: "12px", fontWeight: "600", cursor: "pointer" },
