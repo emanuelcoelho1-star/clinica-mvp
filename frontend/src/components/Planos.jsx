@@ -2,10 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import API_URL from "../api";
 
 const TIPOS = [
-  { value: "particular", label: "Particular" },
-  { value: "convenio", label: "Convênio" },
-  { value: "empresa", label: "Empresa" },
-  { value: "outro", label: "Outro" },
+  { value: "convenio", label: "Pago pelo convênio" },
+  { value: "padrao", label: "Plano padrão" },
 ];
 
 const tokenHeaders = () => ({ Authorization: `Bearer ${localStorage.getItem("token") || ""}` });
@@ -16,7 +14,7 @@ function Planos() {
   const [planoSelecionado, setPlanoSelecionado] = useState(null);
   const [valores, setValores] = useState({});
   const [nomePlano, setNomePlano] = useState("");
-  const [tipoPlano, setTipoPlano] = useState("particular");
+  const [tipoPlano, setTipoPlano] = useState("padrao");
   const [descricaoPlano, setDescricaoPlano] = useState("");
   const [nomeProcedimento, setNomeProcedimento] = useState("");
   const [codigoProcedimento, setCodigoProcedimento] = useState("");
@@ -92,7 +90,7 @@ function Planos() {
       });
       setNomePlano("");
       setDescricaoPlano("");
-      setTipoPlano("particular");
+      setTipoPlano("padrao");
       setMostrarFormPlano(false);
       setMensagem("Plano criado com sucesso.");
       await carregar(resultado.id);
@@ -250,7 +248,7 @@ function Planos() {
               cursor: "pointer", fontFamily: "inherit",
             }}>
               <strong style={{ display: "block", color: "#1e293b", fontSize: "13px" }}>{plano.nome}</strong>
-              <span style={{ display: "block", marginTop: "4px", color: "#94a3b8", fontSize: "11px" }}>{TIPOS.find((tipo) => tipo.value === plano.tipo)?.label || "Outro"}</span>
+              <span style={{ display: "block", marginTop: "4px", color: "#94a3b8", fontSize: "11px" }}>{plano.tipo === "convenio" ? "Pago pelo convênio" : "Plano padrão"}</span>
             </button>
           ))}
         </section>
