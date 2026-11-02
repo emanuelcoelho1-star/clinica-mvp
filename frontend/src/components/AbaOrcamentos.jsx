@@ -753,8 +753,8 @@ function AbaOrcamentos({ pacienteId, pacienteNome }) {
                         {Number(item.quantidade) > 1 && <span style={S.treatmentsModalQuantity}> • Qtd.: {item.quantidade}</span>}
                       </div>
                       <div style={S.treatmentsModalInlineField}>
-                        <span style={S.treatmentsModalValueLabel}>Dente</span>
-                        <span style={S.treatmentsModalQuantity}>{item.dente || "Não informado"}</span>
+                        <span style={S.treatmentsModalValueLabel}>Dente / face</span>
+                        <span style={S.treatmentsModalQuantity}>{[item.dente, item.faces].filter(Boolean).join(" / ") || "Não informado"}</span>
                       </div>
                       <div style={S.treatmentsModalInlineField}>
                         <span style={S.treatmentsModalValueLabel}>Valor</span>
