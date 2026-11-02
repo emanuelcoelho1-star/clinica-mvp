@@ -488,6 +488,7 @@ function ProntuarioPaciente() {
                 )}
               </div>
             </div>
+            </div>
           </section>
 
           {/* ── ODONTOGRAMA ──────────────────────────────── */}
