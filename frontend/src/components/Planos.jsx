@@ -319,7 +319,7 @@ function Planos() {
               Aceita faces
             </label>
             <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", color: "#475569", fontSize: "13px", fontWeight: 600, textTransform: "none", letterSpacing: "normal" }}>
-              Usar na frente
+              Usar
               <button type="button" role="switch" aria-checked={usarNaFrente} onClick={() => setUsarNaFrente((v) => !v)} style={{ width: "46px", height: "26px", padding: "3px", border: "none", borderRadius: "20px", background: usarNaFrente ? "#2563eb" : "#cbd5e1", cursor: "pointer", transition: "background .2s", display: "flex", alignItems: "center", justifyContent: usarNaFrente ? "flex-end" : "flex-start" }}>
                 <span style={{ width: "20px", height: "20px", borderRadius: "50%", background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,.2)" }} />
               </button>
@@ -427,8 +427,8 @@ function Planos() {
                               <th style={thStyle}>Procedimento</th>
                               <th style={{ ...thStyle, width: "125px" }}>Custo do tratamento</th>
                               <th style={{ ...thStyle, width: "150px" }}>Valor neste plano</th>
-                              <th style={{ ...thStyle, width: "130px" }}>Usar na frente</th>
-                              <th style={{ ...thStyle, width: "70px" }}>Ação</th>
+                              <th style={{ ...thStyle, width: "90px" }}>Usar</th>
+                              <th style={{ ...thStyle, width: "70px" }}></th>
                             </tr></thead>
                             <tbody>
                               {lista.length === 0 ? (
@@ -440,7 +440,29 @@ function Planos() {
                                     {item.codigo && <span style={{ display: "block", color: "#94a3b8", fontSize: "11px", marginTop: "3px" }}>Código: {item.codigo}</span>}
                                   </td>
                                   <td style={tdStyle}>
-                                    <span style={{ color: "#475569", fontSize: "13px" }}>{Number(item.custo_tratamento || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span>
+                                    <div style={{ position: "relative" }}>
+                                      <span style={{ position: "absolute", left: "10px", top: "10px", color: "#94a3b8", fontSize: "12px" }}>R$</span>
+                                      <input
+                                        aria-label={`Custo do tratamento de ${item.nome}`}
+                                        style={{ ...campo, padding: "9px 9px 9px 34px", fontSize: "13px" }}
+                                        type="number" min="0" max="99999999" step="0.01"
+                                        placeholder="0,00"
+                                        value={item.custo_tratamento ?? ""}
+                                        disabled={salvando}
+                                        onChange={(e) => setProcedimentos((atuais) => atuais.map((p) => p.id === item.id ? { ...p, custo_tratamento: e.target.value } : p))}
+                                        onBlur={async (e) => {
+                                          const custo = e.target.value === "" ? 0 : Number(String(e.target.value).replace(",", "."));
+                                          if (!Number.isFinite(custo) || custo < 0 || custo > 99999999) {
+                                            setErro("Informe um custo de tratamento válido.");
+                                            return;
+                                          }
+                                          try {
+                                            await requisicao(`/procedimentos/${item.id}/custo`, { method: "PATCH", body: JSON.stringify({ custo_tratamento: custo }) });
+                                            setProcedimentos((atuais) => atuais.map((p) => p.id === item.id ? { ...p, custo_tratamento: custo } : p));
+                                          } catch (error) { setErro(error.message); }
+                                        }}
+                                      />
+                                    </div>
                                   </td>
                                   <td style={tdStyle}>
                                     <div style={{ position: "relative" }}>
