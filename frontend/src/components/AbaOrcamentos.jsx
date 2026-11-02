@@ -746,15 +746,22 @@ function AbaOrcamentos({ pacienteId, pacienteNome }) {
                 <div style={S.treatmentsModalList}>
                   {orcamentoTratamentosModal.itens.map((item, indice) => (
                     <div key={item.id || indice} style={S.treatmentsModalItem}>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "5px", minWidth: 0, flex: 1 }}>
+                      <div style={{ minWidth: 0 }}>
                         <span style={S.treatmentsModalItemName}>{item.procedimento || "Procedimento sem nome"}</span>
-                        <span style={S.treatmentsModalQuantity}>Dente: {item.dente || "Não informado"}{Number(item.quantidade) > 1 ? ` • Quantidade: ${item.quantidade}` : ""}</span>
+                        {Number(item.quantidade) > 1 && <span style={S.treatmentsModalQuantity}> • Qtd.: {item.quantidade}</span>}
                       </div>
-                      <div style={S.treatmentsModalValues}>
-                        <div>
-                          <span style={S.treatmentsModalValueLabel}>Valor</span>
-                          <span style={S.treatmentsModalValue}>{formatarMoeda(item.valor)}</span>
-                        </div>
+                      <div style={S.treatmentsModalInlineField}>
+                        <span style={S.treatmentsModalValueLabel}>Dente</span>
+                        <span style={S.treatmentsModalQuantity}>{item.dente || "Não informado"}</span>
+                      </div>
+                      <div style={S.treatmentsModalInlineField}>
+                        <span style={S.treatmentsModalValueLabel}>Valor</span>
+                        <span style={S.treatmentsModalValue}>{formatarMoeda(item.valor)}</span>
+                      </div>
+                      <div style={S.treatmentsModalInlineField}>
+                        <span style={S.treatmentsModalValueLabel}>Custo</span>
+                        <span style={S.treatmentsModalCost}>{formatarMoeda(item.custo_tratamento)}</span>
+                      </div>
                         <div>
                           <span style={S.treatmentsModalValueLabel}>Custo</span>
                           <span style={S.treatmentsModalCost}>{formatarMoeda(item.custo_tratamento)}</span>
@@ -1210,20 +1217,20 @@ const S = {
   documentRowTitle: { color: "#1e293b", fontSize: "13px", fontWeight: "600", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
   documentRowMeta: { display: "flex", alignItems: "center", flexWrap: "wrap", gap: "7px", color: "#94a3b8", fontSize: "11px" },
   documentMetaDot: { color: "#cbd5e1" },
-  treatmentsModal: { width: "100%", maxWidth: "560px", maxHeight: "80vh", overflowY: "auto", background: "#fff", borderRadius: "16px", padding: "24px", boxShadow: "0 24px 64px rgba(15,23,42,0.2)", animation: "orcamento-fade-in 0.2s ease", boxSizing: "border-box", textAlign: "left" },
+  treatmentsModal: { width: "min(920px, 94vw)", maxWidth: "920px", maxHeight: "80vh", overflowY: "auto", background: "#fff", borderRadius: "16px", padding: "24px", boxShadow: "0 24px 64px rgba(15,23,42,0.2)", animation: "orcamento-fade-in 0.2s ease", boxSizing: "border-box", textAlign: "left" },
   treatmentsModalHeader: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "16px", paddingBottom: "16px", borderBottom: "1px solid #f1f5f9" },
   treatmentsModalTitle: { margin: 0, color: "#0f172a", fontSize: "17px", fontWeight: "700" },
   treatmentsModalSubtitle: { margin: "5px 0 0", color: "#94a3b8", fontSize: "12px" },
   treatmentsModalClose: { width: "30px", height: "30px", border: "1px solid #e8edf3", borderRadius: "8px", background: "#fff", color: "#64748b", fontSize: "22px", lineHeight: 1, cursor: "pointer" },
-  treatmentsModalDetails: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginTop: "16px", padding: "13px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "10px" },
+  treatmentsModalDetails: { display: "grid", gridTemplateColumns: "minmax(0, 1.5fr) minmax(0, 1fr)", gap: "20px", marginTop: "16px", padding: "13px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "10px" },
   treatmentsModalDetail: { display: "flex", flexDirection: "column", gap: "5px", minWidth: 0 },
   treatmentsModalDetailLabel: { color: "#94a3b8", fontSize: "10px", fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.04em" },
   treatmentsModalDetailValue: { color: "#334155", fontSize: "13px", fontWeight: "600", overflowWrap: "anywhere" },
   treatmentsModalList: { display: "flex", flexDirection: "column", gap: "0", marginTop: "12px" },
-  treatmentsModalItem: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: "14px", padding: "13px 4px", borderBottom: "1px solid #f1f5f9" },
+  treatmentsModalItem: { display: "grid", gridTemplateColumns: "minmax(220px, 1fr) 110px 120px 120px", alignItems: "center", gap: "18px", padding: "15px 8px", borderBottom: "1px solid #f1f5f9" },
   treatmentsModalItemName: { color: "#334155", fontSize: "13px", fontWeight: "600" },
   treatmentsModalQuantity: { color: "#94a3b8", fontSize: "12px" },
-  treatmentsModalValues: { display: "flex", gap: "14px", flexShrink: 0 },
+  treatmentsModalInlineField: { display: "flex", flexDirection: "column", gap: "4px", minWidth: 0 },
   treatmentsModalValueLabel: { display: "block", color: "#94a3b8", fontSize: "10px", fontWeight: "700", textTransform: "uppercase", marginBottom: "4px" },
   treatmentsModalValue: { display: "block", color: "#2563eb", fontSize: "12px", fontWeight: "700", whiteSpace: "nowrap" },
   treatmentsModalCost: { display: "block", color: "#475569", fontSize: "12px", fontWeight: "700", whiteSpace: "nowrap" },
