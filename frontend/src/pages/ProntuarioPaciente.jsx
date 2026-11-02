@@ -552,68 +552,9 @@ function ProntuarioPaciente() {
               <InfoCard title="Histórico clínico" icon={Icons.fileText} items={dadosHistoricoClinico} />
               <InfoCard title="Alergias a medicamentos" icon={Icons.fileText} items={[{ label: "Alergias registradas na primeira anamnese", value: anamneseInicial?.alergias }]} />
 
-            {/* Observações */}
-            <div style={{ ...s.card, ...s.cardFull }}>
-              <div style={s.cardHeader}>
-                <div style={s.cardTitleRow}>
-                  <span style={s.cardIcon}>{Icons.fileText}</span>
-                  <h2 style={s.cardTitle}>Observações</h2>
-                </div>
-                {!editandoObservacoes && (
-                  <button
-                    type="button"
-                    style={s.obsActionBtn}
-                    onClick={() => {
-                      setTextoObservacoes(paciente.observacoes || "");
-                      setErroObservacoes("");
-                      setEditandoObservacoes(true);
-                    }}
-                  >
-                    {Icons.edit}
-                    <span>{paciente.observacoes ? "Editar" : "Adicionar observação"}</span>
-                  </button>
-                )}
-              </div>
-              <div style={s.obsBox}>
-                {paciente.observacoes || (
-                  <span style={s.obsEmpty}>Nenhuma observação cadastrada.</span>
-                )}
-              </div>
-              {editandoObservacoes && (
-                <div style={s.modalOverlay} onMouseDown={(e) => { if (e.target === e.currentTarget && !salvandoObservacoes) setEditandoObservacoes(false); }}>
-                  <div style={s.obsModal} role="dialog" aria-modal="true" aria-labelledby="obs-modal-title">
-                    <div style={s.obsModalHeader}>
-                      <div>
-                        <h2 id="obs-modal-title" style={s.obsModalTitle}>{paciente.observacoes ? "Editar observações" : "Adicionar observação"}</h2>
-                        <p style={s.obsModalSubtitle}>Registre informações importantes sobre o paciente.</p>
-                      </div>
-                      <button type="button" style={s.obsModalClose} disabled={salvandoObservacoes} onClick={() => setEditandoObservacoes(false)} aria-label="Fechar">×</button>
-                    </div>
-                    <div style={s.obsModalBody}>
-                      <textarea
-                        autoFocus
-                        style={s.obsTextarea}
-                        value={textoObservacoes}
-                        onChange={(e) => setTextoObservacoes(e.target.value)}
-                        placeholder="Digite as observações sobre o paciente..."
-                        rows={7}
-                      />
-                      {erroObservacoes && <p style={s.obsError}>{erroObservacoes}</p>}
-                    </div>
-                    <div style={s.obsModalFooter}>
-                      <button type="button" style={s.obsCancelBtn} disabled={salvandoObservacoes} onClick={() => setEditandoObservacoes(false)}>Cancelar</button>
-                      <button type="button" style={s.obsSaveBtn} disabled={salvandoObservacoes} onClick={salvarObservacoes}>{salvandoObservacoes ? "Salvando..." : "Salvar observações"}</button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-            </div>
-          </section>
-
           {/* ── CONSULTAS DO PACIENTE ───────────────────── */}
           <section style={s.consultasSection}>
-<div style={{ ...s.consultasGrid, gridTemplateColumns: "1fr" }}>
+            <div style={{ ...s.consultasGrid, gridTemplateColumns: "1fr" }}>
               <div style={s.consultasCard}>
                 <div style={s.consultasCardHeader}>
                   <div>
@@ -674,6 +615,67 @@ function ProntuarioPaciente() {
               </div>
             </div>
           </section>
+
+                        {/* Observações */}
+            <div style={s.card}>
+              <div style={s.cardHeader}>
+                <div style={s.cardTitleRow}>
+                  <span style={s.cardIcon}>{Icons.fileText}</span>
+                  <h2 style={s.cardTitle}>Observações</h2>
+                </div>
+                {!editandoObservacoes && (
+                  <button
+                    type="button"
+                    style={s.obsActionBtn}
+                    onClick={() => {
+                      setTextoObservacoes(paciente.observacoes || "");
+                      setErroObservacoes("");
+                      setEditandoObservacoes(true);
+                    }}
+                  >
+                    {Icons.edit}
+                    <span>{paciente.observacoes ? "Editar" : "Adicionar observação"}</span>
+                  </button>
+                )}
+              </div>
+              <div style={s.obsBox}>
+                {paciente.observacoes || (
+                  <span style={s.obsEmpty}>Nenhuma observação cadastrada.</span>
+                )}
+              </div>
+              {editandoObservacoes && (
+                <div style={s.modalOverlay} onMouseDown={(e) => { if (e.target === e.currentTarget && !salvandoObservacoes) setEditandoObservacoes(false); }}>
+                  <div style={s.obsModal} role="dialog" aria-modal="true" aria-labelledby="obs-modal-title">
+                    <div style={s.obsModalHeader}>
+                      <div>
+                        <h2 id="obs-modal-title" style={s.obsModalTitle}>{paciente.observacoes ? "Editar observações" : "Adicionar observação"}</h2>
+                        <p style={s.obsModalSubtitle}>Registre informações importantes sobre o paciente.</p>
+                      </div>
+                      <button type="button" style={s.obsModalClose} disabled={salvandoObservacoes} onClick={() => setEditandoObservacoes(false)} aria-label="Fechar">×</button>
+                    </div>
+                    <div style={s.obsModalBody}>
+                      <textarea
+                        autoFocus
+                        style={s.obsTextarea}
+                        value={textoObservacoes}
+                        onChange={(e) => setTextoObservacoes(e.target.value)}
+                        placeholder="Digite as observações sobre o paciente..."
+                        rows={7}
+                      />
+                      {erroObservacoes && <p style={s.obsError}>{erroObservacoes}</p>}
+                    </div>
+                    <div style={s.obsModalFooter}>
+                      <button type="button" style={s.obsCancelBtn} disabled={salvandoObservacoes} onClick={() => setEditandoObservacoes(false)}>Cancelar</button>
+                      <button type="button" style={s.obsSaveBtn} disabled={salvandoObservacoes} onClick={salvarObservacoes}>{salvandoObservacoes ? "Salvando..." : "Salvar observações"}</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+            </div>
+          </section>
+
+
 
           {/* ── ODONTOGRAMA ──────────────────────────────── */}
           <div style={s.odontogramaCard}>
@@ -961,17 +963,17 @@ const s = {
   obsError: { margin: 0, color: "#dc2626", fontSize: "12px" },
 
   /* ── Consultas do paciente ───────────────────────── */
-  consultasSection: { display: "flex", flexDirection: "column", gap: "14px" },
+  consultasSection: { display: "flex", flexDirection: "column", gap: "8px", minWidth: 0 },
   consultasGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "20px" },
-  consultasCard: { background: "#fff", border: "1px solid #f1f5f9", borderRadius: "16px", padding: "22px 24px", minWidth: 0 },
-  consultasCardHeader: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", marginBottom: "14px" },
+  consultasCard: { background: "#fff", border: "1px solid #f1f5f9", borderRadius: "12px", padding: "12px 14px", minWidth: 0 },
+  consultasCardHeader: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", marginBottom: "6px" },
   consultasCardTitle: { margin: 0, color: "#0f172a", fontSize: "15px", fontWeight: "600" },
   consultasCount: { display: "block", marginTop: "4px", color: "#94a3b8", fontSize: "12px", fontWeight: "500" },
   consultaIcon: { display: "flex", alignItems: "center", justifyContent: "center", width: "34px", height: "34px", borderRadius: "10px", background: "#f0fdf4", color: "#16a34a", fontSize: "19px", fontWeight: "700" },
   consultaIconFuture: { display: "flex", alignItems: "center", justifyContent: "center", width: "34px", height: "34px", borderRadius: "10px", background: "#eff6ff", color: "#2563eb", fontSize: "22px", fontWeight: "700" },
   consultasEmpty: { margin: 0, padding: "18px 0 8px", color: "#94a3b8", fontSize: "13px" },
   consultasList: { listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column" },
-  consultaRow: { display: "flex", alignItems: "center", gap: "14px", padding: "12px 0", borderTop: "1px solid #f1f5f9" },
+  consultaRow: { display: "flex", alignItems: "center", gap: "8px", padding: "7px 0", borderTop: "1px solid #f1f5f9" },
   consultaDate: { display: "flex", flexDirection: "column", gap: "3px", minWidth: "88px", color: "#16a34a", fontSize: "12px" },
   consultaDateFuture: { display: "flex", flexDirection: "column", gap: "3px", minWidth: "88px", color: "#2563eb", fontSize: "12px" },
   consultaInfo: { display: "flex", flexDirection: "column", gap: "3px", minWidth: 0, flex: 1 },
