@@ -318,7 +318,7 @@ router.post("/", auth, (req, res) => {
       responsavel_telefone,
       clinica_id
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
   db.run(
@@ -377,6 +377,7 @@ router.put("/:id", auth, (req, res) => {
     dataNascimento,
     cpf,
     observacoes,
+    fotoUrl,
     cep,
     rua,
     numero,
@@ -441,6 +442,7 @@ router.put("/:id", auth, (req, res) => {
       dataNascimento || "",
       cpf || "",
       observacoes || "",
+      fotoUrl || "",
       cep || "",
       rua || "",
       numero || "",
