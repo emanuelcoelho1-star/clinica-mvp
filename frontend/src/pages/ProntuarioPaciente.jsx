@@ -526,24 +526,22 @@ function ProntuarioPaciente() {
         <div style={s.profileTop}>
           {/* Foto do paciente */}
           <div style={s.avatarColumn}>
-            <div style={{ ...s.avatar, background: palette.bg, color: palette.color }}>
-              {paciente.foto_url ? (
-                <img src={paciente.foto_url} alt={paciente.nome} style={s.avatarImage} />
-              ) : (
-                getInitials(paciente.nome)
-              )}
-            </div>
             <button
               type="button"
-              style={s.avatarPhotoButton}
+              style={{ ...s.avatar, background: palette.bg, color: palette.color, border: "none", padding: 0, cursor: "pointer" }}
               onClick={() => {
                 setFotoSelecionada(paciente.foto_url || "");
                 setErroFoto("");
                 setModalFotoAberto(true);
               }}
               title={paciente.foto_url ? "Alterar foto do paciente" : "Adicionar foto do paciente"}
+              aria-label={paciente.foto_url ? "Alterar foto do paciente" : "Adicionar foto do paciente"}
             >
-              {paciente.foto_url ? "Alterar foto" : "Adicionar foto"}
+              {paciente.foto_url ? (
+                <img src={paciente.foto_url} alt="" style={s.avatarImage} />
+              ) : (
+                getInitials(paciente.nome)
+              )}
             </button>
           </div>
 
@@ -984,14 +982,10 @@ const s = {
   avatarColumn: {
     display: "flex", flexDirection: "column", alignItems: "center", gap: "7px", flexShrink: 0,
   },
-  avatarPhotoButton: {
-    border: "none", background: "transparent", color: "#2563eb",
-    fontSize: "11px", fontWeight: "600", cursor: "pointer", padding: "2px 4px",
-  },
   avatar: {
     width: "72px", height: "72px", borderRadius: "16px",
     display: "flex", alignItems: "center", justifyContent: "center",
-    fontSize: "22px", fontWeight: "700", flexShrink: 0,
+    fontSize: "28px", fontWeight: "700", flexShrink: 0,
     letterSpacing: "0.02em", overflow: "hidden",
   },
   avatarImage: { width: "100%", height: "100%", objectFit: "cover" },
