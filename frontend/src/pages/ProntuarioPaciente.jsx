@@ -205,6 +205,8 @@ function ProntuarioPaciente() {
   const [carregando, setCarregando] = useState(true);
   const [abaAtiva, setAbaAtiva] = useState("visao-geral");
   const [hoveredTab, setHoveredTab] = useState(null);
+  const [consultasPaciente, setConsultasPaciente] = useState([]);
+  const [carregandoConsultas, setCarregandoConsultas] = useState(true);
 
   useEffect(() => {
     const carregarDados = async () => {
@@ -230,6 +232,29 @@ function ProntuarioPaciente() {
       }
     };
     carregarDados();
+  }, [id]);
+
+  useEffect(() => {
+    let ativo = true;
+    const carregarConsultasPaciente = async () => {
+      setCarregandoConsultas(true);
+      try {
+        const token = localStorage.getItem("token");
+        const resposta = await fetch(`${API_URL}/pacientes/${id}/consultas`, {
+          headers: { Authorization: token },
+        });
+        if (!resposta.ok) throw new Error("Não foi possível carregar as consultas.");
+        const dados = await resposta.json();
+        if (ativo) setConsultasPaciente(Array.isArray(dados) ? dados : []);
+      } catch (erro) {
+        console.error("Erro ao carregar consultas do paciente:", erro);
+        if (ativo) setConsultasPaciente([]);
+      } finally {
+        if (ativo) setCarregandoConsultas(false);
+      }
+    };
+    carregarConsultasPaciente();
+    return () => { ativo = false; };
   }, [id]);
 
   const idadePaciente = useMemo(() => calcularIdade(paciente?.data_nascimento), [paciente?.data_nascimento]);
