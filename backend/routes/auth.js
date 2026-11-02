@@ -9,10 +9,7 @@ function copiarPlanoParticularPadrao(clinicaDestinoId, callback) {
     `SELECT c.id AS clinica_id
      FROM clinicas c
      INNER JOIN planos p ON p.clinica_id = c.id
-     WHERE LOWER(TRIM(p.nome)) = 'particular'
-     ORDER BY
-       (SELECT COUNT(*) FROM procedimentos_catalogo pc WHERE pc.clinica_id = c.id) DESC,
-       c.id ASC
+     WHERE c.id = 1 AND LOWER(TRIM(p.nome)) = 'particular'
      LIMIT 1`,
     [],
     (sourceErr, source) => {
