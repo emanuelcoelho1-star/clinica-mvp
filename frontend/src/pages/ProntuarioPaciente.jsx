@@ -176,6 +176,7 @@ const ABAS = [
 
 /* ── InfoCard component ──────────────────────────────────── */
 function InfoCard({ title, icon, items, style }) {
+  const sections = [...new Set(items.map((item) => item.section || title))];
   return (
     <div style={{ ...s.card, ...style }}>
       <div style={s.cardHeader}>
@@ -184,22 +185,25 @@ function InfoCard({ title, icon, items, style }) {
           <h2 style={s.cardTitle}>{title}</h2>
         </div>
       </div>
-      <div style={s.infoGrid}>
-        {items.map((item, index) => (
-          <React.Fragment key={item.label}>
-            {item.section && (index === 0 || items[index - 1]?.section !== item.section) && (
-              <div style={s.infoSectionTitle}>{item.section}</div>
-            )}
-            <div style={s.infoItem}>
-              <span style={s.infoLabel}>{item.label}</span>
-              <span style={s.infoValue}>{item.value || "—"}</span>
+      <div style={s.infoSections}>
+        {sections.map((section) => (
+          <section key={section} style={s.infoSection}>
+            <h3 style={s.infoSectionTitle}>{section}</h3>
+            <div style={s.infoGrid}>
+              {items.filter((item) => (item.section || title) === section).map((item) => (
+                <div key={item.label} style={s.infoItem}>
+                  <span style={s.infoLabel}>{item.label}</span>
+                  <span style={s.infoValue}>{item.value || "—"}</span>
+                </div>
+              ))}
             </div>
-          </React.Fragment>
+          </section>
         ))}
       </div>
     </div>
   );
 }
+
 
 /* ── Componente Principal ────────────────────────────────── */
 function ProntuarioPaciente() {
@@ -834,32 +838,35 @@ const s = {
     letterSpacing: "-0.01em",
   },
 
-  /* ── Info Grid ────────────────────────────────────── */
+  /* ── Info Sections ────────────────────────────────── */
+  infoSections: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))",
+    gap: "18px 24px",
+  },
+  infoSection: { minWidth: 0 },
+  infoSectionTitle: {
+    margin: "0 0 10px", paddingBottom: "8px",
+    color: "#64748b", fontSize: "11px", fontWeight: "700",
+    textTransform: "uppercase", letterSpacing: "0.07em",
+    borderBottom: "1px solid #edf1f5",
+  },
   infoGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(155px, 1fr))",
-    gap: "1px", borderRadius: "10px", overflow: "hidden",
-    background: "#e9eef5",
+    gridTemplateColumns: "repeat(auto-fit, minmax(125px, 1fr))",
+    gap: "12px 16px",
   },
   infoItem: {
-    display: "flex", flexDirection: "row", alignItems: "center",
-    justifyContent: "space-between", gap: "8px",
-    padding: "9px 12px", minWidth: 0, background: "#fafbfc",
-  },
-  infoSectionTitle: {
-    gridColumn: "1 / -1", padding: "8px 12px 6px",
-    background: "#f1f5f9", color: "#64748b", fontSize: "10px",
-    fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.06em",
-    borderTop: "1px solid #e2e8f0",
+    display: "flex", flexDirection: "column", alignItems: "flex-start",
+    gap: "4px", minWidth: 0, padding: "1px 0",
   },
   infoLabel: {
     fontSize: "10px", fontWeight: "600", color: "#94a3b8",
-    textTransform: "uppercase", letterSpacing: "0.04em", flexShrink: 0,
+    textTransform: "uppercase", letterSpacing: "0.05em",
   },
   infoValue: {
-    color: "#0f172a", fontSize: "12px", fontWeight: "500",
-    wordBreak: "break-word", lineHeight: 1.35, textAlign: "right",
-    minWidth: 0,
+    color: "#1e293b", fontSize: "13px", fontWeight: "500",
+    wordBreak: "break-word", lineHeight: 1.4, minWidth: 0,
   },
 
   /* ── Observações ──────────────────────────────────── */
