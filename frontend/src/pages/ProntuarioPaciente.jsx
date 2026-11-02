@@ -286,6 +286,10 @@ function ProntuarioPaciente() {
     { label: "Nascimento", value: dataResponsavelFormatada },
     { label: "Telefone", value: paciente?.responsavel_telefone },
   ];
+  const possuiResponsavel = Boolean(
+    paciente?.responsavel_nome || paciente?.responsavel_cpf ||
+    paciente?.responsavel_telefone || paciente?.responsavel_data_nascimento
+  );
 
   const anamneseInicial = paciente?.anamnese_inicial || null;
   const dadosHistoricoClinico = [
