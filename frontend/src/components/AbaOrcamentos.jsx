@@ -288,6 +288,7 @@ function AbaOrcamentos({ pacienteId, pacienteNome }) {
   const [excluindo, setExcluindo] = useState(false);
 
   const [hoveredCardId, setHoveredCardId] = useState(null);
+  const [orcamentoExpandidoId, setOrcamentoExpandidoId] = useState(null);
   const [hoveredBtn, setHoveredBtn] = useState(null);
 
   /* ── Carregar ────────────────────────────── */
@@ -659,11 +660,34 @@ function AbaOrcamentos({ pacienteId, pacienteNome }) {
                         </>}
                         <span style={S.documentMetaDot}>•</span>
                         <StatusBadge status={o.status} />
+                        {o.status === "pendente" && (
+                          <button
+                            type="button"
+                            aria-label={orcamentoExpandidoId === o.id ? "Ocultar tratamentos do orçamento" : "Mostrar tratamentos do orçamento"}
+                            title={orcamentoExpandidoId === o.id ? "Ocultar tratamentos" : "Ver tratamentos do orçamento"}
+                            onClick={() => setOrcamentoExpandidoId((atual) => atual === o.id ? null : o.id)}
+                            style={S.treatmentsInfoButton}
+                          >
+                            !
+                          </button>
+                        )}
                       </div>
-                      {o.itens?.length > 0 && (
-                        <span style={S.documentRowDescription}>
-                          {o.itens.map((item) => item.procedimento).filter(Boolean).join(", ")}
-                        </span>
+                      {orcamentoExpandidoId === o.id && (
+                        <div style={S.treatmentsPopover}>
+                          <strong style={S.treatmentsPopoverTitle}>Tratamentos do orçamento</strong>
+                          {o.itens?.length ? (
+                            <ul style={S.treatmentsList}>
+                              {o.itens.map((item, indice) => (
+                                <li key={item.id || indice} style={S.treatmentsListItem}>
+                                  <span>{item.procedimento || "Procedimento sem nome"}</span>
+                                  {Number(item.quantidade) > 1 && <span style={S.treatmentQuantity}>Qtd.: {item.quantidade}</span>}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <span style={S.treatmentsEmpty}>Nenhum tratamento cadastrado neste orçamento.</span>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>
@@ -1356,6 +1380,13 @@ const S = {
   documentRowTitle: { color: "#1e293b", fontSize: "13px", fontWeight: "600", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
   documentRowMeta: { display: "flex", alignItems: "center", flexWrap: "wrap", gap: "7px", color: "#94a3b8", fontSize: "11px" },
   documentMetaDot: { color: "#cbd5e1" },
+  treatmentsInfoButton: { width: "19px", height: "19px", padding: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", border: "1px solid #f59e0b", borderRadius: "50%", background: "#fffbeb", color: "#b45309", fontSize: "12px", fontWeight: "800", lineHeight: 1, cursor: "pointer" },
+  treatmentsPopover: { display: "flex", flexDirection: "column", gap: "7px", marginTop: "7px", padding: "10px 12px", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: "8px", maxWidth: "560px" },
+  treatmentsPopoverTitle: { color: "#92400e", fontSize: "11px", fontWeight: "700" },
+  treatmentsList: { margin: 0, paddingLeft: "18px", display: "flex", flexDirection: "column", gap: "4px", color: "#78350f", fontSize: "12px" },
+  treatmentsListItem: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" },
+  treatmentQuantity: { color: "#a16207", fontSize: "11px", whiteSpace: "nowrap" },
+  treatmentsEmpty: { color: "#92400e", fontSize: "12px" },
   documentRowDescription: { color: "#64748b", fontSize: "11px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" },
   documentRowActions: { display: "flex", alignItems: "center", gap: "7px", flexShrink: 0, flexWrap: "wrap" },
   listActionBtn: { display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px", height: "32px", padding: "0 11px", border: "1px solid #e8edf3", borderRadius: "7px", background: "#fff", color: "#475569", fontSize: "12px", fontWeight: "600", cursor: "pointer", whiteSpace: "nowrap" },
