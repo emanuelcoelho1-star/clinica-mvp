@@ -163,7 +163,7 @@ function StatusBadge({ status }) {
 /* ═══════════════════════════════════════════════════════════
    COMPONENTE
    ═══════════════════════════════════════════════════════════ */
-function AbaOrcamentos({ pacienteId }) {
+function AbaOrcamentos({ pacienteId, pacienteNome }) {
   const [orcamentos, setOrcamentos] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
@@ -227,7 +227,7 @@ function AbaOrcamentos({ pacienteId }) {
   /* ── Abrir form ──────────────────────────── */
   function abrirFormNovo() {
     setEditando(null);
-    setFormData({ ...EMPTY_FORM, itens: [] });
+    setFormData({ ...EMPTY_FORM, descricao: `Plano de Tratamento de ${pacienteNome || ""}`.trim(), itens: [] });
     setTipoDesconto("valor");
     setItemAtual({ ...EMPTY_ITEM });
     setErroForm("");
@@ -708,8 +708,8 @@ function AbaOrcamentos({ pacienteId }) {
                   value={formData.descricao}
                   onChange={handleInput}
                   placeholder="Descreva o orçamento..."
-                  style={S.textarea}
-                  rows={2}
+                  style={{ ...S.textarea, height: "42px", minHeight: "42px", padding: "10px 14px", resize: "none", lineHeight: "20px" }}
+                  rows={1}
                 />
               </div>
               <div style={S.fieldGroup}>
