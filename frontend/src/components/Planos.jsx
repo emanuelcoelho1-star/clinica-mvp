@@ -39,6 +39,7 @@ function Planos() {
   const [nomeProcedimento, setNomeProcedimento] = useState("");
   const [codigoProcedimento, setCodigoProcedimento] = useState("");
   const [aceitaFaces, setAceitaFaces] = useState(false);
+  const [usarNaFrente, setUsarNaFrente] = useState(true);
   const [custoTratamento, setCustoTratamento] = useState("");
   const [valorTratamento, setValorTratamento] = useState("");
   const [categoriaProcedimento, setCategoriaProcedimento] = useState("");
@@ -141,7 +142,7 @@ function Planos() {
     try {
       const novoProcedimento = await requisicao("/procedimentos", {
         method: "POST",
-        body: JSON.stringify({ nome: nomeProcedimento, categoria: categoriaProcedimento, aceita_faces: aceitaFaces, custo_tratamento: custoTratamento === "" ? 0 : Number(String(custoTratamento).replace(",", ".")) }),
+        body: JSON.stringify({ nome: nomeProcedimento, categoria: categoriaProcedimento, aceita_faces: aceitaFaces, usar_na_frente: usarNaFrente, custo_tratamento: custoTratamento === "" ? 0 : Number(String(custoTratamento).replace(",", ".")) }),
       });
       if (planoAtual && valorTratamento !== "") {
         await requisicao(`/${planoAtual.id}/valores`, {
@@ -152,6 +153,7 @@ function Planos() {
       setNomeProcedimento("");
       setCodigoProcedimento("");
       setAceitaFaces(false);
+      setUsarNaFrente(true);
       setCustoTratamento("");
       setValorTratamento("");
       setCategoriaProcedimento("");
@@ -316,6 +318,12 @@ function Planos() {
               <input type="checkbox" checked={aceitaFaces} onChange={(e) => setAceitaFaces(e.target.checked)} style={{ width: "17px", height: "17px", margin: 0, accentColor: "#2563eb" }} />
               Aceita faces
             </label>
+            <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", color: "#475569", fontSize: "13px", fontWeight: 600, textTransform: "none", letterSpacing: "normal" }}>
+              Usar na frente
+              <button type="button" role="switch" aria-checked={usarNaFrente} onClick={() => setUsarNaFrente((v) => !v)} style={{ width: "46px", height: "26px", padding: "3px", border: "none", borderRadius: "20px", background: usarNaFrente ? "#2563eb" : "#cbd5e1", cursor: "pointer", transition: "background .2s", display: "flex", alignItems: "center", justifyContent: usarNaFrente ? "flex-end" : "flex-start" }}>
+                <span style={{ width: "20px", height: "20px", borderRadius: "50%", background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,.2)" }} />
+              </button>
+            </label>
             <label style={labelStyle}>Valor do tratamento {planoAtual ? `(plano: ${planoAtual.nome})` : ""}
               <div style={{ position: "relative" }}>
                 <span style={{ position: "absolute", left: "12px", top: "11px", color: "#94a3b8", fontSize: "13px" }}>R$</span>
@@ -403,6 +411,7 @@ function Planos() {
                             setNomeProcedimento("");
                             setCodigoProcedimento("");
                             setAceitaFaces(false);
+                            setUsarNaFrente(true);
                             setCustoTratamento("");
                             setValorTratamento("");
                             setMostrarFormProcedimento(true);
@@ -416,12 +425,14 @@ function Planos() {
                             <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "440px" }}>
                             <thead><tr style={{ background: "#f8fafc" }}>
                               <th style={thStyle}>Procedimento</th>
-                              <th style={{ ...thStyle, width: "170px" }}>Valor neste plano</th>
-                              <th style={{ ...thStyle, width: "90px" }}>Ação</th>
+                              <th style={{ ...thStyle, width: "125px" }}>Custo do tratamento</th>
+                              <th style={{ ...thStyle, width: "150px" }}>Valor neste plano</th>
+                              <th style={{ ...thStyle, width: "130px" }}>Usar na frente</th>
+                              <th style={{ ...thStyle, width: "70px" }}>Ação</th>
                             </tr></thead>
                             <tbody>
                               {lista.length === 0 ? (
-                                <tr><td colSpan="3" style={{ padding: "20px 14px", textAlign: "center", color: "#94a3b8", fontSize: "12px" }}>Nenhum procedimento cadastrado nesta especialidade.</td></tr>
+                                <tr><td colSpan="5" style={{ padding: "20px 14px", textAlign: "center", color: "#94a3b8", fontSize: "12px" }}>Nenhum procedimento cadastrado nesta especialidade.</td></tr>
                               ) : lista.map((item) => (
                                 <tr key={item.id}>
                                   <td style={tdStyle}>
@@ -429,10 +440,26 @@ function Planos() {
                                     {item.codigo && <span style={{ display: "block", color: "#94a3b8", fontSize: "11px", marginTop: "3px" }}>Código: {item.codigo}</span>}
                                   </td>
                                   <td style={tdStyle}>
+                                    <span style={{ color: "#475569", fontSize: "13px" }}>{Number(item.custo_tratamento || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</span>
+                                  </td>
+                                  <td style={tdStyle}>
                                     <div style={{ position: "relative" }}>
                                       <span style={{ position: "absolute", left: "10px", top: "10px", color: "#94a3b8", fontSize: "12px" }}>R$</span>
                                       <input aria-label={`Valor de ${item.nome}`} style={{ ...campo, padding: "9px 9px 9px 34px", fontSize: "13px" }} type="number" min="0" step="0.01" placeholder="Não definido" value={valores[item.id] ?? ""} onChange={(e) => setValores((atual) => ({ ...atual, [item.id]: e.target.value }))} />
                                     </div>
+                                  </td>
+                                  <td style={tdStyle}>
+                                    <button type="button" role="switch" aria-checked={!!item.usar_na_frente} aria-label={`Usar ${item.nome} no orçamento`} disabled={salvando} onClick={async () => {
+                                      const novoValor = !item.usar_na_frente;
+                                      setSalvando(true);
+                                      try {
+                                        await requisicao(`/procedimentos/${item.id}/usar-na-frente`, { method: "PATCH", body: JSON.stringify({ usar_na_frente: novoValor }) });
+                                        setProcedimentos((atuais) => atuais.map((p) => p.id === item.id ? { ...p, usar_na_frente: novoValor ? 1 : 0 } : p));
+                                      } catch (error) { setErro(error.message); }
+                                      finally { setSalvando(false); }
+                                    }} style={{ width: "42px", height: "24px", padding: "3px", border: "none", borderRadius: "20px", background: item.usar_na_frente ? "#2563eb" : "#cbd5e1", cursor: salvando ? "wait" : "pointer", display: "flex", alignItems: "center", justifyContent: item.usar_na_frente ? "flex-end" : "flex-start" }}>
+                                      <span style={{ width: "18px", height: "18px", borderRadius: "50%", background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,.2)" }} />
+                                    </button>
                                   </td>
                                   <td style={tdStyle}>
                                     <button type="button" title="Excluir do catálogo" onClick={() => excluirProcedimento(item)} style={{ border: "none", background: "transparent", color: "#94a3b8", cursor: "pointer", fontSize: "12px" }}>Excluir</button>
