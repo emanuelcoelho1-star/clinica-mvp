@@ -185,6 +185,7 @@ function AbaOrcamentos({ pacienteId }) {
   /* ── Carregar ────────────────────────────── */
   useEffect(() => {
     carregarOrcamentos();
+    carregarDentistaResponsavel();
   }, [pacienteId]);
 
   async function carregarDentistaResponsavel() {
