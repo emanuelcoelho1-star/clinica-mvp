@@ -31,6 +31,15 @@ function validarNome(nome) {
   return typeof nome === "string" && nome.trim().length > 0 && nome.trim().length <= 120;
 }
 
+function normalizarTipos(tipo) {
+  if (Array.isArray(tipo)) return tipo;
+  if (typeof tipo === "string" && tipo.startsWith("[")) {
+    try { return JSON.parse(tipo); } catch { return []; }
+  }
+  // Compatibilidade com planos criados antes da seleção múltipla.
+  return tipo ? [tipo] : [];
+}
+
 // Lista planos e os valores dos procedimentos configurados em cada um.
 router.get("/", (req, res) => {
   const idClinica = clinicaId(req);
@@ -49,6 +58,7 @@ router.get("/", (req, res) => {
           if (precosErr) return erroInterno(res);
           res.json(planos.map((plano) => ({
             ...plano,
+            tipo: normalizarTipos(plano.tipo),
             valores: precos
               .filter((preco) => preco.plano_id === plano.id)
               .reduce((acc, preco) => ({ ...acc, [preco.procedimento_id]: Number(preco.valor) }), {}),
@@ -69,14 +79,16 @@ router.get("/procedimentos", (req, res) => {
 });
 
 router.post("/", (req, res) => {
-  const { nome, tipo = "padrao", descricao = "" } = req.body || {};
+  const { nome, tipo = [], descricao = "" } = req.body || {};
   const tiposValidos = ["convenio", "padrao"];
   if (!validarNome(nome)) return res.status(400).json({ erro: "Informe um nome válido para o plano." });
-  if (!tiposValidos.includes(tipo)) return res.status(400).json({ erro: "Tipo de plano inválido." });
+  if (!Array.isArray(tipo) || tipo.some((item) => !tiposValidos.includes(item)) || new Set(tipo).size !== tipo.length) {
+    return res.status(400).json({ erro: "Selecione opções válidas para o tipo de plano." });
+  }
 
   db.run(
     "INSERT INTO planos (clinica_id, nome, tipo, descricao) VALUES (?, ?, ?, ?)",
-    [clinicaId(req), nome.trim(), tipo, String(descricao || "").trim()],
+    [clinicaId(req), nome.trim(), JSON.stringify(tipo), String(descricao || "").trim()],
     function (err) {
       if (err) {
         if (err.message.includes("UNIQUE")) return res.status(409).json({ erro: "Já existe um plano com esse nome." });
@@ -88,14 +100,16 @@ router.post("/", (req, res) => {
 });
 
 router.put("/:id", (req, res) => {
-  const { nome, tipo = "padrao", descricao = "", ativo = 1 } = req.body || {};
+  const { nome, tipo = [], descricao = "", ativo = 1 } = req.body || {};
   const tiposValidos = ["convenio", "padrao"];
   if (!validarNome(nome)) return res.status(400).json({ erro: "Informe um nome válido para o plano." });
-  if (!tiposValidos.includes(tipo)) return res.status(400).json({ erro: "Tipo de plano inválido." });
+  if (!Array.isArray(tipo) || tipo.some((item) => !tiposValidos.includes(item)) || new Set(tipo).size !== tipo.length) {
+    return res.status(400).json({ erro: "Selecione opções válidas para o tipo de plano." });
+  }
 
   db.run(
     "UPDATE planos SET nome = ?, tipo = ?, descricao = ?, ativo = ? WHERE id = ? AND clinica_id = ?",
-    [nome.trim(), tipo, String(descricao || "").trim(), ativo ? 1 : 0, req.params.id, clinicaId(req)],
+    [nome.trim(), JSON.stringify(tipo), String(descricao || "").trim(), ativo ? 1 : 0, req.params.id, clinicaId(req)],
     function (err) {
       if (err) {
         if (err.message.includes("UNIQUE")) return res.status(409).json({ erro: "Já existe um plano com esse nome." });
