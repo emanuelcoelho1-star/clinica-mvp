@@ -536,7 +536,11 @@ function ProntuarioPaciente() {
             <button
               type="button"
               style={s.avatarPhotoButton}
-              onClick={() => setEditarPacienteAberto(true)}
+              onClick={() => {
+                setFotoSelecionada(paciente.foto_url || "");
+                setErroFoto("");
+                setModalFotoAberto(true);
+              }}
               title={paciente.foto_url ? "Alterar foto do paciente" : "Adicionar foto do paciente"}
             >
               {paciente.foto_url ? "Alterar foto" : "Adicionar foto"}
