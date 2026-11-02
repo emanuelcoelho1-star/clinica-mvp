@@ -43,7 +43,7 @@ const STATUS_OPTIONS = [
   { value: "concluido",    label: "Concluído" },
 ];
 
-const EMPTY_ITEM = { dente: "", procedimento: "", valor: 0, quantidade: 1 };
+const EMPTY_ITEM = { dente: "", procedimento: "", valor: "", quantidade: "" };
 
 const EMPTY_FORM = {
   data: dataHojeISO(),
