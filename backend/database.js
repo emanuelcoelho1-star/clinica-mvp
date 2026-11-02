@@ -634,6 +634,7 @@ db.serialize(() => {
   adicionarColunaSeNaoExistir("pacientes", "data_nascimento", "TEXT");
   adicionarColunaSeNaoExistir("pacientes", "cpf", "TEXT");
   adicionarColunaSeNaoExistir("pacientes", "observacoes", "TEXT");
+  adicionarColunaSeNaoExistir("pacientes", "foto_url", "TEXT");
   adicionarColunaSeNaoExistir("pacientes", "cep", "TEXT");
   adicionarColunaSeNaoExistir("pacientes", "rua", "TEXT");
   adicionarColunaSeNaoExistir("pacientes", "numero", "TEXT");
