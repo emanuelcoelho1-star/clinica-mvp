@@ -25,6 +25,26 @@ router.use((req, res, next) => {
   );
 });
 
+const ESPECIALIDADES = [
+  "Cirurgia",
+  "Dentística",
+  "Disfunção Temporomandibular (DTM)",
+  "Endodontia",
+  "Estética",
+  "Harmonização facial",
+  "Implantodontia",
+  "Odontopediatria",
+  "Ortodontia",
+  "Ortopedia Funcional",
+  "Outros",
+  "Periodontia",
+  "Prevenção",
+  "Prótese",
+  "Radiologia",
+  "Testes e exames laboratoriais",
+  "Urgência"
+];
+
 const clinicaId = (req) => Number(req.user.clinica_id);
 const erroInterno = (res) => res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
 
@@ -189,6 +209,7 @@ router.delete("/:id", (req, res) => {
 router.post("/procedimentos", (req, res) => {
   const { nome, codigo = "", categoria = "", descricao = "" } = req.body || {};
   if (!validarNome(nome)) return res.status(400).json({ erro: "Informe um nome válido para o procedimento." });
+  if (!ESPECIALIDADES.includes(categoria)) return res.status(400).json({ erro: "Selecione uma especialidade válida." });
 
   db.run(
     "INSERT INTO procedimentos_catalogo (clinica_id, nome, codigo, categoria, descricao) VALUES (?, ?, ?, ?, ?)",
@@ -206,6 +227,7 @@ router.post("/procedimentos", (req, res) => {
 router.put("/procedimentos/:id", (req, res) => {
   const { nome, codigo = "", categoria = "", descricao = "", ativo = 1 } = req.body || {};
   if (!validarNome(nome)) return res.status(400).json({ erro: "Informe um nome válido para o procedimento." });
+  if (!ESPECIALIDADES.includes(categoria)) return res.status(400).json({ erro: "Selecione uma especialidade válida." });
 
   db.run(
     "UPDATE procedimentos_catalogo SET nome = ?, codigo = ?, categoria = ?, descricao = ?, ativo = ? WHERE id = ? AND clinica_id = ?",
