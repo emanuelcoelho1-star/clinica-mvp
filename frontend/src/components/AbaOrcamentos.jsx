@@ -105,8 +105,12 @@ function ProcedimentoAutocomplete({ value, options, onChange, placeholder = "Dig
         value={value}
         placeholder={placeholder}
         style={S.input}
-        onFocus={() => setAberto(true)}
-        onChange={(evento) => { onChange(evento.target.value); setAberto(true); }}
+        onFocus={() => setAberto(Boolean(String(value || "").trim()))}
+        onChange={(evento) => {
+          const texto = evento.target.value;
+          onChange(texto);
+          setAberto(Boolean(texto.trim()));
+        }}
       />
       {aberto && (
         <div style={{ ...S.dropMenu, maxHeight }}>
