@@ -86,7 +86,23 @@ router.get("/", auth, (req, res) => {
 router.get("/:id", auth, (req, res) => {
   const { id } = req.params;
 
-  db.get("SELECT * FROM pacientes WHERE id = ? AND clinica_id = ?", [id, req.user.clinica_id], (err, row) => {
+  db.get(
+    `SELECT p.*,
+      (SELECT json_object(
+        'alergias', a.alergias,
+        'historia_medica', a.historia_medica,
+        'cirurgias_anteriores', a.cirurgias_anteriores,
+        'doencas_cronicas', a.doencas_cronicas,
+        'habitos', a.habitos,
+        'historico_familiar', a.historico_familiar
+      )
+      FROM anamneses a
+      WHERE a.paciente_id = p.id AND a.clinica_id = p.clinica_id
+      ORDER BY a.id ASC LIMIT 1) AS anamnese_inicial
+     FROM pacientes p
+     WHERE p.id = ? AND p.clinica_id = ?`,
+    [id, req.user.clinica_id],
+    (err, row) => {
     if (err) {
       return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
     }
@@ -95,6 +111,13 @@ router.get("/:id", auth, (req, res) => {
       return res.status(404).json({ erro: "Paciente não encontrado" });
     }
 
+    if (row && row.anamnese_inicial) {
+      try {
+        row.anamnese_inicial = JSON.parse(row.anamnese_inicial);
+      } catch {
+        row.anamnese_inicial = null;
+      }
+    }
     res.json(row);
   });
 });
