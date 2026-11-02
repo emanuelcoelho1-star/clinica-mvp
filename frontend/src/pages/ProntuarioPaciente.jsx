@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import API_URL from "../api";
 import AbaAnamneses from "../components/AbaAnamneses";
@@ -185,11 +185,16 @@ function InfoCard({ title, icon, items, style }) {
         </div>
       </div>
       <div style={s.infoGrid}>
-        {items.map((item) => (
-          <div key={item.label} style={s.infoItem}>
-            <span style={s.infoLabel}>{item.label}</span>
-            <span style={s.infoValue}>{item.value || "—"}</span>
-          </div>
+        {items.map((item, index) => (
+          <React.Fragment key={item.label}>
+            {item.section && (index === 0 || items[index - 1]?.section !== item.section) && (
+              <div style={s.infoSectionTitle}>{item.section}</div>
+            )}
+            <div style={s.infoItem}>
+              <span style={s.infoLabel}>{item.label}</span>
+              <span style={s.infoValue}>{item.value || "—"}</span>
+            </div>
+          </React.Fragment>
         ))}
       </div>
     </div>
@@ -300,35 +305,40 @@ function ProntuarioPaciente() {
   };
 
   const dadosPrincipais = [
-    { label: "Nome completo", value: paciente?.nome },
-    { label: "CPF", value: formatCpf(paciente?.cpf) },
-    { label: "Telefone", value: paciente?.telefone },
-    { label: "E-mail", value: paciente?.email },
-    { label: "Gênero", value: paciente?.genero },
-    { label: "Profissão", value: paciente?.profissao },
-    { label: "Como conheceu", value: paciente?.como_conheceu },
+    { section: "Dados principais", label: "Nome completo", value: paciente?.nome },
+    { section: "Dados principais", label: "CPF", value: formatCpf(paciente?.cpf) },
+    { section: "Dados principais", label: "Telefone", value: paciente?.telefone },
+    { section: "Dados principais", label: "E-mail", value: paciente?.email },
+    { section: "Dados principais", label: "Gênero", value: paciente?.genero },
+    { section: "Dados principais", label: "Profissão", value: paciente?.profissao },
+    { section: "Dados principais", label: "Como conheceu", value: paciente?.como_conheceu },
   ];
 
   const dadosEndereco = [
-    { label: "CEP", value: paciente?.cep },
-    { label: "Rua", value: paciente?.rua },
-    { label: "Número", value: paciente?.numero },
-    { label: "Complemento", value: paciente?.complemento },
-    { label: "Bairro", value: paciente?.bairro },
-    { label: "Cidade", value: paciente?.cidade },
-    { label: "Estado", value: paciente?.estado },
+    { section: "Endereço", label: "CEP", value: paciente?.cep },
+    { section: "Endereço", label: "Rua", value: paciente?.rua },
+    { section: "Endereço", label: "Número", value: paciente?.numero },
+    { section: "Endereço", label: "Complemento", value: paciente?.complemento },
+    { section: "Endereço", label: "Bairro", value: paciente?.bairro },
+    { section: "Endereço", label: "Cidade", value: paciente?.cidade },
+    { section: "Endereço", label: "Estado", value: paciente?.estado },
   ];
 
   const dadosResponsavel = [
-    { label: "Nome", value: paciente?.responsavel_nome },
-    { label: "CPF", value: formatCpf(paciente?.responsavel_cpf) },
-    { label: "Nascimento", value: dataResponsavelFormatada },
-    { label: "Telefone", value: paciente?.responsavel_telefone },
+    { section: "Responsável", label: "Nome", value: paciente?.responsavel_nome },
+    { section: "Responsável", label: "CPF", value: formatCpf(paciente?.responsavel_cpf) },
+    { section: "Responsável", label: "Nascimento", value: dataResponsavelFormatada },
+    { section: "Responsável", label: "Telefone", value: paciente?.responsavel_telefone },
   ];
   const possuiResponsavel = Boolean(
     paciente?.responsavel_nome || paciente?.responsavel_cpf ||
     paciente?.responsavel_telefone || paciente?.responsavel_data_nascimento
   );
+  const dadosCadastrais = [
+    ...dadosPrincipais,
+    ...dadosEndereco,
+    ...(possuiResponsavel ? dadosResponsavel : []),
+  ];
 
   const anamneseInicial = paciente?.anamnese_inicial || null;
   const dadosHistoricoClinico = [
@@ -573,9 +583,7 @@ function ProntuarioPaciente() {
               </div>
             </div>
             <div style={s.grid}>
-              <InfoCard title="Dados principais" icon={Icons.user} items={dadosPrincipais} />
-              <InfoCard title="Endereço" icon={Icons.mapPin} items={dadosEndereco} />
-              {possuiResponsavel && <InfoCard title="Responsável" icon={Icons.users} items={dadosResponsavel} />}
+              <InfoCard title="Dados cadastrais" icon={Icons.user} items={dadosCadastrais} style={s.cardFull} />
               <InfoCard title="Histórico clínico" icon={Icons.fileText} items={dadosHistoricoClinico} />
               <InfoCard title="Alergias a medicamentos" icon={Icons.fileText} items={[{ label: "Alergias registradas na primeira anamnese", value: anamneseInicial?.alergias }]} />
 
@@ -836,6 +844,12 @@ const s = {
   infoItem: {
     display: "flex", flexDirection: "column", gap: "4px",
     padding: "14px 16px", background: "#fafbfc",
+  },
+  infoSectionTitle: {
+    gridColumn: "1 / -1", padding: "12px 16px 8px",
+    background: "#f8fafc", color: "#64748b", fontSize: "11px",
+    fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.06em",
+    borderTop: "1px solid #e2e8f0",
   },
   infoLabel: {
     fontSize: "11px", fontWeight: "600", color: "#94a3b8",
