@@ -22,6 +22,7 @@ function CadastroPaciente({ pacienteId, onCancel, onSaved }) {
     dataNascimento: "",
     cpf: "",
     observacoes: "",
+    fotoUrl: "",
 
     cep: "",
     rua: "",
@@ -69,6 +70,7 @@ function CadastroPaciente({ pacienteId, onCancel, onSaved }) {
           dataNascimento: paciente.data_nascimento || "",
           cpf: paciente.cpf || "",
           observacoes: paciente.observacoes || "",
+          fotoUrl: paciente.foto_url || "",
 
           cep: paciente.cep || "",
           rua: paciente.rua || "",
@@ -90,6 +92,37 @@ function CadastroPaciente({ pacienteId, onCancel, onSaved }) {
       })
       .finally(() => setCarregando(false));
   }, [id]);
+
+  const processarFoto = (arquivo) => {
+    if (!arquivo) return;
+    if (!arquivo.type.startsWith("image/")) {
+      setErroModal("Selecione um arquivo de imagem válido.");
+      return;
+    }
+    if (arquivo.size > 10 * 1024 * 1024) {
+      setErroModal("A foto deve ter no máximo 10 MB.");
+      return;
+    }
+
+    const leitor = new FileReader();
+    leitor.onload = () => {
+      const imagem = new Image();
+      imagem.onload = () => {
+        const limite = 480;
+        const escala = Math.min(1, limite / Math.max(imagem.width, imagem.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(imagem.width * escala);
+        canvas.height = Math.round(imagem.height * escala);
+        const contexto = canvas.getContext("2d");
+        contexto.drawImage(imagem, 0, 0, canvas.width, canvas.height);
+        atualizarCampo("fotoUrl", canvas.toDataURL("image/jpeg", 0.68));
+      };
+      imagem.onerror = () => setErroModal("Não foi possível processar esta imagem.");
+      imagem.src = leitor.result;
+    };
+    leitor.onerror = () => setErroModal("Não foi possível carregar a foto.");
+    leitor.readAsDataURL(arquivo);
+  };
 
   const atualizarCampo = (campo, valor) => {
     setForm((prev) => ({
@@ -204,6 +237,7 @@ function CadastroPaciente({ pacienteId, onCancel, onSaved }) {
       dataNascimento: form.dataNascimento,
       cpf: somenteNumeros(form.cpf),
       observacoes: form.observacoes,
+      fotoUrl: form.fotoUrl,
 
       cep: somenteNumeros(form.cep),
       rua: form.rua,
@@ -270,6 +304,22 @@ function CadastroPaciente({ pacienteId, onCancel, onSaved }) {
           <h2 style={styles.sectionTitle}>Dados do paciente</h2>
 
           <div style={styles.grid}>
+            <div style={styles.fieldFull}>
+              <label style={styles.label}>Foto do paciente</label>
+              <div style={styles.photoField}>
+                <div style={styles.photoPreview}>
+                  {form.fotoUrl ? <img src={form.fotoUrl} alt="Prévia da foto do paciente" style={styles.photoImage} /> : <span>Sem foto</span>}
+                </div>
+                <div style={styles.photoActions}>
+                  <label style={styles.photoButton}>
+                    Escolher foto
+                    <input type="file" accept="image/*" onChange={(e) => { processarFoto(e.target.files?.[0]); e.target.value = ""; }} style={{ display: "none" }} />
+                  </label>
+                  {form.fotoUrl && <button type="button" style={styles.photoRemove} onClick={() => atualizarCampo("fotoUrl", "")}>Remover foto</button>}
+                  <span style={styles.photoHint}>A imagem será ajustada automaticamente.</span>
+                </div>
+              </div>
+            </div>
             <div style={styles.fieldFull}>
               <label style={styles.label}>Nome Completo *</label>
               <input
@@ -580,6 +630,13 @@ const styles = {
   fieldFull: {
     gridColumn: "1 / -1",
   },
+  photoField: { display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap" },
+  photoPreview: { width: "88px", height: "88px", borderRadius: "16px", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: "#f1f5f9", color: "#94a3b8", fontSize: "12px", border: "1px solid #e2e8f0" },
+  photoImage: { width: "100%", height: "100%", objectFit: "cover" },
+  photoActions: { display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" },
+  photoButton: { display: "inline-flex", alignItems: "center", padding: "9px 13px", borderRadius: "9px", background: "#eff6ff", color: "#2563eb", fontSize: "13px", fontWeight: "600", cursor: "pointer" },
+  photoRemove: { border: "1px solid #fee2e2", borderRadius: "9px", padding: "8px 12px", background: "#fff7f7", color: "#dc2626", fontSize: "12px", fontWeight: "600", cursor: "pointer" },
+  photoHint: { color: "#94a3b8", fontSize: "12px" },
   label: {
     display: "block",
     marginBottom: "8px",
