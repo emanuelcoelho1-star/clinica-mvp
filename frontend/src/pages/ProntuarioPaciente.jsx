@@ -821,7 +821,7 @@ const s = {
   /* ── Card ─────────────────────────────────────────── */
   card: {
     background: "#fff", borderRadius: "16px",
-    border: "1px solid #f1f5f9", padding: "24px",
+    border: "1px solid #f1f5f9", padding: "18px",
   },
   cardHeader: {
     display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -837,27 +837,29 @@ const s = {
   /* ── Info Grid ────────────────────────────────────── */
   infoGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-    gap: "2px", borderRadius: "12px", overflow: "hidden",
-    background: "#f1f5f9",
+    gridTemplateColumns: "repeat(auto-fit, minmax(155px, 1fr))",
+    gap: "1px", borderRadius: "10px", overflow: "hidden",
+    background: "#e9eef5",
   },
   infoItem: {
-    display: "flex", flexDirection: "column", gap: "4px",
-    padding: "14px 16px", background: "#fafbfc",
+    display: "flex", flexDirection: "row", alignItems: "center",
+    justifyContent: "space-between", gap: "8px",
+    padding: "9px 12px", minWidth: 0, background: "#fafbfc",
   },
   infoSectionTitle: {
-    gridColumn: "1 / -1", padding: "12px 16px 8px",
-    background: "#f8fafc", color: "#64748b", fontSize: "11px",
+    gridColumn: "1 / -1", padding: "8px 12px 6px",
+    background: "#f1f5f9", color: "#64748b", fontSize: "10px",
     fontWeight: "700", textTransform: "uppercase", letterSpacing: "0.06em",
     borderTop: "1px solid #e2e8f0",
   },
   infoLabel: {
-    fontSize: "11px", fontWeight: "600", color: "#94a3b8",
-    textTransform: "uppercase", letterSpacing: "0.06em",
+    fontSize: "10px", fontWeight: "600", color: "#94a3b8",
+    textTransform: "uppercase", letterSpacing: "0.04em", flexShrink: 0,
   },
   infoValue: {
-    color: "#0f172a", fontSize: "14px", fontWeight: "500",
-    wordBreak: "break-word", lineHeight: 1.4,
+    color: "#0f172a", fontSize: "12px", fontWeight: "500",
+    wordBreak: "break-word", lineHeight: 1.35, textAlign: "right",
+    minWidth: 0,
   },
 
   /* ── Observações ──────────────────────────────────── */
