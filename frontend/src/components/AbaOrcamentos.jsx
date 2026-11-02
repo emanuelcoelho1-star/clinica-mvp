@@ -431,7 +431,7 @@ function AbaOrcamentos({ pacienteId, pacienteNome }) {
   function handleItemChange(field, value) {
     if (field === "procedimento") {
       const encontrado = procedimentosPlanoPadrao.find((item) => item.nome.toLocaleLowerCase("pt-BR") === String(value).trim().toLocaleLowerCase("pt-BR"));
-      setItemAtual((p) => ({ ...p, procedimento: value, faces: encontrado && Number(encontrado.aceita_faces) === 1 ? p.faces : "", ...(encontrado && encontrado.valor !== null ? { valor: String(encontrado.valor) } : {}) }));
+      setItemAtual((p) => ({ ...p, procedimento: value, faces: "", ...(encontrado && encontrado.valor !== null ? { valor: String(encontrado.valor) } : {}) }));
       return;
     }
     setItemAtual((p) => ({ ...p, [field]: value }));
