@@ -89,6 +89,8 @@ router.get("/:id", auth, (req, res) => {
 // =========================
 router.post("/", auth, (req, res) => {
   const { paciente_id, data, descricao, itens, desconto, dentista_responsavel } = req.body;
+  const planoId = req.body.plano_id === null || req.body.plano_id === undefined || req.body.plano_id === "" ? null : Number(req.body.plano_id);
+  if (planoId !== null && (!Number.isInteger(planoId) || planoId <= 0)) return res.status(400).json({ erro: "Selecione um plano válido." });
 
   if (!paciente_id || !data) {
     return res.status(400).json({ erro: "Paciente e data são obrigatórios." });
@@ -100,13 +102,16 @@ router.post("/", auth, (req, res) => {
 
   const nomeDentista = typeof dentista_responsavel === "string" && dentista_responsavel.trim() ? dentista_responsavel.trim() : req.user.nome || "";
   const sqlOrcamento = `
-    INSERT INTO orcamentos (paciente_id, data, status, desconto, observacoes, descricao, dentista_responsavel, clinica_id)
-    SELECT p.id, ?, ?, ?, '', ?, ?, ? FROM pacientes p WHERE p.id = ? AND p.clinica_id = ? AND EXISTS (SELECT 1 FROM usuarios u WHERE u.nome = ? AND u.clinica_id = ?)
+    INSERT INTO orcamentos (paciente_id, data, status, desconto, observacoes, descricao, dentista_responsavel, clinica_id, plano_id)
+    SELECT p.id, ?, ?, ?, '', ?, ?, ?, ? FROM pacientes p
+    WHERE p.id = ? AND p.clinica_id = ?
+      AND EXISTS (SELECT 1 FROM usuarios u WHERE u.nome = ? AND u.clinica_id = ?)
+      AND (? IS NULL OR EXISTS (SELECT 1 FROM planos pl WHERE pl.id = ? AND pl.clinica_id = p.clinica_id AND pl.ativo = 1))
   `;
 
   db.run(
     sqlOrcamento,
-    [data, "pendente", Math.max(0, Number(desconto) || 0), descricao || "", nomeDentista, req.user.clinica_id, paciente_id, req.user.clinica_id, nomeDentista, req.user.clinica_id],
+    [data, "pendente", Math.max(0, Number(desconto) || 0), descricao || "", nomeDentista, req.user.clinica_id, planoId, paciente_id, req.user.clinica_id, nomeDentista, req.user.clinica_id, planoId, planoId],
     function (err) {
       if (err) {
         return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
@@ -176,14 +181,15 @@ router.put("/:id", auth, (req, res) => {
   const nomeDentista = typeof dentista_responsavel === "string" && dentista_responsavel.trim() ? dentista_responsavel.trim() : req.user.nome || "";
   const sqlUpdate = `
     UPDATE orcamentos SET
-      paciente_id = ?, data = ?, descricao = ?, desconto = ?, dentista_responsavel = ?
+      paciente_id = ?, data = ?, descricao = ?, desconto = ?, dentista_responsavel = ?, plano_id = ?
     WHERE id = ? AND clinica_id = ?
+      AND (? IS NULL OR EXISTS (SELECT 1 FROM planos pl WHERE pl.id = ? AND pl.clinica_id = orcamentos.clinica_id AND pl.ativo = 1))
       AND EXISTS (SELECT 1 FROM pacientes p WHERE p.id = ? AND p.clinica_id = ? AND EXISTS (SELECT 1 FROM usuarios u WHERE u.nome = ? AND u.clinica_id = ?))
   `;
 
   db.run(
     sqlUpdate,
-    [paciente_id, data, descricao || "", Math.max(0, Number(desconto) || 0), nomeDentista, id, req.user.clinica_id, paciente_id, req.user.clinica_id, nomeDentista, req.user.clinica_id],
+    [paciente_id, data, descricao || "", Math.max(0, Number(desconto) || 0), nomeDentista, planoId, id, req.user.clinica_id, planoId, planoId, paciente_id, req.user.clinica_id, nomeDentista, req.user.clinica_id],
     function (err) {
       if (err) {
         return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
