@@ -223,6 +223,7 @@ function Planos() {
             <label style={labelStyle}>Nome do plano<input autoFocus style={campo} value={nomePlano} onChange={(e) => setNomePlano(e.target.value)} placeholder="Ex.: Convênio Hapvida" required maxLength={120} /></label>
             <fieldset style={{ border: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "9px" }}>
               <legend style={{ ...labelStyle, marginBottom: "9px" }}>Tipo de plano</legend>
+              <span style={{ color: "#64748b", fontSize: "11px" }}>Somente um plano pode ser o padrão da clínica. Ao marcar esta opção em outro plano, o anterior deixará de ser o padrão.</span>
               <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "22px" }}>
                 {TIPOS.map((tipo) => {
                   const marcado = tipoPlano.includes(tipo.value);
@@ -233,7 +234,11 @@ function Planos() {
                         name="tipoPlano"
                         value={tipo.value}
                         checked={marcado}
-                        onChange={() => setTipoPlano((atual) => marcado ? atual.filter((valor) => valor !== tipo.value) : [...atual, tipo.value])}
+                        onChange={() => setTipoPlano((atual) => {
+                          if (marcado) return atual.filter((valor) => valor !== tipo.value);
+                          if (tipo.value === "padrao") return [...atual.filter((valor) => valor !== "padrao"), "padrao"];
+                          return [...atual, tipo.value];
+                        })}
                         style={{ appearance: "none", width: "17px", height: "17px", flex: "0 0 17px", margin: 0, border: marcado ? "5px solid #2563eb" : "1.5px solid #cbd5e1", borderRadius: "50%", background: "#fff", cursor: "pointer", boxSizing: "border-box" }}
                       />
                       {tipo.label}
