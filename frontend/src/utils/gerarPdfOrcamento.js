@@ -10,7 +10,7 @@ function dataBR(data) {
   return partes.length === 3 ? `${partes[2]}/${partes[1]}/${partes[0]}` : data;
 }
 function cpfBR(cpf) {
-  const n = String(cpf || "").replace(/\\D/g, "");
+  const n = String(cpf || "").replace(/\D/g, "");
   return n.length === 11 ? `${n.slice(0, 3)}.${n.slice(3, 6)}.${n.slice(6, 9)}-${n.slice(9)}` : (cpf || "—");
 }
 function moeda(valor) {
