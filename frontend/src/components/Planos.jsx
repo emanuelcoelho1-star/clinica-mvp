@@ -38,6 +38,8 @@ function Planos() {
   const [descricaoPlano, setDescricaoPlano] = useState("");
   const [nomeProcedimento, setNomeProcedimento] = useState("");
   const [codigoProcedimento, setCodigoProcedimento] = useState("");
+  const [aceitaFaces, setAceitaFaces] = useState(false);
+  const [custoTratamento, setCustoTratamento] = useState("");
   const [categoriaProcedimento, setCategoriaProcedimento] = useState("");
   const [especialidadeAberta, setEspecialidadeAberta] = useState("Cirurgia");
   const [busca, setBusca] = useState("");
@@ -138,10 +140,12 @@ function Planos() {
     try {
       await requisicao("/procedimentos", {
         method: "POST",
-        body: JSON.stringify({ nome: nomeProcedimento, codigo: codigoProcedimento, categoria: categoriaProcedimento }),
+        body: JSON.stringify({ nome: nomeProcedimento, categoria: categoriaProcedimento, aceita_faces: aceitaFaces, custo_tratamento: custoTratamento === "" ? 0 : Number(String(custoTratamento).replace(",", ".")) }),
       });
       setNomeProcedimento("");
       setCodigoProcedimento("");
+      setAceitaFaces(false);
+      setCustoTratamento("");
       setCategoriaProcedimento("");
       setMostrarFormProcedimento(false);
       setMensagem("Procedimento adicionado ao catálogo.");
@@ -299,9 +303,21 @@ function Planos() {
               </div>
               <button type="button" aria-label="Fechar" disabled={salvando} onClick={() => setMostrarFormProcedimento(false)} style={{ border: "none", background: "transparent", color: "#64748b", cursor: "pointer", fontSize: "22px", lineHeight: 1 }}>×</button>
             </div>
-            <label style={labelStyle}>Nome do procedimento<input autoFocus style={campo} value={nomeProcedimento} onChange={(e) => setNomeProcedimento(e.target.value)} placeholder="Ex.: Restauração em resina" required /></label>
-            <label style={labelStyle}>Código (opcional)<input style={campo} value={codigoProcedimento} onChange={(e) => setCodigoProcedimento(e.target.value)} placeholder="Código do procedimento" /></label>
-            <div style={{ padding: "10px 12px", borderRadius: "9px", background: "#f8fafc", color: "#64748b", fontSize: "12px" }}>Especialidade: <strong style={{ color: "#334155" }}>{categoriaProcedimento}</strong></div>
+            <label style={labelStyle}>Nome do procedimento<input autoFocus style={campo} value={nomeProcedimento} onChange={(e) => setNomeProcedimento(e.target.value)} placeholder="Ex.: Restauração em resina" required maxLength={120} /></label>
+            <label style={{ display: "flex", alignItems: "center", gap: "9px", color: "#475569", fontSize: "13px", fontWeight: 600, cursor: "pointer", textTransform: "none", letterSpacing: "normal" }}>
+              <input type="checkbox" checked={aceitaFaces} onChange={(e) => setAceitaFaces(e.target.checked)} style={{ width: "17px", height: "17px", margin: 0, accentColor: "#2563eb" }} />
+              Aceita faces
+            </label>
+            <label style={labelStyle}>Custo do tratamento
+              <div style={{ position: "relative" }}>
+                <span style={{ position: "absolute", left: "12px", top: "11px", color: "#94a3b8", fontSize: "13px" }}>R$</span>
+                <input style={{ ...campo, paddingLeft: "36px" }} type="number" min="0" max="99999999" step="0.01" value={custoTratamento} onChange={(e) => setCustoTratamento(e.target.value)} placeholder="0,00" required />
+              </div>
+            </label>
+            <div style={{ padding: "10px 12px", borderRadius: "9px", background: "#f8fafc", color: "#64748b", fontSize: "12px", lineHeight: 1.5 }}>
+              <div>Especialidade: <strong style={{ color: "#334155" }}>{categoriaProcedimento}</strong></div>
+              <div style={{ marginTop: "5px" }}>O valor do tratamento será definido separadamente em cada plano, na tabela de preços.</div>
+            </div>
             <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", paddingTop: "4px" }}>
               <button type="button" style={botaoSecundario} disabled={salvando} onClick={() => setMostrarFormProcedimento(false)}>Cancelar</button>
               <button type="submit" style={botaoPrimario} disabled={salvando}>{salvando ? "Salvando..." : "Adicionar procedimento"}</button>
@@ -372,6 +388,8 @@ function Planos() {
                             setCategoriaProcedimento(especialidade);
                             setNomeProcedimento("");
                             setCodigoProcedimento("");
+                            setAceitaFaces(false);
+                            setCustoTratamento("");
                             setMostrarFormProcedimento(true);
                             setErro("");
                           }}>+ Novo procedimento</button>
