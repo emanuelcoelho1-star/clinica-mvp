@@ -144,7 +144,7 @@ function ProcedimentoAutocomplete({ value, options, onChange, placeholder = "Dig
   );
 }
 
-const EMPTY_ITEM = { dente: "", procedimento: "", valor: "", quantidade: "" };
+const EMPTY_ITEM = { dente: "", procedimento: "", faces: "", valor: "", quantidade: "" };
 
 const EMPTY_FORM = {
   data: dataHojeISO(),
@@ -408,6 +408,7 @@ function AbaOrcamentos({ pacienteId, pacienteNome }) {
               procedimento: i.procedimento || "",
               valor: i.valor || 0,
               quantidade: i.quantidade || 1,
+              faces: i.faces || "",
             }))
           : [],
     });
@@ -430,7 +431,7 @@ function AbaOrcamentos({ pacienteId, pacienteNome }) {
   function handleItemChange(field, value) {
     if (field === "procedimento") {
       const encontrado = procedimentosPlanoPadrao.find((item) => item.nome.toLocaleLowerCase("pt-BR") === String(value).trim().toLocaleLowerCase("pt-BR"));
-      setItemAtual((p) => ({ ...p, procedimento: value, ...(encontrado && encontrado.valor !== null ? { valor: String(encontrado.valor) } : {}) }));
+      setItemAtual((p) => ({ ...p, procedimento: value, faces: encontrado && Number(encontrado.aceita_faces) === 1 ? p.faces : "", ...(encontrado && encontrado.valor !== null ? { valor: String(encontrado.valor) } : {}) }));
       return;
     }
     setItemAtual((p) => ({ ...p, [field]: value }));
@@ -480,6 +481,7 @@ function AbaOrcamentos({ pacienteId, pacienteNome }) {
           procedimento: i.procedimento,
           valor: Number(i.valor) || 0,
           quantidade: Number(i.quantidade) || 1,
+          faces: i.faces || "",
         })),
       };
 
@@ -923,14 +925,34 @@ function AbaOrcamentos({ pacienteId, pacienteNome }) {
 
             <div style={S.itemRow}><div style={{ ...S.itemFields, display: "grid", gridTemplateColumns: "minmax(90px, 120px) minmax(220px, 1fr) minmax(120px, 150px)", alignItems: "start", width: "100%" }}>
               <div style={{ ...S.fieldGroup, minWidth: 0 }}><label style={S.label}>Dente</label><input type="text" value={itemAtual.dente} onChange={(e) => handleItemChange("dente", e.target.value)} placeholder="Ex: 11" style={S.input} /></div>
-              <div style={{ ...S.fieldGroup, minWidth: 0 }}><label style={S.label}>Procedimento</label><ProcedimentoAutocomplete value={itemAtual.procedimento} onChange={(valor) => handleItemChange("procedimento", valor)} options={procedimentosPlanoPadrao.map((procedimento) => ({ value: procedimento.nome, label: procedimento.nome }))} placeholder="Digite ou selecione um procedimento" maxHeight="240px" />{planoPadrao && <span style={{ fontSize: "11px", color: "#64748b" }}>Tabela: {planoPadrao.nome}. O valor será preenchido automaticamente conforme o procedimento selecionado.</span>}</div>
+              <div style={{ ...S.fieldGroup, minWidth: 0 }}>
+                <label style={S.label}>Procedimento</label>
+                <ProcedimentoAutocomplete value={itemAtual.procedimento} onChange={(valor) => handleItemChange("procedimento", valor)} options={procedimentosPlanoPadrao.map((procedimento) => ({ value: procedimento.nome, label: procedimento.nome }))} placeholder="Digite ou selecione um procedimento" maxHeight="240px" />
+                {planoPadrao && <span style={{ fontSize: "11px", color: "#64748b" }}>Tabela: {planoPadrao.nome}. O valor será preenchido automaticamente conforme o procedimento selecionado.</span>}
+                {(() => {
+                  const procedimentoSelecionado = procedimentosPlanoPadrao.find((p) => p.nome.toLocaleLowerCase("pt-BR") === itemAtual.procedimento.trim().toLocaleLowerCase("pt-BR"));
+                  return Number(procedimentoSelecionado?.aceita_faces) === 1 ? (
+                    <div style={S.facesField}>
+                      <span style={S.label}>Face do dente</span>
+                      <div style={S.facesOptions}>
+                        {["M", "O/I", "D", "V", "L/P"].map((face) => (
+                          <label key={face} style={{ ...S.faceOption, ...(itemAtual.faces === face ? S.faceOptionSelected : {}) }}>
+                            <input type="radio" name="orcamento-face-dente" value={face} checked={itemAtual.faces === face} onChange={() => handleItemChange("faces", face)} style={S.faceRadio} />
+                            <span>{face}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null;
+                })()}
+              </div>
               <div style={{ ...S.fieldGroup, minWidth: 0 }}><label style={S.label}>Valor (R$)</label><input type="number" value={itemAtual.valor} onChange={(e) => handleItemChange("valor", e.target.value)} placeholder="0,00" style={S.input} min="0" step="0.01" /></div>
             </div></div>
             <div style={{ display: "flex", justifyContent: "center", width: "100%", marginTop: "16px" }}><button type="button" style={{ ...S.addItemBtn, border: "1px solid #2563eb", background: hoveredBtn === "add-item" ? "#1d4ed8" : "#2563eb", color: "#ffffff", boxShadow: "0 2px 5px rgba(37, 99, 235, 0.22)", padding: "11px 22px", fontSize: "14px", borderRadius: "10px", ...(hoveredBtn === "add-item" ? { transform: "translateY(-1px)", boxShadow: "0 4px 9px rgba(37, 99, 235, 0.28)" } : {}) }} onMouseEnter={() => setHoveredBtn("add-item")} onMouseLeave={() => setHoveredBtn(null)} onClick={adicionarItem}>{Icons.plus}<span>Adicionar procedimento</span></button></div>
             {formData.itens.length > 0 && <div style={{ ...S.totaisBox, marginTop: "14px" }}>
               <div style={{ fontWeight: 700, marginBottom: "8px", color: "#334155" }}>Procedimentos adicionados</div>
               {formData.itens.map((item, idx) => <div key={idx} style={{ ...S.totaisRow, padding: "10px 0", borderBottom: "1px solid #e2e8f0", gap: "12px" }}>
-                <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontWeight: 600, color: "#0f172a" }}>{item.procedimento}</div><div style={{ fontSize: "12px", color: "#64748b" }}>{item.dente ? "Dente: " + item.dente + " · " : ""}Valor: {formatarMoeda(item.valor)}</div></div>
+                <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontWeight: 600, color: "#0f172a" }}>{item.procedimento}</div><div style={{ fontSize: "12px", color: "#64748b" }}>{item.dente ? "Dente: " + item.dente + " · " : ""}{item.faces ? "Face: " + item.faces + " · " : ""}Valor: {formatarMoeda(item.valor)}</div></div>
                 <strong>{formatarMoeda((Number(item.valor) || 0) * (Number(item.quantidade) || 1))}</strong>
                 <button type="button" onClick={() => removerItem(idx)} style={S.removeItemBtn} title="Remover procedimento">{Icons.close}</button>
               </div>)}
@@ -1549,6 +1571,11 @@ const S = {
   dropOptionLast: { borderBottom: "none" },
   dropOptionActive: { background: "#eff6ff", color: "#2563eb", fontWeight: "600" },
   dropEmpty: { padding: "14px", color: "#94a3b8", fontSize: "13px" },
+  facesField: { display: "flex", flexDirection: "column", gap: "7px", marginTop: "8px" },
+  facesOptions: { display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" },
+  faceOption: { display: "inline-flex", alignItems: "center", gap: "6px", padding: "7px 11px", border: "1px solid #e2e8f0", borderRadius: "8px", background: "#fff", color: "#475569", fontSize: "13px", fontWeight: "600", cursor: "pointer", transition: "all 0.15s ease" },
+  faceOptionSelected: { borderColor: "#60a5fa", background: "#eff6ff", color: "#2563eb" },
+  faceRadio: { margin: 0, accentColor: "#2563eb", cursor: "pointer" },
   formActions: {
     display: "flex",
     justifyContent: "flex-end",
