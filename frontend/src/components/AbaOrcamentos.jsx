@@ -191,14 +191,15 @@ function AbaOrcamentos({ pacienteId }) {
   async function carregarDentistaResponsavel() {
     try {
       const tk = localStorage.getItem("token");
-      const r = await fetch(`${API_URL}/orcamentos/usuario-atual`, {
+      const r = await fetch(`${API_URL}/auth/me`, {
         headers: { Authorization: tk || "" },
       });
       if (!r.ok) throw new Error();
       const usuario = await r.json();
-      setDentistaResponsavel(usuario.nome || "");
-    } catch {
-      setDentistaResponsavel("");
+      setDentistaResponsavel(usuario.usuario?.nome || "");
+    } catch (error) {
+      console.error("Erro ao identificar dentista responsável:", error);
+      setDentistaResponsavel("Não foi possível identificar o usuário");
     }
   }
 
@@ -704,7 +705,7 @@ function AbaOrcamentos({ pacienteId }) {
               </div>
               <div style={S.fieldGroup}>
                 <label style={S.label}>Dentista responsável</label>
-                <input type="text" value={dentistaResponsavel || "Identificando usuário..."} readOnly style={S.input} />
+                <input type="text" value={dentistaResponsavel || "Carregando usuário..."} readOnly style={S.input} />
               </div>
               <div style={S.fieldGroup}>
                 <label style={S.label}>Data</label>
