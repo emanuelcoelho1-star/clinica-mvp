@@ -173,26 +173,62 @@ function CategoriaBadge({ categoria }) {
 /* ═══════════════════════════════════════════════════════════
    FILE ICON
    ═══════════════════════════════════════════════════════════ */
-function FileIcon({ nome }) {
-  const ext = getExtensao(nome);
-  const cfg = EXT_ICONS[ext] || { bg: "#f8fafc", color: "#64748b" };
-  return (
-    <div
-      style={{
-        width: "40px",
-        height: "40px",
-        borderRadius: "10px",
-        background: cfg.bg,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        flexShrink: 0,
-        color: cfg.color,
-      }}
-    >
-      {isImagem(nome) ? Icons.image : Icons.fileSmall}
-    </div>
-  );
+function FileIcon({ arquivo }) {
+  const nome = arquivo.nome_original || "Arquivo";
+  const imagem = isImagem(nome);
+  const pdf = getExtensao(nome) === "pdf";
+  const [thumbnailUrl, setThumbnailUrl] = useState("");
+
+  useEffect(() => {
+    if (!imagem) {
+      setThumbnailUrl("");
+      return undefined;
+    }
+    let cancelled = false;
+    let objectUrl = "";
+    const tk = localStorage.getItem("token");
+    fetch(`${API_URL}/arquivos/${arquivo.id}/download`, {
+      headers: { Authorization: tk || "" },
+    })
+      .then((response) => {
+        if (!response.ok) throw new Error();
+        return response.blob();
+      })
+      .then((blob) => {
+        objectUrl = URL.createObjectURL(blob);
+        if (cancelled) URL.revokeObjectURL(objectUrl);
+        else setThumbnailUrl(objectUrl);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [arquivo.id, imagem]);
+
+  if (imagem) {
+    return (
+      <div style={S.fileTileImage}>
+        {thumbnailUrl
+          ? <img src={thumbnailUrl} alt={nome} style={S.fileThumbnail} />
+          : <span style={S.fileTileFallback}>{Icons.image}</span>}
+      </div>
+    );
+  }
+
+  if (pdf) {
+    return (
+      <div style={S.fileTilePdf}>
+        <strong>PDF</strong>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <path d="M14 2v6h6" />
+        </svg>
+      </div>
+    );
+  }
+
+  return <div style={S.fileTileGeneric}>{Icons.file}</div>;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -594,86 +630,31 @@ function AbaArquivos({ pacienteId }) {
               )}
 
               {arquivosFiltrados.length > 0 && (
-                <div style={S.cardGrid}>
-
-            {arquivosFiltrados.map((a) => {
-              const hovered = hoveredCardId === a.id;
-              return (
-                <div
-                  key={a.id}
-                  style={{ ...S.card, ...(hovered ? S.cardHover : {}) }}
-                  onMouseEnter={() => setHoveredCardId(a.id)}
-                  onMouseLeave={() => setHoveredCardId(null)}
-                >
-                  {/* Topo */}
-                  <div style={S.cardTop}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px", flex: 1, minWidth: 0 }}>
-                      <FileIcon nome={a.nome_original} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={S.fileName}>{a.nome_original || "Arquivo"}</p>
-                        <div style={S.fileMeta}>
-                          <span>{formatarTamanho(a.tamanho)}</span>
-                          <span>•</span>
-                          <span>{formatarDataBR(a.created_at || a.data)}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <span style={S.cardId}>#{a.id}</span>
-                  </div>
-
-                  {/* Categoria + Descrição */}
-                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                    {a.categoria && <CategoriaBadge categoria={a.categoria} />}
-                    {a.descricao && (
-                      <p style={S.cardDesc}>{a.descricao}</p>
-                    )}
-                  </div>
-
-                  {/* Ações */}
-                  <div style={S.cardActions}>
-                    {isImagem(a.nome_original) && (
-                      <button
-                        style={{
-                          ...S.cardBtn,
-                          ...(hoveredBtn === `preview-${a.id}` ? S.cardBtnHover : {}),
-                        }}
-                        onMouseEnter={() => setHoveredBtn(`preview-${a.id}`)}
-                        onMouseLeave={() => setHoveredBtn(null)}
-                        onClick={() => abrirPreview(a)}
+                <div style={S.fileExplorerGrid}>
+                  {arquivosFiltrados.map((a) => {
+                    const hovered = hoveredCardId === a.id;
+                    return (
+                      <div
+                        key={a.id}
+                        style={{ ...S.fileExplorerItem, ...(hovered ? S.fileExplorerItemHover : {}) }}
+                        onMouseEnter={() => setHoveredCardId(a.id)}
+                        onMouseLeave={() => setHoveredCardId(null)}
                       >
-                        {Icons.eye}
-                        <span>Ver</span>
-                      </button>
-                    )}
-                    <button
-                      style={{
-                        ...S.cardBtn,
-                        ...(hoveredBtn === `download-${a.id}` ? S.cardBtnHover : {}),
-                      }}
-                      onMouseEnter={() => setHoveredBtn(`download-${a.id}`)}
-                      onMouseLeave={() => setHoveredBtn(null)}
-                      onClick={() => baixarArquivo(a)}
-                    >
-                      {Icons.download}
-                      <span>Baixar</span>
-                    </button>
-                    <button
-                      style={{
-                        ...S.cardBtn,
-                        ...S.cardBtnDanger,
-                        ...(hoveredBtn === `excluir-${a.id}` ? S.cardBtnDangerHover : {}),
-                      }}
-                      onMouseEnter={() => setHoveredBtn(`excluir-${a.id}`)}
-                      onMouseLeave={() => setHoveredBtn(null)}
-                      onClick={() => setConfirmarExclusao(a)}
-                    >
-                      {Icons.trash}
-                      <span>Excluir</span>
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
+                        <button type="button" style={S.fileTileButton}
+                          onClick={() => isImagem(a.nome_original) ? abrirPreview(a) : baixarArquivo(a)}
+                          title={a.nome_original || "Abrir arquivo"}>
+                          <FileIcon arquivo={a} />
+                        </button>
+                        <div style={S.fileTileName} title={a.nome_original || "Arquivo"}>{a.nome_original || "Arquivo"}</div>
+                        <div style={S.fileTileMeta}>{formatarDataBR(a.created_at || a.data)}</div>
+                        {hovered && <div style={S.fileTileActions}>
+                          {isImagem(a.nome_original) && <button type="button" title="Visualizar" style={S.fileTileAction} onClick={() => abrirPreview(a)}>{Icons.eye}</button>}
+                          <button type="button" title="Baixar" style={S.fileTileAction} onClick={() => baixarArquivo(a)}>{Icons.download}</button>
+                          <button type="button" title="Excluir" style={{ ...S.fileTileAction, color: "#dc2626" }} onClick={() => setConfirmarExclusao(a)}>{Icons.trash}</button>
+                        </div>}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 
@@ -1078,6 +1059,20 @@ const S = {
   emptyText: { margin: 0, fontSize: "14px", color: "#94a3b8", lineHeight: 1.5, maxWidth: "360px" },
 
   /* ── Card Grid ───────────────────────────────── */
+  fileExplorerGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(112px, 1fr))", gap: "22px 18px", alignItems: "start" },
+  fileExplorerItem: { position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: "7px", minWidth: 0, padding: "4px 5px 8px", borderRadius: "10px", transition: "background .15s ease" },
+  fileExplorerItemHover: { background: "#f8fafc" },
+  fileTileButton: { display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100px", padding: 0, border: "none", background: "transparent", cursor: "pointer" },
+  fileTileImage: { width: "100px", height: "80px", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", background: "#f8fafc", borderRadius: "3px", boxShadow: "0 2px 5px rgba(15,23,42,.16)" },
+  fileThumbnail: { width: "100%", height: "100%", objectFit: "contain", display: "block" },
+  fileTileFallback: { color: "#94a3b8" },
+  fileTilePdf: { width: "100px", height: "80px", display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "space-between", padding: "11px 13px", boxSizing: "border-box", background: "#d9001b", color: "#fff", boxShadow: "0 2px 5px rgba(15,23,42,.18)" },
+  fileTilePdf: { width: "100px", height: "80px", display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "space-between", padding: "11px 13px", boxSizing: "border-box", background: "#d9001b", color: "#fff", boxShadow: "0 2px 5px rgba(15,23,42,.18)" },
+  fileTileGeneric: { width: "100px", height: "80px", display: "flex", alignItems: "center", justifyContent: "center", background: "#eef2f7", color: "#64748b", boxShadow: "0 2px 5px rgba(15,23,42,.12)" },
+  fileTileName: { width: "100%", color: "#0f172a", fontSize: "13px", fontWeight: "500", lineHeight: 1.25, textAlign: "center", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflowWrap: "anywhere", minHeight: "32px" },
+  fileTileMeta: { color: "#94a3b8", fontSize: "11px", textAlign: "center" },
+  fileTileActions: { position: "absolute", top: "5px", right: "5px", display: "flex", gap: "3px", padding: "3px", borderRadius: "7px", background: "rgba(255,255,255,.96)", boxShadow: "0 2px 8px rgba(15,23,42,.12)" },
+  fileTileAction: { width: "25px", height: "25px", display: "inline-flex", alignItems: "center", justifyContent: "center", border: "none", borderRadius: "5px", background: "transparent", color: "#475569", cursor: "pointer" },
   cardGrid: {
     display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))", gap: "16px",
   },
