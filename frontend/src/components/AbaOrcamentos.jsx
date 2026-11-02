@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import API_URL from "../api";
+import gerarPdfOrcamento from "../utils/gerarPdfOrcamento";
 
 /* ═══════════════════════════════════════════════════════════
    HELPERS
@@ -172,6 +173,11 @@ const Icons = {
       <circle cx="12" cy="12" r="3" />
     </svg>
   ),
+  printer: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 9V2h12v7" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><path d="M6 14h12v8H6z" /><path d="M18 12h.01" />
+    </svg>
+  ),
   edit: (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
@@ -270,7 +276,6 @@ function AbaOrcamentos({ pacienteId, pacienteNome }) {
 
   const [tela, setTela] = useState("lista");
   const [editando, setEditando] = useState(null);
-  const [detalhes, setDetalhes] = useState(null);
 
   const [dentistaResponsavel, setDentistaResponsavel] = useState("");
   const [dentistas, setDentistas] = useState([]);
@@ -410,15 +415,9 @@ function AbaOrcamentos({ pacienteId, pacienteNome }) {
     setTela("form");
   }
 
-  function abrirDetalhes(item) {
-    setDetalhes(item);
-    setTela("detalhes");
-  }
-
   function voltarParaLista() {
     setTela("lista");
     setEditando(null);
-    setDetalhes(null);
     setErroForm("");
   }
 
@@ -503,7 +502,16 @@ function AbaOrcamentos({ pacienteId, pacienteNome }) {
       setSalvando(false);
     }
   }
-     /* ── Mudar Status (com integração financeiro) ── */
+     async function imprimirOrcamento(orcamento) {
+    await gerarPdfOrcamento({
+      orcamento,
+      pacienteId,
+      apiUrl: API_URL,
+      token: localStorage.getItem("token"),
+    });
+  }
+
+  /* ── Mudar Status (com integração financeiro) ── */
   async function handleMudarStatus(orcamentoId, novoStatus) {
     try {
       const tk = localStorage.getItem("token");
@@ -522,9 +530,6 @@ function AbaOrcamentos({ pacienteId, pacienteNome }) {
       }
 
       await carregarOrcamentos();
-      if (tela === "detalhes" && detalhes?.id === orcamentoId) {
-        setDetalhes((prev) => prev ? { ...prev, status: novoStatus } : prev);
-      }
     } catch {
       setErro("Erro ao atualizar status.");
     }
@@ -690,10 +695,10 @@ function AbaOrcamentos({ pacienteId, pacienteNome }) {
                         onClick={() => handleMudarStatus(o.id, "concluido")}>✓ Concluir</button>
                     )}
                     <button type="button"
-                      style={{ ...S.listActionBtn, ...(hoveredBtn === `ver-${o.id}` ? S.listActionBtnHover : {}) }}
-                      onMouseEnter={() => setHoveredBtn(`ver-${o.id}`)} onMouseLeave={() => setHoveredBtn(null)}
-                      onClick={() => abrirDetalhes(o)}>
-                      {Icons.eye}<span>Ver</span>
+                      style={{ ...S.listActionBtn, ...(hoveredBtn === `imprimir-${o.id}` ? S.listActionBtnHover : {}) }}
+                      onMouseEnter={() => setHoveredBtn(`imprimir-${o.id}`)} onMouseLeave={() => setHoveredBtn(null)}
+                      onClick={() => imprimirOrcamento(o)}>
+                      {Icons.printer}<span>Imprimir</span>
                     </button>
                     <button type="button"
                       style={{ ...S.listActionBtn, ...(hoveredBtn === `editar-${o.id}` ? S.listActionBtnHover : {}) }}
@@ -975,218 +980,6 @@ function AbaOrcamentos({ pacienteId, pacienteNome }) {
         </form>
           </div>
         </div>
-      </div>
-    );
-  }
-
-  /* ═══════════════════════════════════════════
-     RENDER — DETALHES
-     ═══════════════════════════════════════════ */
-  if (tela === "detalhes" && detalhes) {
-    const totalDet = calcularTotalItens(detalhes.itens);
-    const descontoDet = Number(detalhes.desconto) || 0;
-    const totalFinalDet = Math.max(0, totalDet - descontoDet);
-
-    return (
-      <div style={S.wrapper}>
-        {/* Header */}
-        <div style={S.header}>
-          <div>
-            <button
-              style={{
-                ...S.backBtn,
-                ...(hoveredBtn === "back-det" ? S.backBtnHover : {}),
-              }}
-              onMouseEnter={() => setHoveredBtn("back-det")}
-              onMouseLeave={() => setHoveredBtn(null)}
-              onClick={voltarParaLista}
-            >
-              {Icons.arrowLeft}
-              <span>Voltar</span>
-            </button>
-            <h2 style={S.title}>Orçamento #{detalhes.id}</h2>
-            <p style={S.subtitle}>Criado em {formatarDataBR(detalhes.data)}</p>
-          </div>
-          <div style={{ display: "flex", gap: "8px" }}>
-            <button
-              style={{
-                ...S.btnSecondary,
-                ...(hoveredBtn === "editar-det" ? S.btnSecondaryHover : {}),
-              }}
-              onMouseEnter={() => setHoveredBtn("editar-det")}
-              onMouseLeave={() => setHoveredBtn(null)}
-              onClick={() => abrirFormEditar(detalhes)}
-            >
-              {Icons.edit}
-              <span>Editar</span>
-            </button>
-            <button
-              style={{
-                ...S.btnDanger,
-                ...(hoveredBtn === "excluir-det" ? S.btnDangerHover : {}),
-              }}
-              onMouseEnter={() => setHoveredBtn("excluir-det")}
-              onMouseLeave={() => setHoveredBtn(null)}
-              onClick={() => setConfirmarExclusao(detalhes)}
-            >
-              {Icons.trash}
-              <span>Excluir</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Informações gerais */}
-        <div style={S.formCard}>
-          <div style={S.formCardHeader}>
-            <span style={S.formCardIcon}>{Icons.clipboard}</span>
-            <span style={S.formCardTitle}>Informações gerais</span>
-          </div>
-          <div style={S.detailItems}>
-                        <div style={S.detailItem}>
-              <span style={S.detailLabel}>Status</span>
-              <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-                <StatusBadge status={detalhes.status} />
-                {detalhes.status === "pendente" && (
-                  <>
-                    <button
-                      style={{ ...S.btnStatusApprove, ...(hoveredBtn === "aprovar-det" ? S.btnStatusApproveHover : {}) }}
-                      onMouseEnter={() => setHoveredBtn("aprovar-det")}
-                      onMouseLeave={() => setHoveredBtn(null)}
-                      onClick={() => handleMudarStatus(detalhes.id, "aprovado")}
-                    >
-                      ✓ Aprovar
-                    </button>
-                    <button
-                      style={{ ...S.btnStatusReject, ...(hoveredBtn === "recusar-det" ? S.btnStatusRejectHover : {}) }}
-                      onMouseEnter={() => setHoveredBtn("recusar-det")}
-                      onMouseLeave={() => setHoveredBtn(null)}
-                      onClick={() => handleMudarStatus(detalhes.id, "recusado")}
-                    >
-                      ✕ Recusar
-                    </button>
-                  </>
-                )}
-                {detalhes.status === "aprovado" && (
-                  <button
-                    style={{ ...S.btnStatusApprove, background: "#eff6ff", color: "#1d4ed8", border: "1px solid #dbeafe", ...(hoveredBtn === "andamento-det" ? { background: "#dbeafe" } : {}) }}
-                    onMouseEnter={() => setHoveredBtn("andamento-det")}
-                    onMouseLeave={() => setHoveredBtn(null)}
-                    onClick={() => handleMudarStatus(detalhes.id, "em_andamento")}
-                  >
-                    ▶ Iniciar tratamento
-                  </button>
-                )}
-                {detalhes.status === "em_andamento" && (
-                  <button
-                    style={{ ...S.btnStatusApprove, ...(hoveredBtn === "concluir-det" ? S.btnStatusApproveHover : {}) }}
-                    onMouseEnter={() => setHoveredBtn("concluir-det")}
-                    onMouseLeave={() => setHoveredBtn(null)}
-                    onClick={() => handleMudarStatus(detalhes.id, "concluido")}
-                  >
-                    ✓ Concluir
-                  </button>
-                )}
-              </div>
-            </div>
-            <div style={S.detailItem}>
-              <span style={S.detailLabel}>Data</span>
-              <span style={S.detailValue}>{formatarDataBR(detalhes.data)}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Tabela de itens */}
-        <div style={S.formCard}>
-          <div style={S.formCardHeader}>
-            <span style={S.formCardIcon}>{Icons.tooth}</span>
-            <span style={S.formCardTitle}>Procedimentos</span>
-          </div>
-
-          <div style={S.tableWrapper}>
-            <table style={S.table}>
-              <thead>
-                <tr>
-                  <th style={S.th}>Dente</th>
-                  <th style={S.th}>Procedimento</th>
-                  <th style={{ ...S.th, textAlign: "right" }}>Valor Unit.</th>
-                  <th style={{ ...S.th, textAlign: "right" }}>Subtotal</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(detalhes.itens || []).map((item, idx) => (
-                  <tr key={idx}>
-                    <td style={S.td}>{item.dente || "—"}</td>
-                    <td style={S.td}>{item.procedimento || "—"}</td>
-                    <td style={{ ...S.td, textAlign: "right" }}>{formatarMoeda(item.valor)}</td>
-                    <td style={{ ...S.td, textAlign: "right", fontWeight: "600" }}>
-                      {formatarMoeda((Number(item.valor) || 0) * (Number(item.quantidade) || 1))}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Totais */}
-          <div style={S.totaisBox}>
-            <div style={S.totaisRow}>
-              <span style={S.totaisLabel}>Subtotal</span>
-              <span style={S.totaisValue}>{formatarMoeda(totalDet)}</span>
-            </div>
-            {descontoDet > 0 && (
-              <div style={S.totaisRow}>
-                <span style={S.totaisLabel}>Desconto</span>
-                <span style={{ ...S.totaisValue, color: "#ef4444" }}>
-                  - {formatarMoeda(descontoDet)}
-                </span>
-              </div>
-            )}
-            <div style={{ ...S.totaisRow, borderTop: "2px solid #e2e8f0", paddingTop: "12px" }}>
-              <span style={{ ...S.totaisLabel, fontSize: "15px", fontWeight: "700", color: "#0f172a" }}>Total Final</span>
-              <span style={{ ...S.totaisValue, fontSize: "20px", fontWeight: "700", color: "#2563eb" }}>
-                {formatarMoeda(totalFinalDet)}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Modal confirmar exclusão */}
-        {confirmarExclusao && (
-          <div style={S.overlay} onClick={() => setConfirmarExclusao(null)}>
-            <div style={S.modal} onClick={(e) => e.stopPropagation()}>
-              <div style={S.modalIconWrap}>{Icons.alertTriangle}</div>
-              <h3 style={S.confirmTitle}>Excluir orçamento #{confirmarExclusao.id}?</h3>
-              <p style={S.confirmText}>Esta ação é irreversível. Todos os dados deste orçamento serão permanentemente removidos.</p>
-              <div style={S.modalActions}>
-                <button
-                  style={{
-                    ...S.btnSecondary,
-                    ...(hoveredBtn === "cancel-modal-det" ? S.btnSecondaryHover : {}),
-                  }}
-                  onMouseEnter={() => setHoveredBtn("cancel-modal-det")}
-                  onMouseLeave={() => setHoveredBtn(null)}
-                  onClick={() => setConfirmarExclusao(null)}
-                  disabled={excluindo}
-                >
-                  Cancelar
-                </button>
-                <button
-                  style={{
-                    ...S.btnDanger,
-                    ...(hoveredBtn === "confirm-modal-det" ? S.btnDangerHover : {}),
-                  }}
-                  onMouseEnter={() => setHoveredBtn("confirm-modal-det")}
-                  onMouseLeave={() => setHoveredBtn(null)}
-                  onClick={handleExcluir}
-                  disabled={excluindo}
-                >
-                  {Icons.trash}
-                  <span>{excluindo ? "Excluindo..." : "Confirmar exclusão"}</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     );
   }
