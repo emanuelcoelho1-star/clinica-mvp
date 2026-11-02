@@ -18,6 +18,7 @@ export const MODULOS_LABELS = {
   documentos: "Documentos",
   tratamentos: "Tratamentos",
   configuracoes: "Configurações",
+  planos: "Planos",
 };
 
 export const ACOES_LABELS = {
