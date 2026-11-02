@@ -764,7 +764,7 @@ function AbaOrcamentos({ pacienteId }) {
                     <option value="valor">R$ Valor</option>
                     <option value="porcentagem">% Porcentagem</option>
                   </select>
-                  <input id="orcamento-desconto" type="number" min="0" max={tipoDesconto === "porcentagem" ? 100 : totalForm} step={tipoDesconto === "porcentagem" ? "0.1" : "0.01"} value={formData.desconto} onChange={(e) => setFormData((p) => ({ ...p, desconto: e.target.value }))} placeholder="0,00" style={{ width: "112px", height: "40px", border: "none", outline: "none", padding: "0 12px", background: "transparent", color: "#0f172a", fontSize: "14px", fontWeight: "600", textAlign: "right", boxSizing: "border-box" }} />
+                  <input id="orcamento-desconto" type="number" min="0" max={tipoDesconto === "porcentagem" ? 100 : totalForm} step={tipoDesconto === "porcentagem" ? "0.1" : "0.01"} value={formData.desconto} onChange={(e) => setFormData((p) => ({ ...p, desconto: e.target.value }))} placeholder="0,00" style={{ width: "112px", height: "40px", border: "none", outline: "none", padding: "0 12px", background: "transparent", color: "#0f172a", fontSize: "14px", fontWeight: "600", textAlign: "right", boxSizing: "border-box", appearance: "textfield", MozAppearance: "textfield" }} />
                 </div>
               </div>
               {descontoForm > 0 && <div style={S.totaisRow}>
