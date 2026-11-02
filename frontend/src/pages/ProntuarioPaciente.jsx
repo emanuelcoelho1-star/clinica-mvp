@@ -812,7 +812,7 @@ function ProntuarioPaciente() {
 
       {/* ── Tab: Orçamentos ──────────────────────────────── */}
       {abaAtiva === "orcamentos" && (
-        <AbaOrcamentos pacienteId={paciente.id} />
+        <AbaOrcamentos pacienteId={paciente.id} pacienteNome={paciente.nome} />
       )}
 
       {/* ── Tab: Tratamentos ─────────────────────────────── */}
