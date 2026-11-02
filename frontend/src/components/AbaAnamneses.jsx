@@ -11,6 +11,13 @@ function formatarDataBR(iso) {
   return `${p[2]}/${p[1]}/${p[0]}`;
 }
 
+function formatarHoraBR(dataHora) {
+  if (!dataHora) return "—";
+  const partes = dataHora.split(" ");
+  if (partes.length < 2) return "—";
+  return partes[1].slice(0, 5);
+}
+
 function dataHojeISO() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -393,6 +400,8 @@ function AbaAnamneses({ pacienteId }) {
                         <span>Anamnese clínica</span>
                         <span style={S.documentMetaDot}>•</span>
                         <span>{formatarDataBR(a.data)}</span>
+                        <span style={S.documentMetaDot}>•</span>
+                        <span>{formatarHoraBR(a.created_at)}</span>
                         <span style={S.documentMetaDot}>•</span>
                         <span>{camposPreenchidos} campo{camposPreenchidos !== 1 ? "s" : ""} preenchido{camposPreenchidos !== 1 ? "s" : ""}</span>
                       </div>
