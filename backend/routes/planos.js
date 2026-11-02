@@ -122,7 +122,7 @@ router.get("/opcoes-orcamento", (req, res) => {
       if (err) return erroInterno(res);
       if (!planos || !planos.length) return res.json([]);
       db.all(
-        `SELECT pp.plano_id, pc.id, pc.nome, pc.usar_na_frente, pp.valor
+        `SELECT pp.plano_id, pc.id, pc.nome, pc.usar_na_frente, pc.aceita_faces, pp.valor
          FROM procedimentos_catalogo pc
          LEFT JOIN plano_procedimentos pp
            ON pp.procedimento_id = pc.id AND pp.clinica_id = pc.clinica_id
