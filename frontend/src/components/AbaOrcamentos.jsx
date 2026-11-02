@@ -628,137 +628,77 @@ function AbaOrcamentos({ pacienteId, pacienteNome }) {
           </div>
         )}
 
-        {/* Lista de cards */}
+        {/* Lista no mesmo estilo das abas Documentos e Anamneses */}
         {!carregando && !erro && orcamentos.length > 0 && (
-          <div style={S.cardGrid}>
+          <div style={S.documentList}>
             {orcamentos.map((o) => {
               const hovered = hoveredCardId === o.id;
               const total = calcularTotalItens(o.itens);
               const desconto = Number(o.desconto) || 0;
               const totalFinal = Math.max(0, total - desconto);
-
               return (
                 <div
                   key={o.id}
-                  style={{ ...S.card, ...(hovered ? S.cardHover : {}) }}
+                  style={{ ...S.documentRow, ...(hovered ? S.documentRowHover : {}) }}
                   onMouseEnter={() => setHoveredCardId(o.id)}
                   onMouseLeave={() => setHoveredCardId(null)}
                 >
-                  {/* Topo do card */}
-                  <div style={S.cardTop}>
-                    <div style={S.cardDateBadge}>
-                      <span style={{ display: "flex", color: "#2563eb" }}>{Icons.calendar}</span>
-                      {formatarDataBR(o.data)}
+                  <div style={S.documentRowMain}>
+                    <div style={S.documentFileIcon}>{Icons.clipboard}</div>
+                    <div style={S.documentRowInfo}>
+                      <span style={S.documentRowTitle}>Orçamento #{o.id}</span>
+                      <div style={S.documentRowMeta}>
+                        <span>{formatarDataBR(o.data)}</span>
+                        <span style={S.documentMetaDot}>•</span>
+                        <span>{o.itens?.length || 0} procedimento{(o.itens?.length || 0) !== 1 ? "s" : ""}</span>
+                        <span style={S.documentMetaDot}>•</span>
+                        <span>Total: {formatarMoeda(totalFinal)}</span>
+                        {desconto > 0 && <>
+                          <span style={S.documentMetaDot}>•</span>
+                          <span>Desconto: {formatarMoeda(desconto)}</span>
+                        </>}
+                        <span style={S.documentMetaDot}>•</span>
+                        <StatusBadge status={o.status} />
+                      </div>
+                      {o.itens?.length > 0 && (
+                        <span style={S.documentRowDescription}>
+                          {o.itens.map((item) => item.procedimento).filter(Boolean).join(", ")}
+                        </span>
+                      )}
                     </div>
-                    <span style={S.cardId}>#{o.id}</span>
                   </div>
-
-                                    {/* Status + Ações rápidas */}
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                    <StatusBadge status={o.status} />
-                    {o.status === "pendente" && (
-                      <>
-                        <button
-                          style={{ ...S.btnStatusApprove, ...(hoveredBtn === `aprovar-${o.id}` ? S.btnStatusApproveHover : {}) }}
-                          onMouseEnter={() => setHoveredBtn(`aprovar-${o.id}`)}
-                          onMouseLeave={() => setHoveredBtn(null)}
-                          onClick={(e) => { e.stopPropagation(); handleMudarStatus(o.id, "aprovado"); }}
-                        >
-                          ✓ Aprovar
-                        </button>
-                        <button
-                          style={{ ...S.btnStatusReject, ...(hoveredBtn === `recusar-${o.id}` ? S.btnStatusRejectHover : {}) }}
-                          onMouseEnter={() => setHoveredBtn(`recusar-${o.id}`)}
-                          onMouseLeave={() => setHoveredBtn(null)}
-                          onClick={(e) => { e.stopPropagation(); handleMudarStatus(o.id, "recusado"); }}
-                        >
-                          ✕ Recusar
-                        </button>
-                      </>
-                    )}
+                  <div style={S.documentRowActions}>
+                    {o.status === "pendente" && <>
+                      <button type="button" style={{ ...S.listActionBtn, color: "#15803d" }}
+                        onClick={() => handleMudarStatus(o.id, "aprovado")}>✓ Aprovar</button>
+                      <button type="button" style={{ ...S.listActionBtn, color: "#b91c1c" }}
+                        onClick={() => handleMudarStatus(o.id, "recusado")}>✕ Recusar</button>
+                    </>}
                     {o.status === "aprovado" && (
-                      <button
-                        style={{ ...S.btnStatusApprove, background: "#eff6ff", color: "#1d4ed8", border: "1px solid #dbeafe", ...(hoveredBtn === `andamento-${o.id}` ? { background: "#dbeafe" } : {}) }}
-                        onMouseEnter={() => setHoveredBtn(`andamento-${o.id}`)}
-                        onMouseLeave={() => setHoveredBtn(null)}
-                        onClick={(e) => { e.stopPropagation(); handleMudarStatus(o.id, "em_andamento"); }}
-                      >
-                        ▶ Iniciar
-                      </button>
+                      <button type="button" style={S.listActionBtn}
+                        onClick={() => handleMudarStatus(o.id, "em_andamento")}>▶ Iniciar</button>
                     )}
                     {o.status === "em_andamento" && (
-                      <button
-                        style={{ ...S.btnStatusApprove, ...(hoveredBtn === `concluir-${o.id}` ? S.btnStatusApproveHover : {}) }}
-                        onMouseEnter={() => setHoveredBtn(`concluir-${o.id}`)}
-                        onMouseLeave={() => setHoveredBtn(null)}
-                        onClick={(e) => { e.stopPropagation(); handleMudarStatus(o.id, "concluido"); }}
-                      >
-                        ✓ Concluir
-                      </button>
+                      <button type="button" style={S.listActionBtn}
+                        onClick={() => handleMudarStatus(o.id, "concluido")}>✓ Concluir</button>
                     )}
-                  </div>
-
-                  {/* Procedimentos resumidos */}
-                  {o.itens && o.itens.length > 0 && (
-                    <div style={S.cardSection}>
-                      <span style={S.cardSectionLabel}>
-                        {o.itens.length} procedimento{o.itens.length !== 1 ? "s" : ""}
-                      </span>
-                      <p style={S.cardSectionText}>
-                        {o.itens
-                          .map((i) => i.procedimento)
-                          .filter(Boolean)
-                          .join(", ")}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Valores */}
-                  <div style={S.pillRow}>
-                    <span style={S.pillMoney}>Total: {formatarMoeda(totalFinal)}</span>
-                    {desconto > 0 && (
-                      <span style={S.pillDiscount}>Desc: {formatarMoeda(desconto)}</span>
-                    )}
-                  </div>
-
-                  {/* Ações */}
-                  <div style={S.cardActions}>
-                    <button
-                      style={{
-                        ...S.cardBtn,
-                        ...(hoveredBtn === `ver-${o.id}` ? S.cardBtnHover : {}),
-                      }}
-                      onMouseEnter={() => setHoveredBtn(`ver-${o.id}`)}
-                      onMouseLeave={() => setHoveredBtn(null)}
-                      onClick={() => abrirDetalhes(o)}
-                    >
-                      {Icons.eye}
-                      <span>Ver</span>
+                    <button type="button"
+                      style={{ ...S.listActionBtn, ...(hoveredBtn === `ver-${o.id}` ? S.listActionBtnHover : {}) }}
+                      onMouseEnter={() => setHoveredBtn(`ver-${o.id}`)} onMouseLeave={() => setHoveredBtn(null)}
+                      onClick={() => abrirDetalhes(o)}>
+                      {Icons.eye}<span>Ver</span>
                     </button>
-                    <button
-                      style={{
-                        ...S.cardBtn,
-                        ...(hoveredBtn === `editar-${o.id}` ? S.cardBtnHover : {}),
-                      }}
-                      onMouseEnter={() => setHoveredBtn(`editar-${o.id}`)}
-                      onMouseLeave={() => setHoveredBtn(null)}
-                      onClick={() => abrirFormEditar(o)}
-                    >
-                      {Icons.edit}
-                      <span>Editar</span>
+                    <button type="button"
+                      style={{ ...S.listActionBtn, ...(hoveredBtn === `editar-${o.id}` ? S.listActionBtnHover : {}) }}
+                      onMouseEnter={() => setHoveredBtn(`editar-${o.id}`)} onMouseLeave={() => setHoveredBtn(null)}
+                      onClick={() => abrirFormEditar(o)}>
+                      {Icons.edit}<span>Editar</span>
                     </button>
-                    <button
-                      style={{
-                        ...S.cardBtn,
-                        ...S.cardBtnDanger,
-                        ...(hoveredBtn === `excluir-${o.id}` ? S.cardBtnDangerHover : {}),
-                      }}
-                      onMouseEnter={() => setHoveredBtn(`excluir-${o.id}`)}
-                      onMouseLeave={() => setHoveredBtn(null)}
-                      onClick={() => setConfirmarExclusao(o)}
-                    >
+                    <button type="button" aria-label="Excluir orçamento" title="Excluir orçamento"
+                      style={{ ...S.listDeleteBtn, ...(hoveredBtn === `excluir-${o.id}` ? S.listDeleteBtnHover : {}) }}
+                      onMouseEnter={() => setHoveredBtn(`excluir-${o.id}`)} onMouseLeave={() => setHoveredBtn(null)}
+                      onClick={() => setConfirmarExclusao(o)}>
                       {Icons.trash}
-                      <span>Excluir</span>
                     </button>
                   </div>
                 </div>
@@ -1405,6 +1345,23 @@ const S = {
     lineHeight: 1.5,
     maxWidth: "360px",
   },
+
+  /* ── Lista no padrão de Documentos e Anamneses ───── */
+  documentList: { display: "flex", flexDirection: "column", background: "#fff", border: "1px solid #f1f5f9", borderRadius: "12px", overflow: "hidden" },
+  documentRow: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: "18px", padding: "13px 16px", borderBottom: "1px solid #f1f5f9", transition: "background 0.15s ease", minWidth: 0, flexWrap: "wrap" },
+  documentRowHover: { background: "#fafcff" },
+  documentRowMain: { display: "flex", alignItems: "center", gap: "12px", minWidth: 0, flex: 1 },
+  documentFileIcon: { width: "38px", height: "38px", borderRadius: "9px", background: "#f8fafc", color: "#64748b", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  documentRowInfo: { display: "flex", flexDirection: "column", gap: "4px", minWidth: 0 },
+  documentRowTitle: { color: "#1e293b", fontSize: "13px", fontWeight: "600", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+  documentRowMeta: { display: "flex", alignItems: "center", flexWrap: "wrap", gap: "7px", color: "#94a3b8", fontSize: "11px" },
+  documentMetaDot: { color: "#cbd5e1" },
+  documentRowDescription: { color: "#64748b", fontSize: "11px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" },
+  documentRowActions: { display: "flex", alignItems: "center", gap: "7px", flexShrink: 0, flexWrap: "wrap" },
+  listActionBtn: { display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px", height: "32px", padding: "0 11px", border: "1px solid #e8edf3", borderRadius: "7px", background: "#fff", color: "#475569", fontSize: "12px", fontWeight: "600", cursor: "pointer", whiteSpace: "nowrap" },
+  listActionBtnHover: { background: "#f8fafc", borderColor: "#cbd5e1" },
+  listDeleteBtn: { width: "32px", height: "32px", display: "inline-flex", alignItems: "center", justifyContent: "center", border: "1px solid transparent", borderRadius: "7px", background: "transparent", color: "#94a3b8", cursor: "pointer" },
+  listDeleteBtnHover: { color: "#dc2626", background: "#fef2f2", borderColor: "#fee2e2" },
 
   /* ── Card Grid ───────────────────────────────────── */
   cardGrid: {
