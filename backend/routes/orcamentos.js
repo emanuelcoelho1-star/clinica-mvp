@@ -169,6 +169,8 @@ router.post("/", auth, (req, res) => {
 router.put("/:id", auth, (req, res) => {
   const { id } = req.params;
   const { paciente_id, data, descricao, itens, desconto, dentista_responsavel } = req.body;
+  const planoId = req.body.plano_id === null || req.body.plano_id === undefined || req.body.plano_id === "" ? null : Number(req.body.plano_id);
+  if (planoId !== null && (!Number.isInteger(planoId) || planoId <= 0)) return res.status(400).json({ erro: "Selecione um plano válido." });
 
   if (!paciente_id || !data) {
     return res.status(400).json({ erro: "Paciente e data são obrigatórios." });
