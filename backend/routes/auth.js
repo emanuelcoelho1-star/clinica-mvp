@@ -1,5 +1,79 @@
 const express = require("express");
 const router = express.Router();
+/**
+ * Copia o plano Particular e o catálogo da clínica-modelo para uma nova clínica.
+ * Os registros são duplicados com novos IDs e permanecem isolados por clinica_id.
+ */
+function copiarPlanoParticularPadrao(clinicaDestinoId, callback) {
+  db.get(
+    `SELECT c.id AS clinica_id
+     FROM clinicas c
+     INNER JOIN planos p ON p.clinica_id = c.id
+     WHERE LOWER(TRIM(p.nome)) = 'particular'
+     ORDER BY
+       (SELECT COUNT(*) FROM procedimentos_catalogo pc WHERE pc.clinica_id = c.id) DESC,
+       c.id ASC
+     LIMIT 1`,
+    [],
+    (sourceErr, source) => {
+      if (sourceErr) return callback(sourceErr);
+      if (!source) return callback(null);
+
+      db.get(
+        `SELECT id, descricao
+         FROM planos
+         WHERE clinica_id = ? AND LOWER(TRIM(nome)) = 'particular'
+         ORDER BY id
+         LIMIT 1`,
+        [source.clinica_id],
+        (planErr, planModelo) => {
+          if (planErr) return callback(planErr);
+          if (!planModelo) return callback(null);
+
+          db.run(
+            `INSERT INTO planos (clinica_id, nome, tipo, descricao, ativo)
+             VALUES (?, 'Particular', ?, ?, 1)`,
+            [clinicaDestinoId, JSON.stringify(["padrao"]), planModelo.descricao || ""],
+            function (insertPlanErr) {
+              if (insertPlanErr) return callback(insertPlanErr);
+              const planoDestinoId = this.lastID;
+
+              db.run(
+                `INSERT INTO procedimentos_catalogo
+                   (clinica_id, nome, codigo, categoria, descricao, ativo, aceita_faces, custo_tratamento, usar_na_frente)
+                 SELECT ?, nome, codigo, categoria, descricao, ativo,
+                        COALESCE(aceita_faces, 0), COALESCE(custo_tratamento, 0), COALESCE(usar_na_frente, 1)
+                 FROM procedimentos_catalogo
+                 WHERE clinica_id = ?
+                 ORDER BY id`,
+                [clinicaDestinoId, source.clinica_id],
+                (proceduresErr) => {
+                  if (proceduresErr) return callback(proceduresErr);
+
+                  db.run(
+                    `INSERT INTO plano_procedimentos (clinica_id, plano_id, procedimento_id, valor)
+                     SELECT ?, ?, destino.id, COALESCE(origem_preco.valor, 0)
+                     FROM procedimentos_catalogo origem
+                     INNER JOIN procedimentos_catalogo destino
+                       ON destino.clinica_id = ? AND LOWER(TRIM(destino.nome)) = LOWER(TRIM(origem.nome))
+                     LEFT JOIN plano_procedimentos origem_preco
+                       ON origem_preco.clinica_id = origem.clinica_id
+                      AND origem_preco.plano_id = ?
+                      AND origem_preco.procedimento_id = origem.id
+                     WHERE origem.clinica_id = ?`,
+                    [clinicaDestinoId, planoDestinoId, clinicaDestinoId, planModelo.id, source.clinica_id],
+                    (pricesErr) => callback(pricesErr || null)
+                  );
+                }
+              );
+            }
+          );
+        }
+      );
+    }
+  );
+}
+
 const db = require("../database");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
@@ -132,7 +206,10 @@ router.post("/register", registerLimiter, async (req, res) => {
                       (subscriptionErr) => {
                         if (subscriptionErr) return rollback(500, "Erro ao preparar o período de teste.");
 
-                        db.run("COMMIT", (commitErr) => {
+                        copiarPlanoParticularPadrao(clinicaId, (catalogoErr) => {
+                          if (catalogoErr) return rollback(500, "Erro ao preparar o plano Particular e os procedimentos padrão.");
+
+                          db.run("COMMIT", (commitErr) => {
                           if (commitErr) return rollback(500, "Não foi possível concluir o cadastro.");
                           const token = jwt.sign(
                             { id: usuarioId, nome: nomeNormalizado, email: emailNormalizado },
