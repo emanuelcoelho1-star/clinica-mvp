@@ -522,29 +522,17 @@ function AbaAnamneses({ pacienteId }) {
      ═══════════════════════════════════════════ */
   if (tela === "form") {
     return (
-      <div style={S.wrapper}>
-
-        {/* Header */}
-        <div style={S.header}>
-          <div>
-            <button
-              style={{
-                ...S.backBtn,
-                ...(hoveredBtn === "back-form" ? S.backBtnHover : {}),
-              }}
-              onMouseEnter={() => setHoveredBtn("back-form")}
-              onMouseLeave={() => setHoveredBtn(null)}
-              onClick={voltarParaLista}
-            >
-              {Icons.arrowLeft}
-              <span>Voltar</span>
-            </button>
-            <h2 style={S.title}>{editando ? "Editar anamnese" : "Nova anamnese"}</h2>
-            <p style={S.subtitle}>{editando ? "Altere os dados clínicos do paciente." : "Preencha o questionário de saúde do paciente."}</p>
+      <div style={S.overlay} onClick={() => { if (!salvando) voltarParaLista(); }}>
+        <div style={S.formModal} onClick={(e) => e.stopPropagation()}>
+          <div style={S.formModalHeader}>
+            <div>
+              <h2 style={S.title}>{editando ? "Editar anamnese" : "Nova anamnese"}</h2>
+              <p style={S.subtitle}>{editando ? "Altere os dados clínicos do paciente." : "Preencha o questionário de saúde do paciente."}</p>
+            </div>
+            <button type="button" style={S.formModalClose} onClick={voltarParaLista} disabled={salvando} aria-label="Fechar formulário" title="Fechar">×</button>
           </div>
-        </div>
 
-        <form onSubmit={handleSalvar} style={S.formWrap}>
+          <form onSubmit={handleSalvar} style={S.formWrap}>
 
           {/* Data */}
           <div style={S.formCard}>
@@ -632,7 +620,8 @@ function AbaAnamneses({ pacienteId }) {
               {salvando ? "Salvando..." : editando ? "Salvar alterações" : "Salvar anamnese"}
             </button>
           </div>
-        </form>
+          </form>
+        </div>
       </div>
     );
   }
@@ -1139,6 +1128,37 @@ const S = {
   },
 
   /* ── Form ─────────��──────────────────────────────── */
+  formModal: {
+    width: "100%",
+    maxWidth: "920px",
+    maxHeight: "90vh",
+    overflowY: "auto",
+    background: "#fff",
+    borderRadius: "16px",
+    padding: "28px",
+    boxShadow: "0 24px 64px rgba(15,23,42,0.22)",
+    animation: "anamnese-fade-in 0.2s ease",
+    boxSizing: "border-box",
+  },
+  formModalHeader: {
+    display: "flex",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: "16px",
+    marginBottom: "22px",
+  },
+  formModalClose: {
+    width: "34px",
+    height: "34px",
+    flexShrink: 0,
+    border: "1px solid #e2e8f0",
+    borderRadius: "9px",
+    background: "#fff",
+    color: "#64748b",
+    fontSize: "24px",
+    lineHeight: 1,
+    cursor: "pointer",
+  },
   formWrap: {
     display: "flex",
     flexDirection: "column",
