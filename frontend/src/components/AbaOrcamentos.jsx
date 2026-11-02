@@ -289,7 +289,7 @@ function AbaOrcamentos({ pacienteId, pacienteNome }) {
       if (resposta.ok) {
         const dados = await resposta.json();
         setPlanoPadrao(dados.plano || null);
-        setProcedimentosPlanoPadrao(Array.isArray(dados.procedimentos) ? dados.procedimentos : []);
+        setProcedimentosPlanoPadrao(Array.isArray(dados.procedimentos) ? dados.procedimentos.filter((p) => Number(p.usar_na_frente) === 1) : []);
       } else { setPlanoPadrao(null); setProcedimentosPlanoPadrao([]); }
     } catch { setPlanoPadrao(null); setProcedimentosPlanoPadrao([]); }
     setFormData({ ...EMPTY_FORM, descricao: `Plano de Tratamento de ${pacienteNome || ""}`.trim(), itens: [] });
