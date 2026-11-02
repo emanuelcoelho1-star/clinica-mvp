@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import API_URL from "../api";
 
 /* ═══════════════════════════════════════════════════════════
@@ -42,6 +42,45 @@ const STATUS_OPTIONS = [
   { value: "em_andamento", label: "Em andamento" },
   { value: "concluido",    label: "Concluído" },
 ];
+
+/* Dropdown personalizado — mesmo padrão visual da Agenda */
+function CustomDropdown({ value, options, onChange, placeholder = "Selecione", maxHeight = "220px" }) {
+  const [aberto, setAberto] = useState(false);
+  const ref = useRef(null);
+  const selecionado = options.find((opcao) => opcao.value === value);
+
+  useEffect(() => {
+    function fecharAoClicarFora(evento) {
+      if (ref.current && !ref.current.contains(evento.target)) setAberto(false);
+    }
+    document.addEventListener("mousedown", fecharAoClicarFora);
+    return () => document.removeEventListener("mousedown", fecharAoClicarFora);
+  }, []);
+
+  return (
+    <div style={S.dropWrap} ref={ref}>
+      <button type="button" onClick={() => setAberto((anterior) => !anterior)} style={S.dropTrigger}>
+        <span style={S.dropText}>{selecionado?.label || placeholder}</span>
+        <span style={{ ...S.dropArrow, ...(aberto ? S.dropArrowOpen : {}) }}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </span>
+      </button>
+      {aberto && (
+        <div style={{ ...S.dropMenu, maxHeight }}>
+          {options.length === 0 ? <div style={S.dropEmpty}>Nenhuma opção</div> : options.map((opcao, indice) => (
+            <button key={opcao.value || indice} type="button"
+              onClick={() => { onChange(opcao.value); setAberto(false); }}
+              style={{ ...S.dropOption, ...(indice === options.length - 1 ? S.dropOptionLast : {}), ...(opcao.value === value ? S.dropOptionActive : {}) }}>
+              {opcao.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 const EMPTY_ITEM = { dente: "", procedimento: "", valor: "", quantidade: "" };
 
@@ -729,10 +768,13 @@ function AbaOrcamentos({ pacienteId, pacienteNome }) {
               </div>
               <div style={S.fieldGroup}>
                 <label style={S.label}>Dentista responsável</label>
-                <select value={dentistaResponsavel} onChange={(e) => setDentistaResponsavel(e.target.value)} style={S.input}>
-                  <option value="">Selecione o dentista</option>
-                  {dentistas.map((dentista) => <option key={dentista.id} value={dentista.nome}>{dentista.nome}</option>)}
-                </select>
+                <CustomDropdown
+                  value={dentistaResponsavel}
+                  onChange={setDentistaResponsavel}
+                  options={dentistas.map((dentista) => ({ value: dentista.nome, label: dentista.nome }))}
+                  placeholder="Selecione o dentista"
+                  maxHeight="240px"
+                />
               </div>
               <div style={S.fieldGroup}>
                 <label style={S.label}>Data</label>
@@ -1541,6 +1583,16 @@ const S = {
     minHeight: "80px",
     lineHeight: 1.5,
   },
+  dropWrap: { position: "relative", width: "100%" },
+  dropTrigger: { width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", border: "1px solid #e2e8f0", background: "#fff", borderRadius: "10px", cursor: "pointer", boxSizing: "border-box", fontSize: "14px", color: "#0f172a", height: "42px", padding: "0 14px" },
+  dropText: { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" },
+  dropArrow: { display: "flex", alignItems: "center", color: "#94a3b8", transition: "transform 0.2s ease", flexShrink: 0 },
+  dropArrowOpen: { transform: "rotate(180deg)" },
+  dropMenu: { position: "absolute", top: "calc(100% + 6px)", left: 0, right: 0, border: "1px solid #f1f5f9", borderRadius: "12px", background: "#fff", overflowY: "auto", display: "flex", flexDirection: "column", boxShadow: "0 12px 32px rgba(15,23,42,0.1)", zIndex: 2000 },
+  dropOption: { border: "none", borderBottom: "1px solid #f8fafc", background: "#fff", padding: "10px 14px", textAlign: "left", cursor: "pointer", width: "100%", fontSize: "14px", color: "#0f172a", fontWeight: "400", transition: "background 0.1s" },
+  dropOptionLast: { borderBottom: "none" },
+  dropOptionActive: { background: "#eff6ff", color: "#2563eb", fontWeight: "600" },
+  dropEmpty: { padding: "14px", color: "#94a3b8", fontSize: "13px" },
   formActions: {
     display: "flex",
     justifyContent: "flex-end",
