@@ -207,13 +207,15 @@ router.delete("/:id", (req, res) => {
 });
 
 router.post("/procedimentos", (req, res) => {
-  const { nome, codigo = "", categoria = "", descricao = "" } = req.body || {};
+  const { nome, categoria = "", aceita_faces = false, custo_tratamento = 0 } = req.body || {};
+  const custo = Number(custo_tratamento);
   if (!validarNome(nome)) return res.status(400).json({ erro: "Informe um nome válido para o procedimento." });
   if (!ESPECIALIDADES.includes(categoria)) return res.status(400).json({ erro: "Selecione uma especialidade válida." });
+  if (!Number.isFinite(custo) || custo < 0 || custo > 99999999) return res.status(400).json({ erro: "Informe um custo de tratamento válido." });
 
   db.run(
-    "INSERT INTO procedimentos_catalogo (clinica_id, nome, codigo, categoria, descricao) VALUES (?, ?, ?, ?, ?)",
-    [clinicaId(req), nome.trim(), String(codigo || "").trim(), String(categoria || "").trim(), String(descricao || "").trim()],
+    "INSERT INTO procedimentos_catalogo (clinica_id, nome, categoria, aceita_faces, custo_tratamento) VALUES (?, ?, ?, ?, ?)",
+    [clinicaId(req), nome.trim(), String(categoria || "").trim(), aceita_faces ? 1 : 0, custo],
     function (err) {
       if (err) {
         if (err.message.includes("UNIQUE")) return res.status(409).json({ erro: "Esse procedimento já está cadastrado." });
@@ -225,13 +227,15 @@ router.post("/procedimentos", (req, res) => {
 });
 
 router.put("/procedimentos/:id", (req, res) => {
-  const { nome, codigo = "", categoria = "", descricao = "", ativo = 1 } = req.body || {};
+  const { nome, categoria = "", aceita_faces = false, custo_tratamento = 0, ativo = 1 } = req.body || {};
+  const custo = Number(custo_tratamento);
   if (!validarNome(nome)) return res.status(400).json({ erro: "Informe um nome válido para o procedimento." });
   if (!ESPECIALIDADES.includes(categoria)) return res.status(400).json({ erro: "Selecione uma especialidade válida." });
+  if (!Number.isFinite(custo) || custo < 0 || custo > 99999999) return res.status(400).json({ erro: "Informe um custo de tratamento válido." });
 
   db.run(
-    "UPDATE procedimentos_catalogo SET nome = ?, codigo = ?, categoria = ?, descricao = ?, ativo = ? WHERE id = ? AND clinica_id = ?",
-    [nome.trim(), String(codigo || "").trim(), String(categoria || "").trim(), String(descricao || "").trim(), ativo ? 1 : 0, req.params.id, clinicaId(req)],
+    "UPDATE procedimentos_catalogo SET nome = ?, categoria = ?, aceita_faces = ?, custo_tratamento = ?, ativo = ? WHERE id = ? AND clinica_id = ?",
+    [nome.trim(), String(categoria || "").trim(), aceita_faces ? 1 : 0, custo, ativo ? 1 : 0, req.params.id, clinicaId(req)],
     function (err) {
       if (err) {
         if (err.message.includes("UNIQUE")) return res.status(409).json({ erro: "Esse procedimento já está cadastrado." });
