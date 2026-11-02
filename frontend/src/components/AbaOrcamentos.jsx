@@ -762,11 +762,6 @@ function AbaOrcamentos({ pacienteId, pacienteNome }) {
                         <span style={S.treatmentsModalValueLabel}>Custo</span>
                         <span style={S.treatmentsModalCost}>{formatarMoeda(item.custo_tratamento)}</span>
                       </div>
-                        <div>
-                          <span style={S.treatmentsModalValueLabel}>Custo</span>
-                          <span style={S.treatmentsModalCost}>{formatarMoeda(item.custo_tratamento)}</span>
-                        </div>
-                      </div>
                     </div>
                   ))}
                 </div>
