@@ -292,7 +292,7 @@ function AbaArquivos({ pacienteId }) {
   }, [pacienteId]);
 
   useEffect(() => {
-    if (!preview || tela !== "preview") {
+    if (!preview) {
       setPreviewUrl("");
       return undefined;
     }
@@ -325,7 +325,7 @@ function AbaArquivos({ pacienteId }) {
       cancelled = true;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [preview, tela]);
+  }, [preview]);
 
   async function carregarPastas() {
     try {
@@ -453,7 +453,6 @@ function AbaArquivos({ pacienteId }) {
   /* ── Preview ─────────────────────────────── */
   function abrirPreview(arquivo) {
     setPreview(arquivo);
-    setTela("preview");
   }
 
   function voltarParaLista() {
@@ -658,14 +657,13 @@ function AbaArquivos({ pacienteId }) {
                         onMouseLeave={() => setHoveredCardId(null)}
                       >
                         <button type="button" style={S.fileTileButton}
-                          onClick={() => isImagem(a.nome_original, a.mimetype) ? abrirPreview(a) : baixarArquivo(a)}
-                          title={a.nome_original || "Abrir arquivo"}>
+                          onClick={() => abrirPreview(a)}
+                          title={a.nome_original || "Visualizar arquivo"}>
                           <FileIcon arquivo={a} />
                         </button>
                         <div style={S.fileTileName} title={a.nome_original || "Arquivo"}>{a.nome_original || "Arquivo"}</div>
                         <div style={S.fileTileMeta}>{formatarDataBR(a.created_at || a.data)}</div>
                         {hovered && <div style={S.fileTileActions}>
-                          {isImagem(a.nome_original, a.mimetype) && <button type="button" title="Visualizar" style={S.fileTileAction} onClick={() => abrirPreview(a)}>{Icons.eye}</button>}
                           <button type="button" title="Baixar" style={S.fileTileAction} onClick={() => baixarArquivo(a)}>{Icons.download}</button>
                           <button type="button" title="Excluir" style={{ ...S.fileTileAction, color: "#dc2626" }} onClick={() => setConfirmarExclusao(a)}>{Icons.trash}</button>
                         </div>}
@@ -719,6 +717,36 @@ function AbaArquivos({ pacienteId }) {
                 <button type="submit" style={S.btnPrimary} disabled={salvandoPasta || !nomeNovaPasta.trim()}>{salvandoPasta ? "Criando..." : "Criar pasta"}</button>
               </div>
             </form>
+          </div>
+        )}
+
+        {/* Visualização do arquivo em modal na própria aba */}
+        {preview && (
+          <div style={S.viewerOverlay} onClick={voltarParaLista}>
+            <div style={S.viewerModal} onClick={(e) => e.stopPropagation()}>
+              <div style={S.viewerHeader}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={S.viewerTitle}>{preview.nome_original || "Visualizar arquivo"}</div>
+                  <div style={S.viewerSubtitle}>{formatarTamanho(preview.tamanho)} • {formatarDataBR(preview.created_at || preview.data)}</div>
+                </div>
+                <div style={S.viewerHeaderActions}>
+                  <button type="button" style={S.btnSecondary} onClick={() => baixarArquivo(preview)}>{Icons.download}<span>Baixar</span></button>
+                  <button type="button" style={S.viewerClose} aria-label="Fechar visualização" onClick={voltarParaLista}>{Icons.close}</button>
+                </div>
+              </div>
+              <div style={S.viewerBody}>
+                {!previewUrl
+                  ? <span style={S.viewerMessage}>Carregando visualização...</span>
+                  : isImagem(preview.nome_original, preview.mimetype)
+                    ? <img src={previewUrl} alt={preview.nome_original} style={S.viewerImage} />
+                    : getExtensao(preview.nome_original) === "pdf" || String(preview.mimetype || "").includes("pdf")
+                      ? <iframe title={preview.nome_original || "Documento PDF"} src={previewUrl} style={S.viewerFrame} />
+                      : <div style={S.viewerUnsupported}>
+                          <span>Não é possível exibir este formato diretamente no navegador.</span>
+                          <button type="button" style={S.btnSecondary} onClick={() => baixarArquivo(preview)}>{Icons.download}<span>Baixar arquivo</span></button>
+                        </div>}
+              </div>
+            </div>
           </div>
         )}
 
@@ -1145,6 +1173,30 @@ const S = {
   confirmTitle: { margin: "12px 0 0", fontSize: "17px", fontWeight: "700", color: "#0f172a", lineHeight: 1.3 },
   confirmText: { margin: "8px 0 0", color: "#64748b", fontSize: "14px", lineHeight: 1.5 },
   modalActions: { display: "flex", justifyContent: "center", gap: "10px", marginTop: "24px" },
+
+  viewerOverlay: {
+    position: "fixed", inset: 0, zIndex: 1200, display: "flex", alignItems: "center",
+    justifyContent: "center", padding: "24px", background: "rgba(15,23,42,.68)",
+    backdropFilter: "blur(5px)",
+  },
+  viewerModal: {
+    width: "min(100%, 1040px)", height: "min(90vh, 820px)", background: "#fff",
+    borderRadius: "16px", boxShadow: "0 24px 80px rgba(0,0,0,.3)", display: "flex",
+    flexDirection: "column", overflow: "hidden",
+  },
+  viewerHeader: {
+    minHeight: "66px", padding: "12px 18px", display: "flex", alignItems: "center",
+    justifyContent: "space-between", gap: "16px", borderBottom: "1px solid #e2e8f0",
+  },
+  viewerTitle: { fontSize: "14px", fontWeight: "700", color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+  viewerSubtitle: { marginTop: "4px", fontSize: "12px", color: "#94a3b8" },
+  viewerHeaderActions: { display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 },
+  viewerClose: { width: "36px", height: "36px", display: "inline-flex", alignItems: "center", justifyContent: "center", border: "none", borderRadius: "9px", background: "#f1f5f9", color: "#475569", cursor: "pointer" },
+  viewerBody: { flex: 1, minHeight: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "#f1f5f9", overflow: "auto" },
+  viewerImage: { maxWidth: "100%", maxHeight: "100%", objectFit: "contain", display: "block" },
+  viewerFrame: { width: "100%", height: "100%", border: "none", background: "#fff" },
+  viewerMessage: { color: "#64748b", fontSize: "14px" },
+  viewerUnsupported: { display: "flex", flexDirection: "column", alignItems: "center", gap: "16px", color: "#64748b", fontSize: "14px", padding: "24px", textAlign: "center" },
 
   /* ── Form ────────────────────────────────────── */
   formCard: {
