@@ -48,6 +48,7 @@ const EMPTY_ITEM = { dente: "", procedimento: "", valor: "", quantidade: "" };
 const EMPTY_FORM = {
   data: dataHojeISO(),
   descricao: "",
+  desconto: 0,
   itens: [],
 };
 
@@ -237,6 +238,7 @@ function AbaOrcamentos({ pacienteId }) {
     setFormData({
       data: item.data || dataHojeISO(),
       descricao: item.descricao || "",
+      desconto: Number(item.desconto) || 0,
       itens:
         item.itens && item.itens.length > 0
           ? item.itens.map((i) => ({
@@ -309,6 +311,7 @@ function AbaOrcamentos({ pacienteId }) {
         paciente_id: Number(pacienteId),
         data: formData.data,
         descricao: formData.descricao || "",
+        desconto: Math.min(totalForm, Math.max(0, Number(formData.desconto) || 0)),
         itens: itensValidos.map((i) => ({
           dente: i.dente || "",
           procedimento: i.procedimento,
@@ -386,7 +389,8 @@ function AbaOrcamentos({ pacienteId }) {
 
   /* ── Totais ──────────────────────────────── */
   const totalForm = calcularTotalItens(formData.itens);
-  const totalFinalForm = totalForm;
+  const descontoForm = Math.min(totalForm, Math.max(0, Number(formData.desconto) || 0));
+  const totalFinalForm = Math.max(0, totalForm - descontoForm);
 
   /* ═══════════════════════════════════════════
      RENDER — LISTA
@@ -741,12 +745,20 @@ function AbaOrcamentos({ pacienteId }) {
                 <button type="button" onClick={() => removerItem(idx)} style={S.removeItemBtn} title="Remover procedimento">{Icons.close}</button>
               </div>)}
             </div>}
-            {/* Totais */}
+            {/* Totais e desconto */}
             <div style={S.totaisBox}>
               <div style={S.totaisRow}>
                 <span style={S.totaisLabel}>Subtotal</span>
                 <span style={S.totaisValue}>{formatarMoeda(totalForm)}</span>
               </div>
+              <div style={{ ...S.totaisRow, alignItems: "center", padding: "10px 0" }}>
+                <label htmlFor="orcamento-desconto" style={S.totaisLabel}>Desconto (R$)</label>
+                <input id="orcamento-desconto" type="number" min="0" max={totalForm} step="0.01" value={formData.desconto} onChange={(e) => setFormData((p) => ({ ...p, desconto: e.target.value }))} placeholder="0,00" style={{ ...S.input, maxWidth: "140px", textAlign: "right" }} />
+              </div>
+              {descontoForm > 0 && <div style={S.totaisRow}>
+                <span style={S.totaisLabel}>Desconto aplicado</span>
+                <span style={{ ...S.totaisValue, color: "#15803d" }}>- {formatarMoeda(descontoForm)}</span>
+              </div>}
               <div style={{ ...S.totaisRow, borderTop: "2px solid #e2e8f0", paddingTop: "12px" }}>
                 <span style={{ ...S.totaisLabel, fontSize: "15px", fontWeight: "700", color: "#0f172a" }}>Total</span>
                 <span style={{ ...S.totaisValue, fontSize: "18px", fontWeight: "700", color: "#2563eb" }}>
