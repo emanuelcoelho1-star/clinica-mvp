@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import RbacSubTabs from "./configuracoes/RbacSubTabs";
 import RbacUsuarios from "./configuracoes/RbacUsuarios";
 import RbacRoles from "./configuracoes/RbacRoles";
@@ -84,6 +84,7 @@ function InfoItem({ label, value, icon }) {
 /* ═══════════════════════════════════════════════════════════ */
 function Configuracoes({ administrador = false }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [usuario, setUsuario] = useState({ nome: "", email: "" });
   const [senhaAtual, setSenhaAtual] = useState("");
   const [novaSenha, setNovaSenha] = useState("");
@@ -94,7 +95,7 @@ function Configuracoes({ administrador = false }) {
   const [erroPerfil, setErroPerfil] = useState("");
   const [salvando, setSalvando] = useState(false);
   const [salvandoSenha, setSalvandoSenha] = useState(false);
-  const [abaAtiva, setAbaAtiva] = useState("perfil");
+  const [abaAtiva, setAbaAtiva] = useState(() => new URLSearchParams(location.search).get("aba") === "planos" ? "planos" : "perfil");
   const [hoveredTab, setHoveredTab] = useState(null);
 
   /* ── RBAC state ──────────────────────────────── */
