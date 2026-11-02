@@ -888,6 +888,7 @@ function AbaOrcamentos({ pacienteId }) {
         </form>
           </div>
         </div>
+      </div>
     );
   }
 
@@ -1797,5 +1798,3 @@ const S = {
     borderColor: "#fca5a5",
   },
 };
-
-export default AbaOrcamentos;
