@@ -442,7 +442,7 @@ function Layout() {
             <Route path="/pacientes/editar/:id" element={<RotaComPermissao acesso={acesso} modulo="pacientes"><CadastroPaciente /></RotaComPermissao>} />
             <Route path="/pacientes/:id" element={<RotaComPermissao acesso={acesso} modulo="pacientes"><ProntuarioPaciente /></RotaComPermissao>} />
             <Route path="/financeiro" element={<RotaComPermissao acesso={acesso} modulo="financeiro"><Financeiro /></RotaComPermissao>} />
-            <Route path="/configuracoes" element={<Configuracoes administrador={Boolean(acesso?.administrador)} />} />
+            <Route path="/configuracoes" element={<Configuracoes administrador={Boolean(acesso?.administrador)} permissoesAcesso={acesso?.permissoes || []} />} />
             <Route path="/cadastro-clinica" element={<CadastroClinica />} />
           </Routes>
         </div>
