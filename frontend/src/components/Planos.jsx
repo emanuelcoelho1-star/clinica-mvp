@@ -419,7 +419,7 @@ function Planos() {
                             <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "520px" }}>
                             <thead><tr style={{ background: "#f8fafc" }}>
                               <th style={thStyle}>Procedimento</th>
-                              <th style={{ ...thStyle, width: "105px" }}>Aceita faces</th>
+                              <th style={{ ...thStyle, width: "105px", textAlign: "center" }}>Aceita faces</th>
                               <th style={{ ...thStyle, width: "150px" }}>Valor neste plano</th>
                               <th style={{ ...thStyle, width: "125px" }}>Custo do tratamento</th>
                               <th style={{ ...thStyle, width: "90px" }}>Usar</th>
@@ -434,7 +434,7 @@ function Planos() {
                                     <strong style={{ display: "block", color: "#334155", fontSize: "13px", fontWeight: 600 }}>{item.nome}</strong>
                                     {item.codigo && <span style={{ display: "block", color: "#94a3b8", fontSize: "11px", marginTop: "3px" }}>Código: {item.codigo}</span>}
                                   </td>
-                                  <td style={tdStyle}>
+                                  <td style={{ ...tdStyle, textAlign: "center" }}>
                                     <button type="button" role="switch" aria-checked={!!item.aceita_faces} aria-label={`Aceita faces para ${item.nome}`} disabled={salvando} onClick={async () => {
                                       const novoValor = !item.aceita_faces;
                                       setSalvando(true);
@@ -443,7 +443,7 @@ function Planos() {
                                         setProcedimentos((atuais) => atuais.map((p) => p.id === item.id ? { ...p, aceita_faces: novoValor ? 1 : 0 } : p));
                                       } catch (error) { setErro(error.message); }
                                       finally { setSalvando(false); }
-                                    }} style={{ width: "42px", height: "24px", padding: "3px", border: "none", borderRadius: "20px", background: item.aceita_faces ? "#2563eb" : "#cbd5e1", cursor: salvando ? "wait" : "pointer", display: "flex", alignItems: "center", justifyContent: item.aceita_faces ? "flex-end" : "flex-start" }}>
+                                    }} style={{ width: "42px", height: "24px", padding: "3px", border: "none", borderRadius: "20px", background: item.aceita_faces ? "#2563eb" : "#cbd5e1", cursor: salvando ? "wait" : "pointer", display: "flex", alignItems: "center", justifyContent: item.aceita_faces ? "flex-end" : "flex-start", margin: "0 auto" }}>
                                       <span style={{ width: "18px", height: "18px", borderRadius: "50%", background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,.2)" }} />
                                     </button>
                                   </td>
