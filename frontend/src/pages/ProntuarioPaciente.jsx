@@ -287,6 +287,15 @@ function ProntuarioPaciente() {
     { label: "Telefone", value: paciente?.responsavel_telefone },
   ];
 
+  const anamneseInicial = paciente?.anamnese_inicial || null;
+  const dadosHistoricoClinico = [
+    { label: "História médica", value: anamneseInicial?.historia_medica },
+    { label: "Cirurgias anteriores", value: anamneseInicial?.cirurgias_anteriores },
+    { label: "Doenças crônicas", value: anamneseInicial?.doencas_cronicas },
+    { label: "Hábitos", value: anamneseInicial?.habitos },
+    { label: "Histórico familiar", value: anamneseInicial?.historico_familiar },
+  ];
+
   /* ── Loading ────────────────────────────────────────────── */
   if (carregando) {
     return (
@@ -451,6 +460,8 @@ function ProntuarioPaciente() {
             <InfoCard title="Dados principais" icon={Icons.user} items={dadosPrincipais} />
             <InfoCard title="Endereço" icon={Icons.mapPin} items={dadosEndereco} />
             <InfoCard title="Responsável" icon={Icons.users} items={dadosResponsavel} />
+            <InfoCard title="Alergias a medicamentos" icon={Icons.fileText} items={[{ label: "Alergias registradas na primeira anamnese", value: anamneseInicial?.alergias }]} />
+            <InfoCard title="Histórico clínico" icon={Icons.fileText} items={dadosHistoricoClinico} />
 
             {/* Observações */}
             <div style={s.card}>
