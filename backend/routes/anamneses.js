@@ -15,7 +15,7 @@ router.get("/paciente/:paciente_id", auth, (req, res) => {
   const { paciente_id } = req.params;
 
   db.all(
-    "SELECT * FROM anamneses WHERE paciente_id = ? AND clinica_id = ? ORDER BY data DESC, id DESC",
+    "SELECT a.*, (SELECT COUNT(*) FROM anamneses anterior WHERE anterior.paciente_id = a.paciente_id AND anterior.clinica_id = a.clinica_id AND anterior.id <= a.id) AS numero_paciente FROM anamneses a WHERE a.paciente_id = ? AND a.clinica_id = ? ORDER BY a.data DESC, a.id DESC",
     [paciente_id, req.user.clinica_id],
     (err, rows) => {
       if (err) {
