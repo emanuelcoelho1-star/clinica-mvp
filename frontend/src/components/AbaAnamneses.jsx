@@ -388,7 +388,7 @@ function AbaAnamneses({ pacienteId }) {
                       {Icons.clipboard}
                     </div>
                     <div style={S.documentRowInfo}>
-                      <span style={S.documentRowTitle}>Anamnese #{a.id}</span>
+                      <span style={S.documentRowTitle}>Anamnese #{a.numero_paciente}</span>
                       <div style={S.documentRowMeta}>
                         <span>Anamnese clínica</span>
                         <span style={S.documentMetaDot}>•</span>
@@ -429,7 +429,7 @@ function AbaAnamneses({ pacienteId }) {
           <div style={S.overlay} onClick={() => setConfirmarExclusao(null)}>
             <div style={S.modal} onClick={(e) => e.stopPropagation()}>
               <div style={S.modalIconWrap}>{Icons.alertTriangle}</div>
-              <h3 style={S.confirmTitle}>Excluir anamnese #{confirmarExclusao.id}?</h3>
+              <h3 style={S.confirmTitle}>Excluir anamnese #{confirmarExclusao.numero_paciente}?</h3>
               <p style={S.confirmText}>Esta ação é irreversível. Todos os dados desta anamnese serão permanentemente removidos.</p>
               <div style={S.modalActions}>
                 <button
@@ -596,7 +596,7 @@ function AbaAnamneses({ pacienteId }) {
 
         <div style={S.detailsModalHeader}>
           <div>
-            <h2 style={S.title}>Anamnese #{detalhes.id}</h2>
+            <h2 style={S.title}>Anamnese #{detalhes.numero_paciente}</h2>
             <p style={S.subtitle}>Registrada em {formatarDataBR(detalhes.data)}</p>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -657,7 +657,7 @@ function AbaAnamneses({ pacienteId }) {
           <div style={S.overlay} onClick={() => setConfirmarExclusao(null)}>
             <div style={S.modal} onClick={(e) => e.stopPropagation()}>
               <div style={S.modalIconWrap}>{Icons.alertTriangle}</div>
-              <h3 style={S.confirmTitle}>Excluir anamnese #{confirmarExclusao.id}?</h3>
+              <h3 style={S.confirmTitle}>Excluir anamnese #{confirmarExclusao.numero_paciente}?</h3>
               <p style={S.confirmText}>Esta ação é irreversível. Todos os dados desta anamnese serão permanentemente removidos.</p>
               <div style={S.modalActions}>
                 <button
