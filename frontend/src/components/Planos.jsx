@@ -286,6 +286,30 @@ function Planos() {
         </div>
       )}
 
+      {mostrarFormProcedimento && (
+        <div
+          onMouseDown={(evento) => { if (evento.target === evento.currentTarget && !salvando) setMostrarFormProcedimento(false); }}
+          style={{ position: "fixed", inset: 0, zIndex: 1100, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px", background: "rgba(15, 23, 42, .55)", backdropFilter: "blur(3px)" }}
+        >
+          <form onSubmit={criarProcedimento} role="dialog" aria-modal="true" aria-labelledby="titulo-modal-procedimento" style={{ width: "100%", maxWidth: "460px", background: "#fff", border: "1px solid #e2e8f0", borderRadius: "15px", padding: "22px", boxShadow: "0 20px 60px rgba(15, 23, 42, .22)", display: "flex", flexDirection: "column", gap: "15px" }}>
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
+              <div>
+                <h3 id="titulo-modal-procedimento" style={{ margin: 0, color: "#0f172a", fontSize: "17px", fontWeight: 700 }}>Novo procedimento</h3>
+                <p style={{ margin: "5px 0 0", color: "#64748b", fontSize: "12px" }}>Cadastre um procedimento em {categoriaProcedimento}.</p>
+              </div>
+              <button type="button" aria-label="Fechar" disabled={salvando} onClick={() => setMostrarFormProcedimento(false)} style={{ border: "none", background: "transparent", color: "#64748b", cursor: "pointer", fontSize: "22px", lineHeight: 1 }}>×</button>
+            </div>
+            <label style={labelStyle}>Nome do procedimento<input autoFocus style={campo} value={nomeProcedimento} onChange={(e) => setNomeProcedimento(e.target.value)} placeholder="Ex.: Restauração em resina" required /></label>
+            <label style={labelStyle}>Código (opcional)<input style={campo} value={codigoProcedimento} onChange={(e) => setCodigoProcedimento(e.target.value)} placeholder="Código do procedimento" /></label>
+            <div style={{ padding: "10px 12px", borderRadius: "9px", background: "#f8fafc", color: "#64748b", fontSize: "12px" }}>Especialidade: <strong style={{ color: "#334155" }}>{categoriaProcedimento}</strong></div>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", paddingTop: "4px" }}>
+              <button type="button" style={botaoSecundario} disabled={salvando} onClick={() => setMostrarFormProcedimento(false)}>Cancelar</button>
+              <button type="submit" style={botaoPrimario} disabled={salvando}>{salvando ? "Salvando..." : "Adicionar procedimento"}</button>
+            </div>
+          </form>
+        </div>
+      )}
+
       <div style={{ display: "grid", gridTemplateColumns: "minmax(220px, 0.75fr) minmax(0, 2fr)", gap: "18px", alignItems: "start" }}>
         <section style={cardStyle}>
           <div style={{ padding: "17px 18px", borderBottom: "1px solid #f1f5f9" }}>
@@ -348,24 +372,13 @@ function Planos() {
                             setCategoriaProcedimento(especialidade);
                             setNomeProcedimento("");
                             setCodigoProcedimento("");
-                            setMostrarFormProcedimento((aberto) => categoriaProcedimento === especialidade ? !aberto : true);
-                            setEspecialidadeAberta(especialidade);
+                            setMostrarFormProcedimento(true);
+                            setErro("");
                           }}>+ Novo procedimento</button>
                         )}
                       </div>
                       {aberta && (
                         <div style={{ borderTop: "1px solid #f1f5f9" }}>
-                          {mostrarFormProcedimento && categoriaProcedimento === especialidade && (
-                            <form onSubmit={criarProcedimento} style={{ margin: "0 14px 14px", padding: "14px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "10px", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "9px" }}>
-                              <input autoFocus style={campo} value={nomeProcedimento} onChange={(e) => setNomeProcedimento(e.target.value)} placeholder="Nome do procedimento" required />
-                              <input style={campo} value={codigoProcedimento} onChange={(e) => setCodigoProcedimento(e.target.value)} placeholder="Código (opcional)" />
-                              <div style={{ display: "flex", alignItems: "center", color: "#64748b", fontSize: "12px" }}>Especialidade: <strong style={{ marginLeft: "4px", color: "#334155" }}>{especialidade}</strong></div>
-                              <div style={{ display: "flex", gap: "7px", gridColumn: "1 / -1" }}>
-                                <button type="submit" style={botaoPrimario} disabled={salvando}>{salvando ? "Salvando..." : "Adicionar ao catálogo"}</button>
-                                <button type="button" style={botaoSecundario} onClick={() => setMostrarFormProcedimento(false)}>Cancelar</button>
-                              </div>
-                            </form>
-                          )}
                           <div style={{ overflowX: "auto" }}>
                             <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "440px" }}>
                             <thead><tr style={{ background: "#f8fafc" }}>
