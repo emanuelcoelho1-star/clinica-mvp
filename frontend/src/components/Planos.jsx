@@ -210,15 +210,27 @@ function Planos() {
       {mensagem && <div style={{ padding: "11px 14px", borderRadius: "9px", background: "#f0fdf4", border: "1px solid #dcfce7", color: "#15803d", fontSize: "13px" }}>{mensagem}</div>}
 
       {mostrarFormPlano && (
-        <form onSubmit={criarPlano} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: "13px", padding: "20px", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: "13px" }}>
-          <label style={labelStyle}>Nome do plano<input style={campo} value={nomePlano} onChange={(e) => setNomePlano(e.target.value)} placeholder="Ex.: Convênio Hapvida" required maxLength={120} /></label>
-          <label style={labelStyle}>Tipo<select style={campo} value={tipoPlano} onChange={(e) => setTipoPlano(e.target.value)}>{TIPOS.map((tipo) => <option key={tipo.value} value={tipo.value}>{tipo.label}</option>)}</select></label>
-          <label style={{ ...labelStyle, gridColumn: "1 / -1" }}>Descrição (opcional)<input style={campo} value={descricaoPlano} onChange={(e) => setDescricaoPlano(e.target.value)} placeholder="Informações sobre o plano" /></label>
-          <div style={{ display: "flex", gap: "8px", gridColumn: "1 / -1" }}>
-            <button type="submit" style={botaoPrimario} disabled={salvando}>{salvando ? "Salvando..." : "Criar plano"}</button>
-            <button type="button" style={botaoSecundario} onClick={() => setMostrarFormPlano(false)}>Cancelar</button>
-          </div>
-        </form>
+        <div
+          onMouseDown={(evento) => { if (evento.target === evento.currentTarget && !salvando) setMostrarFormPlano(false); }}
+          style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px", background: "rgba(15, 23, 42, .55)", backdropFilter: "blur(3px)" }}
+        >
+          <form onSubmit={criarPlano} role="dialog" aria-modal="true" aria-labelledby="titulo-modal-plano" style={{ width: "100%", maxWidth: "480px", background: "#fff", border: "1px solid #e2e8f0", borderRadius: "15px", padding: "22px", boxShadow: "0 20px 60px rgba(15, 23, 42, .22)", display: "flex", flexDirection: "column", gap: "16px" }}>
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
+              <div>
+                <h3 id="titulo-modal-plano" style={{ margin: 0, color: "#0f172a", fontSize: "17px", fontWeight: 700 }}>Criar novo plano</h3>
+                <p style={{ margin: "5px 0 0", color: "#64748b", fontSize: "12px" }}>Informe os dados para cadastrar uma nova tabela de preços.</p>
+              </div>
+              <button type="button" aria-label="Fechar" disabled={salvando} onClick={() => setMostrarFormPlano(false)} style={{ border: "none", background: "transparent", color: "#64748b", cursor: "pointer", fontSize: "22px", lineHeight: 1 }}>×</button>
+            </div>
+            <label style={labelStyle}>Nome do plano<input autoFocus style={campo} value={nomePlano} onChange={(e) => setNomePlano(e.target.value)} placeholder="Ex.: Convênio Hapvida" required maxLength={120} /></label>
+            <label style={labelStyle}>Tipo<select style={campo} value={tipoPlano} onChange={(e) => setTipoPlano(e.target.value)}>{TIPOS.map((tipo) => <option key={tipo.value} value={tipo.value}>{tipo.label}</option>)}</select></label>
+            <label style={labelStyle}>Descrição (opcional)<input style={campo} value={descricaoPlano} onChange={(e) => setDescricaoPlano(e.target.value)} placeholder="Informações sobre o plano" /></label>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", paddingTop: "5px" }}>
+              <button type="button" style={botaoSecundario} disabled={salvando} onClick={() => setMostrarFormPlano(false)}>Cancelar</button>
+              <button type="submit" style={botaoPrimario} disabled={salvando}>{salvando ? "Salvando..." : "Criar plano"}</button>
+            </div>
+          </form>
+        </div>
       )}
 
       <div style={{ display: "grid", gridTemplateColumns: "minmax(220px, 0.75fr) minmax(0, 2fr)", gap: "18px", alignItems: "start" }}>
