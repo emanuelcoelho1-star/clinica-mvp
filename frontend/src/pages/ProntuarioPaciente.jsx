@@ -541,73 +541,6 @@ function ProntuarioPaciente() {
       {/* ── Tab: Visão geral ─────────────────────────────── */}
       {abaAtiva === "visao-geral" && (
         <>
-          {/* ── CONSULTAS DO PACIENTE ───────────────────── */}
-          <section style={s.consultasSection}>
-            <div style={s.sectionHeading}>
-              <div><h2 style={s.sectionTitle}>Consultas</h2></div>
-            </div>
-            <div style={s.consultasGrid}>
-              <div style={s.consultasCard}>
-                <div style={s.consultasCardHeader}>
-                  <div>
-                    <h3 style={s.consultasCardTitle}>Consultas realizadas</h3>
-                    <span style={s.consultasCount}>{consultasRealizadas.length} registro{consultasRealizadas.length !== 1 ? "s" : ""}</span>
-                  </div>
-                  <span style={s.consultaIcon}>✓</span>
-                </div>
-                {carregandoConsultas ? (
-                  <p style={s.consultasEmpty}>Carregando consultas...</p>
-                ) : consultasRealizadas.length === 0 ? (
-                  <p style={s.consultasEmpty}>Nenhuma consulta realizada registrada.</p>
-                ) : (
-                  <ul style={s.consultasList}>
-                    {consultasRealizadas.map((consulta) => (
-                      <li key={consulta.id} style={s.consultaRow}>
-                        <div style={s.consultaDate}>
-                          <strong>{formatarDataConsulta(consulta.data)}</strong>
-                          <span>{(consulta.horario || "").slice(0, 5)}</span>
-                        </div>
-                        <div style={s.consultaInfo}>
-                          <strong>{consulta.procedimento || "Consulta"}</strong>
-                          <span>Realizada</span>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-              <div style={s.consultasCard}>
-                <div style={s.consultasCardHeader}>
-                  <div>
-                    <h3 style={s.consultasCardTitle}>Próximas consultas</h3>
-                    <span style={s.consultasCount}>{consultasFuturas.length} agendada{consultasFuturas.length !== 1 ? "s" : ""}</span>
-                  </div>
-                  <span style={s.consultaIconFuture}>◷</span>
-                </div>
-                {carregandoConsultas ? (
-                  <p style={s.consultasEmpty}>Carregando consultas...</p>
-                ) : consultasFuturas.length === 0 ? (
-                  <p style={s.consultasEmpty}>Não há consultas futuras agendadas.</p>
-                ) : (
-                  <ul style={s.consultasList}>
-                    {consultasFuturas.map((consulta) => (
-                      <li key={consulta.id} style={s.consultaRow}>
-                        <div style={s.consultaDateFuture}>
-                          <strong>{formatarDataConsulta(consulta.data)}</strong>
-                          <span>{(consulta.horario || "").slice(0, 5)}</span>
-                        </div>
-                        <div style={s.consultaInfo}>
-                          <strong>{consulta.procedimento || "Consulta"}</strong>
-                          <span>Agendada</span>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </div>
-          </section>
-
           <section style={s.overviewSection}>
             <div style={s.sectionHeading}>
               <div>
@@ -675,6 +608,70 @@ function ProntuarioPaciente() {
                 </div>
               )}
             </div>
+            </div>
+          </section>
+
+          {/* ── CONSULTAS DO PACIENTE ───────────────────── */}
+          <section style={s.consultasSection}>
+<div style={{ ...s.consultasGrid, gridTemplateColumns: "1fr" }}>
+              <div style={s.consultasCard}>
+                <div style={s.consultasCardHeader}>
+                  <div>
+                    <h3 style={s.consultasCardTitle}>Consultas realizadas</h3>
+                    <span style={s.consultasCount}>{consultasRealizadas.length} registro{consultasRealizadas.length !== 1 ? "s" : ""}</span>
+                  </div>
+                  <span style={s.consultaIcon}>✓</span>
+                </div>
+                {carregandoConsultas ? (
+                  <p style={s.consultasEmpty}>Carregando consultas...</p>
+                ) : consultasRealizadas.length === 0 ? (
+                  <p style={s.consultasEmpty}>Nenhuma consulta realizada registrada.</p>
+                ) : (
+                  <ul style={s.consultasList}>
+                    {consultasRealizadas.map((consulta) => (
+                      <li key={consulta.id} style={s.consultaRow}>
+                        <div style={s.consultaDate}>
+                          <strong>{formatarDataConsulta(consulta.data)}</strong>
+                          <span>{(consulta.horario || "").slice(0, 5)}</span>
+                        </div>
+                        <div style={s.consultaInfo}>
+                          <strong>{consulta.procedimento || "Consulta"}</strong>
+                          <span>Realizada</span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div style={s.consultasCard}>
+                <div style={s.consultasCardHeader}>
+                  <div>
+                    <h3 style={s.consultasCardTitle}>Próximas consultas</h3>
+                    <span style={s.consultasCount}>{consultasFuturas.length} agendada{consultasFuturas.length !== 1 ? "s" : ""}</span>
+                  </div>
+                  <span style={s.consultaIconFuture}>◷</span>
+                </div>
+                {carregandoConsultas ? (
+                  <p style={s.consultasEmpty}>Carregando consultas...</p>
+                ) : consultasFuturas.length === 0 ? (
+                  <p style={s.consultasEmpty}>Não há consultas futuras agendadas.</p>
+                ) : (
+                  <ul style={s.consultasList}>
+                    {consultasFuturas.map((consulta) => (
+                      <li key={consulta.id} style={s.consultaRow}>
+                        <div style={s.consultaDateFuture}>
+                          <strong>{formatarDataConsulta(consulta.data)}</strong>
+                          <span>{(consulta.horario || "").slice(0, 5)}</span>
+                        </div>
+                        <div style={s.consultaInfo}>
+                          <strong>{consulta.procedimento || "Consulta"}</strong>
+                          <span>Agendada</span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
           </section>
 
