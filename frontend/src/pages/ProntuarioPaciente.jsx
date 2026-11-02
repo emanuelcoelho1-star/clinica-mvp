@@ -216,6 +216,11 @@ function ProntuarioPaciente() {
   const [hoveredTab, setHoveredTab] = useState(null);
   const [consultasPaciente, setConsultasPaciente] = useState([]);
   const [carregandoConsultas, setCarregandoConsultas] = useState(true);
+  const [editandoObservacoes, setEditandoObservacoes] = useState(false);
+  const [textoObservacoes, setTextoObservacoes] = useState("");
+  const [salvandoObservacoes, setSalvandoObservacoes] = useState(false);
+  const [erroObservacoes, setErroObservacoes] = useState("");
+
 
   useEffect(() => {
     const carregarDados = async () => {
@@ -265,6 +270,29 @@ function ProntuarioPaciente() {
     carregarConsultasPaciente();
     return () => { ativo = false; };
   }, [id]);
+
+  const salvarObservacoes = async () => {
+    setSalvandoObservacoes(true);
+    setErroObservacoes("");
+    try {
+      const resposta = await fetch(`${API_URL}/pacientes/${id}/observacoes`, {
+        method: "PATCH",
+        headers: {
+          Authorization: localStorage.getItem("token"),
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ observacoes: textoObservacoes }),
+      });
+      const dados = await resposta.json().catch(() => ({}));
+      if (!resposta.ok) throw new Error(dados.erro || "Não foi possível salvar as observações.");
+      setPaciente((atual) => ({ ...atual, observacoes: textoObservacoes }));
+      setEditandoObservacoes(false);
+    } catch (erro) {
+      setErroObservacoes(erro.message || "Não foi possível salvar as observações.");
+    } finally {
+      setSalvandoObservacoes(false);
+    }
+  };
 
   const idadePaciente = useMemo(() => calcularIdade(paciente?.data_nascimento), [paciente?.data_nascimento]);
   const dataResponsavelFormatada = useMemo(() => formatarData(paciente?.responsavel_data_nascimento), [paciente?.responsavel_data_nascimento]);
@@ -598,12 +626,43 @@ function ProntuarioPaciente() {
                   <span style={s.cardIcon}>{Icons.fileText}</span>
                   <h2 style={s.cardTitle}>Observações</h2>
                 </div>
-              </div>
-              <div style={s.obsBox}>
-                {paciente.observacoes || (
-                  <span style={s.obsEmpty}>Nenhuma observação cadastrada.</span>
+                {!editandoObservacoes && (
+                  <button
+                    type="button"
+                    style={s.obsActionBtn}
+                    onClick={() => {
+                      setTextoObservacoes(paciente.observacoes || "");
+                      setErroObservacoes("");
+                      setEditandoObservacoes(true);
+                    }}
+                  >
+                    {Icons.edit}
+                    <span>{paciente.observacoes ? "Editar" : "Adicionar observação"}</span>
+                  </button>
                 )}
               </div>
+              {editandoObservacoes ? (
+                <div style={s.obsEditor}>
+                  <textarea
+                    style={s.obsTextarea}
+                    value={textoObservacoes}
+                    onChange={(e) => setTextoObservacoes(e.target.value)}
+                    placeholder="Digite as observações sobre o paciente..."
+                    rows={5}
+                  />
+                  {erroObservacoes && <p style={s.obsError}>{erroObservacoes}</p>}
+                  <div style={s.obsEditorActions}>
+                    <button type="button" style={s.obsCancelBtn} disabled={salvandoObservacoes} onClick={() => setEditandoObservacoes(false)}>Cancelar</button>
+                    <button type="button" style={s.obsSaveBtn} disabled={salvandoObservacoes} onClick={salvarObservacoes}>{salvandoObservacoes ? "Salvando..." : "Salvar observações"}</button>
+                  </div>
+                </div>
+              ) : (
+                <div style={s.obsBox}>
+                  {paciente.observacoes || (
+                    <span style={s.obsEmpty}>Nenhuma observação cadastrada.</span>
+                  )}
+                </div>
+              )}
             </div>
             </div>
           </section>
@@ -878,6 +937,13 @@ const s = {
     borderLeft: "3px solid #e2e8f0",
   },
   obsEmpty: { color: "#c1c9d4", fontStyle: "italic" },
+  obsActionBtn: { display: "inline-flex", alignItems: "center", gap: "7px", padding: "7px 11px", border: "1px solid #dbeafe", borderRadius: "8px", background: "#eff6ff", color: "#2563eb", fontSize: "12px", fontWeight: "600", cursor: "pointer" },
+  obsEditor: { display: "flex", flexDirection: "column", gap: "10px" },
+  obsTextarea: { width: "100%", boxSizing: "border-box", resize: "vertical", minHeight: "120px", padding: "12px 14px", border: "1px solid #dbe3ed", borderRadius: "10px", outline: "none", background: "#fff", color: "#1e293b", font: "inherit", fontSize: "13px", lineHeight: 1.6 },
+  obsEditorActions: { display: "flex", justifyContent: "flex-end", gap: "8px" },
+  obsCancelBtn: { padding: "8px 13px", border: "1px solid #e2e8f0", borderRadius: "8px", background: "#fff", color: "#64748b", fontSize: "12px", fontWeight: "600", cursor: "pointer" },
+  obsSaveBtn: { padding: "8px 14px", border: "1px solid #2563eb", borderRadius: "8px", background: "#2563eb", color: "#fff", fontSize: "12px", fontWeight: "600", cursor: "pointer" },
+  obsError: { margin: 0, color: "#dc2626", fontSize: "12px" },
 
   /* ── Consultas do paciente ───────────────────────── */
   consultasSection: { display: "flex", flexDirection: "column", gap: "14px" },
