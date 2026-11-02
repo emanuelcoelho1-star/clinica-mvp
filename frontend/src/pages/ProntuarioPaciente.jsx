@@ -206,6 +206,15 @@ function InfoCard({ title, icon, items, style }) {
 }
 
 
+function obterListaObservacoes(valor) {
+  if (!valor) return [];
+  try {
+    const parsed = JSON.parse(valor);
+    if (Array.isArray(parsed)) return parsed.filter((item) => typeof item === "string" && item.trim());
+  } catch {}
+  return [valor].filter((item) => typeof item === "string" && item.trim());
+}
+
 /* ── Componente Principal ────────────────────────────────── */
 function ProntuarioPaciente() {
   const navigate = useNavigate();
@@ -274,26 +283,39 @@ function ProntuarioPaciente() {
   }, [id]);
 
   const salvarObservacoes = async () => {
+    const listaAtual = obterListaObservacoes(paciente?.observacoes);
+    const novaLista = [...listaAtual, textoObservacoes.trim()].filter(Boolean);
+    await persistirObservacoes(novaLista);
+  };
+
+  const persistirObservacoes = async (lista) => {
     setSalvandoObservacoes(true);
     setErroObservacoes("");
     try {
+      const valor = JSON.stringify(lista);
       const resposta = await fetch(`${API_URL}/pacientes/${id}/observacoes`, {
         method: "PATCH",
         headers: {
           Authorization: localStorage.getItem("token"),
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ observacoes: textoObservacoes }),
+        body: JSON.stringify({ observacoes: valor }),
       });
       const dados = await resposta.json().catch(() => ({}));
       if (!resposta.ok) throw new Error(dados.erro || "Não foi possível salvar as observações.");
-      setPaciente((atual) => ({ ...atual, observacoes: textoObservacoes }));
+      setPaciente((atual) => ({ ...atual, observacoes: valor }));
       setEditandoObservacoes(false);
+      setTextoObservacoes("");
     } catch (erro) {
       setErroObservacoes(erro.message || "Não foi possível salvar as observações.");
     } finally {
       setSalvandoObservacoes(false);
     }
+  };
+
+  const excluirObservacao = async (indice) => {
+    const listaAtual = obterListaObservacoes(paciente?.observacoes);
+    await persistirObservacoes(listaAtual.filter((_, i) => i !== indice));
   };
 
   const idadePaciente = useMemo(() => calcularIdade(paciente?.data_nascimento), [paciente?.data_nascimento]);
@@ -625,33 +647,46 @@ function ProntuarioPaciente() {
                   <span style={s.cardIcon}>{Icons.fileText}</span>
                   <h2 style={s.cardTitle}>Observações</h2>
                 </div>
-                {!editandoObservacoes && (
-                  <button
-                    type="button"
-                    style={s.obsActionBtn}
-                    onClick={() => {
-                      setTextoObservacoes(paciente.observacoes || "");
-                      setErroObservacoes("");
-                      setEditandoObservacoes(true);
-                    }}
-                  >
-                    {Icons.edit}
-                    <span>{paciente.observacoes ? "Editar" : "Adicionar observação"}</span>
-                  </button>
-                )}
+                <button
+                  type="button"
+                  style={s.obsActionBtn}
+                  onClick={() => {
+                    setTextoObservacoes("");
+                    setErroObservacoes("");
+                    setEditandoObservacoes(true);
+                  }}
+                >
+                  {Icons.edit}
+                  <span>Adicionar observação</span>
+                </button>
               </div>
-              <div style={s.obsBox}>
-                {paciente.observacoes || (
-                  <span style={s.obsEmpty}>Nenhuma observação cadastrada.</span>
-                )}
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                {obterListaObservacoes(paciente.observacoes).length === 0 ? (
+                  <div style={s.obsBox}><span style={s.obsEmpty}>Nenhuma observação cadastrada.</span></div>
+                ) : obterListaObservacoes(paciente.observacoes).map((observacao, indice) => (
+                  <div key={indice} style={s.obsBox}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
+                      <span style={{ whiteSpace: "pre-wrap", flex: 1 }}>{observacao}</span>
+                      <button
+                        type="button"
+                        disabled={salvandoObservacoes}
+                        onClick={() => {
+                          if (window.confirm("Deseja excluir esta observação?")) excluirObservacao(indice);
+                        }}
+                        style={{ border: "0", background: "transparent", color: "#dc2626", cursor: "pointer", fontSize: "12px", fontWeight: 600, flexShrink: 0 }}
+                        aria-label="Excluir observação"
+                      >Excluir</button>
+                    </div>
+                  </div>
+                ))}
               </div>
               {editandoObservacoes && (
                 <div style={s.modalOverlay} onMouseDown={(e) => { if (e.target === e.currentTarget && !salvandoObservacoes) setEditandoObservacoes(false); }}>
                   <div style={s.obsModal} role="dialog" aria-modal="true" aria-labelledby="obs-modal-title">
                     <div style={s.obsModalHeader}>
                       <div>
-                        <h2 id="obs-modal-title" style={s.obsModalTitle}>{paciente.observacoes ? "Editar observações" : "Adicionar observação"}</h2>
-                        <p style={s.obsModalSubtitle}>Registre informações importantes sobre o paciente.</p>
+                        <h2 id="obs-modal-title" style={s.obsModalTitle}>Adicionar observação</h2>
+                        <p style={s.obsModalSubtitle}>Registre uma nova informação sobre o paciente.</p>
                       </div>
                       <button type="button" style={s.obsModalClose} disabled={salvandoObservacoes} onClick={() => setEditandoObservacoes(false)} aria-label="Fechar">×</button>
                     </div>
@@ -661,14 +696,14 @@ function ProntuarioPaciente() {
                         style={s.obsTextarea}
                         value={textoObservacoes}
                         onChange={(e) => setTextoObservacoes(e.target.value)}
-                        placeholder="Digite as observações sobre o paciente..."
+                        placeholder="Digite a observação..."
                         rows={7}
                       />
                       {erroObservacoes && <p style={s.obsError}>{erroObservacoes}</p>}
                     </div>
                     <div style={s.obsModalFooter}>
                       <button type="button" style={s.obsCancelBtn} disabled={salvandoObservacoes} onClick={() => setEditandoObservacoes(false)}>Cancelar</button>
-                      <button type="button" style={s.obsSaveBtn} disabled={salvandoObservacoes} onClick={salvarObservacoes}>{salvandoObservacoes ? "Salvando..." : "Salvar observações"}</button>
+                      <button type="button" style={s.obsSaveBtn} disabled={salvandoObservacoes || !textoObservacoes.trim()} onClick={salvarObservacoes}>{salvandoObservacoes ? "Salvando..." : "Salvar observação"}</button>
                     </div>
                   </div>
                 </div>
