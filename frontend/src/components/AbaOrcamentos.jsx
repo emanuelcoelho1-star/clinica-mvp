@@ -288,7 +288,7 @@ function AbaOrcamentos({ pacienteId, pacienteNome }) {
   const [excluindo, setExcluindo] = useState(false);
 
   const [hoveredCardId, setHoveredCardId] = useState(null);
-  const [orcamentoExpandidoId, setOrcamentoExpandidoId] = useState(null);
+  const [orcamentoTratamentosModal, setOrcamentoTratamentosModal] = useState(null);
   const [hoveredBtn, setHoveredBtn] = useState(null);
 
   /* ── Carregar ────────────────────────────── */
@@ -663,30 +663,16 @@ function AbaOrcamentos({ pacienteId, pacienteNome }) {
                         {o.status === "pendente" && (
                           <button
                             type="button"
-                            aria-label={orcamentoExpandidoId === o.id ? "Ocultar tratamentos do orçamento" : "Mostrar tratamentos do orçamento"}
-                            title={orcamentoExpandidoId === o.id ? "Ocultar tratamentos" : "Ver tratamentos do orçamento"}
-                            onClick={() => setOrcamentoExpandidoId((atual) => atual === o.id ? null : o.id)}
+                            aria-label="Ver tratamentos do orçamento"
+                            title="Ver tratamentos do orçamento"
+                            onClick={() => setOrcamentoTratamentosModal(o)}
                             style={S.treatmentsInfoButton}
                           >
                             !
                           </button>
                         )}
                       </div>
-                      {orcamentoExpandidoId === o.id && (
-                        <div style={S.treatmentsPopover}>
-                          <strong style={S.treatmentsPopoverTitle}>Tratamentos do orçamento</strong>
-                          {o.itens?.length ? (
-                            <ul style={S.treatmentsList}>
-                              {o.itens.map((item, indice) => (
-                                <li key={item.id || indice} style={S.treatmentsListItem}>
-                                  <span>{item.procedimento || "Procedimento sem nome"}</span>
-                                  {Number(item.quantidade) > 1 && <span style={S.treatmentQuantity}>Qtd.: {item.quantidade}</span>}
-                                </li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <span style={S.treatmentsEmpty}>Nenhum tratamento cadastrado neste orçamento.</span>
-                          )}
+
                         </div>
                       )}
                     </div>
@@ -728,6 +714,40 @@ function AbaOrcamentos({ pacienteId, pacienteNome }) {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* Modal de tratamentos do orçamento */}
+        {orcamentoTratamentosModal && (
+          <div style={S.overlay} onClick={() => setOrcamentoTratamentosModal(null)}>
+            <div style={S.treatmentsModal} onClick={(e) => e.stopPropagation()}>
+              <div style={S.treatmentsModalHeader}>
+                <div>
+                  <h3 style={S.treatmentsModalTitle}>Tratamentos do orçamento</h3>
+                  <p style={S.treatmentsModalSubtitle}>Orçamento #{orcamentoTratamentosModal.id}</p>
+                </div>
+                <button type="button" aria-label="Fechar modal" title="Fechar"
+                  style={S.treatmentsModalClose}
+                  onClick={() => setOrcamentoTratamentosModal(null)}>×</button>
+              </div>
+              {orcamentoTratamentosModal.itens?.length ? (
+                <div style={S.treatmentsModalList}>
+                  {orcamentoTratamentosModal.itens.map((item, indice) => (
+                    <div key={item.id || indice} style={S.treatmentsModalItem}>
+                      <span style={S.treatmentsModalItemName}>{item.procedimento || "Procedimento sem nome"}</span>
+                      {Number(item.quantidade) > 1 && (
+                        <span style={S.treatmentsModalQuantity}>Quantidade: {item.quantidade}</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={S.treatmentsModalEmpty}>Nenhum tratamento cadastrado neste orçamento.</div>
+              )}
+              <div style={S.treatmentsModalFooter}>
+                <button type="button" style={S.btnSecondary} onClick={() => setOrcamentoTratamentosModal(null)}>Fechar</button>
+              </div>
+            </div>
           </div>
         )}
 
@@ -1380,6 +1400,17 @@ const S = {
   documentRowTitle: { color: "#1e293b", fontSize: "13px", fontWeight: "600", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
   documentRowMeta: { display: "flex", alignItems: "center", flexWrap: "wrap", gap: "7px", color: "#94a3b8", fontSize: "11px" },
   documentMetaDot: { color: "#cbd5e1" },
+  treatmentsModal: { width: "100%", maxWidth: "560px", maxHeight: "80vh", overflowY: "auto", background: "#fff", borderRadius: "16px", padding: "24px", boxShadow: "0 24px 64px rgba(15,23,42,0.2)", animation: "orcamento-fade-in 0.2s ease", boxSizing: "border-box", textAlign: "left" },
+  treatmentsModalHeader: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "16px", paddingBottom: "16px", borderBottom: "1px solid #f1f5f9" },
+  treatmentsModalTitle: { margin: 0, color: "#0f172a", fontSize: "17px", fontWeight: "700" },
+  treatmentsModalSubtitle: { margin: "5px 0 0", color: "#94a3b8", fontSize: "12px" },
+  treatmentsModalClose: { width: "30px", height: "30px", border: "1px solid #e8edf3", borderRadius: "8px", background: "#fff", color: "#64748b", fontSize: "22px", lineHeight: 1, cursor: "pointer" },
+  treatmentsModalList: { display: "flex", flexDirection: "column", gap: "0", marginTop: "12px" },
+  treatmentsModalItem: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px", padding: "13px 4px", borderBottom: "1px solid #f1f5f9" },
+  treatmentsModalItemName: { color: "#334155", fontSize: "13px", fontWeight: "600" },
+  treatmentsModalQuantity: { color: "#94a3b8", fontSize: "12px", whiteSpace: "nowrap" },
+  treatmentsModalEmpty: { padding: "28px 12px", color: "#94a3b8", fontSize: "13px", textAlign: "center" },
+  treatmentsModalFooter: { display: "flex", justifyContent: "flex-end", marginTop: "18px" },
   treatmentsInfoButton: { width: "19px", height: "19px", padding: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", border: "1px solid #f59e0b", borderRadius: "50%", background: "#fffbeb", color: "#b45309", fontSize: "12px", fontWeight: "800", lineHeight: 1, cursor: "pointer" },
   treatmentsPopover: { display: "flex", flexDirection: "column", gap: "7px", marginTop: "7px", padding: "10px 12px", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: "8px", maxWidth: "560px" },
   treatmentsPopoverTitle: { color: "#92400e", fontSize: "11px", fontWeight: "700" },
