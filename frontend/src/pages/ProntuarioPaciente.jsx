@@ -468,10 +468,10 @@ function ProntuarioPaciente() {
               </div>
             </div>
             <div style={s.grid}>
-              <InfoCard title="Dados principais" icon={Icons.user} items={dadosPrincipais} style={s.cardWide} />
+              <InfoCard title="Dados principais" icon={Icons.user} items={dadosPrincipais} />
               <InfoCard title="Endereço" icon={Icons.mapPin} items={dadosEndereco} />
               {possuiResponsavel && <InfoCard title="Responsável" icon={Icons.users} items={dadosResponsavel} />}
-              <InfoCard title="Histórico clínico" icon={Icons.fileText} items={dadosHistoricoClinico} style={s.cardWide} />
+              <InfoCard title="Histórico clínico" icon={Icons.fileText} items={dadosHistoricoClinico} />
               <InfoCard title="Alergias a medicamentos" icon={Icons.fileText} items={[{ label: "Alergias registradas na primeira anamnese", value: anamneseInicial?.alergias }]} />
 
             {/* Observações */}
@@ -700,27 +700,19 @@ const s = {
   /* ── Grid ─────────────────────────────────────────── */
   grid: {
     display: "grid",
-    gridTemplateColumns: "repeat(12, minmax(0, 1fr))",
-    gap: "18px",
-    alignItems: "stretch",
+    gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))",
+    gap: "20px",
   },
-  cardWide: { gridColumn: "span 7" },
   cardFull: { gridColumn: "1 / -1" },
 
   /* ── Card ─────────────────────────────────────────── */
   card: {
-    minWidth: 0,
-    background: "#fff",
-    borderRadius: "14px",
-    border: "1px solid #e8edf4",
-    padding: "22px",
-    boxShadow: "0 2px 8px rgba(15, 23, 42, 0.035)",
+    background: "#fff", borderRadius: "16px",
+    border: "1px solid #f1f5f9", padding: "24px",
   },
   cardHeader: {
     display: "flex", alignItems: "center", justifyContent: "space-between",
-    marginBottom: "16px",
-    paddingBottom: "13px",
-    borderBottom: "1px solid #f1f5f9",
+    marginBottom: "18px",
   },
   cardTitleRow: { display: "flex", alignItems: "center", gap: "10px" },
   cardIcon: { display: "flex", color: "#94a3b8" },
@@ -732,16 +724,13 @@ const s = {
   /* ── Info Grid ────────────────────────────────────── */
   infoGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(155px, 1fr))",
-    columnGap: "18px",
-    rowGap: "16px",
+    gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+    gap: "2px", borderRadius: "12px", overflow: "hidden",
+    background: "#f1f5f9",
   },
   infoItem: {
-    display: "flex", flexDirection: "column", gap: "6px",
-    padding: "3px 0 10px",
-    borderBottom: "1px solid #f1f5f9",
-    background: "transparent",
-    minWidth: 0,
+    display: "flex", flexDirection: "column", gap: "4px",
+    padding: "14px 16px", background: "#fafbfc",
   },
   infoLabel: {
     fontSize: "11px", fontWeight: "600", color: "#94a3b8",
