@@ -1408,7 +1408,7 @@ const S = {
   treatmentsModalQuantity: { color: "#94a3b8", fontSize: "12px", whiteSpace: "nowrap" },
   treatmentsModalEmpty: { padding: "28px 12px", color: "#94a3b8", fontSize: "13px", textAlign: "center" },
   treatmentsModalFooter: { display: "flex", justifyContent: "flex-end", marginTop: "18px" },
-  treatmentsInfoButton: { width: "19px", height: "19px", padding: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", border: "1px solid #f59e0b", borderRadius: "50%", background: "#fffbeb", color: "#b45309", fontSize: "12px", fontWeight: "800", lineHeight: 1, cursor: "pointer" },
+  treatmentsInfoButton: { width: "19px", height: "19px", padding: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", border: "1px solid #60a5fa", borderRadius: "50%", background: "#eff6ff", color: "#2563eb", fontSize: "12px", fontWeight: "800", lineHeight: 1, cursor: "pointer" },
   treatmentsPopover: { display: "flex", flexDirection: "column", gap: "7px", marginTop: "7px", padding: "10px 12px", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: "8px", maxWidth: "560px" },
   treatmentsPopoverTitle: { color: "#92400e", fontSize: "11px", fontWeight: "700" },
   treatmentsList: { margin: 0, paddingLeft: "18px", display: "flex", flexDirection: "column", gap: "4px", color: "#78350f", fontSize: "12px" },
