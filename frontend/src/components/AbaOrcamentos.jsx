@@ -1798,3 +1798,5 @@ const S = {
     borderColor: "#fca5a5",
   },
 };
+
+export default AbaOrcamentos;
