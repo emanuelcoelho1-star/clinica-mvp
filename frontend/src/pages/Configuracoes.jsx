@@ -6,6 +6,7 @@ import RbacRoles from "./configuracoes/RbacRoles";
 import RbacPermissoes from "./configuracoes/RbacPermissoes";
 import { API } from "./configuracoes/rbacHelpers";
 import ClinicaForm from "../components/ClinicaForm";
+import Planos from "../components/Planos";
 
 /* ── Icons (mesmos SVGs do prontuário) ────────────────────── */
 const Icons = {
@@ -250,6 +251,7 @@ function Configuracoes({ administrador = false }) {
     { id: "perfil", label: "Perfil" },
     { id: "seguranca", label: "Segurança" },
     ...(administrador ? [{ id: "clinica", label: "Clínica" }] : []),
+    ...(administrador ? [{ id: "planos", label: "Planos" }] : []),
     ...(administrador ? [{ id: "rbac", label: "Permissões & Acessos" }] : []),
   ];
 
@@ -495,6 +497,9 @@ function Configuracoes({ administrador = false }) {
       {abaAtiva === "clinica" && administrador && (
         <ClinicaForm />
       )}
+
+      {/* ═══ Aba: Planos e tabelas de preços ═════ */}
+      {abaAtiva === "planos" && administrador && <Planos />}
 
       {/* ═══ Aba: RBAC — Permissões & Acessos ══════ */}
       {abaAtiva === "rbac" && (
