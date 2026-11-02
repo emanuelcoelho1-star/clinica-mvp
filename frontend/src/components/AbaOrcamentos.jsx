@@ -47,9 +47,7 @@ const EMPTY_ITEM = { dente: "", procedimento: "", valor: 0, quantidade: 1 };
 
 const EMPTY_FORM = {
   data: dataHojeISO(),
-  status: "pendente",
-  desconto: 0,
-  observacoes: "",
+  descricao: "",
   itens: [{ ...EMPTY_ITEM }],
 };
 
@@ -173,6 +171,7 @@ function AbaOrcamentos({ pacienteId }) {
   const [editando, setEditando] = useState(null);
   const [detalhes, setDetalhes] = useState(null);
 
+  const [dentistaResponsavel, setDentistaResponsavel] = useState("");
   const [formData, setFormData] = useState({ ...EMPTY_FORM, itens: [{ ...EMPTY_ITEM }] });
   const [salvando, setSalvando] = useState(false);
   const [erroForm, setErroForm] = useState("");
@@ -187,6 +186,20 @@ function AbaOrcamentos({ pacienteId }) {
   useEffect(() => {
     carregarOrcamentos();
   }, [pacienteId]);
+
+  async function carregarDentistaResponsavel() {
+    try {
+      const tk = localStorage.getItem("token");
+      const r = await fetch(`${API_URL}/orcamentos/usuario-atual`, {
+        headers: { Authorization: tk || "" },
+      });
+      if (!r.ok) throw new Error();
+      const usuario = await r.json();
+      setDentistaResponsavel(usuario.nome || "");
+    } catch {
+      setDentistaResponsavel("");
+    }
+  }
 
   async function carregarOrcamentos() {
     try {
@@ -218,9 +231,7 @@ function AbaOrcamentos({ pacienteId }) {
     setEditando(item);
     setFormData({
       data: item.data || dataHojeISO(),
-      status: item.status || "pendente",
-      desconto: item.desconto || 0,
-      observacoes: item.observacoes || "",
+      descricao: item.descricao || "",
       itens:
         item.itens && item.itens.length > 0
           ? item.itens.map((i) => ({
@@ -296,9 +307,7 @@ function AbaOrcamentos({ pacienteId }) {
       const body = {
         paciente_id: Number(pacienteId),
         data: formData.data,
-        status: formData.status || "pendente",
-        desconto: Number(formData.desconto) || 0,
-        observacoes: formData.observacoes || "",
+        descricao: formData.descricao || "",
         itens: itensValidos.map((i) => ({
           dente: i.dente || "",
           procedimento: i.procedimento,
@@ -376,8 +385,7 @@ function AbaOrcamentos({ pacienteId }) {
 
   /* ── Totais ──────────────────────────────── */
   const totalForm = calcularTotalItens(formData.itens);
-  const descontoForm = Number(formData.desconto) || 0;
-  const totalFinalForm = Math.max(0, totalForm - descontoForm);
+  const totalFinalForm = totalForm;
 
   /* ═══════════════════════════════════════════
      RENDER — LISTA
@@ -682,6 +690,21 @@ function AbaOrcamentos({ pacienteId }) {
               <span style={S.formCardTitle}>Dados do orçamento</span>
             </div>
             <div style={S.formGrid2}>
+              <div style={{ ...S.fieldGroup, gridColumn: "1 / -1" }}>
+                <label style={S.label}>Descrição</label>
+                <textarea
+                  name="descricao"
+                  value={formData.descricao}
+                  onChange={handleInput}
+                  placeholder="Descreva o orçamento..."
+                  style={S.textarea}
+                  rows={2}
+                />
+              </div>
+              <div style={S.fieldGroup}>
+                <label style={S.label}>Dentista responsável</label>
+                <input type="text" value={dentistaResponsavel || "Identificando usuário..."} readOnly style={S.input} />
+              </div>
               <div style={S.fieldGroup}>
                 <label style={S.label}>Data</label>
                 <input
@@ -690,45 +713,6 @@ function AbaOrcamentos({ pacienteId }) {
                   value={formData.data}
                   onChange={handleInput}
                   style={S.input}
-                />
-              </div>
-              <div style={S.fieldGroup}>
-                <label style={S.label}>Status</label>
-                <select
-                  name="status"
-                  value={formData.status}
-                  onChange={handleInput}
-                  style={S.input}
-                >
-                  {STATUS_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div style={S.fieldGroup}>
-                <label style={S.label}>Desconto (R$)</label>
-                <input
-                  type="number"
-                  name="desconto"
-                  value={formData.desconto}
-                  onChange={handleInput}
-                  style={S.input}
-                  min="0"
-                  step="0.01"
-                  placeholder="0,00"
-                />
-              </div>
-              <div style={S.fieldGroup}>
-                <label style={S.label}>Observações</label>
-                <textarea
-                  name="observacoes"
-                  value={formData.observacoes}
-                  onChange={handleInput}
-                  placeholder="Observações sobre o orçamento..."
-                  style={S.textarea}
-                  rows={2}
                 />
               </div>
             </div>
@@ -833,14 +817,6 @@ function AbaOrcamentos({ pacienteId }) {
                 <span style={S.totaisLabel}>Subtotal</span>
                 <span style={S.totaisValue}>{formatarMoeda(totalForm)}</span>
               </div>
-              {descontoForm > 0 && (
-                <div style={S.totaisRow}>
-                  <span style={S.totaisLabel}>Desconto</span>
-                  <span style={{ ...S.totaisValue, color: "#ef4444" }}>
-                    - {formatarMoeda(descontoForm)}
-                  </span>
-                </div>
-              )}
               <div style={{ ...S.totaisRow, borderTop: "2px solid #e2e8f0", paddingTop: "12px" }}>
                 <span style={{ ...S.totaisLabel, fontSize: "15px", fontWeight: "700", color: "#0f172a" }}>Total</span>
                 <span style={{ ...S.totaisValue, fontSize: "18px", fontWeight: "700", color: "#2563eb" }}>
@@ -1005,12 +981,6 @@ function AbaOrcamentos({ pacienteId }) {
               <span style={S.detailLabel}>Data</span>
               <span style={S.detailValue}>{formatarDataBR(detalhes.data)}</span>
             </div>
-            {detalhes.observacoes && (
-              <div style={S.detailItem}>
-                <span style={S.detailLabel}>Observações</span>
-                <span style={S.detailValue}>{detalhes.observacoes}</span>
-              </div>
-            )}
           </div>
         </div>
 
