@@ -325,22 +325,9 @@ function Planos() {
                 <button type="button" onClick={excluirPlano} style={{ ...botaoSecundario, color: "#b91c1c" }} disabled={salvando}>Excluir plano</button>
               </div>
 
-              <div style={{ padding: "16px 20px", display: "flex", gap: "9px", flexWrap: "wrap", alignItems: "center" }}>
-                <input style={{ ...campo, flex: "1 1 180px" }} value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar procedimento..." />
-                <button type="button" style={botaoSecundario} onClick={() => setMostrarFormProcedimento((v) => !v)}>+ Novo procedimento</button>
+              <div style={{ padding: "16px 20px" }}>
+                <input style={{ ...campo, width: "100%" }} value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar procedimento..." />
               </div>
-
-              {mostrarFormProcedimento && (
-                <form onSubmit={criarProcedimento} style={{ margin: "0 20px 16px", padding: "14px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "10px", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "9px" }}>
-                  <input style={campo} value={nomeProcedimento} onChange={(e) => setNomeProcedimento(e.target.value)} placeholder="Nome do procedimento" required />
-                  <input style={campo} value={codigoProcedimento} onChange={(e) => setCodigoProcedimento(e.target.value)} placeholder="Código (opcional)" />
-                  <select style={campo} value={categoriaProcedimento} onChange={(e) => setCategoriaProcedimento(e.target.value)} required><option value="">Selecione a especialidade</option>{ESPECIALIDADES.map((especialidade) => <option key={especialidade} value={especialidade}>{especialidade}</option>)}</select>
-                  <div style={{ display: "flex", gap: "7px", gridColumn: "1 / -1" }}>
-                    <button type="submit" style={botaoPrimario} disabled={salvando}>Adicionar ao catálogo</button>
-                    <button type="button" style={botaoSecundario} onClick={() => setMostrarFormProcedimento(false)}>Cancelar</button>
-                  </div>
-                </form>
-              )}
 
               <div style={{ padding: "0 20px 16px", display: "flex", flexDirection: "column", gap: "9px" }}>
                 {ESPECIALIDADES.map((especialidade, indice) => {
@@ -356,8 +343,28 @@ function Planos() {
                         <span style={{ color: "#64748b", fontSize: "16px" }}>{aberta ? "−" : "+"}</span>
                       </button>
                       {aberta && (
-                        <div style={{ overflowX: "auto", borderTop: "1px solid #f1f5f9" }}>
-                          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "440px" }}>
+                        <div style={{ borderTop: "1px solid #f1f5f9" }}>
+                          <div style={{ padding: "12px 14px", display: "flex", justifyContent: "flex-end", background: "#fff" }}>
+                            <button type="button" style={botaoPrimario} onClick={() => {
+                              setCategoriaProcedimento(especialidade);
+                              setNomeProcedimento("");
+                              setCodigoProcedimento("");
+                              setMostrarFormProcedimento((aberto) => categoriaProcedimento === especialidade ? !aberto : true);
+                            }}>+ Novo procedimento</button>
+                          </div>
+                          {mostrarFormProcedimento && categoriaProcedimento === especialidade && (
+                            <form onSubmit={criarProcedimento} style={{ margin: "0 14px 14px", padding: "14px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "10px", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "9px" }}>
+                              <input autoFocus style={campo} value={nomeProcedimento} onChange={(e) => setNomeProcedimento(e.target.value)} placeholder="Nome do procedimento" required />
+                              <input style={campo} value={codigoProcedimento} onChange={(e) => setCodigoProcedimento(e.target.value)} placeholder="Código (opcional)" />
+                              <div style={{ display: "flex", alignItems: "center", color: "#64748b", fontSize: "12px" }}>Especialidade: <strong style={{ marginLeft: "4px", color: "#334155" }}>{especialidade}</strong></div>
+                              <div style={{ display: "flex", gap: "7px", gridColumn: "1 / -1" }}>
+                                <button type="submit" style={botaoPrimario} disabled={salvando}>{salvando ? "Salvando..." : "Adicionar ao catálogo"}</button>
+                                <button type="button" style={botaoSecundario} onClick={() => setMostrarFormProcedimento(false)}>Cancelar</button>
+                              </div>
+                            </form>
+                          )}
+                          <div style={{ overflowX: "auto" }}>
+                            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "440px" }}>
                             <thead><tr style={{ background: "#f8fafc" }}>
                               <th style={thStyle}>Procedimento</th>
                               <th style={{ ...thStyle, width: "170px" }}>Valor neste plano</th>
@@ -384,7 +391,8 @@ function Planos() {
                                 </tr>
                               ))}
                             </tbody>
-                          </table>
+                            </table>
+                          </div>
                         </div>
                       )}
                     </section>
