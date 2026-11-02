@@ -267,6 +267,7 @@ router.post("/", auth, (req, res) => {
     dataNascimento,
     cpf,
     observacoes,
+    fotoUrl,
     cep,
     rua,
     numero,
@@ -303,6 +304,7 @@ router.post("/", auth, (req, res) => {
       data_nascimento,
       cpf,
       observacoes,
+      foto_url,
       cep,
       rua,
       numero,
@@ -331,6 +333,7 @@ router.post("/", auth, (req, res) => {
       dataNascimento || "",
       cpf || "",
       observacoes || "",
+      fotoUrl || "",
       cep || "",
       rua || "",
       numero || "",
@@ -411,6 +414,7 @@ router.put("/:id", auth, (req, res) => {
       data_nascimento = ?,
       cpf = ?,
       observacoes = ?,
+      foto_url = ?,
       cep = ?,
       rua = ?,
       numero = ?,
@@ -460,7 +464,7 @@ router.put("/:id", auth, (req, res) => {
         return res.status(404).json({ erro: "Paciente não encontrado nesta clínica." });
       }
 
-      res.json({ message: "Paciente atualizado com sucesso" });
+      res.json({ message: "Paciente atualizado com sucesso", id: Number(id), nome, foto_url: fotoUrl || "" });
     }
   );
 });
