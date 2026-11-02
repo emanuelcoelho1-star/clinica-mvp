@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import API_URL from "../api";
 import AbaAnamneses from "../components/AbaAnamneses";
@@ -231,6 +231,11 @@ function ProntuarioPaciente() {
   const [salvandoObservacoes, setSalvandoObservacoes] = useState(false);
   const [erroObservacoes, setErroObservacoes] = useState("");
   const [editarPacienteAberto, setEditarPacienteAberto] = useState(false);
+  const [modalFotoAberto, setModalFotoAberto] = useState(false);
+  const [fotoSelecionada, setFotoSelecionada] = useState("");
+  const [salvandoFoto, setSalvandoFoto] = useState(false);
+  const [erroFoto, setErroFoto] = useState("");
+  const inputFotoRef = useRef(null);
 
 
   useEffect(() => {
@@ -281,6 +286,51 @@ function ProntuarioPaciente() {
     carregarConsultasPaciente();
     return () => { ativo = false; };
   }, [id]);
+
+  const processarFotoProntuario = (arquivo) => {
+    if (!arquivo) return;
+    setErroFoto("");
+    if (!arquivo.type.startsWith("image/")) return setErroFoto("Selecione um arquivo de imagem válido.");
+    if (arquivo.size > 10 * 1024 * 1024) return setErroFoto("A foto deve ter no máximo 10 MB.");
+    const leitor = new FileReader();
+    leitor.onload = () => {
+      const imagem = new Image();
+      imagem.onload = () => {
+        const escala = Math.min(1, 480 / Math.max(imagem.width, imagem.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(imagem.width * escala);
+        canvas.height = Math.round(imagem.height * escala);
+        canvas.getContext("2d").drawImage(imagem, 0, 0, canvas.width, canvas.height);
+        setFotoSelecionada(canvas.toDataURL("image/jpeg", 0.68));
+      };
+      imagem.onerror = () => setErroFoto("Não foi possível processar esta imagem.");
+      imagem.src = leitor.result;
+    };
+    leitor.onerror = () => setErroFoto("Não foi possível carregar a foto.");
+    leitor.readAsDataURL(arquivo);
+  };
+
+  const salvarFotoProntuario = async () => {
+    if (!fotoSelecionada) return setErroFoto("Escolha uma foto antes de salvar.");
+    setSalvandoFoto(true);
+    setErroFoto("");
+    try {
+      const resposta = await fetch(`${API_URL}/pacientes/${id}/foto`, {
+        method: "PATCH",
+        headers: { Authorization: localStorage.getItem("token"), "Content-Type": "application/json" },
+        body: JSON.stringify({ fotoUrl: fotoSelecionada }),
+      });
+      const dados = await resposta.json().catch(() => ({}));
+      if (!resposta.ok) throw new Error(dados.erro || "Não foi possível salvar a foto.");
+      setPaciente((atual) => ({ ...atual, foto_url: dados.foto_url || fotoSelecionada }));
+      setModalFotoAberto(false);
+      setFotoSelecionada("");
+    } catch (erro) {
+      setErroFoto(erro.message || "Não foi possível salvar a foto.");
+    } finally {
+      setSalvandoFoto(false);
+    }
+  };
 
   const salvarObservacoes = async () => {
     const listaAtual = obterListaObservacoes(paciente?.observacoes);
@@ -785,6 +835,22 @@ function ProntuarioPaciente() {
         </div>
       )}
 
+      {modalFotoAberto && (
+        <div style={s.modalOverlay} onMouseDown={(e) => { if (e.target === e.currentTarget) setModalFotoAberto(false); }}>
+          <div style={s.fotoModal} role="dialog" aria-modal="true" aria-label="Foto do paciente">
+            <h2 style={s.fotoModalTitle}>{paciente.foto_url ? "Alterar foto do paciente" : "Adicionar foto do paciente"}</h2>
+            <div style={s.fotoModalPreview}>{fotoSelecionada ? <img src={fotoSelecionada} alt="Prévia da foto" style={s.fotoModalImage} /> : <span>Selecione uma imagem</span>}</div>
+            <input ref={inputFotoRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => { processarFotoProntuario(e.target.files?.[0]); e.target.value = ""; }} />
+            {erroFoto && <p style={s.fotoModalError}>{erroFoto}</p>}
+            <div style={s.fotoModalActions}>
+              <button type="button" style={s.btnSecondary} onClick={() => inputFotoRef.current?.click()}>Escolher foto</button>
+              <button type="button" style={s.btnSecondary} onClick={() => { setModalFotoAberto(false); setFotoSelecionada(""); }}>Cancelar</button>
+              <button type="button" style={s.btnPrimary} disabled={!fotoSelecionada || salvandoFoto} onClick={salvarFotoProntuario}>{salvandoFoto ? "Salvando..." : "Salvar foto"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {editarPacienteAberto && (
         <div
           style={s.modalOverlay}
@@ -905,6 +971,12 @@ const s = {
     display: "flex", alignItems: "flex-start", gap: "20px",
     padding: "28px 28px 20px", flexWrap: "wrap",
   },
+  fotoModal: { width: "100%", maxWidth: "420px", background: "#fff", borderRadius: "18px", padding: "24px", boxShadow: "0 20px 50px rgba(15,23,42,0.25)" },
+  fotoModalTitle: { margin: "0 0 18px", color: "#0f172a", fontSize: "18px" },
+  fotoModalPreview: { width: "150px", height: "150px", margin: "0 auto 18px", borderRadius: "16px", background: "#f1f5f9", color: "#94a3b8", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", fontSize: "12px" },
+  fotoModalImage: { width: "100%", height: "100%", objectFit: "cover" },
+  fotoModalError: { color: "#dc2626", fontSize: "13px", margin: "0 0 12px" },
+  fotoModalActions: { display: "flex", justifyContent: "flex-end", gap: "8px", flexWrap: "wrap" },
   avatarColumn: {
     display: "flex", flexDirection: "column", alignItems: "center", gap: "7px", flexShrink: 0,
   },
