@@ -629,13 +629,29 @@ function AbaArquivos({ pacienteId }) {
             {/* Área de conteúdo no estilo do explorador de arquivos do Windows */}
             <div style={S.contentPanel}>
               {pastasDaPasta.length > 0 && <div style={S.folderGrid}>
-                {pastasDaPasta.map((p) => <div key={p.id} style={S.folderCard}>
-                  <button type="button" style={S.folderOpenButton} onClick={() => { setPastaAtualId(p.id); setBusca(""); setFiltroCategoria("todos"); }}>
-                    <span style={S.folderCardIcon}>{Icons.folderCard}</span><span style={S.folderCardName}>{p.nome}</span><span style={S.folderCardHint}>Abrir pasta</span>
-                  </button>
-                  <button type="button" title="Excluir pasta" aria-label={`Excluir pasta ${p.nome}`} style={S.folderDeleteButton}
-                    onClick={() => setConfirmarExclusaoPasta(p)}>{Icons.trash}<span>Excluir</span></button>
-                </div>)}
+                {pastasDaPasta.map((p) => {
+                  const hovered = hoveredCardId === `pasta-${p.id}`;
+                  const abrirPasta = () => { setPastaAtualId(p.id); setBusca(""); setFiltroCategoria("todos"); };
+                  return (
+                    <div
+                      key={p.id}
+                      style={{ ...S.folderCard, ...(hovered ? S.fileExplorerItemHover : {}) }}
+                      onMouseEnter={() => setHoveredCardId(`pasta-${p.id}`)}
+                      onMouseLeave={() => setHoveredCardId(null)}
+                    >
+                      <button type="button" style={S.folderOpenButton} onClick={abrirPasta} title={`Abrir pasta ${p.nome}`}>
+                        <span style={S.folderCardIcon}>{Icons.folderCard}</span>
+                        <span style={S.folderCardName}>{p.nome}</span>
+                      </button>
+                      {hovered && (
+                        <div style={S.fileTileActions}>
+                          <button type="button" title="Abrir pasta" aria-label={`Abrir pasta ${p.nome}`} style={S.fileTileAction} onClick={abrirPasta}>{Icons.folderSmall}</button>
+                          <button type="button" title="Excluir pasta" aria-label={`Excluir pasta ${p.nome}`} style={{ ...S.fileTileAction, color: "#dc2626" }} onClick={() => setConfirmarExclusaoPasta(p)}>{Icons.trash}</button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>}
 
               {arquivosDaPasta.length > 0 && arquivosFiltrados.length === 0 && (
