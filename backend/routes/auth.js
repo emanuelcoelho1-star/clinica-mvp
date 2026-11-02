@@ -281,6 +281,13 @@ router.get("/me", authGeneralLimiter, auth, (req, res) => {
   );
 });
 
+router.get("/usuarios", authGeneralLimiter, auth, (req, res) => {
+  db.all("SELECT u.id, u.nome FROM usuarios u LEFT JOIN roles r ON r.id = u.role_id WHERE u.clinica_id = ? AND (r.ativo = 1 OR r.id IS NULL) ORDER BY u.nome COLLATE NOCASE ASC", [req.user.clinica_id], (err, usuarios) => {
+    if (err) return res.status(500).json({ erro: "Erro ao buscar profissionais da clínica." });
+    res.json(usuarios || []);
+  });
+});
+
 /* ── Atualizar perfil ─────────────────────────── */
 router.put("/perfil", authGeneralLimiter, auth, (req, res) => {
   const { nome } = req.body;
