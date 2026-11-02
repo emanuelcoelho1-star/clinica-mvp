@@ -9,7 +9,7 @@ router.use(auth);
 // Essas consultas são usadas internamente pelos orçamentos e não abrem o módulo de gestão.
 router.use((req, res, next) => {
   if (req.method === "GET" && ["/padrao", "/opcoes-orcamento"].includes(req.path)) return next();
-  return requirePermission("planos")(req, res, next);
+  return requirePermission("planos", () => "listar")(req, res, next);
 });
 
 const ESPECIALIDADES = [
