@@ -30,8 +30,16 @@ router.get("/paciente/:paciente_id", auth, (req, res) => {
       const placeholders = ids.map(() => "?").join(",");
 
       db.all(
-        `SELECT * FROM orcamento_itens WHERE orcamento_id IN (${placeholders}) ORDER BY id ASC`,
-        ids,
+        `SELECT oi.*, COALESCE(pc.custo_tratamento, 0) AS custo_tratamento
+         FROM orcamento_itens oi
+         INNER JOIN orcamentos o ON o.id = oi.orcamento_id
+         LEFT JOIN procedimentos_catalogo pc
+           ON pc.clinica_id = o.clinica_id
+          AND LOWER(TRIM(pc.nome)) = LOWER(TRIM(oi.procedimento))
+         WHERE oi.orcamento_id IN (${placeholders})
+           AND o.clinica_id = ?
+         ORDER BY oi.id ASC`,
+        [...ids, req.user.clinica_id],
         (errItens, itens) => {
           if (errItens) {
             return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
