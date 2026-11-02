@@ -82,7 +82,8 @@ function InfoItem({ label, value, icon }) {
 }
 
 /* ═══════════════════════════════════════════════════════════ */
-function Configuracoes({ administrador = false }) {
+function Configuracoes({ administrador = false, permissoesAcesso = [] }) {
+  const podeAcessarPlanos = administrador || permissoesAcesso.some((p) => p.modulo === "planos" && p.acao === "listar");
   const navigate = useNavigate();
   const location = useLocation();
   const [usuario, setUsuario] = useState({ nome: "", email: "" });
@@ -95,7 +96,7 @@ function Configuracoes({ administrador = false }) {
   const [erroPerfil, setErroPerfil] = useState("");
   const [salvando, setSalvando] = useState(false);
   const [salvandoSenha, setSalvandoSenha] = useState(false);
-  const [abaAtiva, setAbaAtiva] = useState(() => new URLSearchParams(location.search).get("aba") === "planos" ? "planos" : "perfil");
+  const [abaAtiva, setAbaAtiva] = useState(() => new URLSearchParams(location.search).get("aba") === "planos" && (administrador || permissoesAcesso.some((p) => p.modulo === "planos" && p.acao === "listar")) ? "planos" : "perfil");
   const [hoveredTab, setHoveredTab] = useState(null);
 
   /* ── RBAC state ──────────────────────────────── */
@@ -252,7 +253,7 @@ function Configuracoes({ administrador = false }) {
     { id: "perfil", label: "Perfil" },
     { id: "seguranca", label: "Segurança" },
     ...(administrador ? [{ id: "clinica", label: "Clínica" }] : []),
-    ...(administrador ? [{ id: "planos", label: "Planos" }] : []),
+    ...(podeAcessarPlanos ? [{ id: "planos", label: "Planos" }] : []),
     ...(administrador ? [{ id: "rbac", label: "Permissões & Acessos" }] : []),
   ];
 
@@ -500,7 +501,7 @@ function Configuracoes({ administrador = false }) {
       )}
 
       {/* ═══ Aba: Planos e tabelas de preços ═════ */}
-      {abaAtiva === "planos" && administrador && <Planos />}
+      {abaAtiva === "planos" && podeAcessarPlanos && <Planos />}
 
       {/* ═══ Aba: RBAC — Permissões & Acessos ══════ */}
       {abaAtiva === "rbac" && (
