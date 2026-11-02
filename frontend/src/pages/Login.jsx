@@ -284,6 +284,7 @@ function Login() {
                   ...S.inputWrapper,
                   borderColor: confirmarSenha && confirmarSenha !== senha ? "#ef4444" : confirmarSenha && confirmarSenha === senha ? "#16a34a" : "#e2e8f0",
                 }}>
+                  <span style={S.inputIcon}>{KeyIcon}</span>
                   <input
                     type={mostrarConfirmarSenha ? "text" : "password"}
                     placeholder="Digite a senha novamente"
