@@ -322,10 +322,10 @@ function Planos() {
                 <input style={{ ...campo, paddingLeft: "36px" }} type="number" min="0" max="99999999" step="0.01" value={valorTratamento} onChange={(e) => setValorTratamento(e.target.value)} placeholder="0,00" required />
               </div>
             </label>
-            <label style={labelStyle}>Custo do tratamento
+            <label style={labelStyle}>Custo do tratamento (opcional)
               <div style={{ position: "relative" }}>
                 <span style={{ position: "absolute", left: "12px", top: "11px", color: "#94a3b8", fontSize: "13px" }}>R$</span>
-                <input style={{ ...campo, paddingLeft: "36px" }} type="number" min="0" max="99999999" step="0.01" value={custoTratamento} onChange={(e) => setCustoTratamento(e.target.value)} placeholder="0,00" required />
+                <input style={{ ...campo, paddingLeft: "36px" }} type="number" min="0" max="99999999" step="0.01" value={custoTratamento} onChange={(e) => setCustoTratamento(e.target.value)} placeholder="Opcional" />
               </div>
             </label>
             <div style={{ padding: "10px 12px", borderRadius: "9px", background: "#f8fafc", color: "#64748b", fontSize: "12px", lineHeight: 1.5 }}>
