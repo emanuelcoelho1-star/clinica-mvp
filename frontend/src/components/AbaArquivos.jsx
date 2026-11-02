@@ -24,9 +24,10 @@ function getExtensao(nome) {
   return parts.length > 1 ? parts.pop().toLowerCase() : "";
 }
 
-function isImagem(nome) {
+function isImagem(nome, mimetype) {
   const ext = getExtensao(nome);
-  return ["jpg", "jpeg", "png", "gif", "webp"].includes(ext);
+  const mime = String(mimetype || "").toLowerCase().split(";")[0].trim();
+  return mime.startsWith("image/") || ["jpg", "jpeg", "png", "gif", "webp"].includes(ext);
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -175,7 +176,7 @@ function CategoriaBadge({ categoria }) {
    ═══════════════════════════════════════════════════════════ */
 function FileIcon({ arquivo }) {
   const nome = arquivo.nome_original || "Arquivo";
-  const imagem = isImagem(nome);
+  const imagem = isImagem(nome, arquivo.mimetype);
   const pdf = getExtensao(nome) === "pdf";
   const [thumbnailUrl, setThumbnailUrl] = useState("");
 
@@ -657,14 +658,14 @@ function AbaArquivos({ pacienteId }) {
                         onMouseLeave={() => setHoveredCardId(null)}
                       >
                         <button type="button" style={S.fileTileButton}
-                          onClick={() => isImagem(a.nome_original) ? abrirPreview(a) : baixarArquivo(a)}
+                          onClick={() => isImagem(a.nome_original, a.mimetype) ? abrirPreview(a) : baixarArquivo(a)}
                           title={a.nome_original || "Abrir arquivo"}>
                           <FileIcon arquivo={a} />
                         </button>
                         <div style={S.fileTileName} title={a.nome_original || "Arquivo"}>{a.nome_original || "Arquivo"}</div>
                         <div style={S.fileTileMeta}>{formatarDataBR(a.created_at || a.data)}</div>
                         {hovered && <div style={S.fileTileActions}>
-                          {isImagem(a.nome_original) && <button type="button" title="Visualizar" style={S.fileTileAction} onClick={() => abrirPreview(a)}>{Icons.eye}</button>}
+                          {isImagem(a.nome_original, a.mimetype) && <button type="button" title="Visualizar" style={S.fileTileAction} onClick={() => abrirPreview(a)}>{Icons.eye}</button>}
                           <button type="button" title="Baixar" style={S.fileTileAction} onClick={() => baixarArquivo(a)}>{Icons.download}</button>
                           <button type="button" title="Excluir" style={{ ...S.fileTileAction, color: "#dc2626" }} onClick={() => setConfirmarExclusao(a)}>{Icons.trash}</button>
                         </div>}
