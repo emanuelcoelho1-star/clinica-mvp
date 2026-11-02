@@ -411,15 +411,6 @@ function CadastroPaciente({ pacienteId, onCancel, onSaved }) {
               />
             </div>
 
-            <div style={styles.fieldFull}>
-              <label style={styles.label}>Observações</label>
-              <textarea
-                value={form.observacoes}
-                onChange={(e) => atualizarCampo("observacoes", e.target.value)}
-                placeholder="Digite observações importantes sobre o paciente"
-                style={styles.textarea}
-              />
-            </div>
           </div>
         </div>
 
