@@ -76,7 +76,7 @@ export default async function gerarPdfOrcamento({ orcamento, pacienteId, apiUrl,
       return `<tr>
         <td class="numero">${indice + 1}</td>
         <td>${esc(item.procedimento || "—")}</td>
-        <td>${esc(item.dente || "—")}</td>
+        <td>${esc([item.dente, item.faces].filter(Boolean).join(" / ") || "—")}</td>
         <td class="centro">${quantidade}</td>
         ${convenio ? "" : `<td class="direita">${moeda(valorUnitario)}</td><td class="direita">${moeda(valorLinha)}</td>`}
       </tr>`;
@@ -134,7 +134,7 @@ th,td{padding:3mm 2.2mm;border-bottom:1px solid #e2e8f0;vertical-align:top}
 </section>
 <div class="descricao"><strong>Descrição:</strong> ${esc(orcamento.descricao || "Plano de tratamento")}</div>
 <h2>Procedimentos</h2>
-<table><thead><tr><th class="numero">Nº</th><th>Procedimento</th><th>Dente</th><th class="centro">Qtd.</th>${colunasValores}</tr></thead><tbody>${linhas || `<tr><td colspan="${colSpan}">Nenhum procedimento informado.</td></tr>`}</tbody></table>
+<table><thead><tr><th class="numero">Nº</th><th>Procedimento</th><th>Dente / face</th><th class="centro">Qtd.</th>${colunasValores}</tr></thead><tbody>${linhas || `<tr><td colspan="${colSpan}">Nenhum procedimento informado.</td></tr>`}</tbody></table>
 ${convenio ? '<p class="observacao-convenio">Valores financeiros omitidos nesta via destinada ao paciente.</p>' : `<section class="totais">
   <div class="total-linha"><span>Subtotal</span><strong>${moeda(subtotal)}</strong></div>
   ${desconto > 0 ? `<div class="total-linha"><span>Desconto</span><strong>- ${moeda(desconto)}</strong></div>` : ""}
