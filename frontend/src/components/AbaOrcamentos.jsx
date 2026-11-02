@@ -763,7 +763,7 @@ function AbaOrcamentos({ pacienteId }) {
                     <option value="valor">R$ Valor</option>
                     <option value="porcentagem">% Porcentagem</option>
                   </select>
-                  <input id="orcamento-desconto" type="text" inputMode="decimal" value={formData.desconto} onChange={(e) => setFormData((p) => ({ ...p, desconto: e.target.value.replace(",", ".").replace(/[^0-9.]/g, "") }))} placeholder="0,00" style={{ width: "112px", height: "40px", border: "none", outline: "none", padding: "0 12px", background: "transparent", color: "#0f172a", fontSize: "14px", fontWeight: "600", textAlign: "right", boxSizing: "border-box" }} />
+                  <input id="orcamento-desconto" type="text" inputMode="decimal" value={formData.desconto} onFocus={() => { if (Number(String(formData.desconto).replace(",", ".")) === 0) setFormData((p) => ({ ...p, desconto: "" })); }} onChange={(e) => setFormData((p) => ({ ...p, desconto: e.target.value.replace(",", ".").replace(/[^0-9.]/g, "") }))} placeholder="0,00" style={{ width: "112px", height: "40px", border: "none", outline: "none", padding: "0 12px", background: "transparent", color: "#0f172a", fontSize: "14px", fontWeight: "600", textAlign: "right", boxSizing: "border-box" }} />
                 </div>
               </div>
               {descontoForm > 0 && <div style={S.totaisRow}>
