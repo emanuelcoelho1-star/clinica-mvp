@@ -6,6 +6,26 @@ const TIPOS = [
   { value: "padrao", label: "Plano padrão" },
 ];
 
+const ESPECIALIDADES = [
+  "Cirurgia",
+  "Dentística",
+  "Disfunção Temporomandibular (DTM)",
+  "Endodontia",
+  "Estética",
+  "Harmonização facial",
+  "Implantodontia",
+  "Odontopediatria",
+  "Ortodontia",
+  "Ortopedia Funcional",
+  "Outros",
+  "Periodontia",
+  "Prevenção",
+  "Prótese",
+  "Radiologia",
+  "Testes e exames laboratoriais",
+  "Urgência"
+];
+
 const tokenHeaders = () => ({ Authorization: `Bearer ${localStorage.getItem("token") || ""}` });
 
 function Planos() {
@@ -19,6 +39,7 @@ function Planos() {
   const [nomeProcedimento, setNomeProcedimento] = useState("");
   const [codigoProcedimento, setCodigoProcedimento] = useState("");
   const [categoriaProcedimento, setCategoriaProcedimento] = useState("");
+  const [especialidadeAberta, setEspecialidadeAberta] = useState("Cirurgia");
   const [busca, setBusca] = useState("");
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState(false);
@@ -71,6 +92,15 @@ function Planos() {
         String(item.codigo || "").toLocaleLowerCase("pt-BR").includes(termo))
     );
   }, [procedimentos, busca]);
+
+  const procedimentosPorEspecialidade = useMemo(() => {
+    const grupos = Object.fromEntries(ESPECIALIDADES.map((nome) => [nome, []]));
+    procedimentosFiltrados.forEach((item) => {
+      const especialidade = ESPECIALIDADES.includes(item.categoria) ? item.categoria : "Outros";
+      grupos[especialidade].push(item);
+    });
+    return grupos;
+  }, [procedimentosFiltrados]);
 
   function selecionarPlano(plano) {
     setPlanoSelecionado(plano.id);
@@ -304,7 +334,7 @@ function Planos() {
                 <form onSubmit={criarProcedimento} style={{ margin: "0 20px 16px", padding: "14px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "10px", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "9px" }}>
                   <input style={campo} value={nomeProcedimento} onChange={(e) => setNomeProcedimento(e.target.value)} placeholder="Nome do procedimento" required />
                   <input style={campo} value={codigoProcedimento} onChange={(e) => setCodigoProcedimento(e.target.value)} placeholder="Código (opcional)" />
-                  <input style={campo} value={categoriaProcedimento} onChange={(e) => setCategoriaProcedimento(e.target.value)} placeholder="Categoria (opcional)" />
+                  <select style={campo} value={categoriaProcedimento} onChange={(e) => setCategoriaProcedimento(e.target.value)} required><option value="">Selecione a especialidade</option>{ESPECIALIDADES.map((especialidade) => <option key={especialidade} value={especialidade}>{especialidade}</option>)}</select>
                   <div style={{ display: "flex", gap: "7px", gridColumn: "1 / -1" }}>
                     <button type="submit" style={botaoPrimario} disabled={salvando}>Adicionar ao catálogo</button>
                     <button type="button" style={botaoSecundario} onClick={() => setMostrarFormProcedimento(false)}>Cancelar</button>
@@ -312,35 +342,54 @@ function Planos() {
                 </form>
               )}
 
-              <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "440px" }}>
-                  <thead><tr style={{ background: "#f8fafc" }}>
-                    <th style={thStyle}>Procedimento</th>
-                    <th style={{ ...thStyle, width: "170px" }}>Valor neste plano</th>
-                    <th style={{ ...thStyle, width: "90px" }}>Ação</th>
-                  </tr></thead>
-                  <tbody>
-                    {procedimentosFiltrados.length === 0 ? (
-                      <tr><td colSpan="3" style={{ padding: "28px 18px", textAlign: "center", color: "#94a3b8", fontSize: "13px" }}>Nenhum procedimento no catálogo. Adicione o primeiro.</td></tr>
-                    ) : procedimentosFiltrados.map((item) => (
-                      <tr key={item.id}>
-                        <td style={tdStyle}>
-                          <strong style={{ display: "block", color: "#334155", fontSize: "13px", fontWeight: 600 }}>{item.nome}</strong>
-                          {(item.codigo || item.categoria) && <span style={{ display: "block", color: "#94a3b8", fontSize: "11px", marginTop: "3px" }}>{[item.codigo, item.categoria].filter(Boolean).join(" · ")}</span>}
-                        </td>
-                        <td style={tdStyle}>
-                          <div style={{ position: "relative" }}>
-                            <span style={{ position: "absolute", left: "10px", top: "10px", color: "#94a3b8", fontSize: "12px" }}>R$</span>
-                            <input aria-label={`Valor de ${item.nome}`} style={{ ...campo, padding: "9px 9px 9px 34px", fontSize: "13px" }} type="number" min="0" step="0.01" placeholder="Não definido" value={valores[item.id] ?? ""} onChange={(e) => setValores((atual) => ({ ...atual, [item.id]: e.target.value }))} />
-                          </div>
-                        </td>
-                        <td style={tdStyle}>
-                          <button type="button" title="Excluir do catálogo" onClick={() => excluirProcedimento(item)} style={{ border: "none", background: "transparent", color: "#94a3b8", cursor: "pointer", fontSize: "12px" }}>Excluir</button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div style={{ padding: "0 20px 16px", display: "flex", flexDirection: "column", gap: "9px" }}>
+                {ESPECIALIDADES.map((especialidade, indice) => {
+                  const lista = procedimentosPorEspecialidade[especialidade] || [];
+                  const aberta = especialidadeAberta === especialidade;
+                  return (
+                    <section key={especialidade} style={{ border: "1px solid #e2e8f0", borderRadius: "10px", overflow: "hidden", background: "#fff" }}>
+                      <button type="button" onClick={() => setEspecialidadeAberta(aberta ? "" : especialidade)} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", padding: "13px 15px", border: "none", background: aberta ? "#f8fafc" : "#fff", cursor: "pointer", textAlign: "left", fontFamily: "inherit" }}>
+                        <span style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                          <strong style={{ color: "#334155", fontSize: "13px" }}>{indice + 1}. {especialidade}</strong>
+                          <span style={{ color: "#94a3b8", fontSize: "11px" }}>{lista.length} {lista.length === 1 ? "procedimento" : "procedimentos"}</span>
+                        </span>
+                        <span style={{ color: "#64748b", fontSize: "16px" }}>{aberta ? "−" : "+"}</span>
+                      </button>
+                      {aberta && (
+                        <div style={{ overflowX: "auto", borderTop: "1px solid #f1f5f9" }}>
+                          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "440px" }}>
+                            <thead><tr style={{ background: "#f8fafc" }}>
+                              <th style={thStyle}>Procedimento</th>
+                              <th style={{ ...thStyle, width: "170px" }}>Valor neste plano</th>
+                              <th style={{ ...thStyle, width: "90px" }}>Ação</th>
+                            </tr></thead>
+                            <tbody>
+                              {lista.length === 0 ? (
+                                <tr><td colSpan="3" style={{ padding: "20px 14px", textAlign: "center", color: "#94a3b8", fontSize: "12px" }}>Nenhum procedimento cadastrado nesta especialidade.</td></tr>
+                              ) : lista.map((item) => (
+                                <tr key={item.id}>
+                                  <td style={tdStyle}>
+                                    <strong style={{ display: "block", color: "#334155", fontSize: "13px", fontWeight: 600 }}>{item.nome}</strong>
+                                    {item.codigo && <span style={{ display: "block", color: "#94a3b8", fontSize: "11px", marginTop: "3px" }}>Código: {item.codigo}</span>}
+                                  </td>
+                                  <td style={tdStyle}>
+                                    <div style={{ position: "relative" }}>
+                                      <span style={{ position: "absolute", left: "10px", top: "10px", color: "#94a3b8", fontSize: "12px" }}>R$</span>
+                                      <input aria-label={`Valor de ${item.nome}`} style={{ ...campo, padding: "9px 9px 9px 34px", fontSize: "13px" }} type="number" min="0" step="0.01" placeholder="Não definido" value={valores[item.id] ?? ""} onChange={(e) => setValores((atual) => ({ ...atual, [item.id]: e.target.value }))} />
+                                    </div>
+                                  </td>
+                                  <td style={tdStyle}>
+                                    <button type="button" title="Excluir do catálogo" onClick={() => excluirProcedimento(item)} style={{ border: "none", background: "transparent", color: "#94a3b8", cursor: "pointer", fontSize: "12px" }}>Excluir</button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </section>
+                  );
+                })}
               </div>
 
               <div style={{ padding: "15px 20px", borderTop: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
@@ -354,7 +403,7 @@ function Planos() {
 
       <section style={{ ...cardStyle, padding: "16px 18px" }}>
         <strong style={{ display: "block", color: "#334155", fontSize: "13px", marginBottom: "5px" }}>Catálogo da clínica</strong>
-        <span style={{ color: "#64748b", fontSize: "12px" }}>O catálogo é compartilhado entre os planos desta clínica. Ao cadastrar um procedimento uma vez, basta informar o preço correspondente em cada tabela. Os dados permanecem isolados das demais clínicas.</span>
+        <span style={{ color: "#64748b", fontSize: "12px" }}>As 17 especialidades já ficam disponíveis em todos os planos. O cadastro de procedimentos é compartilhado entre os planos da clínica; os valores são definidos separadamente em cada tabela. Os dados permanecem isolados das demais clínicas.</span>
       </section>
     </div>
   );
