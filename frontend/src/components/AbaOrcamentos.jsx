@@ -130,6 +130,13 @@ function ProcedimentoAutocomplete({ value, options, onChange, placeholder = "Dig
               {opcao.label}
             </button>
           )) : <div style={S.dropEmpty}>Nenhum procedimento cadastrado com esse nome. Você pode manter a descrição digitada.</div>}
+          <button type="button"
+            onMouseDown={(evento) => evento.preventDefault()}
+            onClick={() => { setAberto(false); window.open("/configuracoes?aba=planos", "_blank", "noopener,noreferrer"); }}
+            style={{ ...S.dropOption, borderTop: "1px solid #e2e8f0", color: "#2563eb", fontWeight: "600", display: "flex", alignItems: "center", gap: "8px" }}>
+            <span style={{ fontSize: "17px", lineHeight: 1 }}>＋</span>
+            Adicionar novo procedimento
+          </button>
         </div>
       )}
     </div>
