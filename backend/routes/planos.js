@@ -161,13 +161,21 @@ router.put("/procedimentos/:id", (req, res) => {
 });
 
 router.delete("/procedimentos/:id", (req, res) => {
+  const idClinica = clinicaId(req);
   db.run(
-    "DELETE FROM procedimentos_catalogo WHERE id = ? AND clinica_id = ?",
-    [req.params.id, clinicaId(req)],
-    function (err) {
-      if (err) return erroInterno(res);
-      if (!this.changes) return res.status(404).json({ erro: "Procedimento não encontrado nesta clínica." });
-      res.json({ mensagem: "Procedimento excluído do catálogo. Os preços associados também foram removidos." });
+    "DELETE FROM plano_procedimentos WHERE procedimento_id = ? AND clinica_id = ?",
+    [req.params.id, idClinica],
+    (priceErr) => {
+      if (priceErr) return erroInterno(res);
+      db.run(
+        "DELETE FROM procedimentos_catalogo WHERE id = ? AND clinica_id = ?",
+        [req.params.id, idClinica],
+        function (err) {
+          if (err) return erroInterno(res);
+          if (!this.changes) return res.status(404).json({ erro: "Procedimento não encontrado nesta clínica." });
+          res.json({ mensagem: "Procedimento excluído do catálogo. Os preços associados também foram removidos." });
+        }
+      );
     }
   );
 });
