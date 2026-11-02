@@ -9,6 +9,7 @@ import AbaPagamentos from "../components/AbaPagamentos";
 import AbaEvolucoes from "../components/AbaEvolucoes";
 import AbaTratamentos from "../components/AbaTratamentos";
 import Odontograma from "../components/Odontograma";
+import CadastroPaciente from "./CadastroPaciente";
 
 /* ── Helpers ─────────────────────────────────────────────── */
 const AVATAR_PALETTES = [
@@ -220,6 +221,7 @@ function ProntuarioPaciente() {
   const [textoObservacoes, setTextoObservacoes] = useState("");
   const [salvandoObservacoes, setSalvandoObservacoes] = useState(false);
   const [erroObservacoes, setErroObservacoes] = useState("");
+  const [editarPacienteAberto, setEditarPacienteAberto] = useState(false);
 
 
   useEffect(() => {
@@ -437,7 +439,7 @@ function ProntuarioPaciente() {
         <div style={s.topBarRight}>
           <button
             style={s.btnSecondary}
-            onClick={() => navigate(`/pacientes/editar/${paciente.id}`)}
+            onClick={() => setEditarPacienteAberto(true)}
             onMouseEnter={(e) => (e.currentTarget.style.background = "#f8fafc")}
             onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
           >
@@ -732,6 +734,26 @@ function ProntuarioPaciente() {
         </div>
       )}
 
+      {editarPacienteAberto && (
+        <div
+          style={s.modalOverlay}
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) setEditarPacienteAberto(false);
+          }}
+        >
+          <div style={s.editarPacienteModal} role="dialog" aria-modal="true" aria-label="Editar paciente">
+            <CadastroPaciente
+              pacienteId={paciente.id}
+              onCancel={() => setEditarPacienteAberto(false)}
+              onSaved={(pacienteAtualizado) => {
+                setPaciente((atual) => ({ ...atual, ...pacienteAtualizado }));
+                setEditarPacienteAberto(false);
+              }}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Keyframes */}
       <style>{`
         @keyframes pulse-dot {
@@ -949,6 +971,7 @@ const s = {
   obsEmpty: { color: "#c1c9d4", fontStyle: "italic" },
   obsActionBtn: { display: "inline-flex", alignItems: "center", gap: "7px", padding: "7px 11px", border: "1px solid #dbeafe", borderRadius: "8px", background: "#eff6ff", color: "#2563eb", fontSize: "12px", fontWeight: "600", cursor: "pointer" },
   modalOverlay: { position: "fixed", inset: 0, zIndex: 1200, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px", background: "rgba(15, 23, 42, 0.48)", backdropFilter: "blur(3px)" },
+  editarPacienteModal: { width: "100%", maxWidth: "900px", maxHeight: "90vh", overflowY: "auto", background: "transparent", borderRadius: "16px" },
   obsModal: { width: "100%", maxWidth: "560px", background: "#fff", borderRadius: "16px", boxShadow: "0 24px 70px rgba(15, 23, 42, 0.22)", overflow: "hidden" },
   obsModalHeader: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "16px", padding: "22px 24px 16px", borderBottom: "1px solid #edf1f5" },
   obsModalTitle: { margin: 0, color: "#0f172a", fontSize: "17px", fontWeight: "650" },
