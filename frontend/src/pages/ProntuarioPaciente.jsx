@@ -474,13 +474,23 @@ function ProntuarioPaciente() {
       {/* ── Profile header ───────────────────────────────── */}
       <div style={s.profileCard}>
         <div style={s.profileTop}>
-          {/* Avatar */}
-          <div style={{ ...s.avatar, background: palette.bg, color: palette.color }}>
-            {paciente.foto_url ? (
-              <img src={paciente.foto_url} alt={paciente.nome} style={s.avatarImage} />
-            ) : (
-              getInitials(paciente.nome)
-            )}
+          {/* Foto do paciente */}
+          <div style={s.avatarColumn}>
+            <div style={{ ...s.avatar, background: palette.bg, color: palette.color }}>
+              {paciente.foto_url ? (
+                <img src={paciente.foto_url} alt={paciente.nome} style={s.avatarImage} />
+              ) : (
+                getInitials(paciente.nome)
+              )}
+            </div>
+            <button
+              type="button"
+              style={s.avatarPhotoButton}
+              onClick={() => setEditarPacienteAberto(true)}
+              title={paciente.foto_url ? "Alterar foto do paciente" : "Adicionar foto do paciente"}
+            >
+              {paciente.foto_url ? "Alterar foto" : "Adicionar foto"}
+            </button>
           </div>
 
           {/* Info */}
@@ -894,6 +904,13 @@ const s = {
   profileTop: {
     display: "flex", alignItems: "flex-start", gap: "20px",
     padding: "28px 28px 20px", flexWrap: "wrap",
+  },
+  avatarColumn: {
+    display: "flex", flexDirection: "column", alignItems: "center", gap: "7px", flexShrink: 0,
+  },
+  avatarPhotoButton: {
+    border: "none", background: "transparent", color: "#2563eb",
+    fontSize: "11px", fontWeight: "600", cursor: "pointer", padding: "2px 4px",
   },
   avatar: {
     width: "72px", height: "72px", borderRadius: "16px",
