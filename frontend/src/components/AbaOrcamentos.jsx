@@ -174,6 +174,7 @@ function AbaOrcamentos({ pacienteId }) {
 
   const [dentistaResponsavel, setDentistaResponsavel] = useState("");
   const [formData, setFormData] = useState({ ...EMPTY_FORM, itens: [] });
+  const [tipoDesconto, setTipoDesconto] = useState("valor");
   const [itemAtual, setItemAtual] = useState({ ...EMPTY_ITEM });
   const [salvando, setSalvando] = useState(false);
   const [erroForm, setErroForm] = useState("");
@@ -227,6 +228,7 @@ function AbaOrcamentos({ pacienteId }) {
   function abrirFormNovo() {
     setEditando(null);
     setFormData({ ...EMPTY_FORM, itens: [] });
+    setTipoDesconto("valor");
     setItemAtual({ ...EMPTY_ITEM });
     setErroForm("");
     setTela("form");
@@ -235,6 +237,7 @@ function AbaOrcamentos({ pacienteId }) {
   function abrirFormEditar(item) {
     setEditando(item);
     setItemAtual({ ...EMPTY_ITEM });
+    setTipoDesconto("valor");
     setFormData({
       data: item.data || dataHojeISO(),
       descricao: item.descricao || "",
@@ -311,7 +314,7 @@ function AbaOrcamentos({ pacienteId }) {
         paciente_id: Number(pacienteId),
         data: formData.data,
         descricao: formData.descricao || "",
-        desconto: Math.min(totalForm, Math.max(0, Number(formData.desconto) || 0)),
+        desconto: descontoForm,
         itens: itensValidos.map((i) => ({
           dente: i.dente || "",
           procedimento: i.procedimento,
@@ -389,7 +392,10 @@ function AbaOrcamentos({ pacienteId }) {
 
   /* ── Totais ──────────────────────────────── */
   const totalForm = calcularTotalItens(formData.itens);
-  const descontoForm = Math.min(totalForm, Math.max(0, Number(formData.desconto) || 0));
+  const descontoInformado = Math.max(0, Number(formData.desconto) || 0);
+  const descontoForm = tipoDesconto === "porcentagem"
+    ? totalForm * Math.min(100, descontoInformado) / 100
+    : Math.min(totalForm, descontoInformado);
   const totalFinalForm = Math.max(0, totalForm - descontoForm);
 
   /* ═══════════════════════════════════════════
@@ -751,9 +757,13 @@ function AbaOrcamentos({ pacienteId }) {
                 <span style={S.totaisLabel}>Subtotal</span>
                 <span style={S.totaisValue}>{formatarMoeda(totalForm)}</span>
               </div>
-              <div style={{ ...S.totaisRow, alignItems: "center", padding: "10px 0" }}>
-                <label htmlFor="orcamento-desconto" style={S.totaisLabel}>Desconto (R$)</label>
-                <input id="orcamento-desconto" type="number" min="0" max={totalForm} step="0.01" value={formData.desconto} onChange={(e) => setFormData((p) => ({ ...p, desconto: e.target.value }))} placeholder="0,00" style={{ ...S.input, maxWidth: "140px", textAlign: "right" }} />
+              <div style={{ ...S.totaisRow, alignItems: "center", padding: "10px 0", gap: "12px", flexWrap: "wrap" }}>
+                <label htmlFor="orcamento-desconto" style={S.totaisLabel}>Tipo de desconto</label>
+                <select value={tipoDesconto} onChange={(e) => { setTipoDesconto(e.target.value); setFormData((p) => ({ ...p, desconto: 0 })); }} style={{ ...S.input, maxWidth: "170px" }}>
+                  <option value="valor">Valor (R$)</option>
+                  <option value="porcentagem">Porcentagem (%)</option>
+                </select>
+                <input id="orcamento-desconto" type="number" min="0" max={tipoDesconto === "porcentagem" ? 100 : totalForm} step={tipoDesconto === "porcentagem" ? "0.1" : "0.01"} value={formData.desconto} onChange={(e) => setFormData((p) => ({ ...p, desconto: e.target.value }))} placeholder={tipoDesconto === "porcentagem" ? "0%" : "0,00"} style={{ ...S.input, maxWidth: "140px", textAlign: "right" }} />
               </div>
               {descontoForm > 0 && <div style={S.totaisRow}>
                 <span style={S.totaisLabel}>Desconto aplicado</span>
