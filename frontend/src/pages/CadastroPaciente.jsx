@@ -2,9 +2,10 @@ import API_URL from "../api";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
-function CadastroPaciente() {
+function CadastroPaciente({ pacienteId, onCancel, onSaved }) {
   const navigate = useNavigate();
-  const { id } = useParams();
+  const { id: routeId } = useParams();
+  const id = pacienteId || routeId;
 
   const [carregando, setCarregando] = useState(!!id);
   const [salvando, setSalvando] = useState(false);
@@ -88,7 +89,7 @@ function CadastroPaciente() {
         setErroModal("Não foi possível carregar o paciente.");
       })
       .finally(() => setCarregando(false));
-  }, [id, navigate]);
+  }, [id]);
 
   const atualizarCampo = (campo, valor) => {
     setForm((prev) => ({
@@ -239,7 +240,8 @@ function CadastroPaciente() {
         throw new Error(data.erro || "Erro ao salvar paciente");
       }
 
-      navigate("/pacientes");
+      if (onSaved) onSaved(data);
+      else navigate("/pacientes");
     } catch (erro) {
       console.error(erro);
       setErroModal(erro.message || "Não foi possível salvar o paciente.");
@@ -513,7 +515,7 @@ function CadastroPaciente() {
           <button
             type="button"
             style={styles.secondaryButton}
-            onClick={() => navigate("/pacientes")}
+            onClick={() => (onCancel ? onCancel() : navigate("/pacientes"))}
           >
             Cancelar
           </button>
