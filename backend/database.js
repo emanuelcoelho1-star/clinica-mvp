@@ -626,6 +626,8 @@ db.serialize(() => {
   /* ══════════════════════════════════════════════════════════
      MIGRAÇÕES — Tabelas existentes (pacientes, usuarios)
      ══════════════════════════════════════════════════════════ */
+  adicionarColunaSeNaoExistir("orcamentos", "descricao", "TEXT");
+  adicionarColunaSeNaoExistir("orcamentos", "dentista_responsavel", "TEXT");
   adicionarColunaSeNaoExistir("pacientes", "telefone", "TEXT");
   adicionarColunaSeNaoExistir("pacientes", "email", "TEXT");
   adicionarColunaSeNaoExistir("pacientes", "como_conheceu", "TEXT");
