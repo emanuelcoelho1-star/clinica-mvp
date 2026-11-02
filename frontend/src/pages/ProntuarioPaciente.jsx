@@ -664,19 +664,25 @@ function ProntuarioPaciente() {
                 {obterListaObservacoes(paciente.observacoes).length === 0 ? (
                   <div style={s.obsBox}><span style={s.obsEmpty}>Nenhuma observação cadastrada.</span></div>
                 ) : obterListaObservacoes(paciente.observacoes).map((observacao, indice) => (
-                  <div key={indice} style={s.obsBox}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
-                      <span style={{ whiteSpace: "pre-wrap", flex: 1 }}>{observacao}</span>
-                      <button
-                        type="button"
-                        disabled={salvandoObservacoes}
-                        onClick={() => {
-                          if (window.confirm("Deseja excluir esta observação?")) excluirObservacao(indice);
-                        }}
-                        style={{ border: "0", background: "transparent", color: "#dc2626", cursor: "pointer", fontSize: "12px", fontWeight: 600, flexShrink: 0 }}
-                        aria-label="Excluir observação"
-                      >Excluir</button>
-                    </div>
+                  <div key={indice} style={s.obsItem}>
+                    <span style={s.obsItemText}>{observacao}</span>
+                    <button
+                      type="button"
+                      disabled={salvandoObservacoes}
+                      onClick={() => {
+                        if (window.confirm("Deseja excluir esta observação?")) excluirObservacao(indice);
+                      }}
+                      style={s.obsDeleteBtn}
+                      aria-label="Excluir observação"
+                      title="Excluir observação"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M3 6h18" />
+                        <path d="M8 6V4h8v2" />
+                        <path d="m19 6-1 14H6L5 6" />
+                        <path d="M10 11v5M14 11v5" />
+                      </svg>
+                    </button>
                   </div>
                 ))}
               </div>
@@ -1006,6 +1012,20 @@ const s = {
     color: "#334155", fontSize: "14px", lineHeight: 1.7,
     whiteSpace: "pre-wrap", minHeight: "80px",
     borderLeft: "3px solid #e2e8f0",
+  },
+  obsItem: {
+    display: "flex", alignItems: "flex-start", justifyContent: "space-between",
+    gap: "14px", padding: "14px 14px 14px 16px", borderRadius: "12px",
+    background: "#fafbfc", border: "1px solid #edf1f5",
+    borderLeft: "3px solid #cbd5e1",
+  },
+  obsItemText: { flex: 1, minWidth: 0, color: "#334155", fontSize: "13px", lineHeight: 1.7, whiteSpace: "pre-wrap", overflowWrap: "anywhere" },
+  obsDeleteBtn: {
+    display: "inline-flex", alignItems: "center", justifyContent: "center",
+    width: "34px", height: "34px", flexShrink: 0, padding: 0,
+    border: "1px solid #fee2e2", borderRadius: "9px",
+    background: "#fff7f7", color: "#dc2626", cursor: "pointer",
+    transition: "all 0.15s ease",
   },
   obsEmpty: { color: "#c1c9d4", fontStyle: "italic" },
   obsActionBtn: { display: "inline-flex", alignItems: "center", gap: "7px", padding: "7px 11px", border: "1px solid #dbeafe", borderRadius: "8px", background: "#eff6ff", color: "#2563eb", fontSize: "12px", fontWeight: "600", cursor: "pointer" },
