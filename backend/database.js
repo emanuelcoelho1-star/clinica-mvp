@@ -690,6 +690,9 @@ db.serialize(() => {
   adicionarColunaSeNaoExistir("pacientes", "responsavel_data_nascimento", "TEXT");
   adicionarColunaSeNaoExistir("pacientes", "responsavel_telefone", "TEXT");
 
+  adicionarColunaSeNaoExistir("procedimentos_catalogo", "aceita_faces", "INTEGER NOT NULL DEFAULT 0");
+  adicionarColunaSeNaoExistir("procedimentos_catalogo", "custo_tratamento", "REAL NOT NULL DEFAULT 0");
+
   adicionarColunaSeNaoExistir("usuarios", "nome", "TEXT DEFAULT 'Administrador'");
   adicionarColunaSeNaoExistir("usuarios", "created_at", "TEXT");
   adicionarColunaSeNaoExistir("usuarios", "role_id", "INTEGER DEFAULT 1"); // ← NOVO: RBAC
