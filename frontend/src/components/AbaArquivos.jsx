@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import API_URL from "../api";
+import { useTheme } from "../contexts/ThemeContext";
 
 /* ═══════════════════════════════════════════════════════════
    HELPERS
@@ -252,6 +253,8 @@ function FileIcon({ arquivo }) {
    COMPONENTE
    ═══════════════════════════════════════════════════════════ */
 function AbaArquivos({ pacienteId }) {
+  const { tema } = useTheme();
+  const isDark = tema === "dark";
   const [arquivos, setArquivos] = useState([]);
   const [pastas, setPastas] = useState([]);
   const [pastaAtualId, setPastaAtualId] = useState(null);
@@ -650,7 +653,7 @@ function AbaArquivos({ pacienteId }) {
                       return (
                         <div
                           key={`pasta-${p.id}`}
-                          style={{ ...S.folderCard, ...(hovered ? S.fileExplorerItemHover : {}) }}
+                          style={{ ...S.folderCard, ...(isDark ? S.folderCardDark : {}), ...(hovered ? S.fileExplorerItemHover : {}) }}
                           onMouseEnter={() => setHoveredCardId(`pasta-${p.id}`)}
                           onMouseLeave={() => setHoveredCardId(null)}
                         >
@@ -792,6 +795,7 @@ function AbaArquivos({ pacienteId }) {
                 <button
                   style={{
                     ...S.btnSecondary,
+                    ...(isDark ? S.btnSecondaryDark : {}),
                     ...(hoveredBtn === "cancel-modal" ? S.btnSecondaryHover : {}),
                   }}
                   onMouseEnter={() => setHoveredBtn("cancel-modal")}
@@ -804,6 +808,7 @@ function AbaArquivos({ pacienteId }) {
                 <button
                   style={{
                     ...S.btnDanger,
+                    ...(isDark ? S.btnDangerDark : {}),
                     ...(hoveredBtn === "confirm-modal" ? S.btnDangerHover : {}),
                   }}
                   onMouseEnter={() => setHoveredBtn("confirm-modal")}
@@ -980,7 +985,8 @@ const S = {
   breadcrumbSlash: { color: "#cbd5e1" },
   breadcrumbButton: { border: "none", background: "transparent", color: "#64748b", padding: "4px 0", fontSize: "13px", fontWeight: "600", cursor: "pointer" },
   folderGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(112px, 1fr))", gap: "22px 18px" },
-  folderCard: { position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: "5px", padding: "4px 5px 8px", minHeight: "132px", textAlign: "center", background: "transparent", border: "1px solid transparent", borderRadius: "10px", transition: "all .18s ease" },
+  folderCard: { position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: "5px", padding: "4px 5px 8px", minHeight: "132px", textAlign: "center", background: "transparent", border: "none", outline: "none", boxShadow: "none", borderRadius: "10px", transition: "all .18s ease" },
+  folderCardDark: { background: "transparent", border: "none", outline: "none", boxShadow: "none" },
   folderOpenButton: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", gap: "7px", width: "100%", padding: "0", border: "none", background: "transparent", textAlign: "center", cursor: "pointer" },
   folderDeleteButton: { display: "inline-flex", alignItems: "center", justifyContent: "center", alignSelf: "flex-end", gap: "6px", padding: "6px 9px", border: "1px solid #fee2e2", borderRadius: "8px", background: "#fff", color: "#dc2626", fontSize: "12px", fontWeight: "600", cursor: "pointer" },
   folderCardIcon: { display: "flex", alignItems: "center", justifyContent: "center", width: "100px", height: "100px", color: "#258ff0" },
@@ -1061,6 +1067,7 @@ const S = {
     height: "40px", boxSizing: "border-box",
   },
   btnSecondaryHover: { background: "#f8fafc", borderColor: "#cbd5e1" },
+  btnSecondaryDark: { background: "#1f2937", borderColor: "#374151", color: "#e5e7eb" },
   btnDanger: {
     display: "inline-flex", alignItems: "center", gap: "6px",
     border: "none", borderRadius: "10px", padding: "0 16px",
@@ -1068,6 +1075,7 @@ const S = {
     cursor: "pointer", transition: "all 0.2s ease", whiteSpace: "nowrap",
     height: "40px", boxSizing: "border-box",
   },
+  btnDangerDark: { background: "#b91c1c", color: "#fff" },
   btnDangerHover: {
     background: "#dc2626", boxShadow: "0 4px 12px rgba(239,68,68,0.3)", transform: "translateY(-1px)",
   },
