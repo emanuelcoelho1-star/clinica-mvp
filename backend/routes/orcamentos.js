@@ -88,7 +88,7 @@ router.get("/:id", auth, (req, res) => {
 // CRIAR ORÇAMENTO
 // =========================
 router.post("/", auth, (req, res) => {
-  const { paciente_id, data, descricao, itens } = req.body;
+  const { paciente_id, data, descricao, itens, desconto } = req.body;
 
   if (!paciente_id || !data) {
     return res.status(400).json({ erro: "Paciente e data são obrigatórios." });
@@ -100,12 +100,12 @@ router.post("/", auth, (req, res) => {
 
   const sqlOrcamento = `
     INSERT INTO orcamentos (paciente_id, data, status, desconto, observacoes, descricao, dentista_responsavel, clinica_id)
-    SELECT p.id, ?, ?, 0, '', ?, ?, ? FROM pacientes p WHERE p.id = ? AND p.clinica_id = ?
+    SELECT p.id, ?, ?, ?, '', ?, ?, ? FROM pacientes p WHERE p.id = ? AND p.clinica_id = ?
   `;
 
   db.run(
     sqlOrcamento,
-    [data, "pendente", descricao || "", req.user.nome || "", req.user.clinica_id, paciente_id, req.user.clinica_id],
+    [data, "pendente", Math.max(0, Number(desconto) || 0), descricao || "", req.user.nome || "", req.user.clinica_id, paciente_id, req.user.clinica_id],
     function (err) {
       if (err) {
         return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
@@ -174,14 +174,14 @@ router.put("/:id", auth, (req, res) => {
 
   const sqlUpdate = `
     UPDATE orcamentos SET
-      paciente_id = ?, data = ?, descricao = ?, dentista_responsavel = ?
+      paciente_id = ?, data = ?, descricao = ?, desconto = ?, dentista_responsavel = ?
     WHERE id = ? AND clinica_id = ?
       AND EXISTS (SELECT 1 FROM pacientes p WHERE p.id = ? AND p.clinica_id = ?)
   `;
 
   db.run(
     sqlUpdate,
-    [paciente_id, data, descricao || "", req.user.nome || "", id, req.user.clinica_id, paciente_id, req.user.clinica_id],
+    [paciente_id, data, descricao || "", Math.max(0, Number(desconto) || 0), req.user.nome || "", id, req.user.clinica_id, paciente_id, req.user.clinica_id],
     function (err) {
       if (err) {
         return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
