@@ -757,13 +757,16 @@ function AbaOrcamentos({ pacienteId }) {
                 <span style={S.totaisLabel}>Subtotal</span>
                 <span style={S.totaisValue}>{formatarMoeda(totalForm)}</span>
               </div>
-              <div style={{ ...S.totaisRow, alignItems: "center", padding: "10px 0", gap: "12px", flexWrap: "wrap" }}>
-                <label htmlFor="orcamento-desconto" style={S.totaisLabel}>Tipo de desconto</label>
-                <select value={tipoDesconto} onChange={(e) => { setTipoDesconto(e.target.value); setFormData((p) => ({ ...p, desconto: 0 })); }} style={{ ...S.input, maxWidth: "170px" }}>
-                  <option value="valor">Valor (R$)</option>
-                  <option value="porcentagem">Porcentagem (%)</option>
-                </select>
-                <input id="orcamento-desconto" type="number" min="0" max={tipoDesconto === "porcentagem" ? 100 : totalForm} step={tipoDesconto === "porcentagem" ? "0.1" : "0.01"} value={formData.desconto} onChange={(e) => setFormData((p) => ({ ...p, desconto: e.target.value }))} placeholder={tipoDesconto === "porcentagem" ? "0%" : "0,00"} style={{ ...S.input, maxWidth: "140px", textAlign: "right" }} />
+              <div style={{ ...S.totaisRow, alignItems: "center", padding: "10px 0", gap: "14px", flexWrap: "wrap" }}>
+                <label htmlFor="orcamento-desconto" style={{ ...S.totaisLabel, minWidth: "72px" }}>Desconto</label>
+                <div style={{ display: "flex", alignItems: "center", border: "1px solid #e2e8f0", borderRadius: "10px", background: "#fff", overflow: "hidden", minHeight: "42px" }}>
+                  <select aria-label="Tipo de desconto" value={tipoDesconto} onChange={(e) => { setTipoDesconto(e.target.value); setFormData((p) => ({ ...p, desconto: 0 })); }} style={{ height: "40px", border: "none", borderRight: "1px solid #e2e8f0", outline: "none", padding: "0 12px", background: "#f8fafc", color: "#475569", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}>
+                    <option value="valor">R$ Valor</option>
+                    <option value="porcentagem">% Porcentagem</option>
+                  </select>
+                  <input id="orcamento-desconto" type="number" min="0" max={tipoDesconto === "porcentagem" ? 100 : totalForm} step={tipoDesconto === "porcentagem" ? "0.1" : "0.01"} value={formData.desconto} onChange={(e) => setFormData((p) => ({ ...p, desconto: e.target.value }))} placeholder="0,00" style={{ width: "112px", height: "40px", border: "none", outline: "none", padding: "0 12px", background: "transparent", color: "#0f172a", fontSize: "14px", fontWeight: "600", textAlign: "right", boxSizing: "border-box" }} />
+                </div>
+                {descontoForm > 0 && <span style={{ fontSize: "12px", color: "#15803d", fontWeight: "600" }}>− {formatarMoeda(descontoForm)}</span>}
               </div>
               {descontoForm > 0 && <div style={S.totaisRow}>
                 <span style={S.totaisLabel}>Desconto aplicado</span>
