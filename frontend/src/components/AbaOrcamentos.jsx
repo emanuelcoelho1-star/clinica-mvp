@@ -46,6 +46,7 @@ const STATUS_OPTIONS = [
 /* Dropdown personalizado — mesmo padrão visual da Agenda */
 function CustomDropdown({ value, options, onChange, placeholder = "Selecione", maxHeight = "220px" }) {
   const [aberto, setAberto] = useState(false);
+  const [opcaoHover, setOpcaoHover] = useState(null);
   const ref = useRef(null);
   const selecionado = options.find((opcao) => opcao.value === value);
 
@@ -71,8 +72,10 @@ function CustomDropdown({ value, options, onChange, placeholder = "Selecione", m
         <div style={{ ...S.dropMenu, maxHeight }}>
           {options.length === 0 ? <div style={S.dropEmpty}>Nenhuma opção</div> : options.map((opcao, indice) => (
             <button key={opcao.value || indice} type="button"
-              onClick={() => { onChange(opcao.value); setAberto(false); }}
-              style={{ ...S.dropOption, ...(indice === options.length - 1 ? S.dropOptionLast : {}), ...(opcao.value === value ? S.dropOptionActive : {}) }}>
+              onMouseEnter={() => setOpcaoHover(opcao.value)}
+              onMouseLeave={() => setOpcaoHover(null)}
+              onClick={() => { onChange(opcao.value); setAberto(false); setOpcaoHover(null); }}
+              style={{ ...S.dropOption, ...(indice === options.length - 1 ? S.dropOptionLast : {}), ...(opcao.value === value || opcaoHover === opcao.value ? S.dropOptionActive : {}) }}>
               {opcao.label}
             </button>
           ))}
