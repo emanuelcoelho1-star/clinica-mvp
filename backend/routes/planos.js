@@ -8,7 +8,7 @@ router.use(auth);
 // O gerenciamento de planos e tabelas de preços é exclusivo do administrador
 // da clínica. Todas as consultas também são limitadas pelo clinica_id da sessão.
 router.use((req, res, next) => {
-  if (req.method === "GET" && req.path === "/padrao") return next();
+  if (req.method === "GET" && ["/padrao", "/opcoes-orcamento"].includes(req.path)) return next();
   db.get(
     `SELECT r.protegido
      FROM usuarios u
@@ -110,6 +110,39 @@ router.get("/padrao", (req, res) => {
       }
     );
   });
+});
+
+// Lista apenas planos ativos e seus procedimentos/preços para criação de orçamentos.
+router.get("/opcoes-orcamento", (req, res) => {
+  const idClinica = clinicaId(req);
+  db.all(
+    "SELECT id, nome, tipo FROM planos WHERE clinica_id = ? AND ativo = 1 ORDER BY nome COLLATE NOCASE",
+    [idClinica],
+    (err, planos) => {
+      if (err) return erroInterno(res);
+      if (!planos || !planos.length) return res.json([]);
+      db.all(
+        `SELECT pp.plano_id, pc.id, pc.nome, pc.usar_na_frente, pp.valor
+         FROM procedimentos_catalogo pc
+         LEFT JOIN plano_procedimentos pp
+           ON pp.procedimento_id = pc.id AND pp.clinica_id = pc.clinica_id
+         WHERE pc.clinica_id = ? AND pc.ativo = 1
+         ORDER BY pc.nome COLLATE NOCASE`,
+        [idClinica],
+        (procedimentosErr, procedimentos) => {
+          if (procedimentosErr) return erroInterno(res);
+          res.json(planos.map((plano) => ({
+            id: plano.id,
+            nome: plano.nome,
+            tipo: normalizarTipos(plano.tipo),
+            procedimentos: (procedimentos || [])
+              .filter((item) => Number(item.plano_id) === Number(plano.id))
+              .map(({ plano_id, ...item }) => item),
+          })));
+        }
+      );
+    }
+  );
 });
 
 // Catálogo único de procedimentos da clínica.
