@@ -740,13 +740,12 @@ function AbaOrcamentos({ pacienteId }) {
               <div style={S.fieldGroup}><label style={S.label}>Dente</label><input type="text" value={itemAtual.dente} onChange={(e) => handleItemChange("dente", e.target.value)} placeholder="Ex: 11" style={{ ...S.input, maxWidth: "100px" }} /></div>
               <div style={{ ...S.fieldGroup, flex: 2 }}><label style={S.label}>Procedimento</label><input type="text" value={itemAtual.procedimento} onChange={(e) => handleItemChange("procedimento", e.target.value)} placeholder="Ex: Restauração" style={S.input} /></div>
               <div style={S.fieldGroup}><label style={S.label}>Valor (R$)</label><input type="number" value={itemAtual.valor} onChange={(e) => handleItemChange("valor", e.target.value)} placeholder="0,00" style={{ ...S.input, maxWidth: "120px" }} min="0" step="0.01" /></div>
-              <div style={S.fieldGroup}><label style={S.label}>Qtd</label><input type="number" value={itemAtual.quantidade} onChange={(e) => handleItemChange("quantidade", e.target.value)} placeholder="1" style={{ ...S.input, maxWidth: "70px" }} min="1" /></div>
             </div></div>
             <div style={{ display: "flex", justifyContent: "center", width: "100%", marginTop: "16px" }}><button type="button" style={{ ...S.addItemBtn, border: "1px solid #2563eb", background: hoveredBtn === "add-item" ? "#1d4ed8" : "#2563eb", color: "#ffffff", boxShadow: "0 2px 5px rgba(37, 99, 235, 0.22)", padding: "11px 22px", fontSize: "14px", borderRadius: "10px", ...(hoveredBtn === "add-item" ? { transform: "translateY(-1px)", boxShadow: "0 4px 9px rgba(37, 99, 235, 0.28)" } : {}) }} onMouseEnter={() => setHoveredBtn("add-item")} onMouseLeave={() => setHoveredBtn(null)} onClick={adicionarItem}>{Icons.plus}<span>Adicionar procedimento</span></button></div>
             {formData.itens.length > 0 && <div style={{ ...S.totaisBox, marginTop: "14px" }}>
               <div style={{ fontWeight: 700, marginBottom: "8px", color: "#334155" }}>Procedimentos adicionados</div>
               {formData.itens.map((item, idx) => <div key={idx} style={{ ...S.totaisRow, padding: "10px 0", borderBottom: "1px solid #e2e8f0", gap: "12px" }}>
-                <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontWeight: 600, color: "#0f172a" }}>{item.procedimento}</div><div style={{ fontSize: "12px", color: "#64748b" }}>{item.dente ? "Dente: " + item.dente + " · " : ""}Qtd: {item.quantidade || 1} · Valor unitário: {formatarMoeda(item.valor)}</div></div>
+                <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontWeight: 600, color: "#0f172a" }}>{item.procedimento}</div><div style={{ fontSize: "12px", color: "#64748b" }}>{item.dente ? "Dente: " + item.dente + " · " : ""}Valor: {formatarMoeda(item.valor)}</div></div>
                 <strong>{formatarMoeda((Number(item.valor) || 0) * (Number(item.quantidade) || 1))}</strong>
                 <button type="button" onClick={() => removerItem(idx)} style={S.removeItemBtn} title="Remover procedimento">{Icons.close}</button>
               </div>)}
@@ -952,7 +951,6 @@ function AbaOrcamentos({ pacienteId }) {
                   <th style={S.th}>Dente</th>
                   <th style={S.th}>Procedimento</th>
                   <th style={{ ...S.th, textAlign: "right" }}>Valor Unit.</th>
-                  <th style={{ ...S.th, textAlign: "center" }}>Qtd</th>
                   <th style={{ ...S.th, textAlign: "right" }}>Subtotal</th>
                 </tr>
               </thead>
@@ -962,7 +960,6 @@ function AbaOrcamentos({ pacienteId }) {
                     <td style={S.td}>{item.dente || "—"}</td>
                     <td style={S.td}>{item.procedimento || "—"}</td>
                     <td style={{ ...S.td, textAlign: "right" }}>{formatarMoeda(item.valor)}</td>
-                    <td style={{ ...S.td, textAlign: "center" }}>{item.quantidade || 1}</td>
                     <td style={{ ...S.td, textAlign: "right", fontWeight: "600" }}>
                       {formatarMoeda((Number(item.valor) || 0) * (Number(item.quantidade) || 1))}
                     </td>
