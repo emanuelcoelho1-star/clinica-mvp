@@ -374,93 +374,31 @@ function AbaAnamneses({ pacienteId }) {
           </div>
         )}
 
-        {/* Lista de cards */}
+        {/* Lista no mesmo estilo de explorador da aba Arquivos */}
         {!carregando && !erro && anamneses.length > 0 && (
-          <div style={S.cardGrid}>
-            {anamneses.map((a) => {
-              const hovered = hoveredCardId === a.id;
-              const camposPreenchidos = contarCamposPreenchidos(a);
-              return (
-                <div
-                  key={a.id}
-                  style={{ ...S.card, ...(hovered ? S.cardHover : {}) }}
-                  onMouseEnter={() => setHoveredCardId(a.id)}
-                  onMouseLeave={() => setHoveredCardId(null)}
-                >
-                  {/* Topo do card */}
-                  <div style={S.cardTop}>
-                    <div style={S.cardDateBadge}>
-                      <span style={{ display: "flex", color: "#2563eb" }}>{Icons.calendar}</span>
-                      {formatarDataBR(a.data)}
-                    </div>
-                    <span style={S.cardId}>#{a.id}</span>
-                  </div>
-
-                  {/* Queixa */}
-                  {a.queixa_principal && (
-                    <div style={S.cardSection}>
-                      <span style={S.cardSectionLabel}>Queixa principal</span>
-                      <p style={S.cardSectionText}>{a.queixa_principal}</p>
-                    </div>
-                  )}
-
-                  {/* Sinais vitais pills */}
-                  {(a.pressao_arterial || a.frequencia_cardiaca || a.glicemia) && (
-                    <div style={S.pillRow}>
-                      {a.pressao_arterial && <span style={S.pill}>PA {a.pressao_arterial}</span>}
-                      {a.frequencia_cardiaca && <span style={S.pill}>FC {a.frequencia_cardiaca} bpm</span>}
-                      {a.glicemia && <span style={S.pill}>Glic {a.glicemia} mg/dL</span>}
-                    </div>
-                  )}
-
-                  {/* Campos preenchidos */}
-                  <div style={S.metaRow}>
-                    <span style={S.metaChip}>{camposPreenchidos} campo{camposPreenchidos !== 1 ? "s" : ""} preenchido{camposPreenchidos !== 1 ? "s" : ""}</span>
-                  </div>
-
-                  {/* Ações */}
-                  <div style={S.cardActions}>
-                    <button
-                      style={{
-                        ...S.cardBtn,
-                        ...(hoveredBtn === `ver-${a.id}` ? S.cardBtnHover : {}),
-                      }}
-                      onMouseEnter={() => setHoveredBtn(`ver-${a.id}`)}
-                      onMouseLeave={() => setHoveredBtn(null)}
-                      onClick={() => abrirDetalhes(a)}
-                    >
-                      {Icons.eye}
-                      <span>Ver</span>
+          <div style={S.contentPanel}>
+            <div style={S.anamneseExplorerGrid}>
+              {anamneses.map((a) => {
+                const hovered = hoveredCardId === a.id;
+                const camposPreenchidos = contarCamposPreenchidos(a);
+                return (
+                  <div key={a.id} style={{ ...S.anamneseExplorerItem, ...(hovered ? S.fileExplorerItemHover : {}) }}
+                    onMouseEnter={() => setHoveredCardId(a.id)} onMouseLeave={() => setHoveredCardId(null)}>
+                    <button type="button" style={S.anamneseFileButton} onClick={() => abrirDetalhes(a)} title={`Ver anamnese #${a.id}`}>
+                      <span style={S.anamneseFileIcon}>{Icons.clipboard}</span>
                     </button>
-                    <button
-                      style={{
-                        ...S.cardBtn,
-                        ...(hoveredBtn === `editar-${a.id}` ? S.cardBtnHover : {}),
-                      }}
-                      onMouseEnter={() => setHoveredBtn(`editar-${a.id}`)}
-                      onMouseLeave={() => setHoveredBtn(null)}
-                      onClick={() => abrirFormEditar(a)}
-                    >
-                      {Icons.edit}
-                      <span>Editar</span>
-                    </button>
-                    <button
-                      style={{
-                        ...S.cardBtn,
-                        ...S.cardBtnDanger,
-                        ...(hoveredBtn === `excluir-${a.id}` ? S.cardBtnDangerHover : {}),
-                      }}
-                      onMouseEnter={() => setHoveredBtn(`excluir-${a.id}`)}
-                      onMouseLeave={() => setHoveredBtn(null)}
-                      onClick={() => setConfirmarExclusao(a)}
-                    >
-                      {Icons.trash}
-                      <span>Excluir</span>
-                    </button>
+                    <div style={S.fileTileName}>Anamnese #{a.id}</div>
+                    <div style={S.fileTileMeta}>{formatarDataBR(a.data)}</div>
+                    <div style={S.fileTileMeta}>{camposPreenchidos} campo{camposPreenchidos !== 1 ? "s" : ""} preenchido{camposPreenchidos !== 1 ? "s" : ""}</div>
+                    {hovered && <div style={S.anamneseFileActions}>
+                      <button type="button" title="Ver" aria-label="Ver anamnese" style={S.anamneseActionButton} onClick={() => abrirDetalhes(a)}>{Icons.eye}</button>
+                      <button type="button" title="Editar" aria-label="Editar anamnese" style={S.anamneseActionButton} onClick={() => abrirFormEditar(a)}>{Icons.edit}</button>
+                      <button type="button" title="Excluir" aria-label="Excluir anamnese" style={{ ...S.anamneseActionButton, color: "#dc2626" }} onClick={() => setConfirmarExclusao(a)}>{Icons.trash}</button>
+                    </div>}
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         )}
 
@@ -631,27 +569,15 @@ function AbaAnamneses({ pacienteId }) {
      ═══════════════════════════════════════════ */
   if (tela === "detalhes" && detalhes) {
     return (
-      <div style={S.wrapper}>
+      <div style={S.overlay} onClick={voltarParaLista}>
+        <div style={S.detailsModal} onClick={(e) => e.stopPropagation()}>
 
-        {/* Header */}
-        <div style={S.header}>
+        <div style={S.detailsModalHeader}>
           <div>
-            <button
-              style={{
-                ...S.backBtn,
-                ...(hoveredBtn === "back-det" ? S.backBtnHover : {}),
-              }}
-              onMouseEnter={() => setHoveredBtn("back-det")}
-              onMouseLeave={() => setHoveredBtn(null)}
-              onClick={voltarParaLista}
-            >
-              {Icons.arrowLeft}
-              <span>Voltar</span>
-            </button>
             <h2 style={S.title}>Anamnese #{detalhes.id}</h2>
             <p style={S.subtitle}>Registrada em {formatarDataBR(detalhes.data)}</p>
           </div>
-          <div style={{ display: "flex", gap: "8px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <button
               style={{
                 ...S.btnSecondary,
@@ -676,6 +602,7 @@ function AbaAnamneses({ pacienteId }) {
               {Icons.trash}
               <span>Excluir</span>
             </button>
+            <button type="button" style={S.detailsClose} onClick={voltarParaLista} aria-label="Fechar detalhes">×</button>
           </div>
         </div>
 
@@ -740,6 +667,7 @@ function AbaAnamneses({ pacienteId }) {
             </div>
           </div>
         )}
+        </div>
       </div>
     );
   }
@@ -757,6 +685,17 @@ const S = {
     gap: "24px",
     animation: "anamnese-fade-in 0.3s ease",
   },
+
+  /* ── Explorador de anamneses ─────────────────────── */
+  anamneseExplorerGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(112px, 1fr))", gap: "22px 18px", alignItems: "start" },
+  anamneseExplorerItem: { position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: "7px", minWidth: 0, padding: "4px 5px 8px", borderRadius: "10px", transition: "background .15s ease" },
+  anamneseFileButton: { display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100px", padding: 0, border: "none", background: "transparent", cursor: "pointer" },
+  anamneseFileIcon: { width: "76px", height: "86px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "8px", background: "#eff6ff", color: "#2563eb" },
+  anamneseFileActions: { position: "absolute", top: "5px", right: "5px", display: "flex", gap: "3px", padding: "3px", borderRadius: "7px", background: "rgba(255,255,255,.96)", boxShadow: "0 2px 8px rgba(15,23,42,.12)" },
+  anamneseActionButton: { width: "25px", height: "25px", display: "inline-flex", alignItems: "center", justifyContent: "center", border: "none", borderRadius: "5px", background: "transparent", color: "#475569", cursor: "pointer" },
+  detailsModal: { width: "min(100%, 920px)", maxHeight: "90vh", overflowY: "auto", background: "#fff", borderRadius: "16px", padding: "26px", boxShadow: "0 24px 80px rgba(0,0,0,.3)", animation: "anamnese-fade-in 0.2s ease", boxSizing: "border-box" },
+  detailsModalHeader: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "16px", paddingBottom: "18px", marginBottom: "20px", borderBottom: "1px solid #e2e8f0" },
+  detailsClose: { width: "34px", height: "34px", flexShrink: 0, border: "1px solid #e2e8f0", borderRadius: "9px", background: "#fff", color: "#64748b", fontSize: "24px", lineHeight: 1, cursor: "pointer" },
 
   /* ── Header ──────────────────────────────────────── */
   header: {
