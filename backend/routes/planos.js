@@ -247,6 +247,22 @@ router.put("/procedimentos/:id", (req, res) => {
   );
 });
 
+router.patch("/procedimentos/:id/usar-na-frente", (req, res) => {
+  const usarNaFrente = req.body?.usar_na_frente;
+  if (![true, false, 0, 1].includes(usarNaFrente)) {
+    return res.status(400).json({ erro: "Informe se o procedimento deve aparecer no orçamento." });
+  }
+  db.run(
+    "UPDATE procedimentos_catalogo SET usar_na_frente = ? WHERE id = ? AND clinica_id = ?",
+    [usarNaFrente ? 1 : 0, req.params.id, clinicaId(req)],
+    function (err) {
+      if (err) return erroInterno(res);
+      if (!this.changes) return res.status(404).json({ erro: "Procedimento não encontrado nesta clínica." });
+      res.json({ mensagem: "Preferência do procedimento atualizada." });
+    }
+  );
+});
+
 router.delete("/procedimentos/:id", (req, res) => {
   const idClinica = clinicaId(req);
   db.run(
