@@ -173,6 +173,7 @@ function AbaOrcamentos({ pacienteId, pacienteNome }) {
   const [detalhes, setDetalhes] = useState(null);
 
   const [dentistaResponsavel, setDentistaResponsavel] = useState("");
+  const [dentistas, setDentistas] = useState([]);
   const [formData, setFormData] = useState({ ...EMPTY_FORM, itens: [] });
   const [tipoDesconto, setTipoDesconto] = useState("valor");
   const [itemAtual, setItemAtual] = useState({ ...EMPTY_ITEM });
@@ -189,6 +190,7 @@ function AbaOrcamentos({ pacienteId, pacienteNome }) {
   useEffect(() => {
     carregarOrcamentos();
     carregarDentistaResponsavel();
+    carregarDentistas();
   }, [pacienteId]);
 
   async function carregarDentistaResponsavel() {
@@ -204,6 +206,16 @@ function AbaOrcamentos({ pacienteId, pacienteNome }) {
       console.error("Erro ao identificar dentista responsável:", error);
       setDentistaResponsavel("Não foi possível identificar o usuário");
     }
+  }
+
+  async function carregarDentistas() {
+    try {
+      const tk = localStorage.getItem("token");
+      const r = await fetch(`${API_URL}/auth/usuarios`, { headers: { Authorization: tk || "" } });
+      if (!r.ok) throw new Error();
+      const lista = await r.json();
+      setDentistas(Array.isArray(lista) ? lista : []);
+    } catch (error) { console.error("Erro ao carregar profissionais:", error); setDentistas([]); }
   }
 
   async function carregarOrcamentos() {
@@ -228,6 +240,7 @@ function AbaOrcamentos({ pacienteId, pacienteNome }) {
   function abrirFormNovo() {
     setEditando(null);
     setFormData({ ...EMPTY_FORM, descricao: `Plano de Tratamento de ${pacienteNome || ""}`.trim(), itens: [] });
+    carregarDentistaResponsavel();
     setTipoDesconto("valor");
     setItemAtual({ ...EMPTY_ITEM });
     setErroForm("");
@@ -236,6 +249,7 @@ function AbaOrcamentos({ pacienteId, pacienteNome }) {
 
   function abrirFormEditar(item) {
     setEditando(item);
+    setDentistaResponsavel(item.dentista_responsavel || "");
     setItemAtual({ ...EMPTY_ITEM });
     setTipoDesconto("valor");
     setFormData({
@@ -315,6 +329,7 @@ function AbaOrcamentos({ pacienteId, pacienteNome }) {
         data: formData.data,
         descricao: formData.descricao || "",
         desconto: descontoForm,
+        dentista_responsavel: dentistaResponsavel,
         itens: itensValidos.map((i) => ({
           dente: i.dente || "",
           procedimento: i.procedimento,
@@ -714,7 +729,10 @@ function AbaOrcamentos({ pacienteId, pacienteNome }) {
               </div>
               <div style={S.fieldGroup}>
                 <label style={S.label}>Dentista responsável</label>
-                <input type="text" value={dentistaResponsavel || "Carregando usuário..."} readOnly style={S.input} />
+                <select value={dentistaResponsavel} onChange={(e) => setDentistaResponsavel(e.target.value)} style={S.input}>
+                  <option value="">Selecione o dentista</option>
+                  {dentistas.map((dentista) => <option key={dentista.id} value={dentista.nome}>{dentista.nome}</option>)}
+                </select>
               </div>
               <div style={S.fieldGroup}>
                 <label style={S.label}>Data</label>
