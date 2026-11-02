@@ -8,6 +8,7 @@ router.use(auth);
 // O gerenciamento de planos e tabelas de preços é exclusivo do administrador
 // da clínica. Todas as consultas também são limitadas pelo clinica_id da sessão.
 router.use((req, res, next) => {
+  if (req.method === "GET" && req.path === "/padrao") return next();
   db.get(
     `SELECT r.protegido
      FROM usuarios u
@@ -69,6 +70,28 @@ router.get("/", (req, res) => {
   );
 });
 
+// Retorna a tabela marcada como padrão e seus preços para preencher novos orçamentos.
+router.get("/padrao", (req, res) => {
+  const idClinica = clinicaId(req);
+  db.all("SELECT * FROM planos WHERE clinica_id = ? AND ativo = 1 ORDER BY id ASC", [idClinica], (err, rows) => {
+    if (err) return erroInterno(res);
+    const plano = (rows || []).find((item) => normalizarTipos(item.tipo).includes("padrao"));
+    if (!plano) return res.json({ plano: null, procedimentos: [] });
+    db.all(
+      `SELECT pc.id, pc.nome, pp.valor
+       FROM procedimentos_catalogo pc
+       LEFT JOIN plano_procedimentos pp ON pp.procedimento_id = pc.id AND pp.plano_id = ? AND pp.clinica_id = ?
+       WHERE pc.clinica_id = ? AND pc.ativo = 1
+       ORDER BY pc.nome COLLATE NOCASE`,
+      [plano.id, idClinica, idClinica],
+      (precosErr, procedimentos) => {
+        if (precosErr) return erroInterno(res);
+        res.json({ plano: { id: plano.id, nome: plano.nome }, procedimentos: procedimentos || [] });
+      }
+    );
+  });
+});
+
 // Catálogo único de procedimentos da clínica.
 router.get("/procedimentos", (req, res) => {
   db.all(
@@ -78,6 +101,21 @@ router.get("/procedimentos", (req, res) => {
   );
 });
 
+function removerPlanoPadraoAnterior(idClinica, planoAtualId, callback) {
+  db.all("SELECT id, tipo FROM planos WHERE clinica_id = ?", [idClinica], (err, rows) => {
+    if (err) return callback(err);
+    const anteriores = (rows || []).filter((plano) => plano.id !== planoAtualId && normalizarTipos(plano.tipo).includes("padrao"));
+    let indice = 0;
+    const proximo = () => {
+      if (indice >= anteriores.length) return callback(null);
+      const plano = anteriores[indice++];
+      const tipos = normalizarTipos(plano.tipo).filter((tipo) => tipo !== "padrao");
+      db.run("UPDATE planos SET tipo = ? WHERE id = ? AND clinica_id = ?", [JSON.stringify(tipos), plano.id, idClinica], (updateErr) => updateErr ? callback(updateErr) : proximo());
+    };
+    proximo();
+  });
+}
+
 router.post("/", (req, res) => {
   const { nome, tipo = [], descricao = "" } = req.body || {};
   const tiposValidos = ["convenio", "padrao"];
@@ -86,17 +124,22 @@ router.post("/", (req, res) => {
     return res.status(400).json({ erro: "Selecione opções válidas para o tipo de plano." });
   }
 
-  db.run(
-    "INSERT INTO planos (clinica_id, nome, tipo, descricao) VALUES (?, ?, ?, ?)",
-    [clinicaId(req), nome.trim(), JSON.stringify(tipo), String(descricao || "").trim()],
-    function (err) {
-      if (err) {
-        if (err.message.includes("UNIQUE")) return res.status(409).json({ erro: "Já existe um plano com esse nome." });
-        return erroInterno(res);
+  const idClinica = clinicaId(req);
+  db.serialize(() => {
+    db.run("BEGIN IMMEDIATE TRANSACTION");
+    const inserir = () => db.run(
+      "INSERT INTO planos (clinica_id, nome, tipo, descricao) VALUES (?, ?, ?, ?)",
+      [idClinica, nome.trim(), JSON.stringify(tipo), String(descricao || "").trim()],
+      function (err) {
+        if (err) return db.run("ROLLBACK", () => err.message.includes("UNIQUE") ? res.status(409).json({ erro: "Já existe um plano com esse nome." }) : erroInterno(res));
+        const id = this.lastID;
+        db.run("COMMIT", (commitErr) => commitErr ? db.run("ROLLBACK", () => erroInterno(res)) : res.status(201).json({ id, mensagem: "Plano criado com sucesso." }));
       }
-      res.status(201).json({ id: this.lastID, mensagem: "Plano criado com sucesso." });
-    }
-  );
+    );
+    if (tipo.includes("padrao")) {
+      removerPlanoPadraoAnterior(idClinica, null, (err) => err ? db.run("ROLLBACK", () => erroInterno(res)) : inserir());
+    } else inserir();
+  });
 });
 
 router.put("/:id", (req, res) => {
@@ -107,18 +150,22 @@ router.put("/:id", (req, res) => {
     return res.status(400).json({ erro: "Selecione opções válidas para o tipo de plano." });
   }
 
-  db.run(
-    "UPDATE planos SET nome = ?, tipo = ?, descricao = ?, ativo = ? WHERE id = ? AND clinica_id = ?",
-    [nome.trim(), JSON.stringify(tipo), String(descricao || "").trim(), ativo ? 1 : 0, req.params.id, clinicaId(req)],
-    function (err) {
-      if (err) {
-        if (err.message.includes("UNIQUE")) return res.status(409).json({ erro: "Já existe um plano com esse nome." });
-        return erroInterno(res);
+  const idClinica = clinicaId(req);
+  db.serialize(() => {
+    db.run("BEGIN IMMEDIATE TRANSACTION");
+    const atualizar = () => db.run(
+      "UPDATE planos SET nome = ?, tipo = ?, descricao = ?, ativo = ? WHERE id = ? AND clinica_id = ?",
+      [nome.trim(), JSON.stringify(tipo), String(descricao || "").trim(), ativo ? 1 : 0, req.params.id, idClinica],
+      function (err) {
+        if (err) return db.run("ROLLBACK", () => err.message.includes("UNIQUE") ? res.status(409).json({ erro: "Já existe um plano com esse nome." }) : erroInterno(res));
+        if (!this.changes) return db.run("ROLLBACK", () => res.status(404).json({ erro: "Plano não encontrado nesta clínica." }));
+        db.run("COMMIT", (commitErr) => commitErr ? db.run("ROLLBACK", () => erroInterno(res)) : res.json({ mensagem: "Plano atualizado com sucesso." }));
       }
-      if (!this.changes) return res.status(404).json({ erro: "Plano não encontrado nesta clínica." });
-      res.json({ mensagem: "Plano atualizado com sucesso." });
-    }
-  );
+    );
+    if (tipo.includes("padrao")) {
+      removerPlanoPadraoAnterior(idClinica, Number(req.params.id), (err) => err ? db.run("ROLLBACK", () => erroInterno(res)) : atualizar());
+    } else atualizar();
+  });
 });
 
 router.delete("/:id", (req, res) => {
