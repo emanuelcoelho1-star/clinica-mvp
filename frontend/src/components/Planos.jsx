@@ -8,7 +8,6 @@ const TIPOS = [
   { value: "outro", label: "Outro" },
 ];
 
-const moeda = (valor) => Number(valor || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const tokenHeaders = () => ({ Authorization: `Bearer ${localStorage.getItem("token") || ""}` });
 
 function Planos() {
@@ -50,7 +49,7 @@ function Planos() {
       ]);
       setPlanos(listaPlanos);
       setProcedimentos(listaProcedimentos);
-      const atual = listaPlanos.find((item) => item.id === (selecionarId || planoSelecionado)) || listaPlanos[0] || null;
+      const atual = listaPlanos.find((item) => item.id === selecionarId) || listaPlanos[0] || null;
       setPlanoSelecionado(atual?.id || null);
       setValores(atual?.valores || {});
     } catch (error) {
@@ -58,9 +57,9 @@ function Planos() {
     } finally {
       setCarregando(false);
     }
-  }, [requisicao, planoSelecionado]);
+  }, [requisicao]);
 
-  useEffect(() => { carregar(); }, []);
+  useEffect(() => { carregar(); }, [carregar]);
 
   const planoAtual = useMemo(
     () => planos.find((item) => item.id === planoSelecionado) || null,
