@@ -231,6 +231,7 @@ router.post("/register", registerLimiter, async (req, res) => {
         });
       });
     });
+    });
   } catch (error) {
     return res.status(500).json({ erro: "Erro interno no servidor." });
   }
