@@ -88,7 +88,13 @@ function CustomDropdown({ value, options, onChange, placeholder = "Selecione", m
 function ProcedimentoAutocomplete({ value, options, onChange, placeholder = "Digite ou selecione um procedimento", maxHeight = "240px" }) {
   const [aberto, setAberto] = useState(false);
   const ref = useRef(null);
-  const filtradas = options.filter((opcao) => opcao.label.toLocaleLowerCase("pt-BR").includes(String(value || "").toLocaleLowerCase("pt-BR")));
+  const termoBusca = String(value || "").trim().normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLocaleLowerCase("pt-BR");
+  const filtradas = termoBusca
+    ? options.filter((opcao) => {
+        const nome = String(opcao.label || "").normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLocaleLowerCase("pt-BR").trim();
+        return nome.startsWith(termoBusca);
+      })
+    : [];
 
   useEffect(() => {
     function fecharAoClicarFora(evento) {
