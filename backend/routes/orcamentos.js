@@ -130,8 +130,8 @@ router.post("/", auth, (req, res) => {
       const orcamentoId = this.lastID;
 
       const sqlItem = `
-        INSERT INTO orcamento_itens (orcamento_id, dente, procedimento, valor, quantidade)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO orcamento_itens (orcamento_id, dente, faces, procedimento, valor, quantidade)
+        VALUES (?, ?, ?, ?, ?, ?)
       `;
 
       let inseridos = 0;
@@ -145,6 +145,7 @@ router.post("/", auth, (req, res) => {
           [
             orcamentoId,
             item.dente || "",
+            item.faces || "",
             item.procedimento || "",
             item.valor || 0,
             item.quantidade || 1,
@@ -219,8 +220,8 @@ router.put("/:id", auth, (req, res) => {
           }
 
           const sqlItem = `
-            INSERT INTO orcamento_itens (orcamento_id, dente, procedimento, valor, quantidade)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO orcamento_itens (orcamento_id, dente, faces, procedimento, valor, quantidade)
+            VALUES (?, ?, ?, ?, ?, ?)
           `;
 
           let inseridos = 0;
@@ -234,6 +235,7 @@ router.put("/:id", auth, (req, res) => {
               [
                 id,
                 item.dente || "",
+                item.faces || "",
                 item.procedimento || "",
                 item.valor || 0,
                 item.quantidade || 1,
