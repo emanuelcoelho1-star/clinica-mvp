@@ -85,6 +85,45 @@ function CustomDropdown({ value, options, onChange, placeholder = "Selecione", m
   );
 }
 
+function ProcedimentoAutocomplete({ value, options, onChange, placeholder = "Digite ou selecione um procedimento", maxHeight = "240px" }) {
+  const [aberto, setAberto] = useState(false);
+  const ref = useRef(null);
+  const filtradas = options.filter((opcao) => opcao.label.toLocaleLowerCase("pt-BR").includes(String(value || "").toLocaleLowerCase("pt-BR")));
+
+  useEffect(() => {
+    function fecharAoClicarFora(evento) {
+      if (ref.current && !ref.current.contains(evento.target)) setAberto(false);
+    }
+    document.addEventListener("mousedown", fecharAoClicarFora);
+    return () => document.removeEventListener("mousedown", fecharAoClicarFora);
+  }, []);
+
+  return (
+    <div style={S.dropWrap} ref={ref}>
+      <input
+        type="text"
+        value={value}
+        placeholder={placeholder}
+        style={S.input}
+        onFocus={() => setAberto(true)}
+        onChange={(evento) => { onChange(evento.target.value); setAberto(true); }}
+      />
+      {aberto && (
+        <div style={{ ...S.dropMenu, maxHeight }}>
+          {filtradas.length ? filtradas.map((opcao, indice) => (
+            <button key={opcao.value || indice} type="button"
+              onMouseDown={(evento) => evento.preventDefault()}
+              onClick={() => { onChange(opcao.value); setAberto(false); }}
+              style={{ ...S.dropOption, ...(indice === filtradas.length - 1 ? S.dropOptionLast : {}), ...(opcao.value === value ? S.dropOptionActive : {}) }}>
+              {opcao.label}
+            </button>
+          )) : <div style={S.dropEmpty}>Nenhum procedimento cadastrado com esse nome. Você pode manter a descrição digitada.</div>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const EMPTY_ITEM = { dente: "", procedimento: "", valor: "", quantidade: "" };
 
 const EMPTY_FORM = {
@@ -857,7 +896,7 @@ function AbaOrcamentos({ pacienteId, pacienteNome }) {
 
             <div style={S.itemRow}><div style={{ ...S.itemFields, display: "grid", gridTemplateColumns: "minmax(90px, 120px) minmax(220px, 1fr) minmax(120px, 150px)", alignItems: "start", width: "100%" }}>
               <div style={{ ...S.fieldGroup, minWidth: 0 }}><label style={S.label}>Dente</label><input type="text" value={itemAtual.dente} onChange={(e) => handleItemChange("dente", e.target.value)} placeholder="Ex: 11" style={S.input} /></div>
-              <div style={{ ...S.fieldGroup, minWidth: 0 }}><label style={S.label}>Procedimento</label><CustomDropdown value={itemAtual.procedimento} onChange={(valor) => handleItemChange("procedimento", valor)} options={procedimentosPlanoPadrao.map((procedimento) => ({ value: procedimento.nome, label: procedimento.nome }))} placeholder={planoPadrao ? "Selecione o procedimento" : "Selecione um plano primeiro"} maxHeight="240px" />{planoPadrao && <span style={{ fontSize: "11px", color: "#64748b" }}>Tabela: {planoPadrao.nome}. O valor será preenchido automaticamente conforme o procedimento selecionado.</span>}</div>
+              <div style={{ ...S.fieldGroup, minWidth: 0 }}><label style={S.label}>Procedimento</label><ProcedimentoAutocomplete value={itemAtual.procedimento} onChange={(valor) => handleItemChange("procedimento", valor)} options={procedimentosPlanoPadrao.map((procedimento) => ({ value: procedimento.nome, label: procedimento.nome }))} placeholder="Digite ou selecione um procedimento" maxHeight="240px" />{planoPadrao && <span style={{ fontSize: "11px", color: "#64748b" }}>Tabela: {planoPadrao.nome}. O valor será preenchido automaticamente conforme o procedimento selecionado.</span>}</div>
               <div style={{ ...S.fieldGroup, minWidth: 0 }}><label style={S.label}>Valor (R$)</label><input type="number" value={itemAtual.valor} onChange={(e) => handleItemChange("valor", e.target.value)} placeholder="0,00" style={S.input} min="0" step="0.01" /></div>
             </div></div>
             <div style={{ display: "flex", justifyContent: "center", width: "100%", marginTop: "16px" }}><button type="button" style={{ ...S.addItemBtn, border: "1px solid #2563eb", background: hoveredBtn === "add-item" ? "#1d4ed8" : "#2563eb", color: "#ffffff", boxShadow: "0 2px 5px rgba(37, 99, 235, 0.22)", padding: "11px 22px", fontSize: "14px", borderRadius: "10px", ...(hoveredBtn === "add-item" ? { transform: "translateY(-1px)", boxShadow: "0 4px 9px rgba(37, 99, 235, 0.28)" } : {}) }} onMouseEnter={() => setHoveredBtn("add-item")} onMouseLeave={() => setHoveredBtn(null)} onClick={adicionarItem}>{Icons.plus}<span>Adicionar procedimento</span></button></div>
