@@ -263,6 +263,22 @@ router.patch("/procedimentos/:id/custo", (req, res) => {
   );
 });
 
+router.patch("/procedimentos/:id/aceita-faces", (req, res) => {
+  const aceitaFaces = req.body?.aceita_faces;
+  if (![true, false, 0, 1].includes(aceitaFaces)) {
+    return res.status(400).json({ erro: "Informe se o procedimento aceita faces." });
+  }
+  db.run(
+    "UPDATE procedimentos_catalogo SET aceita_faces = ? WHERE id = ? AND clinica_id = ?",
+    [aceitaFaces ? 1 : 0, req.params.id, clinicaId(req)],
+    function (err) {
+      if (err) return erroInterno(res);
+      if (!this.changes) return res.status(404).json({ erro: "Procedimento não encontrado nesta clínica." });
+      res.json({ mensagem: "Configuração de faces atualizada." });
+    }
+  );
+});
+
 router.patch("/procedimentos/:id/usar-na-frente", (req, res) => {
   const usarNaFrente = req.body?.usar_na_frente;
   if (![true, false, 0, 1].includes(usarNaFrente)) {
