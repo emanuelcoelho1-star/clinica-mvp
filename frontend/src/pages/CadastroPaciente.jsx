@@ -256,12 +256,14 @@ function CadastroPaciente({ pacienteId, onCancel, onSaved }) {
 
   return (
     <div>
-      <div style={styles.header}>
-        <h1 style={styles.title}>{id ? "Editar paciente" : "Cadastrar paciente"}</h1>
-        <p style={styles.subtitle}>
-          Preencha os dados do paciente para manter o cadastro completo da clínica.
-        </p>
-      </div>
+      {!onCancel && (
+        <div style={styles.header}>
+          <h1 style={styles.title}>{id ? "Editar paciente" : "Cadastrar paciente"}</h1>
+          <p style={styles.subtitle}>
+            Preencha os dados do paciente para manter o cadastro completo da clínica.
+          </p>
+        </div>
+      )}
 
       <form style={styles.card} onSubmit={salvarPaciente}>
         <div style={styles.section}>
