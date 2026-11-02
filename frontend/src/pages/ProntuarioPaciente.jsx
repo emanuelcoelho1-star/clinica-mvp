@@ -463,7 +463,6 @@ function ProntuarioPaciente() {
           <section style={s.overviewSection}>
             <div style={s.sectionHeading}>
               <div>
-                <span style={s.sectionEyebrow}>PRONTUÁRIO</span>
                 <h2 style={s.sectionTitle}>Resumo do paciente</h2>
               </div>
             </div>
