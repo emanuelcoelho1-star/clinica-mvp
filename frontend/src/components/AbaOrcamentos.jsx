@@ -219,6 +219,8 @@ function AbaOrcamentos({ pacienteId, pacienteNome }) {
   const [formData, setFormData] = useState({ ...EMPTY_FORM, itens: [] });
   const [tipoDesconto, setTipoDesconto] = useState("valor");
   const [itemAtual, setItemAtual] = useState({ ...EMPTY_ITEM });
+  const [planoPadrao, setPlanoPadrao] = useState(null);
+  const [procedimentosPlanoPadrao, setProcedimentosPlanoPadrao] = useState([]);
   const [salvando, setSalvando] = useState(false);
   const [erroForm, setErroForm] = useState("");
 
@@ -279,8 +281,17 @@ function AbaOrcamentos({ pacienteId, pacienteNome }) {
   }
 
   /* ── Abrir form ──────────────────────────── */
-  function abrirFormNovo() {
+  async function abrirFormNovo() {
     setEditando(null);
+    try {
+      const tk = localStorage.getItem("token");
+      const resposta = await fetch(`${API_URL}/planos/padrao`, { headers: { Authorization: `Bearer ${tk || ""}` } });
+      if (resposta.ok) {
+        const dados = await resposta.json();
+        setPlanoPadrao(dados.plano || null);
+        setProcedimentosPlanoPadrao(Array.isArray(dados.procedimentos) ? dados.procedimentos : []);
+      } else { setPlanoPadrao(null); setProcedimentosPlanoPadrao([]); }
+    } catch { setPlanoPadrao(null); setProcedimentosPlanoPadrao([]); }
     setFormData({ ...EMPTY_FORM, descricao: `Plano de Tratamento de ${pacienteNome || ""}`.trim(), itens: [] });
     carregarDentistaResponsavel();
     setTipoDesconto("valor");
@@ -331,6 +342,11 @@ function AbaOrcamentos({ pacienteId, pacienteNome }) {
   }
 
   function handleItemChange(field, value) {
+    if (field === "procedimento") {
+      const encontrado = procedimentosPlanoPadrao.find((item) => item.nome.toLocaleLowerCase("pt-BR") === String(value).trim().toLocaleLowerCase("pt-BR"));
+      setItemAtual((p) => ({ ...p, procedimento: value, ...(encontrado && encontrado.valor !== null ? { valor: String(encontrado.valor) } : {}) }));
+      return;
+    }
     setItemAtual((p) => ({ ...p, [field]: value }));
   }
 
@@ -801,7 +817,7 @@ function AbaOrcamentos({ pacienteId, pacienteNome }) {
 
             <div style={S.itemRow}><div style={S.itemFields}>
               <div style={S.fieldGroup}><label style={S.label}>Dente</label><input type="text" value={itemAtual.dente} onChange={(e) => handleItemChange("dente", e.target.value)} placeholder="Ex: 11" style={{ ...S.input, maxWidth: "100px" }} /></div>
-              <div style={{ ...S.fieldGroup, flex: 2 }}><label style={S.label}>Procedimento</label><input type="text" value={itemAtual.procedimento} onChange={(e) => handleItemChange("procedimento", e.target.value)} placeholder="Ex: Restauração" style={S.input} /></div>
+              <div style={{ ...S.fieldGroup, flex: 2 }}><label style={S.label}>Procedimento</label><input type="text" list="procedimentos-plano-padrao" value={itemAtual.procedimento} onChange={(e) => handleItemChange("procedimento", e.target.value)} placeholder="Ex: Restauração" style={S.input} /><datalist id="procedimentos-plano-padrao">{procedimentosPlanoPadrao.map((procedimento) => <option key={procedimento.id} value={procedimento.nome} />)}</datalist>{planoPadrao && <span style={{ fontSize: "11px", color: "#64748b" }}>Tabela padrão: {planoPadrao.nome}. Ao escolher um procedimento cadastrado, o valor será preenchido automaticamente.</span>}</div>
               <div style={S.fieldGroup}><label style={S.label}>Valor (R$)</label><input type="number" value={itemAtual.valor} onChange={(e) => handleItemChange("valor", e.target.value)} placeholder="0,00" style={{ ...S.input, maxWidth: "120px" }} min="0" step="0.01" /></div>
             </div></div>
             <div style={{ display: "flex", justifyContent: "center", width: "100%", marginTop: "16px" }}><button type="button" style={{ ...S.addItemBtn, border: "1px solid #2563eb", background: hoveredBtn === "add-item" ? "#1d4ed8" : "#2563eb", color: "#ffffff", boxShadow: "0 2px 5px rgba(37, 99, 235, 0.22)", padding: "11px 22px", fontSize: "14px", borderRadius: "10px", ...(hoveredBtn === "add-item" ? { transform: "translateY(-1px)", boxShadow: "0 4px 9px rgba(37, 99, 235, 0.28)" } : {}) }} onMouseEnter={() => setHoveredBtn("add-item")} onMouseLeave={() => setHoveredBtn(null)} onClick={adicionarItem}>{Icons.plus}<span>Adicionar procedimento</span></button></div>
