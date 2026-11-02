@@ -48,7 +48,7 @@ const EMPTY_ITEM = { dente: "", procedimento: "", valor: "", quantidade: "" };
 const EMPTY_FORM = {
   data: dataHojeISO(),
   descricao: "",
-  itens: [{ ...EMPTY_ITEM }],
+  itens: [],
 };
 
 /* ═══════════════════════════════════════════════════════════
@@ -172,7 +172,8 @@ function AbaOrcamentos({ pacienteId }) {
   const [detalhes, setDetalhes] = useState(null);
 
   const [dentistaResponsavel, setDentistaResponsavel] = useState("");
-  const [formData, setFormData] = useState({ ...EMPTY_FORM, itens: [{ ...EMPTY_ITEM }] });
+  const [formData, setFormData] = useState({ ...EMPTY_FORM, itens: [] });
+  const [itemAtual, setItemAtual] = useState({ ...EMPTY_ITEM });
   const [salvando, setSalvando] = useState(false);
   const [erroForm, setErroForm] = useState("");
 
@@ -224,13 +225,15 @@ function AbaOrcamentos({ pacienteId }) {
   /* ── Abrir form ──────────────────────────── */
   function abrirFormNovo() {
     setEditando(null);
-    setFormData({ ...EMPTY_FORM, itens: [{ ...EMPTY_ITEM }] });
+    setFormData({ ...EMPTY_FORM, itens: [] });
+    setItemAtual({ ...EMPTY_ITEM });
     setErroForm("");
     setTela("form");
   }
 
   function abrirFormEditar(item) {
     setEditando(item);
+    setItemAtual({ ...EMPTY_ITEM });
     setFormData({
       data: item.data || dataHojeISO(),
       descricao: item.descricao || "",
@@ -242,7 +245,7 @@ function AbaOrcamentos({ pacienteId }) {
               valor: i.valor || 0,
               quantidade: i.quantidade || 1,
             }))
-          : [{ ...EMPTY_ITEM }],
+          : [],
     });
     setErroForm("");
     setTela("form");
@@ -266,24 +269,19 @@ function AbaOrcamentos({ pacienteId }) {
     setFormData((p) => ({ ...p, [name]: value }));
   }
 
-  function handleItemChange(index, field, value) {
-    setFormData((p) => {
-      const novosItens = [...p.itens];
-      novosItens[index] = { ...novosItens[index], [field]: value };
-      return { ...p, itens: novosItens };
-    });
+  function handleItemChange(field, value) {
+    setItemAtual((p) => ({ ...p, [field]: value }));
   }
 
   function adicionarItem() {
-    setFormData((p) => ({ ...p, itens: [...p.itens, { ...EMPTY_ITEM }] }));
+    if (!itemAtual.procedimento.trim()) { setErroForm("Informe a descrição do procedimento antes de adicionar."); return; }
+    setFormData((p) => ({ ...p, itens: [...p.itens, { ...itemAtual, valor: Number(itemAtual.valor) || 0, quantidade: Number(itemAtual.quantidade) || 1 }] }));
+    setItemAtual({ ...EMPTY_ITEM });
+    setErroForm("");
   }
 
   function removerItem(index) {
-    setFormData((p) => {
-      if (p.itens.length <= 1) return p;
-      const novosItens = p.itens.filter((_, i) => i !== index);
-      return { ...p, itens: novosItens };
-    });
+    setFormData((p) => ({ ...p, itens: p.itens.filter((_, i) => i !== index) }));
   }
 
   /* ── Salvar ──────────────────────────────── */
@@ -294,7 +292,8 @@ function AbaOrcamentos({ pacienteId }) {
       return;
     }
 
-    const itensValidos = formData.itens.filter((i) => i.procedimento.trim() !== "");
+    const itensValidos = [...formData.itens];
+    if (itemAtual.procedimento.trim()) itensValidos.push({ ...itemAtual });
     if (itensValidos.length === 0) {
       setErroForm("Adicione pelo menos um procedimento.");
       return;
@@ -727,92 +726,21 @@ function AbaOrcamentos({ pacienteId }) {
               <span style={S.formCardTitle}>Procedimentos</span>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              {formData.itens.map((item, idx) => (
-                <div key={idx} style={S.itemRow}>
-                  <div style={S.itemFields}>
-                    <div style={S.fieldGroup}>
-                      <label style={S.label}>Dente</label>
-                      <input
-                        type="text"
-                        value={item.dente}
-                        onChange={(e) => handleItemChange(idx, "dente", e.target.value)}
-                        placeholder="Ex: 11"
-                        style={{ ...S.input, maxWidth: "100px" }}
-                      />
-                    </div>
-                    <div style={{ ...S.fieldGroup, flex: 2 }}>
-                      <label style={S.label}>Procedimento</label>
-                      <input
-                        type="text"
-                        value={item.procedimento}
-                        onChange={(e) => handleItemChange(idx, "procedimento", e.target.value)}
-                        placeholder="Ex: Restauração"
-                        style={S.input}
-                      />
-                    </div>
-                    <div style={S.fieldGroup}>
-                      <label style={S.label}>Valor (R$)</label>
-                      <input
-                        type="number"
-                        value={item.valor}
-                        onChange={(e) => handleItemChange(idx, "valor", e.target.value)}
-                        placeholder="0,00"
-                        style={{ ...S.input, maxWidth: "120px" }}
-                        min="0"
-                        step="0.01"
-                      />
-                    </div>
-                    <div style={S.fieldGroup}>
-                      <label style={S.label}>Qtd</label>
-                      <input
-                        type="number"
-                        value={item.quantidade}
-                        onChange={(e) => handleItemChange(idx, "quantidade", e.target.value)}
-                        style={{ ...S.input, maxWidth: "70px" }}
-                        min="1"
-                      />
-                    </div>
-                    <div style={{ ...S.fieldGroup, justifyContent: "flex-end", minWidth: "90px" }}>
-                      <label style={S.label}>Subtotal</label>
-                      <span style={S.subtotalText}>
-                        {formatarMoeda((Number(item.valor) || 0) * (Number(item.quantidade) || 1))}
-                      </span>
-                    </div>
-                  </div>
-                  {formData.itens.length > 1 && (
-                    <button
-                      type="button"
-                      style={{
-                        ...S.removeItemBtn,
-                        ...(hoveredBtn === `remove-${idx}` ? S.removeItemBtnHover : {}),
-                      }}
-                      onMouseEnter={() => setHoveredBtn(`remove-${idx}`)}
-                      onMouseLeave={() => setHoveredBtn(null)}
-                      onClick={() => removerItem(idx)}
-                      title="Remover item"
-                    >
-                      {Icons.close}
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            <button
-              type="button"
-              style={{
-                ...S.addItemBtn,
-                ...(hoveredBtn === "add-item" ? S.addItemBtnHover : {}),
-              }}
-              onMouseEnter={() => setHoveredBtn("add-item")}
-              onMouseLeave={() => setHoveredBtn(null)}
-              onClick={adicionarItem}
-            >
-              {Icons.plus}
-              <span>Adicionar procedimento</span>
-            </button>
-
+            <div style={S.itemRow}><div style={S.itemFields}>
+              <div style={S.fieldGroup}><label style={S.label}>Dente</label><input type="text" value={itemAtual.dente} onChange={(e) => handleItemChange("dente", e.target.value)} placeholder="Ex: 11" style={{ ...S.input, maxWidth: "100px" }} /></div>
+              <div style={{ ...S.fieldGroup, flex: 2 }}><label style={S.label}>Procedimento</label><input type="text" value={itemAtual.procedimento} onChange={(e) => handleItemChange("procedimento", e.target.value)} placeholder="Ex: Restauração" style={S.input} /></div>
+              <div style={S.fieldGroup}><label style={S.label}>Valor (R$)</label><input type="number" value={itemAtual.valor} onChange={(e) => handleItemChange("valor", e.target.value)} placeholder="0,00" style={{ ...S.input, maxWidth: "120px" }} min="0" step="0.01" /></div>
+              <div style={S.fieldGroup}><label style={S.label}>Qtd</label><input type="number" value={itemAtual.quantidade} onChange={(e) => handleItemChange("quantidade", e.target.value)} placeholder="1" style={{ ...S.input, maxWidth: "70px" }} min="1" /></div>
+            </div></div>
+            <button type="button" style={{ ...S.addItemBtn, ...(hoveredBtn === "add-item" ? S.addItemBtnHover : {}) }} onMouseEnter={() => setHoveredBtn("add-item")} onMouseLeave={() => setHoveredBtn(null)} onClick={adicionarItem}>{Icons.plus}<span>Adicionar procedimento</span></button>
+            {formData.itens.length > 0 && <div style={{ ...S.totaisBox, marginTop: "14px" }}>
+              <div style={{ fontWeight: 700, marginBottom: "8px", color: "#334155" }}>Procedimentos adicionados</div>
+              {formData.itens.map((item, idx) => <div key={idx} style={{ ...S.totaisRow, padding: "10px 0", borderBottom: "1px solid #e2e8f0", gap: "12px" }}>
+                <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontWeight: 600, color: "#0f172a" }}>{item.procedimento}</div><div style={{ fontSize: "12px", color: "#64748b" }}>{item.dente ? "Dente: " + item.dente + " · " : ""}Qtd: {item.quantidade || 1} · Valor unitário: {formatarMoeda(item.valor)}</div></div>
+                <strong>{formatarMoeda((Number(item.valor) || 0) * (Number(item.quantidade) || 1))}</strong>
+                <button type="button" onClick={() => removerItem(idx)} style={S.removeItemBtn} title="Remover procedimento">{Icons.close}</button>
+              </div>)}
+            </div>}
             {/* Totais */}
             <div style={S.totaisBox}>
               <div style={S.totaisRow}>
