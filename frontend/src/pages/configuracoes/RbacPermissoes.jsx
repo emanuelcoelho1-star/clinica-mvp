@@ -113,7 +113,7 @@ function RbacPermissoes({ roles, permissoes, token, onMsg, onErro }) {
   const ordemModulos = [
     "pacientes", "anamneses", "orcamentos", "tratamentos",
     "pagamentos", "evolucoes", "documentos", "arquivos",
-    "agenda", "financeiro", "planos", "configuracoes",
+    "agenda", "financeiro", "configuracoes", "planos",
   ];
   const modulos = [...new Set(permissoes.map((p) => p.modulo))].sort((a, b) => {
     const ia = ordemModulos.indexOf(a);
@@ -124,6 +124,7 @@ function RbacPermissoes({ roles, permissoes, token, onMsg, onErro }) {
     "anamneses", "orcamentos", "tratamentos", "pagamentos",
     "evolucoes", "documentos", "arquivos",
   ]);
+  const modulosSubConfiguracoes = new Set(["planos"]);
 
   /* ── Colunas de ações que realmente existem ──── */
   const acoesExistentes = [...new Set(permissoes.map((p) => p.acao))];
@@ -272,6 +273,8 @@ function RbacPermissoes({ roles, permissoes, token, onMsg, onErro }) {
                   !todasAtivas && permsDoModulo.some((p) => permissoesDaRole.includes(p.id));
 
                 const abaProntuario = modulosAbasProntuario.has(modulo);
+                const subConfiguracoes = modulosSubConfiguracoes.has(modulo);
+                const moduloAninhado = abaProntuario || subConfiguracoes;
                 const rotuloModulo =
                   modulo === "pacientes"
                     ? "Pacientes e visão geral"
@@ -280,13 +283,13 @@ function RbacPermissoes({ roles, permissoes, token, onMsg, onErro }) {
                 return (
                   <tr key={modulo} style={{
                     ...S.tr,
-                    background: abaProntuario ? (isDark ? "#111827" : "#fbfdff") : "transparent",
+                    background: moduloAninhado ? (isDark ? "#111827" : "#fbfdff") : "transparent",
                   }}>
                     <td style={{
                       ...S.td,
                       color: isDark ? "#e2e8f0" : "#0f172a",
-                      paddingLeft: abaProntuario ? "34px" : "16px",
-                      borderLeft: abaProntuario ? (isDark ? "3px solid #475569" : "3px solid #bfdbfe") : "3px solid transparent",
+                      paddingLeft: moduloAninhado ? "34px" : "16px",
+                      borderLeft: moduloAninhado ? (isDark ? "3px solid #475569" : "3px solid #bfdbfe") : "3px solid transparent",
                     }}>
                       <button
                         type="button"
@@ -302,7 +305,7 @@ function RbacPermissoes({ roles, permissoes, token, onMsg, onErro }) {
                           fontFamily: "inherit",
                         }}
                       >
-                        {abaProntuario && (
+                        {moduloAninhado && (
                           <span style={{ color: isDark ? "#94a3b8" : "#64748b", fontSize: "12px" }}>↳</span>
                         )}
                         <span style={{ fontSize: "14px", fontWeight: abaProntuario ? "500" : "600", color: isDark ? "#e2e8f0" : "#0f172a" }}>
