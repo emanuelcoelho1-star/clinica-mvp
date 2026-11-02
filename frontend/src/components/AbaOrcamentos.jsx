@@ -672,9 +672,7 @@ function AbaOrcamentos({ pacienteId, pacienteNome }) {
                           </button>
                         )}
                       </div>
-
-                        </div>
-                      )}
+                      </div>
                     </div>
                   </div>
                   <div style={S.documentRowActions}>
