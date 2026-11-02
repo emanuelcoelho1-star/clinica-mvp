@@ -692,6 +692,7 @@ db.serialize(() => {
 
   adicionarColunaSeNaoExistir("procedimentos_catalogo", "aceita_faces", "INTEGER NOT NULL DEFAULT 0");
   adicionarColunaSeNaoExistir("procedimentos_catalogo", "custo_tratamento", "REAL NOT NULL DEFAULT 0");
+  adicionarColunaSeNaoExistir("procedimentos_catalogo", "usar_na_frente", "INTEGER NOT NULL DEFAULT 1");
 
   adicionarColunaSeNaoExistir("usuarios", "nome", "TEXT DEFAULT 'Administrador'");
   adicionarColunaSeNaoExistir("usuarios", "created_at", "TEXT");
