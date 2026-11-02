@@ -335,23 +335,24 @@ function Planos() {
                   const aberta = especialidadeAberta === especialidade;
                   return (
                     <section key={especialidade} style={{ border: "1px solid #e2e8f0", borderRadius: "10px", overflow: "hidden", background: "#fff" }}>
-                      <button type="button" onClick={() => setEspecialidadeAberta(aberta ? "" : especialidade)} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", padding: "13px 15px", border: "none", background: aberta ? "#f8fafc" : "#fff", cursor: "pointer", textAlign: "left", fontFamily: "inherit" }}>
-                        <span style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                          <strong style={{ color: "#334155", fontSize: "13px" }}>{indice + 1}. {especialidade}</strong>
-                          <span style={{ color: "#94a3b8", fontSize: "11px" }}>{lista.length} {lista.length === 1 ? "procedimento" : "procedimentos"}</span>
-                        </span>
-                        <span style={{ color: "#64748b", fontSize: "16px" }}>{aberta ? "−" : "+"}</span>
-                      </button>
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "8px 12px", background: aberta ? "#f8fafc" : "#fff" }}>
+                        <button type="button" onClick={() => setEspecialidadeAberta(aberta ? "" : especialidade)} style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", padding: "5px 3px", border: "none", background: "transparent", cursor: "pointer", textAlign: "left", fontFamily: "inherit" }}>
+                          <span style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+                            <strong style={{ color: "#334155", fontSize: "13px" }}>{indice + 1}. {especialidade}</strong>
+                            <span style={{ color: "#94a3b8", fontSize: "11px" }}>{lista.length} {lista.length === 1 ? "procedimento" : "procedimentos"}</span>
+                          </span>
+                          <span style={{ color: "#64748b", fontSize: "16px" }}>{aberta ? "−" : "+"}</span>
+                        </button>
+                        <button type="button" style={{ ...botaoPrimario, padding: "8px 11px", whiteSpace: "nowrap", flexShrink: 0 }} onClick={() => {
+                          setCategoriaProcedimento(especialidade);
+                          setNomeProcedimento("");
+                          setCodigoProcedimento("");
+                          setMostrarFormProcedimento((aberto) => categoriaProcedimento === especialidade ? !aberto : true);
+                          setEspecialidadeAberta(especialidade);
+                        }}>+ Novo procedimento</button>
+                      </div>
                       {aberta && (
                         <div style={{ borderTop: "1px solid #f1f5f9" }}>
-                          <div style={{ padding: "12px 14px", display: "flex", justifyContent: "flex-end", background: "#fff" }}>
-                            <button type="button" style={botaoPrimario} onClick={() => {
-                              setCategoriaProcedimento(especialidade);
-                              setNomeProcedimento("");
-                              setCodigoProcedimento("");
-                              setMostrarFormProcedimento((aberto) => categoriaProcedimento === especialidade ? !aberto : true);
-                            }}>+ Novo procedimento</button>
-                          </div>
                           {mostrarFormProcedimento && categoriaProcedimento === especialidade && (
                             <form onSubmit={criarProcedimento} style={{ margin: "0 14px 14px", padding: "14px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "10px", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "9px" }}>
                               <input autoFocus style={campo} value={nomeProcedimento} onChange={(e) => setNomeProcedimento(e.target.value)} placeholder="Nome do procedimento" required />
