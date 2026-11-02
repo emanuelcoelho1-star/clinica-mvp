@@ -364,6 +364,18 @@ router.post("/", auth, (req, res) => {
 // =========================
 // ATUALIZAR PACIENTE
 // =========================
+router.patch("/:id/foto", auth, (req, res) => {
+  const { fotoUrl } = req.body;
+  if (typeof fotoUrl !== "string" || !fotoUrl.startsWith("data:image/")) {
+    return res.status(400).json({ erro: "Selecione uma imagem válida." });
+  }
+  db.run("UPDATE pacientes SET foto_url = ? WHERE id = ? AND clinica_id = ?", [fotoUrl, req.params.id, req.user.clinica_id], function (err) {
+    if (err) return res.status(500).json({ erro: "Não foi possível salvar a foto." });
+    if (!this.changes) return res.status(404).json({ erro: "Paciente não encontrado nesta clínica." });
+    res.json({ message: "Foto atualizada com sucesso.", foto_url: fotoUrl });
+  });
+});
+
 router.put("/:id", auth, (req, res) => {
   const { id } = req.params;
 
