@@ -101,6 +101,19 @@ router.post("/pastas", (req, res) => {
       if (patientErr) return res.status(500).json({ erro: "Não foi possível validar o paciente." });
       if (!patient) return res.status(404).json({ erro: "Paciente não encontrado nesta clínica." });
 
+      const verificarDuplicidade = () => db.get(
+        `SELECT id FROM pastas_arquivos
+         WHERE paciente_id = ? AND clinica_id = ?
+           AND COALESCE(pasta_pai_id, 0) = COALESCE(?, 0)
+           AND nome = ? COLLATE NOCASE`,
+        [paciente_id, req.user.clinica_id, pasta_pai_id || null, nomeSeguro],
+        (duplicateErr, duplicate) => {
+          if (duplicateErr) return res.status(500).json({ erro: "Não foi possível verificar se já existe uma pasta com esse nome." });
+          if (duplicate) return res.status(409).json({ erro: "Já existe uma pasta com esse nome neste local. Escolha outro nome." });
+          inserir();
+        }
+      );
+
       const inserir = () => db.run(
         "INSERT INTO pastas_arquivos (paciente_id, clinica_id, nome, pasta_pai_id) VALUES (?, ?, ?, ?)",
         [paciente_id, req.user.clinica_id, nomeSeguro, pasta_pai_id || null],
@@ -115,14 +128,14 @@ router.post("/pastas", (req, res) => {
         }
       );
 
-      if (!pasta_pai_id) return inserir();
+      if (!pasta_pai_id) return verificarDuplicidade();
       db.get(
         "SELECT id FROM pastas_arquivos WHERE id = ? AND paciente_id = ? AND clinica_id = ?",
         [pasta_pai_id, paciente_id, req.user.clinica_id],
         (parentErr, parent) => {
           if (parentErr) return res.status(500).json({ erro: "Não foi possível validar a pasta de destino." });
           if (!parent) return res.status(400).json({ erro: "Pasta de destino inválida." });
-          inserir();
+          verificarDuplicidade();
         }
       );
     }
