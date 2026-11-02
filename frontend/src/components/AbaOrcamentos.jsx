@@ -860,7 +860,7 @@ function AbaOrcamentos({ pacienteId, pacienteNome }) {
               <span style={S.formCardIcon}>{Icons.clipboard}</span>
               <span style={S.formCardTitle}>Dados do orçamento</span>
             </div>
-            <div style={S.formGrid2}>
+            <div style={{ ...S.formGrid2, gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}>
               <div style={{ ...S.fieldGroup, gridColumn: "1 / -1" }}>
                 <label style={S.label}>Descrição</label>
                 <textarea
@@ -872,7 +872,7 @@ function AbaOrcamentos({ pacienteId, pacienteNome }) {
                   rows={1}
                 />
               </div>
-              <div style={{ ...S.fieldGroup, gridColumn: "1 / -1" }}>
+              <div style={{ ...S.fieldGroup, minWidth: 0 }}>
                 <label style={S.label}>Plano do orçamento</label>
                 <CustomDropdown
                   value={planoSelecionadoId}
