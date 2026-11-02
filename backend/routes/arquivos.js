@@ -172,7 +172,13 @@ router.post("/", auth, upload.single("arquivo"), (req, res) => {
     });
   }
 
-  const nomeOriginal = path.basename(req.file.originalname || "arquivo").replace(/[\\r\\n\\0]/g, "").slice(0, 180);
+  // O Multer/Busboy pode entregar nomes multipart em latin1; converte para UTF-8
+  // para preservar acentos e caracteres especiais. Não limita o nome a 180 caracteres.
+  const nomeRecebido = String(req.file.originalname || "arquivo");
+  const nomeConvertido = /[ÃÂ]|�/.test(nomeRecebido)
+    ? Buffer.from(nomeRecebido, "latin1").toString("utf8")
+    : nomeRecebido;
+  const nomeOriginal = path.basename(nomeConvertido).replace(/[\\r\\n\\0]/g, "").trim() || "arquivo";
   const sql = `
     INSERT INTO arquivos (paciente_id, nome_original, nome_salvo, tamanho, mimetype, categoria, descricao, clinica_id, pasta_id)
     SELECT p.id, ?, ?, ?, ?, ?, ?, ?, ?
