@@ -195,7 +195,23 @@ function FileIcon({ arquivo }) {
         return response.blob();
       })
       .then((blob) => {
-        objectUrl = URL.createObjectURL(blob);
+        // Alguns arquivos antigos podem chegar como application/octet-stream.
+        // Reaplica o MIME correto pela extensão para o navegador conseguir renderizar a miniatura.
+        const extensao = getExtensao(nome);
+        const mimePorExtensao = {
+          jpg: "image/jpeg",
+          jpeg: "image/jpeg",
+          png: "image/png",
+          gif: "image/gif",
+          webp: "image/webp",
+        };
+        const mime = blob.type && blob.type.startsWith("image/")
+          ? blob.type
+          : (arquivo.mimetype && arquivo.mimetype.startsWith("image/")
+            ? arquivo.mimetype
+            : mimePorExtensao[extensao]);
+        const imagemBlob = mime ? new Blob([blob], { type: mime }) : blob;
+        objectUrl = URL.createObjectURL(imagemBlob);
         if (cancelled) URL.revokeObjectURL(objectUrl);
         else setThumbnailUrl(objectUrl);
       })
@@ -210,7 +226,7 @@ function FileIcon({ arquivo }) {
     return (
       <div style={S.fileTileImage}>
         {thumbnailUrl
-          ? <img src={thumbnailUrl} alt={nome} style={S.fileThumbnail} />
+          ? <img src={thumbnailUrl} alt={nome} style={S.fileThumbnail} onError={() => setThumbnailUrl("")} />
           : <span style={S.fileTileFallback}>{Icons.image}</span>}
       </div>
     );
