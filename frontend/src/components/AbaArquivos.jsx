@@ -688,8 +688,8 @@ function AbaArquivos({ pacienteId }) {
                         <div style={S.fileTileName} title={a.nome_original || "Arquivo"}>{a.nome_original || "Arquivo"}</div>
                         <div style={S.fileTileMeta}>{formatarDataBR(a.created_at || a.data)}</div>
                         {hovered && <div style={{ ...S.fileTileActions, ...(isDark ? S.fileTileActionsDark : {}) }}>
-                          <button type="button" title="Baixar" aria-label={`Baixar ${a.nome_original || "arquivo"}`} style={{ ...S.fileTileAction, ...(isDark ? S.fileTileDownloadDark : S.fileTileDownload) }} onClick={() => baixarArquivo(a)}>{Icons.download}</button>
-                          <button type="button" title="Excluir" aria-label={`Excluir ${a.nome_original || "arquivo"}`} style={{ ...S.fileTileAction, ...(isDark ? S.fileTileDeleteDark : S.fileTileDelete) }} onClick={() => setConfirmarExclusao(a)}>{Icons.trash}</button>
+                          <button type="button" title="Baixar" aria-label={`Baixar ${a.nome_original || "arquivo"}`} style={S.fileTileAction} onClick={() => baixarArquivo(a)}>{Icons.download}</button>
+                          <button type="button" title="Excluir" aria-label={`Excluir ${a.nome_original || "arquivo"}`} style={{ ...S.fileTileAction, color: "#dc2626" }} onClick={() => setConfirmarExclusao(a)}>{Icons.trash}</button>
                         </div>}
                       </div>
                     );
@@ -1152,13 +1152,9 @@ const S = {
   fileTileGeneric: { width: "100px", height: "80px", display: "flex", alignItems: "center", justifyContent: "center", background: "#eef2f7", color: "#64748b", boxShadow: "0 2px 5px rgba(15,23,42,.12)" },
   fileTileName: { width: "100%", color: "#0f172a", fontSize: "13px", fontWeight: "500", lineHeight: 1.25, textAlign: "center", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflowWrap: "anywhere", minHeight: "32px" },
   fileTileMeta: { color: "#94a3b8", fontSize: "11px", textAlign: "center" },
-  fileTileActions: { position: "absolute", top: "5px", right: "5px", display: "flex", gap: "5px", padding: "4px", borderRadius: "8px", background: "rgba(255,255,255,.96)", boxShadow: "0 2px 8px rgba(15,23,42,.12)" },
+  fileTileActions: { position: "absolute", top: "5px", right: "5px", display: "flex", gap: "3px", padding: "3px", borderRadius: "7px", background: "rgba(255,255,255,.96)", boxShadow: "0 2px 8px rgba(15,23,42,.12)" },
   fileTileActionsDark: { background: "#111827", boxShadow: "0 2px 10px rgba(0,0,0,.45)" },
-  fileTileAction: { width: "28px", height: "28px", display: "inline-flex", alignItems: "center", justifyContent: "center", border: "none", borderRadius: "6px", cursor: "pointer" },
-  fileTileDownload: { background: "#dbeafe", color: "#1d4ed8" },
-  fileTileDownloadDark: { background: "#1e3a8a", color: "#bfdbfe" },
-  fileTileDelete: { background: "#fee2e2", color: "#b91c1c" },
-  fileTileDeleteDark: { background: "#7f1d1d", color: "#fecaca" },
+  fileTileAction: { width: "25px", height: "25px", display: "inline-flex", alignItems: "center", justifyContent: "center", border: "none", borderRadius: "5px", background: "transparent", color: "#475569", cursor: "pointer" },
   cardGrid: {
     display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))", gap: "16px",
   },
