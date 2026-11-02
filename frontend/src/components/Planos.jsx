@@ -117,7 +117,7 @@ function Planos() {
       setCategoriaProcedimento("");
       setMostrarFormProcedimento(false);
       setMensagem("Procedimento adicionado ao catálogo.");
-      await carregar();
+      await carregar(planoSelecionado);
     } catch (error) {
       setErro(error.message);
     } finally {
