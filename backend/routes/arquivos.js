@@ -178,7 +178,7 @@ router.post("/", auth, upload.single("arquivo"), (req, res) => {
   const nomeConvertido = /[ÃÂ]|�/.test(nomeRecebido)
     ? Buffer.from(nomeRecebido, "latin1").toString("utf8")
     : nomeRecebido;
-  const nomeOriginal = path.basename(nomeConvertido).replace(/[\\r\\n\\0]/g, "").trim() || "arquivo";
+  const nomeOriginal = path.basename(nomeConvertido).replace(/[\r\n\0]/g, "").trim() || "arquivo";
   const sql = `
     INSERT INTO arquivos (paciente_id, nome_original, nome_salvo, tamanho, mimetype, categoria, descricao, clinica_id, pasta_id)
     SELECT p.id, ?, ?, ?, ?, ?, ?, ?, ?
@@ -306,8 +306,8 @@ router.get("/:id/download", (req, res) => {
           ? storedType
           : (mimeDaExtensao || "application/octet-stream");
         const disposition = inlineTypes.has(contentType) ? "inline" : "attachment";
-        const originalName = String(row.nome_original || "arquivo").replace(/[\\r\\n\\0]/g, "").slice(0, 180);
-        const fallbackName = originalName.replace(/[^\\x20-\\x7E]/g, "_").replace(/["\\\\]/g, "_") || "arquivo";
+        const originalName = String(row.nome_original || "arquivo").replace(/[\r\n\0]/g, "").slice(0, 180);
+        const fallbackName = originalName.replace(/[^\x20-\x7E]/g, "_").replace(/["\\]/g, "_") || "arquivo";
 
         res.setHeader("X-Content-Type-Options", "nosniff");
         res.setHeader("Cache-Control", "private, no-store");
