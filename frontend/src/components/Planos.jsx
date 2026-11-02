@@ -221,7 +221,22 @@ function Planos() {
               <button type="button" aria-label="Fechar" disabled={salvando} onClick={() => setMostrarFormPlano(false)} style={{ border: "none", background: "transparent", color: "#64748b", cursor: "pointer", fontSize: "22px", lineHeight: 1 }}>×</button>
             </div>
             <label style={labelStyle}>Nome do plano<input autoFocus style={campo} value={nomePlano} onChange={(e) => setNomePlano(e.target.value)} placeholder="Ex.: Convênio Hapvida" required maxLength={120} /></label>
-            <label style={labelStyle}>Tipo<select style={campo} value={tipoPlano} onChange={(e) => setTipoPlano(e.target.value)}>{TIPOS.map((tipo) => <option key={tipo.value} value={tipo.value}>{tipo.label}</option>)}</select></label>
+            <fieldset style={{ border: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "9px" }}>
+              <legend style={{ ...labelStyle, marginBottom: "9px" }}>Tipo de plano</legend>
+              {TIPOS.map((tipo) => (
+                <label key={tipo.value} style={{ display: "flex", alignItems: "center", gap: "9px", color: "#334155", fontSize: "13px", fontWeight: 500, cursor: "pointer" }}>
+                  <input
+                    type="radio"
+                    name="tipoPlano"
+                    value={tipo.value}
+                    checked={tipoPlano === tipo.value}
+                    onChange={(e) => setTipoPlano(e.target.value)}
+                    style={{ width: "16px", height: "16px", margin: 0, accentColor: "#2563eb", cursor: "pointer" }}
+                  />
+                  {tipo.label}
+                </label>
+              ))}
+            </fieldset>
             <label style={labelStyle}>Descrição (opcional)<input style={campo} value={descricaoPlano} onChange={(e) => setDescricaoPlano(e.target.value)} placeholder="Informações sobre o plano" /></label>
             <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", paddingTop: "5px" }}>
               <button type="button" style={botaoSecundario} disabled={salvando} onClick={() => setMostrarFormPlano(false)}>Cancelar</button>
