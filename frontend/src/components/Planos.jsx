@@ -343,13 +343,15 @@ function Planos() {
                           </span>
                           <span style={{ color: "#64748b", fontSize: "16px" }}>{aberta ? "−" : "+"}</span>
                         </button>
-                        <button type="button" style={{ ...botaoPrimario, padding: "8px 11px", whiteSpace: "nowrap", flexShrink: 0 }} onClick={() => {
-                          setCategoriaProcedimento(especialidade);
-                          setNomeProcedimento("");
-                          setCodigoProcedimento("");
-                          setMostrarFormProcedimento((aberto) => categoriaProcedimento === especialidade ? !aberto : true);
-                          setEspecialidadeAberta(especialidade);
-                        }}>+ Novo procedimento</button>
+                        {aberta && (
+                          <button type="button" style={{ ...botaoPrimario, padding: "8px 11px", whiteSpace: "nowrap", flexShrink: 0 }} onClick={() => {
+                            setCategoriaProcedimento(especialidade);
+                            setNomeProcedimento("");
+                            setCodigoProcedimento("");
+                            setMostrarFormProcedimento((aberto) => categoriaProcedimento === especialidade ? !aberto : true);
+                            setEspecialidadeAberta(especialidade);
+                          }}>+ Novo procedimento</button>
+                        )}
                       </div>
                       {aberta && (
                         <div style={{ borderTop: "1px solid #f1f5f9" }}>
