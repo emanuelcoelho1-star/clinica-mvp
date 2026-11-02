@@ -699,34 +699,6 @@ function AbaArquivos({ pacienteId }) {
                 </div>
               )}
 
-              {arquivosFiltrados.length > 0 && (
-                <div style={S.fileExplorerGrid}>
-                  {arquivosFiltrados.map((a) => {
-                    const hovered = hoveredCardId === a.id;
-                    return (
-                      <div
-                        key={a.id}
-                        style={{ ...S.fileExplorerItem, ...(hovered ? S.fileExplorerItemHover : {}) }}
-                        onMouseEnter={() => setHoveredCardId(a.id)}
-                        onMouseLeave={() => setHoveredCardId(null)}
-                      >
-                        <button type="button" style={S.fileTileButton}
-                          onClick={() => abrirPreview(a)}
-                          title={a.nome_original || "Visualizar arquivo"}>
-                          <FileIcon arquivo={a} />
-                        </button>
-                        <div style={S.fileTileName} title={a.nome_original || "Arquivo"}>{a.nome_original || "Arquivo"}</div>
-                        <div style={S.fileTileMeta}>{formatarDataBR(a.created_at || a.data)}</div>
-                        {hovered && <div style={S.fileTileActions}>
-                          <button type="button" title="Baixar" style={S.fileTileAction} onClick={() => baixarArquivo(a)}>{Icons.download}</button>
-                          <button type="button" title="Excluir" style={{ ...S.fileTileAction, color: "#dc2626" }} onClick={() => setConfirmarExclusao(a)}>{Icons.trash}</button>
-                        </div>}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
               {itensOrdenados.length === 0 && (
                 <div style={S.emptyBox}>
                   {Icons.folder}
