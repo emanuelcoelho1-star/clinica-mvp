@@ -766,7 +766,6 @@ function AbaOrcamentos({ pacienteId }) {
                   </select>
                   <input id="orcamento-desconto" type="number" min="0" max={tipoDesconto === "porcentagem" ? 100 : totalForm} step={tipoDesconto === "porcentagem" ? "0.1" : "0.01"} value={formData.desconto} onChange={(e) => setFormData((p) => ({ ...p, desconto: e.target.value }))} placeholder="0,00" style={{ width: "112px", height: "40px", border: "none", outline: "none", padding: "0 12px", background: "transparent", color: "#0f172a", fontSize: "14px", fontWeight: "600", textAlign: "right", boxSizing: "border-box" }} />
                 </div>
-                {descontoForm > 0 && <span style={{ fontSize: "12px", color: "#15803d", fontWeight: "600" }}>− {formatarMoeda(descontoForm)}</span>}
               </div>
               {descontoForm > 0 && <div style={S.totaisRow}>
                 <span style={S.totaisLabel}>Desconto aplicado</span>
