@@ -467,6 +467,27 @@ router.put("/:id", auth, (req, res) => {
 
 
 // =========================
+ // ATUALIZAR OBSERVAÇÕES DO PACIENTE
+ // =========================
+router.patch("/:id/observacoes", auth, (req, res) => {
+  const { id } = req.params;
+  const observacoes = typeof req.body.observacoes === "string" ? req.body.observacoes : "";
+  db.run(
+    "UPDATE pacientes SET observacoes = ? WHERE id = ? AND clinica_id = ?",
+    [observacoes, id, req.user.clinica_id],
+    function (err) {
+      if (err) {
+        return res.status(500).json({ erro: "Não foi possível salvar as observações." });
+      }
+      if (!this.changes) {
+        return res.status(404).json({ erro: "Paciente não encontrado nesta clínica." });
+      }
+      res.json({ message: "Observações atualizadas com sucesso." });
+    }
+  );
+});
+
+// =========================
 // DELETAR PACIENTE
 // =========================
 router.delete("/:id", auth, (req, res) => {
