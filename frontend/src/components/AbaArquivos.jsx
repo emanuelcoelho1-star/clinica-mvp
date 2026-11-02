@@ -259,6 +259,7 @@ function AbaArquivos({ pacienteId }) {
   const [menuNovoAberto, setMenuNovoAberto] = useState(false);
   const [modalPastaAberto, setModalPastaAberto] = useState(false);
   const [nomeNovaPasta, setNomeNovaPasta] = useState("");
+  const [erroPasta, setErroPasta] = useState("");
   const [salvandoPasta, setSalvandoPasta] = useState(false);
   const [erro, setErro] = useState("");
 
@@ -438,6 +439,7 @@ function AbaArquivos({ pacienteId }) {
     e.preventDefault();
     const nome = nomeNovaPasta.trim();
     if (!nome) return;
+    setErroPasta("");
     try {
       setSalvandoPasta(true);
       const tk = localStorage.getItem("token");
@@ -454,7 +456,7 @@ function AbaArquivos({ pacienteId }) {
       setModalPastaAberto(false);
       await carregarPastas();
     } catch (err) {
-      setErro(err.message || "Não foi possível criar a pasta.");
+      setErroPasta(err.message || "Não foi possível criar a pasta.");
     } finally {
       setSalvandoPasta(false);
     }
@@ -737,7 +739,8 @@ function AbaArquivos({ pacienteId }) {
               <div style={S.modalIconWrap}>{Icons.folderCard}</div>
               <h3 style={S.confirmTitle}>Criar nova pasta</h3>
               <p style={S.confirmText}>A pasta será criada dentro de {caminhoPastas.length ? caminhoPastas[caminhoPastas.length - 1].nome : "Arquivos"}.</p>
-              <input autoFocus value={nomeNovaPasta} onChange={(e) => setNomeNovaPasta(e.target.value)} maxLength={100} placeholder="Nome da pasta" style={{ ...S.input, marginTop: "18px" }} />
+              <input autoFocus value={nomeNovaPasta} onChange={(e) => { setNomeNovaPasta(e.target.value); setErroPasta(""); }} maxLength={100} placeholder="Nome da pasta" style={{ ...S.input, marginTop: "18px" }} />
+              {erroPasta && <p role="alert" style={{ color: "#dc2626", fontSize: "13px", margin: "10px 0 0", lineHeight: 1.4 }}>{erroPasta}</p>}
               <div style={S.modalActions}>
                 <button type="button" style={S.btnSecondary} onClick={() => setModalPastaAberto(false)} disabled={salvandoPasta}>Cancelar</button>
                 <button type="submit" style={S.btnPrimary} disabled={salvandoPasta || !nomeNovaPasta.trim()}>{salvandoPasta ? "Criando..." : "Criar pasta"}</button>
