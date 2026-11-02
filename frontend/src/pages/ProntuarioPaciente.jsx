@@ -177,7 +177,7 @@ const ABAS = [
 /* ── InfoCard component ──────────────────────────────────── */
 function InfoCard({ title, icon, items, style }) {
   return (
-    <div style={s.card}>
+    <div style={{ ...s.card, ...style }}>
       <div style={s.cardHeader}>
         <div style={s.cardTitleRow}>
           <span style={s.cardIcon}>{icon}</span>
@@ -463,19 +463,19 @@ function ProntuarioPaciente() {
           <section style={s.overviewSection}>
             <div style={s.sectionHeading}>
               <div>
+                <span style={s.sectionEyebrow}>PRONTUÁRIO</span>
                 <h2 style={s.sectionTitle}>Resumo do paciente</h2>
-                <p style={s.sectionDescription}>Informações cadastrais e histórico clínico em um só lugar.</p>
               </div>
             </div>
             <div style={s.grid}>
-              <InfoCard title="Dados principais" icon={Icons.user} items={dadosPrincipais} />
+              <InfoCard title="Dados principais" icon={Icons.user} items={dadosPrincipais} style={s.cardWide} />
               <InfoCard title="Endereço" icon={Icons.mapPin} items={dadosEndereco} />
               {possuiResponsavel && <InfoCard title="Responsável" icon={Icons.users} items={dadosResponsavel} />}
+              <InfoCard title="Histórico clínico" icon={Icons.fileText} items={dadosHistoricoClinico} style={s.cardWide} />
               <InfoCard title="Alergias a medicamentos" icon={Icons.fileText} items={[{ label: "Alergias registradas na primeira anamnese", value: anamneseInicial?.alergias }]} />
-              <InfoCard title="Histórico clínico" icon={Icons.fileText} items={dadosHistoricoClinico} />
 
             {/* Observações */}
-            <div style={s.card}>
+            <div style={{ ...s.card, ...s.cardFull }}>
               <div style={s.cardHeader}>
                 <div style={s.cardTitleRow}>
                   <span style={s.cardIcon}>{Icons.fileText}</span>
@@ -700,18 +700,27 @@ const s = {
   /* ── Grid ─────────────────────────────────────────── */
   grid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))",
-    gap: "20px",
+    gridTemplateColumns: "repeat(12, minmax(0, 1fr))",
+    gap: "18px",
+    alignItems: "stretch",
   },
+  cardWide: { gridColumn: "span 7" },
+  cardFull: { gridColumn: "1 / -1" },
 
   /* ── Card ─────────────────────────────────────────── */
   card: {
-    background: "#fff", borderRadius: "16px",
-    border: "1px solid #f1f5f9", padding: "24px",
+    minWidth: 0,
+    background: "#fff",
+    borderRadius: "14px",
+    border: "1px solid #e8edf4",
+    padding: "22px",
+    boxShadow: "0 2px 8px rgba(15, 23, 42, 0.035)",
   },
   cardHeader: {
     display: "flex", alignItems: "center", justifyContent: "space-between",
-    marginBottom: "18px",
+    marginBottom: "16px",
+    paddingBottom: "13px",
+    borderBottom: "1px solid #f1f5f9",
   },
   cardTitleRow: { display: "flex", alignItems: "center", gap: "10px" },
   cardIcon: { display: "flex", color: "#94a3b8" },
@@ -723,13 +732,16 @@ const s = {
   /* ── Info Grid ────────────────────────────────────── */
   infoGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-    gap: "2px", borderRadius: "12px", overflow: "hidden",
-    background: "#f1f5f9",
+    gridTemplateColumns: "repeat(auto-fit, minmax(155px, 1fr))",
+    columnGap: "18px",
+    rowGap: "16px",
   },
   infoItem: {
-    display: "flex", flexDirection: "column", gap: "4px",
-    padding: "14px 16px", background: "#fafbfc",
+    display: "flex", flexDirection: "column", gap: "6px",
+    padding: "3px 0 10px",
+    borderBottom: "1px solid #f1f5f9",
+    background: "transparent",
+    minWidth: 0,
   },
   infoLabel: {
     fontSize: "11px", fontWeight: "600", color: "#94a3b8",
