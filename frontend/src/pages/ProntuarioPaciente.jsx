@@ -499,36 +499,6 @@ function ProntuarioPaciente() {
       {/* ── Tab: Visão geral ─────────────────────────────── */}
       {abaAtiva === "visao-geral" && (
         <>
-          <section style={s.overviewSection}>
-            <div style={s.sectionHeading}>
-              <div>
-                <h2 style={s.sectionTitle}>Resumo do paciente</h2>
-              </div>
-            </div>
-            <div style={s.grid}>
-              <InfoCard title="Dados principais" icon={Icons.user} items={dadosPrincipais} />
-              <InfoCard title="Endereço" icon={Icons.mapPin} items={dadosEndereco} />
-              {possuiResponsavel && <InfoCard title="Responsável" icon={Icons.users} items={dadosResponsavel} />}
-              <InfoCard title="Histórico clínico" icon={Icons.fileText} items={dadosHistoricoClinico} />
-              <InfoCard title="Alergias a medicamentos" icon={Icons.fileText} items={[{ label: "Alergias registradas na primeira anamnese", value: anamneseInicial?.alergias }]} />
-
-            {/* Observações */}
-            <div style={{ ...s.card, ...s.cardFull }}>
-              <div style={s.cardHeader}>
-                <div style={s.cardTitleRow}>
-                  <span style={s.cardIcon}>{Icons.fileText}</span>
-                  <h2 style={s.cardTitle}>Observações</h2>
-                </div>
-              </div>
-              <div style={s.obsBox}>
-                {paciente.observacoes || (
-                  <span style={s.obsEmpty}>Nenhuma observação cadastrada.</span>
-                )}
-              </div>
-            </div>
-            </div>
-          </section>
-
           {/* ── CONSULTAS DO PACIENTE ───────────────────── */}
           <section style={s.consultasSection}>
             <div style={s.sectionHeading}>
@@ -593,6 +563,36 @@ function ProntuarioPaciente() {
                   </ul>
                 )}
               </div>
+            </div>
+          </section>
+
+          <section style={s.overviewSection}>
+            <div style={s.sectionHeading}>
+              <div>
+                <h2 style={s.sectionTitle}>Resumo do paciente</h2>
+              </div>
+            </div>
+            <div style={s.grid}>
+              <InfoCard title="Dados principais" icon={Icons.user} items={dadosPrincipais} />
+              <InfoCard title="Endereço" icon={Icons.mapPin} items={dadosEndereco} />
+              {possuiResponsavel && <InfoCard title="Responsável" icon={Icons.users} items={dadosResponsavel} />}
+              <InfoCard title="Histórico clínico" icon={Icons.fileText} items={dadosHistoricoClinico} />
+              <InfoCard title="Alergias a medicamentos" icon={Icons.fileText} items={[{ label: "Alergias registradas na primeira anamnese", value: anamneseInicial?.alergias }]} />
+
+            {/* Observações */}
+            <div style={{ ...s.card, ...s.cardFull }}>
+              <div style={s.cardHeader}>
+                <div style={s.cardTitleRow}>
+                  <span style={s.cardIcon}>{Icons.fileText}</span>
+                  <h2 style={s.cardTitle}>Observações</h2>
+                </div>
+              </div>
+              <div style={s.obsBox}>
+                {paciente.observacoes || (
+                  <span style={s.obsEmpty}>Nenhuma observação cadastrada.</span>
+                )}
+              </div>
+            </div>
             </div>
           </section>
 
