@@ -43,7 +43,7 @@ function Planos() {
   const [custoTratamento, setCustoTratamento] = useState("");
   const [valorTratamento, setValorTratamento] = useState("");
   const [categoriaProcedimento, setCategoriaProcedimento] = useState("");
-  const [especialidadeAberta, setEspecialidadeAberta] = useState("Cirurgia");
+  const [especialidadeAberta, setEspecialidadeAberta] = useState("");
   const [busca, setBusca] = useState("");
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState(false);
