@@ -69,8 +69,8 @@ router.get("/procedimentos", (req, res) => {
 });
 
 router.post("/", (req, res) => {
-  const { nome, tipo = "particular", descricao = "" } = req.body || {};
-  const tiposValidos = ["particular", "convenio", "empresa", "outro"];
+  const { nome, tipo = "padrao", descricao = "" } = req.body || {};
+  const tiposValidos = ["convenio", "padrao"];
   if (!validarNome(nome)) return res.status(400).json({ erro: "Informe um nome válido para o plano." });
   if (!tiposValidos.includes(tipo)) return res.status(400).json({ erro: "Tipo de plano inválido." });
 
@@ -88,8 +88,8 @@ router.post("/", (req, res) => {
 });
 
 router.put("/:id", (req, res) => {
-  const { nome, tipo = "particular", descricao = "", ativo = 1 } = req.body || {};
-  const tiposValidos = ["particular", "convenio", "empresa", "outro"];
+  const { nome, tipo = "padrao", descricao = "", ativo = 1 } = req.body || {};
+  const tiposValidos = ["convenio", "padrao"];
   if (!validarNome(nome)) return res.status(400).json({ erro: "Informe um nome válido para o plano." });
   if (!tiposValidos.includes(tipo)) return res.status(400).json({ erro: "Tipo de plano inválido." });
 
