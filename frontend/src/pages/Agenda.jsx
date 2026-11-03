@@ -58,7 +58,7 @@ function calcularFim(horario, dur = 30) {
 }
 function normalizarConsulta(c) {
   return {
-    id: c.id, data: c.data, inicio: c.horario, fim: calcularFim(c.horario, 30),
+    id: c.id, data: c.data, inicio: c.horario, duracao: Number(c.duracao) || 30, fim: calcularFim(c.horario, Number(c.duracao) || 30),
     paciente: c.paciente_nome || c.paciente || c.nome_paciente || "Paciente",
     procedimento: c.procedimento || "Consulta",
     dentista: c.dentista || c.profissional || c.nome_profissional || "Profissional",
@@ -212,7 +212,7 @@ function Agenda() {
   });
   const [buscandoCepPaciente, setBuscandoCepPaciente] = useState(false);
   const [formData, setFormData] = useState({
-    paciente_id: "", data: formatarDataISO(new Date()), horario: "08:00", procedimento: "", status: "agendado",
+    paciente_id: "", data: formatarDataISO(new Date()), horario: "08:00", duracao: 30, procedimento: "", status: "agendado",
   });
   const patientSearchRef = useRef(null);
 
@@ -344,6 +344,7 @@ function Agenda() {
   function avancarSemana() { setInicioSemana((p) => adicionarDias(p, 7)); }
   function irParaHoje() { setInicioSemana(obterInicioAgenda(new Date())); }
   function obterAgendamento(iso, h) { return agendamentosFiltrados.find((i) => i.data === iso && i.inicio === h); }
+  function obterAgendamentoSobreposto(iso, h) { const minuto = obterMinutos(h); return agendamentosFiltrados.find((i) => i.data === iso && i.status !== "cancelado" && minuto > obterMinutos(i.inicio) && minuto < obterMinutos(i.fim)); }
 
   function horarioPassado(iso, h) {
     if (!iso || !h) return false;
@@ -380,6 +381,7 @@ function Agenda() {
       paciente_id: pacienteId,
       data: dataRetorno,
       horario: horarioRetorno,
+      duracao: 30,
       procedimento: "Retorno",
       status: "agendado",
     }));
@@ -392,7 +394,7 @@ function Agenda() {
     if (ag) {
       setAgendamentoEditando(ag);
       setRetornoPersonalizado(false);
-      setFormData({ paciente_id: String(ag.paciente_id||""), data: ag.data||formatarDataISO(new Date()), horario: ag.inicio||"08:00", procedimento: ag.procedimento||"", status: ag.status||"agendado" });
+      setFormData({ paciente_id: String(ag.paciente_id||""), data: ag.data||formatarDataISO(new Date()), horario: ag.inicio||"08:00", duracao: Number(ag.duracao)||30, procedimento: ag.procedimento||"", status: ag.status||"agendado" });
       setBuscaPaciente(ag.paciente||"");
     } else {
       const di = dataPad || diasSemana[0]?.iso || formatarDataISO(new Date());
@@ -402,7 +404,7 @@ function Agenda() {
         : (diaPermitido ? horarios.find((h) => !horarioPassado(di, h)) || "" : "");
       setAgendamentoEditando(null);
       setRetornoPersonalizado(false);
-      setFormData({ paciente_id: "", data: di, horario: hi, procedimento: "", status: "agendado" });
+      setFormData({ paciente_id: "", data: di, horario: hi, duracao: 30, procedimento: "", status: "agendado" });
       setBuscaPaciente("");
     }
     setModalAberto(true);
@@ -422,15 +424,17 @@ function Agenda() {
 
   async function handleSalvar(e) {
     e.preventDefault();
-    if (!formData.paciente_id || !formData.data || !formData.horario) { setErroFormulario("Preencha paciente, data e horário."); return; }
+    if (!formData.paciente_id || !formData.data || !formData.horario || !formData.duracao) { setErroFormulario("Preencha paciente, data, horário e duração."); return; }
     const diaSelecionado = new Date(`${formData.data}T12:00:00`).getDay();
     if (!funcionamento.dias.includes(diaSelecionado)) { setErroFormulario("A clínica não funciona no dia selecionado."); return; }
     if (!horarios.includes(formData.horario)) { setErroFormulario("Selecione um horário dentro do funcionamento da clínica."); return; }
+    if (obterMinutos(formData.horario) + Number(formData.duracao) > obterMinutos(funcionamento.fechamento)) { setErroFormulario("A duração escolhida ultrapassa o horário de funcionamento da clínica."); return; }
     if (!agendamentoEditando && horarioPassado(formData.data, formData.horario)) { setErroFormulario("Não é possível agendar em horários passados."); return; }
 
     const conflito = consultas.find((item) =>
       item.data === formData.data &&
-      item.inicio === formData.horario &&
+      obterMinutos(formData.horario) < obterMinutos(item.fim) &&
+      obterMinutos(formData.horario) + Number(formData.duracao) > obterMinutos(item.inicio) &&
       item.status !== "cancelado" &&
       String(item.id) !== String(agendamentoEditando?.id || "") &&
       formData.status !== "cancelado"
@@ -448,7 +452,7 @@ function Agenda() {
       const r = await fetch(ed ? `${API_URL}/consultas/${agendamentoEditando.id}` : `${API_URL}/consultas`, {
         method: ed ? "PUT" : "POST",
         headers: { "Content-Type": "application/json", Authorization: tk || "" },
-        body: JSON.stringify({ paciente_id: Number(formData.paciente_id), data: formData.data, horario: formData.horario, procedimento: formData.procedimento, status: formData.status }),
+        body: JSON.stringify({ paciente_id: Number(formData.paciente_id), data: formData.data, horario: formData.horario, duracao: Number(formData.duracao), procedimento: formData.procedimento, status: formData.status }),
       });
       if (!r.ok) {
         const resposta = await r.json().catch(() => ({}));
@@ -799,6 +803,7 @@ function Agenda() {
                 {diasSemana.map((dia) => {
                   const hoje = dia.iso === hojeIso;
                   const ag = obterAgendamento(dia.iso, hora);
+                  const agSobreposto = obterAgendamentoSobreposto(dia.iso, hora);
                   const bloq = horarioPassado(dia.iso, hora);
                   const pl = hoje && agoraNaAgenda ? posLinha(hora) : null;
                   const stCfg = ag ? (STATUS_STYLE[ag.status] || STATUS_STYLE.agendado) : null;
@@ -810,7 +815,7 @@ function Agenda() {
 
                       {ag ? (
                         <button type="button" onClick={(e) => { e.stopPropagation(); abrirModal(ag); }}
-                          style={{ ...S.eventCard, background: stCfg.bg, borderColor: stCfg.border, ...(agendamentoEditando?.id === ag.id ? S.eventActive : {}) }}>
+                          style={{ ...S.eventCard, height: `${Math.max(1, ag.duracao / 30) * 68 - 8}px`, background: stCfg.bg, borderColor: stCfg.border, ...(agendamentoEditando?.id === ag.id ? S.eventActive : {}) }}>
                           <div style={S.eventTime}>{ag.inicio} – {ag.fim}</div>
                           <div style={S.eventName}>{ag.paciente}</div>
                           <div style={S.eventProc}>{ag.procedimento}</div>
@@ -819,6 +824,8 @@ function Agenda() {
                             {obterLabelStatus(ag.status)}
                           </span>
                         </button>
+                      ) : agSobreposto ? (
+                        <div style={{ width: "100%", minHeight: "58px", pointerEvents: "none" }} />
                       ) : bloq ? (
                         <div style={S.slotBlocked} />
                       ) : (
@@ -920,6 +927,10 @@ function Agenda() {
                   <CustomDropdown value={formData.horario} options={horariosOpts}
                     onChange={(h) => setFormData((p) => ({ ...p, horario: h }))}
                     placeholder="Selecione" triggerStyle={S.input} menuStyle={{ zIndex: 3000 }} maxHeight="260px" /></div>
+                <div style={S.fieldGroup}><label style={S.label}>Duração do atendimento</label>
+                  <CustomDropdown value={String(formData.duracao)} options={[30,60,90,120,150,180].map((min) => ({ value: String(min), label: min < 60 ? `${min} minutos` : `${min/60} hora${min > 60 ? "s" : ""}` }))}
+                    onChange={(v) => setFormData((p) => ({ ...p, duracao: Number(v) }))}
+                    placeholder="Selecione a duração" triggerStyle={S.input} menuStyle={{ zIndex: 3000 }} /></div>
               </div>
 
               <div style={S.fieldGroup}><label style={S.label}>Procedimento</label>
