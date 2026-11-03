@@ -389,53 +389,6 @@ function RotaComPermissao({ acesso, modulo, children }) {
 }
 
 function Layout() {
-  useEffect(() => {
-    let modalIniciadoDentro = null;
-
-    const identificarModal = (alvo) => {
-      let elemento = alvo instanceof Element ? alvo : null;
-      while (elemento && elemento !== document.body) {
-        const estilo = window.getComputedStyle(elemento);
-        const area = elemento.getBoundingClientRect();
-        const ocupaTela =
-          estilo.position === "fixed" &&
-          area.width >= window.innerWidth - 2 &&
-          area.height >= window.innerHeight - 2;
-
-        if (ocupaTela) return elemento;
-        elemento = elemento.parentElement;
-      }
-      return null;
-    };
-
-    const aoIniciar = (evento) => {
-      modalIniciadoDentro = identificarModal(evento.target);
-    };
-
-    const aoClicar = (evento) => {
-      if (modalIniciadoDentro && evento.target === modalIniciadoDentro) {
-        evento.preventDefault();
-        evento.stopPropagation();
-        evento.stopImmediatePropagation();
-      }
-      modalIniciadoDentro = null;
-    };
-
-    const limparInicio = () => {
-      modalIniciadoDentro = null;
-    };
-
-    document.addEventListener("pointerdown", aoIniciar, true);
-    document.addEventListener("click", aoClicar, true);
-    window.addEventListener("pointercancel", limparInicio, true);
-
-    return () => {
-      document.removeEventListener("pointerdown", aoIniciar, true);
-      document.removeEventListener("click", aoClicar, true);
-      window.removeEventListener("pointercancel", limparInicio, true);
-    };
-  }, []);
-
   const [acesso, setAcesso] = useState(null);
   const [carregandoAcesso, setCarregandoAcesso] = useState(true);
 
