@@ -654,7 +654,7 @@ function AbaOrcamentos({ pacienteId, pacienteNome }) {
                   <div style={S.documentRowMain}>
                     <div style={S.documentFileIcon}>{Icons.clipboard}</div>
                     <div style={S.documentRowInfo}>
-                      <span style={S.documentRowTitle}>Orçamento #{o.id}</span>
+                      <span style={S.documentRowTitle}>{String(o.descricao || "").trim() || `Orçamento #${o.id}`}</span>
                       <div style={S.documentRowMeta}>
                         <span>{formatarDataBR(o.data)}</span>
                         <span style={S.documentMetaDot}>•</span>
