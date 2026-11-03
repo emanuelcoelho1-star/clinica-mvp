@@ -61,7 +61,8 @@ function normalizarConsulta(c) {
     id: c.id, data: c.data, inicio: c.horario, duracao: Number(c.duracao) || 30, fim: calcularFim(c.horario, Number(c.duracao) || 30),
     paciente: c.paciente_nome || c.paciente || c.nome_paciente || "Paciente",
     procedimento: c.procedimento || "Consulta",
-    dentista: c.dentista || c.profissional || c.nome_profissional || "Profissional",
+    dentista: c.dentista || c.profissional || c.nome_profissional || c.responsavel_tecnico || "Não informado",
+    telefone: c.paciente_telefone || c.telefone || "", fotoPaciente: c.paciente_foto || c.foto_url || "", logoClinica: c.logo_url || "",
     status: c.status || "agendado", paciente_id: c.paciente_id,
   };
 }
@@ -191,6 +192,7 @@ function Agenda() {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
   const [modalAberto, setModalAberto] = useState(false);
+  const [consultaPreview, setConsultaPreview] = useState(null);
   const [salvando, setSalvando] = useState(false);
   const [excluindo, setExcluindo] = useState(false);
   const [erroFormulario, setErroFormulario] = useState("");
@@ -390,6 +392,7 @@ function Agenda() {
   }
 
   function abrirModal(ag = null, dataPad = null, horPad = "08:00") {
+    setConsultaPreview(null);
     setErroFormulario(""); setConfirmarExclusaoAberto(false); setMostrarSugestoesPaciente(false);
     if (ag) {
       setAgendamentoEditando(ag);
@@ -814,7 +817,7 @@ function Agenda() {
                       onClick={() => { if (!ag && !bloq) abrirModal(null, dia.iso, hora); }}>
 
                       {ag ? (
-                        <button type="button" onClick={(e) => { e.stopPropagation(); abrirModal(ag); }}
+                        <button type="button" onClick={(e) => { e.stopPropagation(); setConsultaPreview(ag); }}
                           style={{ ...S.eventCard, ...(Number(ag.duracao) > 30 ? { position: "absolute", top: "4px", left: "4px", right: "4px", width: "auto", zIndex: 12, overflow: "hidden", height: `${(Number(ag.duracao) / 30) * 68 - 8}px` } : {}), background: stCfg.bg, borderColor: stCfg.border, ...(agendamentoEditando?.id === ag.id ? S.eventActive : {}) }}>
                           <div style={S.eventTime}>{ag.inicio} – {ag.fim}</div>
                           <div style={S.eventName}>{ag.paciente}</div>
@@ -844,6 +847,67 @@ function Agenda() {
                 })}
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+
+      {/* Prévia do agendamento */}
+      {consultaPreview && (
+        <div style={S.overlay} onClick={() => setConsultaPreview(null)}>
+          <div style={{ ...S.modal, maxWidth: "480px" }} onClick={(e) => e.stopPropagation()}>
+            <div style={S.modalHeader}>
+              <div>
+                <h2 style={S.modalTitle}>Detalhes do agendamento</h2>
+                <p style={S.modalSub}>Informações do paciente e da consulta.</p>
+              </div>
+              <button type="button" style={S.closeBtn} onClick={() => setConsultaPreview(null)} aria-label="Fechar">{Icons.close}</button>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "16px", padding: "4px 0 20px", borderBottom: "1px solid #f1f5f9" }}>
+              {(consultaPreview.fotoPaciente || consultaPreview.logoClinica) ? (
+                <img src={consultaPreview.fotoPaciente || consultaPreview.logoClinica} alt={consultaPreview.fotoPaciente ? "Foto do paciente" : "Logo da clínica"}
+                  style={{ width: "76px", height: "76px", borderRadius: "50%", objectFit: "cover", border: "1px solid #e2e8f0", background: "#f8fafc", flexShrink: 0 }} />
+              ) : (
+                <div style={{ width: "76px", height: "76px", borderRadius: "50%", background: "#eff6ff", color: "#2563eb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "28px", fontWeight: "700", flexShrink: 0 }}>
+                  {String(consultaPreview.paciente || "P").trim().charAt(0).toUpperCase()}
+                </div>
+              )}
+              <div style={{ minWidth: 0 }}>
+                <h3 style={{ margin: 0, color: "#0f172a", fontSize: "18px", fontWeight: "700" }}>{consultaPreview.paciente}</h3>
+                <p style={{ margin: "6px 0 0", color: "#64748b", fontSize: "13px" }}>{consultaPreview.telefone || "Telefone não informado"}</p>
+              </div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", padding: "20px 0" }}>
+              <div style={{ background: "#f8fafc", borderRadius: "10px", padding: "13px" }}>
+                <div style={S.label}>Data da consulta</div>
+                <div style={{ marginTop: "7px", color: "#0f172a", fontSize: "14px", fontWeight: "600" }}>
+                  {new Date(consultaPreview.data + "T12:00:00").toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long", year: "numeric" })}
+                </div>
+              </div>
+              <div style={{ background: "#f8fafc", borderRadius: "10px", padding: "13px" }}>
+                <div style={S.label}>Horário</div>
+                <div style={{ marginTop: "7px", color: "#0f172a", fontSize: "14px", fontWeight: "600" }}>{consultaPreview.inicio} – {consultaPreview.fim}</div>
+              </div>
+              <div style={{ background: "#f8fafc", borderRadius: "10px", padding: "13px", gridColumn: "1 / -1" }}>
+                <div style={S.label}>Dentista responsável</div>
+                <div style={{ marginTop: "7px", color: "#0f172a", fontSize: "14px", fontWeight: "600" }}>{consultaPreview.dentista}</div>
+              </div>
+              <div style={{ gridColumn: "1 / -1" }}>
+                <div style={S.label}>Procedimento</div>
+                <div style={{ marginTop: "6px", color: "#334155", fontSize: "14px" }}>{consultaPreview.procedimento}</div>
+              </div>
+              <div style={{ gridColumn: "1 / -1" }}>
+                <span style={{ ...S.eventBadge, background: (STATUS_STYLE[consultaPreview.status] || STATUS_STYLE.agendado).bg, color: (STATUS_STYLE[consultaPreview.status] || STATUS_STYLE.agendado).color, borderColor: (STATUS_STYLE[consultaPreview.status] || STATUS_STYLE.agendado).border }}>
+                  <span style={{ ...S.eventDot, background: (STATUS_STYLE[consultaPreview.status] || STATUS_STYLE.agendado).dot }} />
+                  {obterLabelStatus(consultaPreview.status)}
+                </span>
+              </div>
+            </div>
+            <div style={S.formActions}>
+              <div style={{ flex: 1 }} />
+              <button type="button" style={S.btnSecondary} onClick={() => setConsultaPreview(null)}>Fechar</button>
+              <button type="button" style={S.btnPrimary} onClick={() => abrirModal(consultaPreview)}>Editar agendamento</button>
+            </div>
           </div>
         </div>
       )}
