@@ -857,10 +857,6 @@ function Agenda() {
       {consultaPreview && (
         <div onClick={() => setConsultaPreview(null)} style={{ position: "fixed", inset: 0, zIndex: 1500, background: "transparent" }}>
           <section onClick={(e) => e.stopPropagation()} style={{ ...S.modal, position: "fixed", top: consultaPreviewPos.top, left: consultaPreviewPos.left, width: "min(480px, calc(100vw - 16px))", maxWidth: "480px", maxHeight: "calc(100vh - 16px)", overflowY: "auto", margin: 0 }}>
-            <div style={S.modalHeader}>
-              <div style={{ flex: 1 }} />
-              <button type="button" style={S.closeBtn} onClick={() => setConsultaPreview(null)} aria-label="Fechar">{Icons.close}</button>
-            </div>
             <div style={{ display: "flex", alignItems: "center", gap: "16px", padding: "4px 0 20px", borderBottom: "1px solid #e2e8f0" }}>
               {(consultaPreview.fotoPaciente || consultaPreview.logoClinica) ? (
                 <img src={consultaPreview.fotoPaciente || consultaPreview.logoClinica} alt={consultaPreview.fotoPaciente ? "Foto do paciente" : "Logo da clínica"}
@@ -870,10 +866,11 @@ function Agenda() {
                   {String(consultaPreview.paciente || "P").trim().charAt(0).toUpperCase()}
                 </div>
               )}
-              <div style={{ minWidth: 0 }}>
+              <div style={{ minWidth: 0, flex: 1 }}>
                 <h3 style={{ margin: 0, color: "var(--text-primary, #0f172a)", fontSize: "18px", fontWeight: "700" }}>{consultaPreview.paciente}</h3>
                 <p style={{ margin: "6px 0 0", color: "var(--text-secondary, #64748b)", fontSize: "13px" }}>{consultaPreview.telefone || "Telefone não informado"}</p>
               </div>
+              <button type="button" style={S.closeBtn} onClick={() => setConsultaPreview(null)} aria-label="Fechar">{Icons.close}</button>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", padding: "20px 0" }}>
               <div style={S.fieldGroup}>
