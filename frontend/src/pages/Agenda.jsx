@@ -661,11 +661,6 @@ function Agenda() {
               style={S.searchInput} />
             {busca && <button style={S.searchClear} onClick={() => setBusca("")}>✕</button>}
           </div>
-          <button style={S.btnRefresh} onClick={carregarConsultas}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "#f8fafc")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}>
-            {Icons.refresh}<span>Atualizar</span>
-          </button>
           <button type="button" style={mostrarGerenciador ? S.btnManageActive : S.btnRefresh}
             onClick={() => setMostrarGerenciador((v) => !v)}>
             <span>{mostrarGerenciador ? "Ocultar consultas" : "Gerenciar consultas"}</span>
