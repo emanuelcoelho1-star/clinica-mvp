@@ -75,9 +75,11 @@ router.put("/horarios-funcionamento", (req, res) => {
 
 router.get("/", auth, (req, res) => {
   const sql = `
-    SELECT consultas.*, pacientes.nome AS paciente_nome
+    SELECT consultas.*, pacientes.nome AS paciente_nome, pacientes.telefone AS paciente_telefone,
+           pacientes.foto_url AS paciente_foto, clinicas.logo_url, clinicas.responsavel_tecnico
     FROM consultas
     LEFT JOIN pacientes ON consultas.paciente_id = pacientes.id AND pacientes.clinica_id = consultas.clinica_id
+    LEFT JOIN clinicas ON clinicas.id = consultas.clinica_id
     WHERE consultas.clinica_id = ?
     ORDER BY consultas.data ASC, consultas.horario ASC
   `;
