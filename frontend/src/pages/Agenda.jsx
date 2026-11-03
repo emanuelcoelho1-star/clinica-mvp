@@ -869,7 +869,7 @@ function Agenda() {
                 </div>
               )}
               <div style={{ minWidth: 0, flex: 1 }}>
-                <button type="button" onClick={() => { if (consultaPreview.paciente_id) { setConsultaPreview(null); navigate(`/pacientes/${consultaPreview.paciente_id}`); } }} disabled={!consultaPreview.paciente_id} title={consultaPreview.paciente_id ? "Abrir prontuário do paciente" : "Paciente sem cadastro vinculado"} style={{ margin: 0, padding: 0, border: 0, background: "transparent", color: "var(--text-primary, #0f172a)", fontSize: "18px", fontWeight: "700", textAlign: "left", cursor: consultaPreview.paciente_id ? "pointer" : "default", textDecoration: consultaPreview.paciente_id ? "underline" : "none", textUnderlineOffset: "3px" }}>{consultaPreview.paciente}</button>
+                <button type="button" onClick={() => { if (consultaPreview.paciente_id) { setConsultaPreview(null); navigate(`/pacientes/${consultaPreview.paciente_id}`); } }} disabled={!consultaPreview.paciente_id} title={consultaPreview.paciente_id ? "Abrir prontuário do paciente" : "Paciente sem cadastro vinculado"} style={{ margin: 0, padding: 0, border: 0, background: "transparent", color: "var(--text-primary, #0f172a)", fontSize: "18px", fontWeight: "700", textAlign: "left", cursor: consultaPreview.paciente_id ? "pointer" : "default", textDecoration: "none" }}>{consultaPreview.paciente}</button>
                 <p style={{ margin: "6px 0 0", color: "var(--text-secondary, #64748b)", fontSize: "13px" }}>{consultaPreview.telefone || "Telefone não informado"}</p>
               </div>
               <button type="button" style={S.closeBtn} onClick={() => setConsultaPreview(null)} aria-label="Fechar">{Icons.close}</button>
