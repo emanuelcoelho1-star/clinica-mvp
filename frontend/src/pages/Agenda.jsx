@@ -58,8 +58,6 @@ function formatarTelefoneBR(valor) {
   return original;
 }
 
-function formatarDataISO}
-
 function formatarDataISO(data) {
   return `${data.getFullYear()}-${String(data.getMonth()+1).padStart(2,"0")}-${String(data.getDate()).padStart(2,"0")}`;
 }
