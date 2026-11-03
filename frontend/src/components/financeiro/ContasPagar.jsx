@@ -1069,7 +1069,7 @@ function ContasPagar() {
           MODAL — Nova / Editar conta a pagar
           ══════════════════════════════════════════════ */}
       {modal && (
-        <div style={S.modalOverlay} onClick={() => setModal(null)}>
+        <div style={S.modalOverlay} onMouseDown={(e) => { if (e.target === e.currentTarget) setModal(null); }}>
           <div style={S.modal} onClick={(e) => e.stopPropagation()}>
             {/* Header */}
             <div style={S.modalHeader}>
