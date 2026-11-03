@@ -60,6 +60,15 @@ function formatarData(data) {
   return `${partes[2]}/${partes[1]}/${partes[0]}`;
 }
 
+function formatarTelefoneBR(valor) {
+  const original = String(valor || "").trim();
+  let numeros = original.replace(/\D/g, "");
+  if (numeros.startsWith("55") && (numeros.length === 12 || numeros.length === 13)) numeros = numeros.slice(2);
+  if (numeros.length === 11) return numeros.replace(/^(\d{2})(\d{5})(\d{4})$/, "($1) $2-$3");
+  if (numeros.length === 10) return numeros.replace(/^(\d{2})(\d{4})(\d{4})$/, "($1) $2-$3");
+  return original || "—";
+}
+
 function formatCpf(cpf) {
   if (!cpf) return "—";
   const digits = cpf.replace(/\D/g, "");
@@ -413,7 +422,7 @@ function ProntuarioPaciente() {
   const dadosPrincipais = [
     { section: "Dados principais", label: "Nome completo", value: paciente?.nome },
     { section: "Dados principais", label: "CPF", value: formatCpf(paciente?.cpf) },
-    { section: "Dados principais", label: "Telefone", value: paciente?.telefone },
+    { section: "Dados principais", label: "Telefone", value: formatarTelefoneBR(paciente?.telefone) },
     { section: "Dados principais", label: "E-mail", value: paciente?.email },
     { section: "Dados principais", label: "Gênero", value: paciente?.genero },
     { section: "Dados principais", label: "Profissão", value: paciente?.profissao },
@@ -434,7 +443,7 @@ function ProntuarioPaciente() {
     { section: "Responsável", label: "Nome", value: paciente?.responsavel_nome },
     { section: "Responsável", label: "CPF", value: formatCpf(paciente?.responsavel_cpf) },
     { section: "Responsável", label: "Nascimento", value: dataResponsavelFormatada },
-    { section: "Responsável", label: "Telefone", value: paciente?.responsavel_telefone },
+    { section: "Responsável", label: "Telefone", value: formatarTelefoneBR(paciente?.responsavel_telefone) },
   ];
   const possuiResponsavel = Boolean(
     paciente?.responsavel_nome || paciente?.responsavel_cpf ||
@@ -567,7 +576,7 @@ function ProntuarioPaciente() {
               {paciente.telefone && (
                 <span style={s.chip}>
                   <span style={s.chipIcon}>{Icons.phone}</span>
-                  {paciente.telefone}
+                  {formatarTelefoneBR(paciente.telefone)}
                 </span>
               )}
               {paciente.email && (
