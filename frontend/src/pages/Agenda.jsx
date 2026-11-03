@@ -4,11 +4,16 @@ import API_URL from "../api";
 /* ═══════════════════════════════════════════════════════════
    CONSTANTES
    ═══════════════════════════════════════════════════════════ */
-const horarios = [
-  "08:00","08:30","09:00","09:30","10:00","10:30","11:00","11:30",
-  "12:00","12:30","13:00","13:30","14:00","14:30","15:00","15:30",
-  "16:00","16:30","17:00","17:30","18:00","18:30",
-];
+function gerarHorarios(abertura, fechamento) {
+  const inicio = obterMinutos(abertura);
+  const fim = obterMinutos(fechamento);
+  if (!abertura || !fechamento || fim <= inicio) return [];
+  const lista = [];
+  for (let minuto = inicio; minuto + 30 <= fim; minuto += 30) {
+    lista.push(`${String(Math.floor(minuto / 60)).padStart(2, "0")}:${String(minuto % 60).padStart(2, "0")}`);
+  }
+  return lista;
+}
 
 const nomesDias = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
 const nomesMeses = [
@@ -217,11 +222,17 @@ function Agenda() {
     document.addEventListener("mousedown", h); return () => document.removeEventListener("mousedown", h);
   }, []);
 
+  const horarios = useMemo(
+    () => gerarHorarios(funcionamento.abertura, funcionamento.fechamento),
+    [funcionamento.abertura, funcionamento.fechamento]
+  );
+
   const diasSemana = useMemo(() =>
-    Array.from({ length: 6 }).map((_, i) => {
-      const d = adicionarDias(inicioSemana, i);
-      return { data: d, label: nomesDias[d.getDay()], numero: String(d.getDate()).padStart(2,"0"), iso: formatarDataISO(d) };
-    }), [inicioSemana]);
+    Array.from({ length: 7 }).map((_, i) => adicionarDias(inicioSemana, i))
+      .filter((d) => funcionamento.dias.includes(d.getDay()))
+      .map((d) => ({ data: d, label: nomesDias[d.getDay()], numero: String(d.getDate()).padStart(2,"0"), iso: formatarDataISO(d) })),
+    [inicioSemana, funcionamento.dias]
+  );
 
   const hojeIso = formatarDataISO(agora);
   useEffect(() => { carregarDadosIniciais(); carregarFuncionamento(); }, []);
@@ -539,9 +550,9 @@ function Agenda() {
   }
 
   const minAgora = agora.getHours()*60+agora.getMinutes();
-  const pMin = obterMinutos(horarios[0]);
-  const uMin = obterMinutos(horarios[horarios.length-1])+30;
-  const agoraNaAgenda = minAgora >= pMin && minAgora <= uMin;
+  const pMin = horarios.length ? obterMinutos(horarios[0]) : 0;
+  const uMin = horarios.length ? obterMinutos(horarios[horarios.length-1])+30 : 0;
+  const agoraNaAgenda = horarios.length > 0 && minAgora >= pMin && minAgora <= uMin;
   function posLinha(h) { const i = obterMinutos(h); if (minAgora < i || minAgora >= i+30) return null; return ((minAgora-i)/30)*100; }
   const horariosOpts = horarios.map((h) => ({ value: h, label: h, disabled: horarioPassado(formData.data, h) && !agendamentoEditando }));
 
@@ -760,7 +771,7 @@ function Agenda() {
       {!carregando && !erro && (
         <div style={S.calWrap}>
           {/* Head */}
-          <div style={S.calHead}>
+          <div style={{ ...S.calHead, gridTemplateColumns: `68px repeat(${Math.max(diasSemana.length, 1)}, minmax(0, 1fr))` }}>
             <div style={S.timeColHead} />
             {diasSemana.map((dia) => {
               const hoje = dia.iso === hojeIso;
@@ -776,8 +787,12 @@ function Agenda() {
 
           {/* Body */}
           <div style={S.calBody}>
-            {horarios.map((hora) => (
-              <div key={hora} style={S.calRow}>
+            {diasSemana.length === 0 ? (
+              <div style={{ padding: "36px 20px", textAlign: "center", color: "#94a3b8", fontSize: "14px" }}>Não há dias de funcionamento configurados para esta semana.</div>
+            ) : horarios.length === 0 ? (
+              <div style={{ padding: "36px 20px", textAlign: "center", color: "#94a3b8", fontSize: "14px" }}>Configure um intervalo de pelo menos 30 minutos para exibir os horários.</div>
+            ) : horarios.map((hora) => (
+              <div key={hora} style={{ ...S.calRow, gridTemplateColumns: `68px repeat(${Math.max(diasSemana.length, 1)}, minmax(0, 1fr))` }}>
                 <div style={S.timeCell}><span>{hora}</span></div>
                 {diasSemana.map((dia) => {
                   const hoje = dia.iso === hojeIso;
