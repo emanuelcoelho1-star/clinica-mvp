@@ -32,7 +32,7 @@ router.get("/horarios-funcionamento", (req, res) => {
 router.put("/horarios-funcionamento", (req, res) => {
   const { dias, abertura, fechamento } = req.body || {};
   const diasValidos = Array.isArray(dias) && dias.length > 0 && dias.every((dia) => Number.isInteger(dia) && dia >= 0 && dia <= 6);
-  const horarioValido = (valor) => typeof valor === "string" && /^([01]\\d|2[0-3]):[0-5]\\d$/.test(valor);
+  const horarioValido = (valor) => typeof valor === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(valor);
   if (!diasValidos || new Set(dias).size !== dias.length || !horarioValido(abertura) || !horarioValido(fechamento) || abertura >= fechamento) {
     return res.status(400).json({ erro: "Informe dias válidos e um intervalo de horário correto." });
   }
