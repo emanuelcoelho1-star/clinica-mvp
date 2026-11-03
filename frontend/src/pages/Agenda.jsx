@@ -47,6 +47,17 @@ function obterInicioAgenda(data) {
   d.setDate(d.getDate() - (diaSemana === 0 ? 6 : diaSemana - 1));
   return d;
 }
+function formatarTelefoneBR(valor) {
+  const original = String(valor || "").trim();
+  let numeros = original.replace(/\\D/g, "");
+  if (numeros.startsWith("55") && (numeros.length === 12 || numeros.length === 13)) {
+    numeros = numeros.slice(2);
+  }
+  if (numeros.length === 11) return numeros.replace(/^(\\d{2})(\\d{5})(\\d{4})$/, "($1) $2-$3");
+  if (numeros.length === 10) return numeros.replace(/^(\\d{2})(\\d{4})(\\d{4})$/, "($1) $2-$3");
+  return original || "";
+}
+
 function formatarDataISO(data) {
   return `${data.getFullYear()}-${String(data.getMonth()+1).padStart(2,"0")}-${String(data.getDate()).padStart(2,"0")}`;
 }
@@ -929,7 +940,7 @@ function Agenda() {
               )}
               <div style={{ minWidth: 0, flex: 1 }}>
                 <button type="button" onClick={() => { if (consultaPreview.paciente_id) { setConsultaPreview(null); navigate(`/pacientes/${consultaPreview.paciente_id}`); } }} disabled={!consultaPreview.paciente_id} title={consultaPreview.paciente_id ? "Abrir prontuário do paciente" : "Paciente sem cadastro vinculado"} style={{ margin: 0, padding: 0, border: 0, background: "transparent", color: "var(--text-primary, #0f172a)", fontSize: "18px", fontWeight: "700", textAlign: "left", cursor: consultaPreview.paciente_id ? "pointer" : "default", textDecoration: "none" }}>{consultaPreview.paciente}</button>
-                <p style={{ margin: "6px 0 0", color: "var(--text-secondary, #64748b)", fontSize: "13px" }}>{consultaPreview.telefone || "Telefone não informado"}</p>
+                <p style={{ margin: "6px 0 0", color: "var(--text-secondary, #64748b)", fontSize: "13px" }}>{formatarTelefoneBR(consultaPreview.telefone) || "Telefone não informado"}</p>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                 <button type="button" style={S.closeBtn} onClick={() => abrirModal(consultaPreview)} aria-label="Editar agendamento" title="Editar agendamento">
