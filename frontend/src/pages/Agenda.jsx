@@ -892,11 +892,11 @@ function Agenda() {
                 <div style={S.label}>Horário</div>
                 <div style={{ marginTop: "7px", color: "var(--text-primary, #0f172a)", fontSize: "14px", fontWeight: "600" }}>{consultaPreview.inicio} – {consultaPreview.fim}</div>
               </div>
-              <div style={{ ...S.fieldGroup, gridColumn: "1 / -1" }}>
+              <div style={S.fieldGroup}>
                 <div style={S.label}>Dentista responsável</div>
                 <div style={{ marginTop: "7px", color: "var(--text-primary, #0f172a)", fontSize: "14px", fontWeight: "600" }}>{consultaPreview.dentista}</div>
               </div>
-              <div style={{ ...S.fieldGroup, gridColumn: "1 / -1" }}>
+              <div style={S.fieldGroup}>
                 <div style={S.label}>Procedimento</div>
                 <div style={{ marginTop: "6px", color: "var(--text-secondary, #334155)", fontSize: "14px" }}>{consultaPreview.procedimento}</div>
               </div>
