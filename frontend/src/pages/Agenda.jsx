@@ -352,7 +352,8 @@ function Agenda() {
   }
 
   function ajustarHorario(novaData) {
-    const disp = horarios.filter((h) => !horarioPassado(novaData, h));
+    const diaPermitido = funcionamento.dias.includes(new Date(`${novaData}T12:00:00`).getDay());
+    const disp = diaPermitido ? horarios.filter((h) => !horarioPassado(novaData, h)) : [];
     setFormData((p) => ({ ...p, data: novaData, horario: disp.length === 0 ? "" : disp.includes(p.horario) ? p.horario : disp[0] }));
   }
 
@@ -395,7 +396,10 @@ function Agenda() {
       setBuscaPaciente(ag.paciente||"");
     } else {
       const di = dataPad || diasSemana[0]?.iso || formatarDataISO(new Date());
-      let hi = horPad; if (horarioPassado(di, hi)) hi = horarios.find((h) => !horarioPassado(di, h)) || "";
+      const diaPermitido = funcionamento.dias.includes(new Date(`${di}T12:00:00`).getDay());
+      let hi = diaPermitido && horarios.includes(horPad) && !horarioPassado(di, horPad)
+        ? horPad
+        : (diaPermitido ? horarios.find((h) => !horarioPassado(di, h)) || "" : "");
       setAgendamentoEditando(null);
       setRetornoPersonalizado(false);
       setFormData({ paciente_id: "", data: di, horario: hi, procedimento: "", status: "agendado" });
@@ -419,6 +423,9 @@ function Agenda() {
   async function handleSalvar(e) {
     e.preventDefault();
     if (!formData.paciente_id || !formData.data || !formData.horario) { setErroFormulario("Preencha paciente, data e horário."); return; }
+    const diaSelecionado = new Date(`${formData.data}T12:00:00`).getDay();
+    if (!funcionamento.dias.includes(diaSelecionado)) { setErroFormulario("A clínica não funciona no dia selecionado."); return; }
+    if (!horarios.includes(formData.horario)) { setErroFormulario("Selecione um horário dentro do funcionamento da clínica."); return; }
     if (!agendamentoEditando && horarioPassado(formData.data, formData.horario)) { setErroFormulario("Não é possível agendar em horários passados."); return; }
 
     const conflito = consultas.find((item) =>
