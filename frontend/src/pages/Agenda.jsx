@@ -49,14 +49,16 @@ function obterInicioAgenda(data) {
 }
 function formatarTelefoneBR(valor) {
   const original = String(valor || "").trim();
-  let numeros = original.replace(/\\D/g, "");
+  let numeros = original.replace(/\D/g, "");
   if (numeros.startsWith("55") && (numeros.length === 12 || numeros.length === 13)) {
     numeros = numeros.slice(2);
   }
-  if (numeros.length === 11) return numeros.replace(/^(\\d{2})(\\d{5})(\\d{4})$/, "($1) $2-$3");
-  if (numeros.length === 10) return numeros.replace(/^(\\d{2})(\\d{4})(\\d{4})$/, "($1) $2-$3");
-  return original || "";
+  if (numeros.length === 11) return numeros.replace(/^(\d{2})(\d{5})(\d{4})$/, "($1) $2-$3");
+  if (numeros.length === 10) return numeros.replace(/^(\d{2})(\d{4})(\d{4})$/, "($1) $2-$3");
+  return original;
 }
+
+function formatarDataISO}
 
 function formatarDataISO(data) {
   return `${data.getFullYear()}-${String(data.getMonth()+1).padStart(2,"0")}-${String(data.getDate()).padStart(2,"0")}`;
