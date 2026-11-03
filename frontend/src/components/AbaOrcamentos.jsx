@@ -770,6 +770,29 @@ function AbaOrcamentos({ pacienteId, pacienteNome }) {
               ) : (
                 <div style={S.treatmentsModalEmpty}>Nenhum tratamento cadastrado neste orçamento.</div>
               )}
+              {(() => {
+                const subtotal = calcularTotalItens(orcamentoTratamentosModal.itens);
+                const desconto = Math.min(subtotal, Math.max(0, Number(orcamentoTratamentosModal.desconto) || 0));
+                const totalFinal = Math.max(0, subtotal - desconto);
+                return (
+                  <div style={S.treatmentsModalTotals}>
+                    <div style={S.treatmentsModalTotalRow}>
+                      <span>Subtotal</span>
+                      <strong>{formatarMoeda(subtotal)}</strong>
+                    </div>
+                    {desconto > 0 && (
+                      <div style={S.treatmentsModalTotalRow}>
+                        <span>Desconto</span>
+                        <strong style={{ color: "#dc2626" }}>- {formatarMoeda(desconto)}</strong>
+                      </div>
+                    )}
+                    <div style={{ ...S.treatmentsModalTotalRow, ...S.treatmentsModalGrandTotal }}>
+                      <span>Total do orçamento</span>
+                      <strong>{formatarMoeda(totalFinal)}</strong>
+                    </div>
+                  </div>
+                );
+              })()}
               <div style={S.treatmentsModalFooter}>
                 <button type="button" style={S.btnSecondary} onClick={() => setOrcamentoTratamentosModal(null)}>Fechar</button>
               </div>
@@ -1252,6 +1275,9 @@ const S = {
   treatmentsModalValue: { display: "block", color: "#2563eb", fontSize: "12px", fontWeight: "700", whiteSpace: "nowrap" },
   treatmentsModalCost: { display: "block", color: "#475569", fontSize: "12px", fontWeight: "700", whiteSpace: "nowrap" },
   treatmentsModalEmpty: { padding: "28px 12px", color: "#94a3b8", fontSize: "13px", textAlign: "center" },
+  treatmentsModalTotals: { display: "flex", flexDirection: "column", gap: "9px", marginTop: "18px", marginLeft: "auto", width: "min(320px, 100%)", padding: "14px 16px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "10px", boxSizing: "border-box" },
+  treatmentsModalTotalRow: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px", color: "#64748b", fontSize: "13px" },
+  treatmentsModalGrandTotal: { borderTop: "1px solid #cbd5e1", paddingTop: "10px", color: "#0f172a", fontSize: "14px", fontWeight: "700" },
   treatmentsModalFooter: { display: "flex", justifyContent: "flex-end", marginTop: "18px" },
   treatmentsInfoButton: { width: "19px", height: "19px", padding: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", border: "1px solid #60a5fa", borderRadius: "50%", background: "#eff6ff", color: "#2563eb", fontSize: "12px", fontWeight: "800", lineHeight: 1, cursor: "pointer" },
   treatmentsPopover: { display: "flex", flexDirection: "column", gap: "7px", marginTop: "7px", padding: "10px 12px", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: "8px", maxWidth: "560px" },
