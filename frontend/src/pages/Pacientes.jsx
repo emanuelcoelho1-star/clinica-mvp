@@ -31,6 +31,21 @@ function formatCpf(cpf) {
   return cpf;
 }
 
+function formatarTelefoneBR(valor) {
+  if (!valor) return "";
+  let digits = String(valor).replace(/\D/g, "");
+  if ((digits.length === 12 || digits.length === 13) && digits.startsWith("55")) {
+    digits = digits.slice(2);
+  }
+  if (digits.length === 11) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+  }
+  if (digits.length === 10) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  }
+  return String(valor);
+}
+
 function getInitials(name) {
   if (!name) return "?";
   const parts = name.trim().split(/\s+/);
@@ -607,7 +622,7 @@ function Pacientes() {
                     {p.telefone ? (
                       <span style={{ ...s.cellText, display: "flex", alignItems: "center", gap: "6px" }}>
                         <span style={{ color: "#94a3b8", display: "flex" }}>{Icons.phone}</span>
-                        {p.telefone}
+                        {formatarTelefoneBR(p.telefone)}
                       </span>
                     ) : (
                       <span style={s.cellEmpty}>—</span>
