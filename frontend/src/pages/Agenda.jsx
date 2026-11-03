@@ -136,8 +136,26 @@ const Icons = {
    ═══════════════════════════════════════════════════════════ */
 function CustomDropdown({ value, options, onChange, placeholder = "Selecione", disabled = false, triggerStyle = {}, menuStyle = {}, maxHeight = "220px" }) {
   const [aberto, setAberto] = useState(false);
+  const [abrirParaCima, setAbrirParaCima] = useState(false);
   const ref = useRef(null);
   const sel = options.find((o) => o.value === value);
+
+  function alternarDropdown() {
+    if (disabled) return;
+    if (!aberto) {
+      const gatilho = ref.current?.getBoundingClientRect();
+      if (gatilho) {
+        const alturaMaxima = Number.parseInt(maxHeight, 10) || 220;
+        const alturaEstimada = Math.min(alturaMaxima, options.length * 42 + 2);
+        const espacoAbaixo = window.innerHeight - gatilho.bottom - 12;
+        const espacoAcima = gatilho.top - 12;
+        setAbrirParaCima(espacoAbaixo < alturaEstimada && espacoAcima > espacoAbaixo);
+      } else {
+        setAbrirParaCima(false);
+      }
+    }
+    setAberto((p) => !p);
+  }
 
   useEffect(() => {
     function handler(e) { if (ref.current && !ref.current.contains(e.target)) setAberto(false); }
@@ -147,7 +165,7 @@ function CustomDropdown({ value, options, onChange, placeholder = "Selecione", d
 
   return (
     <div style={S.dropWrap} ref={ref}>
-      <button type="button" onClick={() => !disabled && setAberto((p) => !p)} disabled={disabled}
+      <button type="button" onClick={alternarDropdown} disabled={disabled}
         style={{ ...S.dropTrigger, ...(disabled ? S.dropTriggerDisabled : {}), ...triggerStyle }}>
         <span style={S.dropText}>{sel?.label || placeholder}</span>
         <span style={{ ...S.dropArrow, ...(aberto ? S.dropArrowOpen : {}) }}>
@@ -157,7 +175,7 @@ function CustomDropdown({ value, options, onChange, placeholder = "Selecione", d
         </span>
       </button>
       {aberto && (
-        <div style={{ ...S.dropMenu, maxHeight, ...menuStyle }}>
+        <div style={{ ...S.dropMenu, maxHeight, ...(abrirParaCima ? { top: "auto", bottom: "calc(100% + 6px)" } : {}), ...menuStyle }}>
           {options.length === 0
             ? <div style={S.dropEmpty}>Nenhuma opção</div>
             : options.map((opt, i) => (
