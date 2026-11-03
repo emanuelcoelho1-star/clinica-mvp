@@ -193,6 +193,7 @@ function Agenda() {
   const [erro, setErro] = useState("");
   const [modalAberto, setModalAberto] = useState(false);
   const [consultaPreview, setConsultaPreview] = useState(null);
+  const [consultaPreviewPos, setConsultaPreviewPos] = useState({ top: 16, left: 16 });
   const [salvando, setSalvando] = useState(false);
   const [excluindo, setExcluindo] = useState(false);
   const [erroFormulario, setErroFormulario] = useState("");
@@ -817,7 +818,7 @@ function Agenda() {
                       onClick={() => { if (!ag && !bloq) abrirModal(null, dia.iso, hora); }}>
 
                       {ag ? (
-                        <button type="button" onClick={(e) => { e.stopPropagation(); setConsultaPreview(ag); }}
+                        <button type="button" onClick={(e) => { e.stopPropagation(); const rect = e.currentTarget.getBoundingClientRect(); const largura = 392; const altura = 420; const left = rect.right + largura + 12 <= window.innerWidth ? rect.right + 8 : Math.max(8, rect.left - largura - 8); const top = Math.min(Math.max(8, rect.top), Math.max(8, window.innerHeight - altura - 8)); setConsultaPreviewPos({ top, left }); setConsultaPreview(ag); }}
                           style={{ ...S.eventCard, ...(Number(ag.duracao) > 30 ? { position: "absolute", top: "4px", left: "4px", right: "4px", width: "auto", zIndex: 12, overflow: "hidden", height: `${(Number(ag.duracao) / 30) * 68 - 8}px` } : {}), background: stCfg.bg, borderColor: stCfg.border, ...(agendamentoEditando?.id === ag.id ? S.eventActive : {}) }}>
                           <div style={S.eventTime}>{ag.inicio} – {ag.fim}</div>
                           <div style={S.eventName}>{ag.paciente}</div>
@@ -852,63 +853,48 @@ function Agenda() {
       )}
 
 
-      {/* Prévia do agendamento */}
+      {/* Prévia flutuante do agendamento, ancorada ao cartão selecionado */}
       {consultaPreview && (
-        <div style={S.overlay} onClick={() => setConsultaPreview(null)}>
-          <div style={{ ...S.modal, maxWidth: "480px" }} onClick={(e) => e.stopPropagation()}>
-            <div style={S.modalHeader}>
-              <div>
-                <h2 style={S.modalTitle}>Detalhes do agendamento</h2>
-                <p style={S.modalSub}>Informações do paciente e da consulta.</p>
+        <div onClick={() => setConsultaPreview(null)} style={{ position: "fixed", inset: 0, zIndex: 1500, background: "transparent" }}>
+          <section onClick={(e) => e.stopPropagation()} style={{ position: "fixed", top: consultaPreviewPos.top, left: consultaPreviewPos.left, width: "min(392px, calc(100vw - 16px))", background: "#fff", borderRadius: "8px", boxShadow: "0 12px 32px rgba(15,23,42,0.22)", overflow: "hidden", fontFamily: "inherit" }}>
+            <div style={{ background: "#55afe8", color: "#fff", padding: "16px 18px 18px", position: "relative" }}>
+              <div style={{ position: "absolute", top: "9px", right: "10px", display: "flex", gap: "8px" }}>
+                <button type="button" title="Editar agendamento" onClick={() => abrirModal(consultaPreview)} style={{ width: "36px", height: "36px", border: 0, borderRadius: "50%", background: "rgba(255,255,255,0.18)", color: "#fff", cursor: "pointer", fontSize: "19px" }}>✎</button>
+                <button type="button" title="Fechar" onClick={() => setConsultaPreview(null)} style={{ width: "36px", height: "36px", border: 0, borderRadius: "50%", background: "rgba(255,255,255,0.18)", color: "#fff", cursor: "pointer", fontSize: "23px", lineHeight: 1 }}>×</button>
               </div>
-              <button type="button" style={S.closeBtn} onClick={() => setConsultaPreview(null)} aria-label="Fechar">{Icons.close}</button>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "16px", padding: "4px 0 20px", borderBottom: "1px solid #f1f5f9" }}>
-              {(consultaPreview.fotoPaciente || consultaPreview.logoClinica) ? (
-                <img src={consultaPreview.fotoPaciente || consultaPreview.logoClinica} alt={consultaPreview.fotoPaciente ? "Foto do paciente" : "Logo da clínica"}
-                  style={{ width: "76px", height: "76px", borderRadius: "50%", objectFit: "cover", border: "1px solid #e2e8f0", background: "#f8fafc", flexShrink: 0 }} />
-              ) : (
-                <div style={{ width: "76px", height: "76px", borderRadius: "50%", background: "#eff6ff", color: "#2563eb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "28px", fontWeight: "700", flexShrink: 0 }}>
-                  {String(consultaPreview.paciente || "P").trim().charAt(0).toUpperCase()}
-                </div>
-              )}
-              <div style={{ minWidth: 0 }}>
-                <h3 style={{ margin: 0, color: "#0f172a", fontSize: "18px", fontWeight: "700" }}>{consultaPreview.paciente}</h3>
-                <p style={{ margin: "6px 0 0", color: "#64748b", fontSize: "13px" }}>{consultaPreview.telefone || "Telefone não informado"}</p>
-              </div>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", padding: "20px 0" }}>
-              <div style={{ background: "#f8fafc", borderRadius: "10px", padding: "13px" }}>
-                <div style={S.label}>Data da consulta</div>
-                <div style={{ marginTop: "7px", color: "#0f172a", fontSize: "14px", fontWeight: "600" }}>
-                  {new Date(consultaPreview.data + "T12:00:00").toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long", year: "numeric" })}
+              <div style={{ display: "flex", alignItems: "center", gap: "14px", paddingTop: "30px" }}>
+                {(consultaPreview.fotoPaciente || consultaPreview.logoClinica) ? (
+                  <img src={consultaPreview.fotoPaciente || consultaPreview.logoClinica} alt={consultaPreview.fotoPaciente ? "Foto do paciente" : "Logo da clínica"} style={{ width: "58px", height: "58px", borderRadius: "50%", objectFit: "cover", border: "2px solid rgba(255,255,255,0.75)", background: "#fff", flexShrink: 0 }} />
+                ) : (
+                  <div style={{ width: "58px", height: "58px", borderRadius: "50%", background: "rgba(255,255,255,0.9)", color: "#55afe8", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "23px", fontWeight: 700, flexShrink: 0 }}>{String(consultaPreview.paciente || "P").trim().charAt(0).toUpperCase()}</div>
+                )}
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: "18px", lineHeight: 1.25, fontWeight: 700, color: "#fff", overflowWrap: "anywhere" }}>{consultaPreview.paciente}</div>
+                  <div style={{ marginTop: "5px", fontSize: "14px", color: "#fff" }}>{consultaPreview.telefone || "Telefone não informado"}</div>
                 </div>
               </div>
-              <div style={{ background: "#f8fafc", borderRadius: "10px", padding: "13px" }}>
-                <div style={S.label}>Horário</div>
-                <div style={{ marginTop: "7px", color: "#0f172a", fontSize: "14px", fontWeight: "600" }}>{consultaPreview.inicio} – {consultaPreview.fim}</div>
-              </div>
-              <div style={{ background: "#f8fafc", borderRadius: "10px", padding: "13px", gridColumn: "1 / -1" }}>
-                <div style={S.label}>Dentista responsável</div>
-                <div style={{ marginTop: "7px", color: "#0f172a", fontSize: "14px", fontWeight: "600" }}>{consultaPreview.dentista}</div>
-              </div>
-              <div style={{ gridColumn: "1 / -1" }}>
-                <div style={S.label}>Procedimento</div>
-                <div style={{ marginTop: "6px", color: "#334155", fontSize: "14px" }}>{consultaPreview.procedimento}</div>
-              </div>
-              <div style={{ gridColumn: "1 / -1" }}>
-                <span style={{ ...S.eventBadge, background: (STATUS_STYLE[consultaPreview.status] || STATUS_STYLE.agendado).bg, color: (STATUS_STYLE[consultaPreview.status] || STATUS_STYLE.agendado).color, borderColor: (STATUS_STYLE[consultaPreview.status] || STATUS_STYLE.agendado).border }}>
-                  <span style={{ ...S.eventDot, background: (STATUS_STYLE[consultaPreview.status] || STATUS_STYLE.agendado).dot }} />
-                  {obterLabelStatus(consultaPreview.status)}
-                </span>
+              <div style={{ margin: "10px 0 0 72px", fontSize: "13px", color: "#fff", lineHeight: 1.4 }}>
+                {new Date(consultaPreview.data + "T12:00:00").toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "short" })} · {consultaPreview.inicio} - {consultaPreview.fim}
               </div>
             </div>
-            <div style={S.formActions}>
-              <div style={{ flex: 1 }} />
-              <button type="button" style={S.btnSecondary} onClick={() => setConsultaPreview(null)}>Fechar</button>
-              <button type="button" style={S.btnPrimary} onClick={() => abrirModal(consultaPreview)}>Editar agendamento</button>
+            <div style={{ padding: "16px 18px 18px", display: "flex", flexDirection: "column", gap: "13px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", minHeight: "42px", border: "1px solid #d9e0e6", borderRadius: "6px", padding: "0 12px" }}>
+                <span style={{ color: "#479bd0", fontSize: "18px" }}>▣</span>
+                <span style={{ color: "#475569", fontSize: "14px" }}>{obterLabelStatus(consultaPreview.status)}</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", color: "#334155", fontSize: "14px" }}>
+                <span style={{ width: "25px", height: "25px", borderRadius: "50%", background: "#e4f4ec", color: "#399a72", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: 700 }}>D</span>
+                <span>{consultaPreview.dentista || "Dentista não informado"}</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", color: "#334155", fontSize: "14px" }}>
+                <span style={{ width: "25px", height: "25px", borderRadius: "50%", background: "#fff2cf", color: "#bd8618", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: "13px" }}>$</span>
+                <span style={{ overflowWrap: "anywhere" }}>{consultaPreview.procedimento || "Consulta"}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "flex-end", paddingTop: "2px" }}>
+                <button type="button" onClick={() => abrirModal(consultaPreview)} style={{ border: 0, borderRadius: "6px", padding: "9px 16px", background: "#55afe8", color: "#fff", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>Editar agendamento</button>
+              </div>
             </div>
-          </div>
+          </section>
         </div>
       )}
 
