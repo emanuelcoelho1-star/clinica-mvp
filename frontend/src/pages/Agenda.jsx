@@ -883,7 +883,7 @@ function Agenda() {
       {/* Prévia do agendamento: mantém o design original em formato flutuante */}
       {consultaPreview && (
         <div onClick={() => setConsultaPreview(null)} style={{ position: "fixed", inset: 0, zIndex: 1500, background: "transparent" }}>
-          <section onClick={(e) => e.stopPropagation()} style={{ ...S.modal, position: "fixed", top: consultaPreviewPos.top, left: consultaPreviewPos.left, width: "min(480px, calc(100vw - 16px))", maxWidth: "480px", maxHeight: "calc(100vh - 16px)", overflowY: "auto", margin: 0 }}>
+          <section onClick={(e) => e.stopPropagation()} style={{ ...S.modal, position: "fixed", top: consultaPreviewPos.top, left: consultaPreviewPos.left, width: "min(480px, calc(100vw - 16px))", maxWidth: "480px", overflow: "visible", margin: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: "16px", padding: "4px 0 20px", borderBottom: "1px solid #e2e8f0" }}>
               {(consultaPreview.fotoPaciente || consultaPreview.logoClinica) ? (
                 <img src={consultaPreview.fotoPaciente || consultaPreview.logoClinica} alt={consultaPreview.fotoPaciente ? "Foto do paciente" : "Logo da clínica"}
