@@ -7,6 +7,50 @@ const requirePermission = require("../middleware/requirePermission");
 // A autorização é validada na API, não apenas na interface.
 router.use(auth, requirePermission("agenda"));
 
+
+// Configuração de funcionamento isolada por clínica.
+function garantirTabelaFuncionamento(callback) {
+  db.run(`CREATE TABLE IF NOT EXISTS agenda_funcionamento (
+    clinica_id INTEGER PRIMARY KEY,
+    dias TEXT NOT NULL DEFAULT '[1,2,3,4,5,6]',
+    abertura TEXT NOT NULL DEFAULT '08:00',
+    fechamento TEXT NOT NULL DEFAULT '18:30',
+    updated_at TEXT DEFAULT (datetime('now','localtime'))
+  )`, callback);
+}
+
+router.get("/horarios-funcionamento", (req, res) => {
+  garantirTabelaFuncionamento((err) => {
+    if (err) return res.status(500).json({ erro: "Não foi possível carregar o funcionamento da clínica." });
+    db.get("SELECT dias, abertura, fechamento FROM agenda_funcionamento WHERE clinica_id = ?", [req.user.clinica_id], (selectErr, row) => {
+      if (selectErr) return res.status(500).json({ erro: "Não foi possível carregar o funcionamento da clínica." });
+      res.json(row ? { dias: JSON.parse(row.dias), abertura: row.abertura, fechamento: row.fechamento } : { dias: [1,2,3,4,5,6], abertura: "08:00", fechamento: "18:30" });
+    });
+  });
+});
+
+router.put("/horarios-funcionamento", (req, res) => {
+  const { dias, abertura, fechamento } = req.body || {};
+  const diasValidos = Array.isArray(dias) && dias.length > 0 && dias.every((dia) => Number.isInteger(dia) && dia >= 0 && dia <= 6);
+  const horarioValido = (valor) => typeof valor === "string" && /^([01]\\d|2[0-3]):[0-5]\\d$/.test(valor);
+  if (!diasValidos || new Set(dias).size !== dias.length || !horarioValido(abertura) || !horarioValido(fechamento) || abertura >= fechamento) {
+    return res.status(400).json({ erro: "Informe dias válidos e um intervalo de horário correto." });
+  }
+  garantirTabelaFuncionamento((err) => {
+    if (err) return res.status(500).json({ erro: "Não foi possível salvar o funcionamento da clínica." });
+    db.run(
+      `INSERT INTO agenda_funcionamento (clinica_id, dias, abertura, fechamento, updated_at)
+       VALUES (?, ?, ?, ?, datetime('now','localtime'))
+       ON CONFLICT(clinica_id) DO UPDATE SET dias = excluded.dias, abertura = excluded.abertura, fechamento = excluded.fechamento, updated_at = excluded.updated_at`,
+      [req.user.clinica_id, JSON.stringify([...dias].sort((x,y) => x-y)), abertura, fechamento],
+      function (saveErr) {
+        if (saveErr) return res.status(500).json({ erro: "Não foi possível salvar o funcionamento da clínica." });
+        res.json({ mensagem: "Funcionamento da clínica atualizado com sucesso." });
+      }
+    );
+  });
+});
+
 router.get("/", auth, (req, res) => {
   const sql = `
     SELECT consultas.*, pacientes.nome AS paciente_nome
