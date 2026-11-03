@@ -775,7 +775,7 @@ function Comissoes() {
 
             {/* MODAL — Cadastrar profissional */}
       {modal === "config" && (
-        <div style={S.modalOverlay} onClick={() => setModal(null)}>
+        <div style={S.modalOverlay} onMouseDown={(e) => { if (e.target === e.currentTarget) setModal(null); }}>
           <div style={S.modal} onClick={(e) => e.stopPropagation()}>
             <div style={S.modalHeader}>
               <h3 style={S.modalTitle}>Cadastrar profissional</h3>
