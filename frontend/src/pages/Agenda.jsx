@@ -1000,7 +1000,7 @@ function Agenda() {
       )}
       {/* ── Modal Agendamento ─────────────────────────────── */}
       {modalAberto && (
-        <div style={S.overlay} onClick={fecharModal}>
+        <div style={S.overlay} onMouseDown={(e) => { if (e.target === e.currentTarget) fecharModal(); }}>
           <div style={S.modal} onClick={(e) => e.stopPropagation()}>
             <div style={S.modalHeader}>
               <div>
