@@ -174,6 +174,10 @@ function Agenda() {
   const [busca, setBusca] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
   const [mostrarGerenciador, setMostrarGerenciador] = useState(false);
+  const [modalFuncionamentoAberto, setModalFuncionamentoAberto] = useState(false);
+  const [salvandoFuncionamento, setSalvandoFuncionamento] = useState(false);
+  const [erroFuncionamento, setErroFuncionamento] = useState("");
+  const [funcionamento, setFuncionamento] = useState({ dias: [1,2,3,4,5,6], abertura: "08:00", fechamento: "18:30" });
   const [buscaGerenciador, setBuscaGerenciador] = useState("");
   const [statusGerenciador, setStatusGerenciador] = useState("todos");
   const [inicioSemana, setInicioSemana] = useState(obterInicioAgenda(new Date()));
@@ -220,8 +224,36 @@ function Agenda() {
     }), [inicioSemana]);
 
   const hojeIso = formatarDataISO(agora);
-  useEffect(() => { carregarDadosIniciais(); }, []);
+  useEffect(() => { carregarDadosIniciais(); carregarFuncionamento(); }, []);
   async function carregarDadosIniciais() { await Promise.all([carregarConsultas(), carregarPacientes()]); }
+
+
+  async function carregarFuncionamento() {
+    try {
+      const tk = localStorage.getItem("token");
+      const r = await fetch(`${API_URL}/consultas/horarios-funcionamento`, { headers: { Authorization: tk || "" } });
+      if (!r.ok) throw new Error();
+      const d = await r.json();
+      if (d && Array.isArray(d.dias)) setFuncionamento({ dias: d.dias, abertura: d.abertura || "08:00", fechamento: d.fechamento || "18:30" });
+    } catch { setErroFuncionamento("Não foi possível carregar as configurações."); }
+  }
+  async function salvarFuncionamento(e) {
+    e.preventDefault();
+    if (!funcionamento.dias.length) { setErroFuncionamento("Selecione pelo menos um dia de funcionamento."); return; }
+    if (funcionamento.abertura >= funcionamento.fechamento) { setErroFuncionamento("O horário de fechamento deve ser posterior à abertura."); return; }
+    try {
+      setSalvandoFuncionamento(true); setErroFuncionamento("");
+      const tk = localStorage.getItem("token");
+      const r = await fetch(`${API_URL}/consultas/horarios-funcionamento`, {
+        method: "PUT", headers: { "Content-Type": "application/json", Authorization: tk || "" },
+        body: JSON.stringify(funcionamento),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.erro || "Não foi possível salvar as configurações.");
+      setModalFuncionamentoAberto(false);
+    } catch (err) { setErroFuncionamento(err.message || "Não foi possível salvar as configurações."); }
+    finally { setSalvandoFuncionamento(false); }
+  }
 
   async function carregarConsultas() {
     try { setCarregando(true); setErro(""); const tk = localStorage.getItem("token");
@@ -525,13 +557,47 @@ function Agenda() {
           </div>
           <p style={S.headerSub}>Organize atendimentos e acompanhe os horários</p>
         </div>
-        <button style={S.btnPrimary} onClick={() => abrirModal()}
-          onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 6px 20px rgba(37,99,235,0.3)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 1px 3px rgba(37,99,235,0.2)"; }}>
-          {Icons.plus}
-          <span>Novo agendamento</span>
-        </button>
+        <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+          <button type="button" style={S.btnRefresh} onClick={() => { setErroFuncionamento(""); setModalFuncionamentoAberto(true); }}>
+            <span>⚙</span><span>Configurações</span>
+          </button>
+          <button style={S.btnPrimary} onClick={() => abrirModal()}
+            onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = "0 6px 20px rgba(37,99,235,0.3)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 1px 3px rgba(37,99,235,0.2)"; }}>
+            {Icons.plus}<span>Novo agendamento</span>
+          </button>
+        </div>
       </div>
+
+
+      {modalFuncionamentoAberto && (
+        <div style={{ ...S.overlay, zIndex: 1300 }} onClick={() => !salvandoFuncionamento && setModalFuncionamentoAberto(false)}>
+          <div style={{ ...S.modal, maxWidth: "560px" }} onClick={(e) => e.stopPropagation()}>
+            <div style={S.modalHeader}>
+              <div><h2 style={S.modalTitle}>Funcionamento da clínica</h2><p style={S.modalSub}>Defina os dias e horários em que a clínica recebe pacientes.</p></div>
+              <button type="button" style={S.closeBtn} onClick={() => setModalFuncionamentoAberto(false)} aria-label="Fechar">{Icons.close}</button>
+            </div>
+            <form onSubmit={salvarFuncionamento} style={S.form}>
+              <div style={S.fieldGroup}>
+                <label style={S.label}>Dias de funcionamento</label>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: "8px" }}>
+                  {[{id:1,n:"Segunda"},{id:2,n:"Terça"},{id:3,n:"Quarta"},{id:4,n:"Quinta"},{id:5,n:"Sexta"},{id:6,n:"Sábado"},{id:0,n:"Domingo"}].map((dia) => {
+                    const ativo = funcionamento.dias.includes(dia.id);
+                    return <button key={dia.id} type="button" onClick={() => setFuncionamento((p) => ({ ...p, dias: ativo ? p.dias.filter((d) => d !== dia.id) : [...p.dias, dia.id] }))}
+                      style={{ padding: "10px 8px", borderRadius: "9px", border: ativo ? "1px solid #2563eb" : "1px solid #e2e8f0", background: ativo ? "#eff6ff" : "#fff", color: ativo ? "#1d4ed8" : "#475569", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>{dia.n}</button>;
+                  })}
+                </div>
+              </div>
+              <div style={S.formGrid}>
+                <div style={S.fieldGroup}><label style={S.label}>Horário de abertura</label><input required type="time" value={funcionamento.abertura} onChange={(e) => setFuncionamento((p) => ({ ...p, abertura: e.target.value }))} style={S.input} /></div>
+                <div style={S.fieldGroup}><label style={S.label}>Horário de fechamento</label><input required type="time" value={funcionamento.fechamento} onChange={(e) => setFuncionamento((p) => ({ ...p, fechamento: e.target.value }))} style={S.input} /></div>
+              </div>
+              {erroFuncionamento && <div style={S.formError}>{erroFuncionamento}</div>}
+              <div style={S.formActions}><div style={{ flex: 1 }} /><button type="button" style={S.btnSecondary} onClick={() => setModalFuncionamentoAberto(false)} disabled={salvandoFuncionamento}>Cancelar</button><button type="submit" style={S.btnPrimary} disabled={salvandoFuncionamento}>{salvandoFuncionamento ? "Salvando..." : "Salvar configurações"}</button></div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* ── Stats pills ───────────────────────────────────── */}
       <div style={S.statsRow}>
