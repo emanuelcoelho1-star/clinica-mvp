@@ -815,7 +815,7 @@ function Agenda() {
 
                       {ag ? (
                         <button type="button" onClick={(e) => { e.stopPropagation(); abrirModal(ag); }}
-                          style={{ ...S.eventCard, position: "absolute", top: "4px", left: "4px", right: "4px", width: "auto", zIndex: 12, overflow: "hidden", height: `${Math.max(1, ag.duracao / 30) * 68 - 8}px`, background: stCfg.bg, borderColor: stCfg.border, ...(agendamentoEditando?.id === ag.id ? S.eventActive : {}) }}>
+                          style={{ ...S.eventCard, ...(Number(ag.duracao) > 30 ? { position: "absolute", top: "4px", left: "4px", right: "4px", width: "auto", zIndex: 12, overflow: "hidden", height: `${(Number(ag.duracao) / 30) * 68 - 8}px` } : {}), background: stCfg.bg, borderColor: stCfg.border, ...(agendamentoEditando?.id === ag.id ? S.eventActive : {}) }}>
                           <div style={S.eventTime}>{ag.inicio} – {ag.fim}</div>
                           <div style={S.eventName}>{ag.paciente}</div>
                           <div style={S.eventProc}>{ag.procedimento}</div>
