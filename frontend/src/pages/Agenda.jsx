@@ -858,10 +858,7 @@ function Agenda() {
         <div onClick={() => setConsultaPreview(null)} style={{ position: "fixed", inset: 0, zIndex: 1500, background: "transparent" }}>
           <section onClick={(e) => e.stopPropagation()} style={{ ...S.modal, position: "fixed", top: consultaPreviewPos.top, left: consultaPreviewPos.left, width: "min(480px, calc(100vw - 16px))", maxWidth: "480px", maxHeight: "calc(100vh - 16px)", overflowY: "auto", margin: 0 }}>
             <div style={S.modalHeader}>
-              <div>
-                <h2 style={S.modalTitle}>Detalhes do agendamento</h2>
-                <p style={S.modalSub}>Informações do paciente e da consulta.</p>
-              </div>
+              <div style={{ flex: 1 }} />
               <button type="button" style={S.closeBtn} onClick={() => setConsultaPreview(null)} aria-label="Fechar">{Icons.close}</button>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "16px", padding: "4px 0 20px", borderBottom: "1px solid #e2e8f0" }}>
