@@ -895,34 +895,37 @@ function Agenda() {
               <div style={S.formGrid}>
                 <div style={S.fieldGroup}><label style={S.label}>Data do atendimento / retorno</label>
                   <input type="date" name="data" min={formatarDataISO(new Date())} value={formData.data} onChange={handleInput} style={S.input} />
-{agendamentoEditando && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "4px" }}>
-                      <label style={S.label}>Agendar retorno</label>
-                      <CustomDropdown
-                        value=""
-                        options={[
-                          { value: "7", label: "1 semana" },
-                          { value: "14", label: "2 semanas" },
-                          { value: "21", label: "3 semanas" },
-                          { value: "30", label: "1 mês" },
-                          { value: "personalizado", label: "Escolher quantidade de dias" },
-                        ]}
-                        onChange={(valor) => {
-                          if (valor === "personalizado") {
-                            setDiasRetornoPersonalizado("10");
-                            setRetornoPersonalizado(true);
-                            setErroFormulario("");
-                            return;
-                          }
-                          definirRetorno(Number(valor));
-                        }}
-                        placeholder="Selecione quando retornar..."
-                        triggerStyle={S.input}
-                        menuStyle={{ zIndex: 3000 }}
-                      />
-                    </div>
-                  )}
                 </div>
+                {agendamentoEditando && (
+                  <div style={S.fieldGroup}>
+                    <label style={S.label}>Agendar retorno</label>
+                    <CustomDropdown
+                      value=""
+                      options={[
+                        { value: "7", label: "1 semana" },
+                        { value: "14", label: "2 semanas" },
+                        { value: "21", label: "3 semanas" },
+                        { value: "30", label: "1 mês" },
+                        { value: "personalizado", label: "Escolher quantidade de dias" },
+                      ]}
+                      onChange={(valor) => {
+                        if (valor === "personalizado") {
+                          setDiasRetornoPersonalizado("10");
+                          setRetornoPersonalizado(true);
+                          setErroFormulario("");
+                          return;
+                        }
+                        definirRetorno(Number(valor));
+                      }}
+                      placeholder="Selecione quando retornar..."
+                      triggerStyle={S.input}
+                      menuStyle={{ zIndex: 3000 }}
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div style={S.formGrid}>
                 <div style={S.fieldGroup}><label style={S.label}>Horário</label>
                   <CustomDropdown value={formData.horario} options={horariosOpts}
                     onChange={(h) => setFormData((p) => ({ ...p, horario: h }))}
