@@ -570,7 +570,7 @@ function CadastroPaciente({ pacienteId, onCancel, onSaved }) {
       </form>
 
       {erroModal && (
-        <div style={styles.modalOverlay} onClick={() => setErroModal("")}>
+        <div style={styles.modalOverlay} onMouseDown={(e) => { if (e.target === e.currentTarget) setErroModal(""); }}>
           <div style={styles.modalBox} onClick={(e) => e.stopPropagation()}>
             <h3 style={styles.modalTitle}>Atenção</h3>
             <p style={styles.modalText}>{erroModal}</p>
