@@ -389,6 +389,66 @@ function RotaComPermissao({ acesso, modulo, children }) {
 }
 
 function Layout() {
+  useEffect(() => {
+    let inicioArraste = null;
+    let bloquearProximoClique = false;
+
+    const encontrarOverlay = (alvo) => {
+      let atual = alvo instanceof Element ? alvo : null;
+      while (atual && atual !== document.body) {
+        const estilo = window.getComputedStyle(atual);
+        const ret = atual.getBoundingClientRect();
+        if (
+          estilo.position === "fixed" &&
+          ret.left <= 1 && ret.top <= 1 &&
+          ret.right >= window.innerWidth - 1 &&
+          ret.bottom >= window.innerHeight - 1
+        ) return atual;
+        atual = atual.parentElement;
+      }
+      return null;
+    };
+
+    const aoPressionar = (evento) => {
+      const overlay = encontrarOverlay(evento.target);
+      inicioArraste = overlay && evento.target !== overlay
+        ? { overlay, alvo: evento.target }
+        : null;
+      bloquearProximoClique = false;
+    };
+
+    const aoSoltar = (evento) => {
+      if (inicioArraste && evento.target === inicioArraste.overlay) {
+        bloquearProximoClique = true;
+      }
+      inicioArraste = null;
+    };
+
+    const aoClicar = (evento) => {
+      if (!bloquearProximoClique) return;
+      bloquearProximoClique = false;
+      evento.preventDefault();
+      evento.stopPropagation();
+      evento.stopImmediatePropagation();
+    };
+
+    const cancelar = () => {
+      inicioArraste = null;
+      bloquearProximoClique = false;
+    };
+
+    document.addEventListener("pointerdown", aoPressionar, true);
+    document.addEventListener("pointerup", aoSoltar, true);
+    document.addEventListener("click", aoClicar, true);
+    document.addEventListener("pointercancel", cancelar, true);
+
+    return () => {
+      document.removeEventListener("pointerdown", aoPressionar, true);
+      document.removeEventListener("pointerup", aoSoltar, true);
+      document.removeEventListener("click", aoClicar, true);
+      document.removeEventListener("pointercancel", cancelar, true);
+    };
+  }, []);
   const [acesso, setAcesso] = useState(null);
   const [carregandoAcesso, setCarregandoAcesso] = useState(true);
 
