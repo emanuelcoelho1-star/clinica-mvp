@@ -428,6 +428,31 @@ function Agenda() {
     setFormData((p) => ({ ...p, [name]: value }));
   }
 
+  async function alterarStatusRapido(novoStatus) {
+    if (!consultaPreview?.id || !novoStatus || novoStatus === consultaPreview.status) return;
+    try {
+      const tk = localStorage.getItem("token");
+      const r = await fetch(`${API_URL}/consultas/${consultaPreview.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: tk || "" },
+        body: JSON.stringify({
+          paciente_id: Number(consultaPreview.paciente_id),
+          data: consultaPreview.data,
+          horario: consultaPreview.inicio,
+          duracao: Number(consultaPreview.duracao) || 30,
+          procedimento: consultaPreview.procedimento,
+          status: novoStatus,
+        }),
+      });
+      const resposta = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(resposta.erro || "Não foi possível alterar o status.");
+      setConsultaPreview((atual) => atual ? { ...atual, status: novoStatus } : atual);
+      await carregarConsultas();
+    } catch (err) {
+      alert(err.message || "Não foi possível alterar o status.");
+    }
+  }
+
   async function handleSalvar(e) {
     e.preventDefault();
     if (!formData.paciente_id || !formData.data || !formData.horario || !formData.duracao) { setErroFormulario("Preencha paciente, data, horário e duração."); return; }
@@ -900,11 +925,16 @@ function Agenda() {
                 <div style={S.label}>Procedimento</div>
                 <div style={{ marginTop: "6px", color: "var(--text-secondary, #334155)", fontSize: "14px" }}>{consultaPreview.procedimento}</div>
               </div>
-              <div style={{ gridColumn: "1 / -1" }}>
-                <span style={{ ...S.eventBadge, background: (STATUS_STYLE[consultaPreview.status] || STATUS_STYLE.agendado).bg, color: (STATUS_STYLE[consultaPreview.status] || STATUS_STYLE.agendado).color, borderColor: (STATUS_STYLE[consultaPreview.status] || STATUS_STYLE.agendado).border }}>
-                  <span style={{ ...S.eventDot, background: (STATUS_STYLE[consultaPreview.status] || STATUS_STYLE.agendado).dot }} />
-                  {obterLabelStatus(consultaPreview.status)}
-                </span>
+              <div style={{ ...S.fieldGroup, gridColumn: "1 / -1" }}>
+                <div style={S.label}>Status</div>
+                <CustomDropdown
+                  value={consultaPreview.status}
+                  options={statusOptions}
+                  onChange={alterarStatusRapido}
+                  placeholder="Selecione"
+                  triggerStyle={S.input}
+                  menuStyle={{ zIndex: 3000 }}
+                />
               </div>
             </div>
           </section>
