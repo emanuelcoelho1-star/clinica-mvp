@@ -872,7 +872,14 @@ function Agenda() {
                 <button type="button" onClick={() => { if (consultaPreview.paciente_id) { setConsultaPreview(null); navigate(`/pacientes/${consultaPreview.paciente_id}`); } }} disabled={!consultaPreview.paciente_id} title={consultaPreview.paciente_id ? "Abrir prontuário do paciente" : "Paciente sem cadastro vinculado"} style={{ margin: 0, padding: 0, border: 0, background: "transparent", color: "var(--text-primary, #0f172a)", fontSize: "18px", fontWeight: "700", textAlign: "left", cursor: consultaPreview.paciente_id ? "pointer" : "default", textDecoration: "none" }}>{consultaPreview.paciente}</button>
                 <p style={{ margin: "6px 0 0", color: "var(--text-secondary, #64748b)", fontSize: "13px" }}>{consultaPreview.telefone || "Telefone não informado"}</p>
               </div>
-              <button type="button" style={S.closeBtn} onClick={() => setConsultaPreview(null)} aria-label="Fechar">{Icons.close}</button>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <button type="button" style={S.closeBtn} onClick={() => abrirModal(consultaPreview)} aria-label="Editar agendamento" title="Editar agendamento">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="m16 4 4 4"/><path d="M4 20l4.5-1 11-11a2.12 2.12 0 0 0-3-3l-11 11L4 20z"/>
+                  </svg>
+                </button>
+                <button type="button" style={S.closeBtn} onClick={() => setConsultaPreview(null)} aria-label="Fechar">{Icons.close}</button>
+              </div>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", padding: "20px 0" }}>
               <div style={S.fieldGroup}>
@@ -899,11 +906,6 @@ function Agenda() {
                   {obterLabelStatus(consultaPreview.status)}
                 </span>
               </div>
-            </div>
-            <div style={S.formActions}>
-              <div style={{ flex: 1 }} />
-              <button type="button" style={S.btnSecondary} onClick={() => setConsultaPreview(null)}>Fechar</button>
-              <button type="button" style={S.btnPrimary} onClick={() => abrirModal(consultaPreview)}>Editar agendamento</button>
             </div>
           </section>
         </div>
