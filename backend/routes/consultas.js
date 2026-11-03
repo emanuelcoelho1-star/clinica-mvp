@@ -7,6 +7,28 @@ const requirePermission = require("../middleware/requirePermission");
 // A autorização é validada na API, não apenas na interface.
 router.use(auth, requirePermission("agenda"));
 
+let colunaDuracaoVerificada = false;
+router.use((req, res, next) => {
+  if (colunaDuracaoVerificada) return next();
+  db.all("PRAGMA table_info(consultas)", [], (err, colunas) => {
+    if (err) return res.status(500).json({ erro: "Não foi possível verificar a estrutura dos agendamentos." });
+    if (colunas.some((coluna) => coluna.name === "duracao")) { colunaDuracaoVerificada = true; return next(); }
+    db.run("ALTER TABLE consultas ADD COLUMN duracao INTEGER NOT NULL DEFAULT 30", (alterErr) => {
+      if (alterErr) return res.status(500).json({ erro: "Não foi possível atualizar a estrutura dos agendamentos." });
+      colunaDuracaoVerificada = true; next();
+    });
+  });
+});
+function minutos(horario) { const [h, m] = String(horario || "").split(":").map(Number); return h * 60 + m; }
+function duracaoValida(valor) { return [30,60,90,120,150,180].includes(Number(valor)); }
+function existeSobreposicao(data, horario, duracao, ignorarId, clinicaId, callback) {
+  db.all("SELECT id, horario, duracao FROM consultas WHERE clinica_id = ? AND data = ? AND status != 'cancelado' AND id != ?", [clinicaId, data, ignorarId || 0], (err, rows) => {
+    if (err) return callback(err);
+    const inicio = minutos(horario), fim = inicio + Number(duracao);
+    callback(null, rows.some((row) => inicio < minutos(row.horario) + (Number(row.duracao) || 30) && fim > minutos(row.horario)));
+  });
+}
+
 
 // Configuração de funcionamento isolada por clínica.
 function garantirTabelaFuncionamento(callback) {
@@ -70,9 +92,9 @@ router.get("/", auth, (req, res) => {
 });
 
 router.post("/", auth, (req, res) => {
-  const { paciente_id, data, horario, procedimento, status } = req.body;
+  const { paciente_id, data, horario, duracao = 30, procedimento, status } = req.body;
 
-  if (!paciente_id || !data || !horario) {
+  if (!paciente_id || !data || !horario || !duracaoValida(duracao)) {
     return res
       .status(400)
       .json({ erro: "Paciente, data e horário são obrigatórios." });
@@ -81,11 +103,11 @@ router.post("/", auth, (req, res) => {
   const statusConsulta = status || "agendado";
   const inserirConsulta = () => {
     const sql = `
-      INSERT INTO consultas (paciente_id, data, horario, procedimento, status, clinica_id)
-      SELECT p.id, ?, ?, ?, ?, ? FROM pacientes p WHERE p.id = ? AND p.clinica_id = ?
+      INSERT INTO consultas (paciente_id, data, horario, duracao, procedimento, status, clinica_id)
+      SELECT p.id, ?, ?, ?, ?, ?, ? FROM pacientes p WHERE p.id = ? AND p.clinica_id = ?
     `;
 
-    db.run(sql, [data, horario, procedimento || "", statusConsulta, req.user.clinica_id, paciente_id, req.user.clinica_id], function (err) {
+    db.run(sql, [data, horario, Number(duracao), procedimento || "", statusConsulta, req.user.clinica_id, paciente_id, req.user.clinica_id], function (err) {
       if (err) {
         return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
       }
@@ -102,22 +124,18 @@ router.post("/", auth, (req, res) => {
   };
 
   if (statusConsulta === "cancelado") return inserirConsulta();
-  db.get(
-    "SELECT paciente_id, horario FROM consultas WHERE clinica_id = ? AND data = ? AND horario = ? AND status != 'cancelado' LIMIT 1",
-    [req.user.clinica_id, data, horario],
-    (err, conflito) => {
-      if (err) return res.status(500).json({ erro: "Não foi possível validar a disponibilidade do horário." });
-      if (conflito) return res.status(409).json({ erro: "Este horário já está ocupado por outra consulta. Escolha outro horário." });
-      inserirConsulta();
-    }
-  );
+  existeSobreposicao(data, horario, duracao, null, req.user.clinica_id, (err, conflito) => {
+    if (err) return res.status(500).json({ erro: "Não foi possível validar a disponibilidade do horário." });
+    if (conflito) return res.status(409).json({ erro: "Este horário se sobrepõe a outro atendimento. Escolha outro horário." });
+    inserirConsulta();
+  });
 });
 
 router.put("/:id", auth, (req, res) => {
   const { id } = req.params;
-  const { paciente_id, data, horario, procedimento, status } = req.body;
+  const { paciente_id, data, horario, duracao = 30, procedimento, status } = req.body;
 
-  if (!paciente_id || !data || !horario) {
+  if (!paciente_id || !data || !horario || !duracaoValida(duracao)) {
     return res
       .status(400)
       .json({ erro: "Paciente, data e horário são obrigatórios." });
@@ -127,12 +145,12 @@ router.put("/:id", auth, (req, res) => {
   const atualizarConsulta = () => {
     const sql = `
       UPDATE consultas
-      SET paciente_id = ?, data = ?, horario = ?, procedimento = ?, status = ?
+      SET paciente_id = ?, data = ?, horario = ?, duracao = ?, procedimento = ?, status = ?
       WHERE id = ? AND clinica_id = ?
         AND EXISTS (SELECT 1 FROM pacientes p WHERE p.id = ? AND p.clinica_id = ?)
     `;
 
-    db.run(sql, [paciente_id, data, horario, procedimento || "", statusConsulta, id, req.user.clinica_id, paciente_id, req.user.clinica_id], function (err) {
+    db.run(sql, [paciente_id, data, horario, Number(duracao), procedimento || "", statusConsulta, id, req.user.clinica_id, paciente_id, req.user.clinica_id], function (err) {
       if (err) {
         return res.status(500).json({ erro: "Não foi possível processar a solicitação. Tente novamente." });
       }
@@ -146,15 +164,11 @@ router.put("/:id", auth, (req, res) => {
   };
 
   if (statusConsulta === "cancelado") return atualizarConsulta();
-  db.get(
-    "SELECT id FROM consultas WHERE clinica_id = ? AND data = ? AND horario = ? AND status != 'cancelado' AND id != ? LIMIT 1",
-    [req.user.clinica_id, data, horario, id],
-    (err, conflito) => {
-      if (err) return res.status(500).json({ erro: "Não foi possível validar a disponibilidade do horário." });
-      if (conflito) return res.status(409).json({ erro: "Este horário já está ocupado por outra consulta. Escolha outro horário." });
-      atualizarConsulta();
-    }
-  );
+  existeSobreposicao(data, horario, duracao, id, req.user.clinica_id, (err, conflito) => {
+    if (err) return res.status(500).json({ erro: "Não foi possível validar a disponibilidade do horário." });
+    if (conflito) return res.status(409).json({ erro: "Este horário se sobrepõe a outro atendimento. Escolha outro horário." });
+    atualizarConsulta();
+  });
 });
 
 router.delete("/:id", auth, (req, res) => {
