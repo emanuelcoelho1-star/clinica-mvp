@@ -230,8 +230,8 @@ function AbaTratamentos({ pacienteId }) {
       status: item.status || "em_andamento",
       valor: item.valor || "",
       profissional: item.profissional || "",
-      descricao: item.descricao || "",
-      observacoes: item.observacoes || "",
+      descricao: (item.descricao || "").startsWith("Gerado automaticamente a partir do orçamento #") ? "" : (item.descricao || ""),
+      observacoes: (item.observacoes || "").startsWith("Quantidade aprovada:") ? "" : (item.observacoes || ""),
     });
     setErroForm("");
     setTela("form");
