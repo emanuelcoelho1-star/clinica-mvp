@@ -86,8 +86,6 @@ export default async function gerarPdfOrcamento({ orcamento, pacienteId, apiUrl,
     }).join("");
     const colunasValores = convenio ? "" : "<th class='direita'>Valor unit.</th><th class='direita'>Subtotal</th>";
     const colSpan = convenio ? 4 : 6;
-    const odontograma = gerarOdontograma(itens);
-
     janela.document.open();
     janela.document.write(`<!DOCTYPE html>
 <html lang="pt-BR"><head><meta charset="utf-8"><title>Orçamento #${esc(orcamento.id)} - ${esc(paciente.nome)}</title>
@@ -115,7 +113,6 @@ th,td{padding:3mm 2.2mm;border-bottom:1px solid #e2e8f0;vertical-align:top}
 .totais{width:72mm;margin:6mm 0 0 auto;font-size:10pt}.total-linha{display:flex;justify-content:space-between;gap:8mm;padding:2mm 0}
 .total-final{border-top:1.5px solid #334155;margin-top:2mm;padding-top:3mm;font-size:12pt;font-weight:700}
 .observacao-convenio{margin-top:5mm;color:#64748b;font-size:9pt}
-.odontograma-topo span{font-size:7pt;color:#64748b;font-weight:400}
 .rodape{margin-top:22mm;display:flex;justify-content:space-around;gap:16mm;text-align:center;page-break-inside:avoid}
 .assinatura{flex:1;max-width:75mm;border-top:1px solid #444;padding-top:2mm;font-size:9.5pt;line-height:1.4}
 .assinatura strong{font-weight:600}
