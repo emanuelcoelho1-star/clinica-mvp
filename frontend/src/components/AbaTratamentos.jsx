@@ -589,7 +589,6 @@ function AbaTratamentos({ pacienteId }) {
                     name="descricao"
                     value={formData.descricao}
                     onChange={handleInput}
-                    placeholder="Descreva o diagnóstico..."
                     style={S.textarea}
                     rows={4}
                     maxLength={500}
@@ -608,7 +607,6 @@ function AbaTratamentos({ pacienteId }) {
                     name="observacoes"
                     value={formData.observacoes}
                     onChange={handleInput}
-                    placeholder="Adicione observações..."
                     style={S.textarea}
                     rows={4}
                     maxLength={500}
