@@ -179,7 +179,6 @@ const ABAS = [
   { id: "orcamentos", label: "Orçamentos", modulo: "orcamentos", icon: Icons.id },
   { id: "tratamentos", label: "Tratamentos", modulo: "tratamentos", icon: Icons.calendar },
   { id: "pagamentos", label: "Pagamentos", modulo: "pagamentos", icon: Icons.dollarSign },
-  { id: "evolucoes", label: "Evoluções", modulo: "evolucoes", icon: Icons.fileText },
   { id: "documentos", label: "Documentos", modulo: "documentos", icon: Icons.fileText },
   { id: "arquivos", label: "Arquivos", modulo: "arquivos", icon: Icons.fileText },
 ];
@@ -826,7 +825,10 @@ function ProntuarioPaciente() {
 
       {/* ── Tab: Tratamentos ─────────────────────────────── */}
       {abaAtiva === "tratamentos" && (
-        <AbaTratamentos pacienteId={paciente.id} />
+        <div style={{ display: "flex", flexDirection: "column", gap: "24px", minWidth: 0 }}>
+          <AbaTratamentos pacienteId={paciente.id} />
+          <AbaEvolucoes pacienteId={paciente.id} />
+        </div>
       )}
 
       {/* ── Tab: Pagamentos ──────────────────────────────── */}
