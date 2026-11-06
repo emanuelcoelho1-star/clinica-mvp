@@ -532,6 +532,9 @@ function AbaOrcamentos({ pacienteId, pacienteNome }) {
       }
 
       await carregarOrcamentos();
+      if (novoStatus === "aprovado") {
+        window.dispatchEvent(new CustomEvent("orcamento-aprovado", { detail: { pacienteId: Number(pacienteId) } }));
+      }
     } catch {
       setErro("Erro ao atualizar status.");
     }
