@@ -537,7 +537,8 @@ function AbaTratamentos({ pacienteId }) {
      ══════════════════════��════════════════════ */
   if (tela === "form") {
     return (
-      <div style={S.wrapper}>
+      <div style={S.formModalOverlay} onClick={voltarParaLista}>
+        <div style={S.formModal} onClick={(e) => e.stopPropagation()}>
 
         {/* Header */}
         <div style={S.header}>
@@ -678,6 +679,7 @@ function AbaTratamentos({ pacienteId }) {
             </button>
           </div>
         </form>
+        </div>
       </div>
     );
   }
@@ -1086,6 +1088,17 @@ const S = {
   modalActions: { display: "flex", justifyContent: "center", gap: "10px", marginTop: "24px" },
 
   /* ── Form ─────────────────────────────────────────── */
+  formModalOverlay: {
+    position: "fixed", inset: 0, zIndex: 1000, background: "rgba(15,23,42,0.48)",
+    backdropFilter: "blur(5px)", display: "flex", alignItems: "center",
+    justifyContent: "center", padding: "20px", overflowY: "auto",
+  },
+  formModal: {
+    width: "100%", maxWidth: "860px", maxHeight: "calc(100vh - 40px)",
+    overflowY: "auto", background: "#f8fafc", borderRadius: "16px",
+    padding: "24px", boxShadow: "0 24px 64px rgba(15,23,42,0.22)",
+    animation: "tratamento-fade-in 0.2s ease",
+  },
   formWrap: { display: "flex", flexDirection: "column", gap: "16px" },
   formCard: {
     background: "#fff", borderRadius: "16px",
