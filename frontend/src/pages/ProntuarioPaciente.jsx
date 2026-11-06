@@ -825,7 +825,7 @@ function ProntuarioPaciente() {
 
       {/* ── Tab: Tratamentos ─────────────────────────────── */}
       {abaAtiva === "tratamentos" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "24px", minWidth: 0 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "20px", alignItems: "start", minWidth: 0 }}>
           <AbaTratamentos pacienteId={paciente.id} />
           <AbaEvolucoes pacienteId={paciente.id} />
         </div>
