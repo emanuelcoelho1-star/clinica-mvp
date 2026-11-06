@@ -186,6 +186,11 @@ function AbaTratamentos({ pacienteId }) {
   /* ── Carregar ────────────────────────────── */
   useEffect(() => {
     carregarTratamentos();
+    const atualizarAposAprovacao = (evento) => {
+      if (Number(evento.detail?.pacienteId) === Number(pacienteId)) carregarTratamentos();
+    };
+    window.addEventListener("orcamento-aprovado", atualizarAposAprovacao);
+    return () => window.removeEventListener("orcamento-aprovado", atualizarAposAprovacao);
   }, [pacienteId]);
 
   async function carregarTratamentos() {
