@@ -179,6 +179,7 @@ function AbaTratamentos({ pacienteId }) {
 
   const [confirmarExclusao, setConfirmarExclusao] = useState(null);
   const [excluindo, setExcluindo] = useState(false);
+  const [finalizandoId, setFinalizandoId] = useState(null);
 
   const [hoveredCardId, setHoveredCardId] = useState(null);
   const [hoveredBtn, setHoveredBtn] = useState(null);
@@ -309,6 +310,38 @@ function AbaTratamentos({ pacienteId }) {
     }
   }
 
+  /* ── Finalizar tratamento ───────────────── */
+  async function handleFinalizar(item) {
+    if (!item?.id || item.status === "concluido") return;
+    try {
+      setFinalizandoId(item.id);
+      setErro("");
+      const tk = localStorage.getItem("token");
+      const r = await fetch(`${API_URL}/tratamentos/${item.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: tk || "" },
+        body: JSON.stringify({
+          paciente_id: Number(pacienteId),
+          data_inicio: item.data_inicio || dataHojeISO(),
+          data_fim: dataHojeISO(),
+          procedimento: item.procedimento,
+          dente: item.dente || "",
+          status: "concluido",
+          valor: Number(item.valor) || 0,
+          profissional: item.profissional || "",
+          descricao: item.descricao || "",
+          observacoes: item.observacoes || "",
+        }),
+      });
+      if (!r.ok) throw new Error();
+      await carregarTratamentos();
+    } catch {
+      setErro("Não foi possível finalizar o tratamento.");
+    } finally {
+      setFinalizandoId(null);
+    }
+  }
+
   /* ── Contagem de campos preenchidos ─────── */
   function contarCamposPreenchidos(a) {
     let total = 0;
@@ -419,12 +452,14 @@ function AbaTratamentos({ pacienteId }) {
                     <span style={{ ...S.pillStatus, background: statusCfg.bg, color: statusCfg.color, borderColor: statusCfg.border }}>
                       {statusCfg.label}
                     </span>
-                    <button type="button"
-                      style={{ ...S.listActionBtn, ...(hoveredBtn === `ver-${a.id}` ? S.listActionBtnHover : {}) }}
-                      onMouseEnter={() => setHoveredBtn(`ver-${a.id}`)} onMouseLeave={() => setHoveredBtn(null)}
-                      onClick={() => abrirDetalhes(a)}>
-                      {Icons.eye}<span>Ver</span>
-                    </button>
+                    {a.status !== "concluido" && (
+                      <button type="button" disabled={finalizandoId === a.id}
+                        style={{ ...S.finishBtn, ...(hoveredBtn === `finalizar-${a.id}` ? S.finishBtnHover : {}), opacity: finalizandoId === a.id ? 0.65 : 1 }}
+                        onMouseEnter={() => setHoveredBtn(`finalizar-${a.id}`)} onMouseLeave={() => setHoveredBtn(null)}
+                        onClick={() => handleFinalizar(a)}>
+                        <span>{finalizandoId === a.id ? "Finalizando..." : "Finalizar"}</span>
+                      </button>
+                    )}
                     <button type="button"
                       style={{ ...S.listActionBtn, ...(hoveredBtn === `editar-${a.id}` ? S.listActionBtnHover : {}) }}
                       onMouseEnter={() => setHoveredBtn(`editar-${a.id}`)} onMouseLeave={() => setHoveredBtn(null)}
@@ -942,6 +977,8 @@ const S = {
   documentRowActions: { display: "flex", alignItems: "center", gap: "7px", flexShrink: 0, flexWrap: "wrap" },
   listActionBtn: { display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px", height: "32px", padding: "0 11px", border: "1px solid #e8edf3", borderRadius: "7px", background: "#fff", color: "#475569", fontSize: "12px", fontWeight: "600", cursor: "pointer" },
   listActionBtnHover: { background: "#f8fafc", borderColor: "#cbd5e1" },
+  finishBtn: { display: "inline-flex", alignItems: "center", justifyContent: "center", height: "32px", padding: "0 12px", border: "1px solid #bbf7d0", borderRadius: "7px", background: "#f0fdf4", color: "#15803d", fontSize: "12px", fontWeight: "600", cursor: "pointer", whiteSpace: "nowrap" },
+  finishBtnHover: { background: "#dcfce7", borderColor: "#86efac" },
   listDeleteBtn: { width: "32px", height: "32px", display: "inline-flex", alignItems: "center", justifyContent: "center", border: "1px solid transparent", borderRadius: "7px", background: "transparent", color: "#94a3b8", cursor: "pointer" },
   listDeleteBtnHover: { color: "#dc2626", background: "#fef2f2", borderColor: "#fee2e2" },
 
