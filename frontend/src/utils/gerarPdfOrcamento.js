@@ -32,6 +32,58 @@ function tiposPlano(tipo) {
   }
 }
 
+
+function normalizarFaces(valor) {
+  if (Array.isArray(valor)) return valor.map((face) => String(face).trim().toUpperCase());
+  if (!valor) return [];
+  const texto = String(valor).trim();
+  try {
+    const parsed = JSON.parse(texto);
+    if (Array.isArray(parsed)) return parsed.map((face) => String(face).trim().toUpperCase());
+  } catch {}
+  return texto.split(/[,;/|]+/).map((face) => face.trim().toUpperCase()).filter(Boolean);
+}
+
+function gerarOdontograma(itens) {
+  const dentes = new Map();
+  (itens || []).forEach((item) => {
+    const dente = String(item.dente || "").trim();
+    if (!/^([1-4][1-8])$/.test(dente)) return;
+    if (!dentes.has(dente)) dentes.set(dente, new Set());
+    normalizarFaces(item.faces).forEach((face) => dentes.get(dente).add(face));
+  });
+
+  const superiores = ["18","17","16","15","14","13","12","11","21","22","23","24","25","26","27","28"];
+  const inferiores = ["48","47","46","45","44","43","42","41","31","32","33","34","35","36","37","38"];
+  const faces = [
+    { codigo: "V", x: 8, y: 1, w: 24, h: 8 },
+    { codigo: "M", x: 1, y: 10, w: 8, h: 24 },
+    { codigo: "O/I", x: 10, y: 10, w: 20, h: 24 },
+    { codigo: "D", x: 31, y: 10, w: 8, h: 24 },
+    { codigo: "L/P", x: 8, y: 35, w: 24, h: 8 },
+  ];
+  const desenharDente = (numero) => {
+    const selecionadas = dentes.get(numero) || new Set();
+    const marcado = dentes.has(numero);
+    const segmentos = faces.map((face) => {
+      const ativo = selecionadas.has(face.codigo) || (face.codigo === "O/I" && selecionadas.has("O"));
+      const preenchimento = ativo ? "#2563eb" : (marcado && selecionadas.size === 0 ? "#bfdbfe" : "#fff");
+      return `<rect x="${face.x}" y="${face.y}" width="${face.w}" height="${face.h}" rx="2" fill="${preenchimento}" stroke="${ativo ? "#1d4ed8" : "#94a3b8"}" stroke-width=".8"/>`;
+    }).join("");
+    return `<div class="dente-chart"><svg viewBox="0 0 40 44" role="img" aria-label="Dente ${numero}">${segmentos}</svg><span>${numero}</span></div>`;
+  };
+  const linha = (lista) => lista.map(desenharDente).join("");
+  const temDentes = dentes.size > 0;
+  if (!temDentes) return "";
+  return `<section class="odontograma">
+    <div class="odontograma-topo"><strong>Odontograma</strong><span>Faces destacadas em azul</span></div>
+    <div class="arcada-label">ARCADA SUPERIOR</div><div class="arcada-dentes">${linha(superiores)}</div>
+    <div class="arcada-divisoria"></div>
+    <div class="arcada-label">ARCADA INFERIOR</div><div class="arcada-dentes">${linha(inferiores)}</div>
+    <div class="legenda-faces"><span><i class="legenda-azul"></i> Dente/face incluído no orçamento</span><span>V: vestibular · M: mesial · O/I: oclusal/incisal · D: distal · L/P: lingual/palatina</span></div>
+  </section>`;
+}
+
 export default async function gerarPdfOrcamento({ orcamento, pacienteId, apiUrl, token }) {
   const janela = window.open("", "_blank", "width=900,height=1100");
   if (!janela) {
@@ -83,6 +135,7 @@ export default async function gerarPdfOrcamento({ orcamento, pacienteId, apiUrl,
     }).join("");
     const colunasValores = convenio ? "" : "<th class='direita'>Valor unit.</th><th class='direita'>Subtotal</th>";
     const colSpan = convenio ? 4 : 6;
+    const odontograma = gerarOdontograma(itens);
 
     janela.document.open();
     janela.document.write(`<!DOCTYPE html>
@@ -111,6 +164,17 @@ th,td{padding:3mm 2.2mm;border-bottom:1px solid #e2e8f0;vertical-align:top}
 .totais{width:72mm;margin:6mm 0 0 auto;font-size:10pt}.total-linha{display:flex;justify-content:space-between;gap:8mm;padding:2mm 0}
 .total-final{border-top:1.5px solid #334155;margin-top:2mm;padding-top:3mm;font-size:12pt;font-weight:700}
 .observacao-convenio{margin-top:5mm;color:#64748b;font-size:9pt}
+.odontograma{margin:5mm 0 6mm;padding:3mm 3mm 2.5mm;border:1px solid #cbd5e1;border-radius:2mm;page-break-inside:avoid}
+.odontograma-topo{display:flex;justify-content:space-between;align-items:center;margin-bottom:2mm;font-size:9pt;color:#334155}
+.odontograma-topo span{font-size:7pt;color:#64748b;font-weight:400}
+.arcada-label{text-align:center;font-size:7pt;font-weight:700;letter-spacing:.08em;color:#64748b;margin:1mm 0}
+.arcada-dentes{display:grid;grid-template-columns:repeat(16,minmax(0,1fr));gap:1mm;align-items:center}
+.dente-chart{min-width:0;text-align:center;color:#475569;font-size:6.5pt;line-height:1}
+.dente-chart svg{display:block;width:100%;height:9mm;max-width:10mm;margin:0 auto .7mm}
+.arcada-divisoria{height:1px;background:#e2e8f0;margin:2mm 0}
+.legenda-faces{display:flex;flex-direction:column;gap:1mm;margin-top:2mm;font-size:6.5pt;color:#64748b}
+.legenda-azul{display:inline-block;width:7px;height:7px;background:#2563eb;border-radius:1px;margin-right:3px;vertical-align:middle}
+
 .rodape{margin-top:22mm;display:flex;justify-content:space-around;gap:16mm;text-align:center;page-break-inside:avoid}
 .assinatura{flex:1;max-width:75mm;border-top:1px solid #444;padding-top:2mm;font-size:9.5pt;line-height:1.4}
 .assinatura strong{font-weight:600}
@@ -133,6 +197,7 @@ th,td{padding:3mm 2.2mm;border-bottom:1px solid #e2e8f0;vertical-align:top}
   <div class="campo"><strong>Dentista responsável:</strong> ${esc(orcamento.dentista_responsavel || "—")}</div>
 </section>
 <div class="descricao"><strong>Descrição:</strong> ${esc(orcamento.descricao || "Plano de tratamento")}</div>
+${odontograma}
 <h2>Procedimentos</h2>
 <table><thead><tr><th class="numero">Nº</th><th>Procedimento</th><th>Dente / face</th><th class="centro">Qtd.</th>${colunasValores}</tr></thead><tbody>${linhas || `<tr><td colspan="${colSpan}">Nenhum procedimento informado.</td></tr>`}</tbody></table>
 ${convenio ? '<p class="observacao-convenio">Valores financeiros omitidos nesta via destinada ao paciente.</p>' : `<section class="totais">
