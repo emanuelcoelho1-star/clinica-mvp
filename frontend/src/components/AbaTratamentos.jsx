@@ -618,6 +618,7 @@ function AbaTratamentos({ pacienteId }) {
               </div>
             </>
           ) : (
+            <>
           {/* Datas + Status */}
           <div style={S.formCard}>
             <div style={S.formCardHeader}>
@@ -698,8 +699,7 @@ function AbaTratamentos({ pacienteId }) {
               </div>
             </div>
           ))}
-
-
+            </>
           )}
           {/* Erro */}
           {erroForm && (
