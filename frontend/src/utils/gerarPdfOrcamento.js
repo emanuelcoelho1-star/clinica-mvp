@@ -147,7 +147,7 @@ ${convenio ? '<p class="observacao-convenio">Valores financeiros omitidos nesta 
 </section>`}
 <footer class="rodape">
   <div class="assinatura"><strong>${esc(paciente.nome || "Paciente")}</strong><br>Paciente</div>
-  <div class="assinatura"><strong>${esc(orcamento.dentista_responsavel || "Dentista responsável")}</strong><br>${esc(clinica.cro ? `CRO/PI ${clinica.cro}` : "")}<br>Dentista responsável</div>
+  <div class="assinatura"><strong>${esc(orcamento.dentista_responsavel || "Dentista responsável")}</strong><br>${esc(clinica.cro ? `CRO/PI ${clinica.cro}` : "")}</div>
 </footer>
 </main><script>window.onload=()=>window.print();</script></body></html>`);
     janela.document.close();
