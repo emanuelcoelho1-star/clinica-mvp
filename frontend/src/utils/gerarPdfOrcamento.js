@@ -34,14 +34,16 @@ function tiposPlano(tipo) {
 
 
 function normalizarFaces(valor) {
-  if (Array.isArray(valor)) return valor.map((face) => String(face).trim().toUpperCase());
-  if (!valor) return [];
-  const texto = String(valor).trim();
-  try {
-    const parsed = JSON.parse(texto);
-    if (Array.isArray(parsed)) return parsed.map((face) => String(face).trim().toUpperCase());
-  } catch {}
-  return texto.split(/[,;/|]+/).map((face) => face.trim().toUpperCase()).filter(Boolean);
+  const valores = Array.isArray(valor) ? valor : String(valor || "").split(/[,;|]+/);
+  return valores.map((face) => {
+    const texto = String(face || "").trim().toUpperCase().replace(/\\s+/g, "");
+    if (["O", "I", "O/I", "OI", "OCLUSAL", "INCISAL"].includes(texto)) return "O/I";
+    if (["M", "MESIAL"].includes(texto)) return "M";
+    if (["D", "DISTAL"].includes(texto)) return "D";
+    if (["V", "VESTIBULAR"].includes(texto)) return "V";
+    if (["L", "P", "L/P", "LP", "LINGUAL", "PALATINA", "PALATINO"].includes(texto)) return "L/P";
+    return "";
+  }).filter(Boolean);
 }
 
 function gerarOdontograma(itens) {
@@ -55,32 +57,35 @@ function gerarOdontograma(itens) {
 
   const superiores = ["18","17","16","15","14","13","12","11","21","22","23","24","25","26","27","28"];
   const inferiores = ["48","47","46","45","44","43","42","41","31","32","33","34","35","36","37","38"];
-  const faces = [
-    { codigo: "V", x: 8, y: 1, w: 24, h: 8 },
-    { codigo: "M", x: 1, y: 10, w: 8, h: 24 },
-    { codigo: "O/I", x: 10, y: 10, w: 20, h: 24 },
-    { codigo: "D", x: 31, y: 10, w: 8, h: 24 },
-    { codigo: "L/P", x: 8, y: 35, w: 24, h: 8 },
-  ];
   const desenharDente = (numero) => {
     const selecionadas = dentes.get(numero) || new Set();
-    const marcado = dentes.has(numero);
-    const segmentos = faces.map((face) => {
-      const ativo = selecionadas.has(face.codigo) || (face.codigo === "O/I" && selecionadas.has("O"));
-      const preenchimento = ativo ? "#2563eb" : (marcado && selecionadas.size === 0 ? "#bfdbfe" : "#fff");
-      return `<rect x="${face.x}" y="${face.y}" width="${face.w}" height="${face.h}" rx="2" fill="${preenchimento}" stroke="${ativo ? "#1d4ed8" : "#94a3b8"}" stroke-width=".8"/>`;
-    }).join("");
-    return `<div class="dente-chart"><svg viewBox="0 0 40 44" role="img" aria-label="Dente ${numero}">${segmentos}</svg><span>${numero}</span></div>`;
+    const cor = (codigo) => selecionadas.has(codigo) ? "#2563eb" : "#fff";
+    const borda = selecionadas.size ? "#1d4ed8" : "#64748b";
+    const clipId = `coroa-${numero}`;
+    return `<div class="dente-chart">
+      <svg viewBox="0 0 44 58" role="img" aria-label="Dente ${numero}">
+        <defs><clipPath id="${clipId}"><path d="M8 9 Q5 5 10 3 Q16 0 22 4 Q28 0 34 3 Q39 5 36 10 L33 29 Q31 34 28 31 L25 24 L22 40 L19 24 L16 32 Q12 35 10 29 Z"/></clipPath></defs>
+        <g clip-path="url(#${clipId})">
+          <rect x="0" y="0" width="44" height="58" fill="#fff"/>
+          <path d="M5 0 H39 V13 H5 Z" fill="${cor("V")}"/>
+          <path d="M5 13 H15 V32 H5 Z" fill="${cor("M")}"/>
+          <path d="M15 13 H29 V32 H15 Z" fill="${cor("O/I")}"/>
+          <path d="M29 13 H39 V32 H29 Z" fill="${cor("D")}"/>
+          <path d="M5 32 H39 V44 H5 Z" fill="${cor("L/P")}"/>
+        </g>
+        <path d="M8 9 Q5 5 10 3 Q16 0 22 4 Q28 0 34 3 Q39 5 36 10 L33 29 Q31 34 28 31 L25 24 L22 40 L19 24 L16 32 Q12 35 10 29 Z" fill="none" stroke="${borda}" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M15 13 L15 32 M29 13 L29 32 M5 13 H39 M5 32 H39" fill="none" stroke="#94a3b8" stroke-width=".7"/>
+      </svg><span>${numero}</span>
+    </div>`;
   };
   const linha = (lista) => lista.map(desenharDente).join("");
-  const temDentes = dentes.size > 0;
-  if (!temDentes) return "";
+  if (!dentes.size) return "";
   return `<section class="odontograma">
-    <div class="odontograma-topo"><strong>Odontograma</strong><span>Faces destacadas em azul</span></div>
+    <div class="odontograma-topo"><strong>Odontograma</strong><span>Faces selecionadas em azul</span></div>
     <div class="arcada-label">ARCADA SUPERIOR</div><div class="arcada-dentes">${linha(superiores)}</div>
     <div class="arcada-divisoria"></div>
     <div class="arcada-label">ARCADA INFERIOR</div><div class="arcada-dentes">${linha(inferiores)}</div>
-    <div class="legenda-faces"><span><i class="legenda-azul"></i> Dente/face incluído no orçamento</span><span>V: vestibular · M: mesial · O/I: oclusal/incisal · D: distal · L/P: lingual/palatina</span></div>
+    <div class="legenda-faces"><span><i class="legenda-azul"></i> Face selecionada no orçamento</span><span>V: vestibular · M: mesial · O/I: oclusal/incisal · D: distal · L/P: lingual/palatina</span></div>
   </section>`;
 }
 
