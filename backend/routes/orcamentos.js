@@ -297,20 +297,19 @@ router.patch("/:id/status", auth, (req, res) => {
           return res.status(404).json({ erro: "Orçamento não encontrado." });
         }
 
-        // 3) Se está sendo APROVADO (e não estava aprovado antes), gera contas a receber
+        // Ao aprovar pela primeira vez, cria automaticamente os tratamentos.
         if (status === "aprovado" && orcamento.status !== "aprovado") {
-          gerarContasReceber(id, orcamento.paciente_id, req.user.clinica_id, (erroFinanceiro) => {
-            if (erroFinanceiro) {
-              console.error("Erro ao gerar contas a receber:", erroFinanceiro);
-              // Retorna sucesso no status, mas avisa sobre o erro financeiro
-              return res.json({
-                mensagem: "Status atualizado, mas houve erro ao gerar contas a receber.",
-                aviso: erroFinanceiro,
-              });
+          criarTratamentosDoOrcamento(id, orcamento.paciente_id, req.user.clinica_id, (erroTratamentos) => {
+            if (erroTratamentos) {
+              console.error("Erro ao criar tratamentos do orçamento:", erroTratamentos);
+              return res.status(500).json({ erro: "O orçamento foi aprovado, mas não foi possível criar os tratamentos." });
             }
-            res.json({
-              mensagem: "Status atualizado e contas a receber geradas com sucesso.",
-              financeiro_gerado: true,
+            gerarContasReceber(id, orcamento.paciente_id, req.user.clinica_id, (erroFinanceiro) => {
+              if (erroFinanceiro) {
+                console.error("Erro ao gerar contas a receber:", erroFinanceiro);
+                return res.json({ mensagem: "Orçamento aprovado e tratamentos criados, mas houve erro ao gerar contas a receber.", aviso: erroFinanceiro, tratamentos_gerados: true });
+              }
+              res.json({ mensagem: "Orçamento aprovado, tratamentos criados e contas a receber geradas com sucesso.", financeiro_gerado: true, tratamentos_gerados: true });
             });
           });
         } else {
@@ -321,6 +320,32 @@ router.patch("/:id/status", auth, (req, res) => {
   });
 });
 
+
+// Cria um tratamento por item aprovado e evita duplicatas em reaprovações.
+function criarTratamentosDoOrcamento(orcamentoId, pacienteId, clinicaId, callback) {
+  db.all(
+    "SELECT oi.id, oi.procedimento, oi.dente, oi.valor, oi.quantidade, o.dentista_responsavel FROM orcamento_itens oi INNER JOIN orcamentos o ON o.id = oi.orcamento_id WHERE oi.orcamento_id = ? AND o.paciente_id = ? AND o.clinica_id = ? ORDER BY oi.id ASC",
+    [orcamentoId, pacienteId, clinicaId],
+    (err, itens) => {
+      if (err) return callback(err.message);
+      if (!itens || itens.length === 0) return callback("Orçamento sem procedimentos.");
+      const hoje = new Date().toISOString().slice(0, 10);
+      let concluidos = 0;
+      let erroInsercao = null;
+      itens.forEach((item) => {
+        db.run(
+          "INSERT INTO tratamentos (paciente_id, data_inicio, procedimento, dente, status, valor, profissional, descricao, observacoes, clinica_id, origem_orcamento_item_id) SELECT ?, ?, ?, ?, 'em_andamento', ?, ?, ?, ?, ?, ? WHERE NOT EXISTS (SELECT 1 FROM tratamentos WHERE origem_orcamento_item_id = ? AND clinica_id = ?)",
+          [pacienteId, hoje, item.procedimento, item.dente || null, (Number(item.valor) || 0) * (Number(item.quantidade) || 1), item.dentista_responsavel || null, "Gerado automaticamente a partir do orçamento #" + orcamentoId + ".", "Quantidade aprovada: " + (Number(item.quantidade) || 1) + ".", clinicaId, item.id, item.id, clinicaId],
+          (insertErr) => {
+            if (insertErr && !erroInsercao) erroInsercao = insertErr;
+            concluidos += 1;
+            if (concluidos === itens.length) callback(erroInsercao ? erroInsercao.message : null);
+          }
+        );
+      });
+    }
+  );
+}
 
 // =========================
 // FUNÇÃO: GERAR CONTAS A RECEBER A PARTIR DO ORÇAMENTO
