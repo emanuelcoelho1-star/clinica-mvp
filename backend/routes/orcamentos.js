@@ -335,7 +335,7 @@ function criarTratamentosDoOrcamento(orcamentoId, pacienteId, clinicaId, callbac
       itens.forEach((item) => {
         db.run(
           "INSERT INTO tratamentos (paciente_id, data_inicio, procedimento, dente, status, valor, profissional, descricao, observacoes, clinica_id, origem_orcamento_item_id) SELECT ?, ?, ?, ?, 'em_andamento', ?, ?, ?, ?, ?, ? WHERE NOT EXISTS (SELECT 1 FROM tratamentos WHERE origem_orcamento_item_id = ? AND clinica_id = ?)",
-          [pacienteId, hoje, item.procedimento, item.dente || null, (Number(item.valor) || 0) * (Number(item.quantidade) || 1), item.dentista_responsavel || null, "Gerado automaticamente a partir do orçamento #" + orcamentoId + ".", "Quantidade aprovada: " + (Number(item.quantidade) || 1) + ".", clinicaId, item.id, item.id, clinicaId],
+          [pacienteId, hoje, item.procedimento, item.dente || null, (Number(item.valor) || 0) * (Number(item.quantidade) || 1), item.dentista_responsavel || null, null, null, clinicaId, item.id, item.id, clinicaId],
           (insertErr) => {
             if (insertErr && !erroInsercao) erroInsercao = insertErr;
             concluidos += 1;
