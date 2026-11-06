@@ -460,11 +460,11 @@ function AbaTratamentos({ pacienteId }) {
                         <span>{finalizandoId === a.id ? "Finalizando..." : "Finalizar"}</span>
                       </button>
                     )}
-                    <button type="button"
-                      style={{ ...S.listActionBtn, ...(hoveredBtn === `editar-${a.id}` ? S.listActionBtnHover : {}) }}
+                    <button type="button" aria-label="Editar tratamento" title="Editar tratamento"
+                      style={{ ...S.listActionBtn, width: "32px", padding: 0, ...(hoveredBtn === `editar-${a.id}` ? S.listActionBtnHover : {}) }}
                       onMouseEnter={() => setHoveredBtn(`editar-${a.id}`)} onMouseLeave={() => setHoveredBtn(null)}
                       onClick={() => abrirFormEditar(a)}>
-                      {Icons.edit}<span>Editar</span>
+                      {Icons.edit}
                     </button>
                     <button type="button" aria-label="Excluir tratamento" title="Excluir tratamento"
                       style={{ ...S.listDeleteBtn, ...(hoveredBtn === `excluir-${a.id}` ? S.listDeleteBtnHover : {}) }}
