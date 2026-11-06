@@ -562,6 +562,62 @@ function AbaTratamentos({ pacienteId }) {
 
         <form onSubmit={handleSalvar} style={S.formWrap}>
 
+          {editando ? (
+            <>
+              <div style={S.formCard}>
+                <div style={S.formCardHeader}>
+                  <span style={S.formCardIcon}>{Icons.tooth}</span>
+                  <span style={S.formCardTitle}>Tratamento</span>
+                </div>
+                <div style={S.fieldGroup}>
+                  <input
+                    type="text"
+                    value={editando.procedimento || ""}
+                    readOnly
+                    style={{ ...S.input, background: "#f1f5f9", color: "#64748b", cursor: "not-allowed" }}
+                  />
+                </div>
+              </div>
+
+              <div style={S.formCard}>
+                <div style={S.formCardHeader}>
+                  <span style={S.formCardIcon}>{Icons.clipboard}</span>
+                  <span style={S.formCardTitle}>Diagnóstico</span>
+                </div>
+                <div style={S.fieldGroup}>
+                  <textarea
+                    name="descricao"
+                    value={formData.descricao}
+                    onChange={handleInput}
+                    placeholder="Descreva o diagnóstico..."
+                    style={S.textarea}
+                    rows={4}
+                    maxLength={500}
+                  />
+                  <span style={S.charCount}>{formData.descricao.length}/500</span>
+                </div>
+              </div>
+
+              <div style={S.formCard}>
+                <div style={S.formCardHeader}>
+                  <span style={S.formCardIcon}>{Icons.notes}</span>
+                  <span style={S.formCardTitle}>Observações</span>
+                </div>
+                <div style={S.fieldGroup}>
+                  <textarea
+                    name="observacoes"
+                    value={formData.observacoes}
+                    onChange={handleInput}
+                    placeholder="Adicione observações..."
+                    style={S.textarea}
+                    rows={4}
+                    maxLength={500}
+                  />
+                  <span style={S.charCount}>{formData.observacoes.length}/500</span>
+                </div>
+              </div>
+            </>
+          ) : (
           {/* Datas + Status */}
           <div style={S.formCard}>
             <div style={S.formCardHeader}>
@@ -643,6 +699,8 @@ function AbaTratamentos({ pacienteId }) {
             </div>
           ))}
 
+
+          )}
           {/* Erro */}
           {erroForm && (
             <div style={S.errorBox}>
@@ -1099,6 +1157,7 @@ const S = {
     padding: "24px", boxShadow: "0 24px 64px rgba(15,23,42,0.22)",
     animation: "tratamento-fade-in 0.2s ease",
   },
+  charCount: { display: "block", marginTop: "5px", textAlign: "right", color: "#94a3b8", fontSize: "11px" },
   formWrap: { display: "flex", flexDirection: "column", gap: "16px" },
   formCard: {
     background: "#fff", borderRadius: "16px",
