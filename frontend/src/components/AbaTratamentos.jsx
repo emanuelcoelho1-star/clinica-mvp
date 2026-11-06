@@ -391,115 +391,51 @@ function AbaTratamentos({ pacienteId }) {
           </div>
         )}
 
-        {/* Lista de cards */}
+        {/* Lista no mesmo padrão visual de Anamneses e Orçamentos */}
         {!carregando && !erro && tratamentos.length > 0 && (
-          <div style={S.cardGrid}>
-            {tratamentos.map((a) => {
+          <div style={S.documentList}>
+            {tratamentos.map((a, indice) => {
               const hovered = hoveredCardId === a.id;
-              const camposPreenchidos = contarCamposPreenchidos(a);
               const statusCfg = getStatusConfig(a.status);
               return (
-                <div
-                  key={a.id}
-                  style={{ ...S.card, ...(hovered ? S.cardHover : {}) }}
+                <div key={a.id}
+                  style={{ ...S.documentRow, ...(indice === tratamentos.length - 1 ? S.documentRowLast : {}), ...(hovered ? S.documentRowHover : {}) }}
                   onMouseEnter={() => setHoveredCardId(a.id)}
-                  onMouseLeave={() => setHoveredCardId(null)}
-                >
-                  {/* Topo do card */}
-                  <div style={S.cardTop}>
-                    <div style={S.cardDateBadge}>
-                      <span style={{ display: "flex", color: "#2563eb" }}>{Icons.calendar}</span>
-                      {formatarDataBR(a.data_inicio)}
-                      {a.data_fim && <span style={{ color: "#94a3b8" }}> → {formatarDataBR(a.data_fim)}</span>}
+                  onMouseLeave={() => setHoveredCardId(null)}>
+                  <div style={S.documentRowMain}>
+                    <div style={S.documentFileIcon}>{Icons.clipboard}</div>
+                    <div style={S.documentRowInfo}>
+                      <span style={S.documentRowTitle}>{a.procedimento || `Tratamento #${a.id}`}</span>
+                      <div style={S.documentRowMeta}>
+                        <span>{formatarDataBR(a.data_inicio)}</span>
+                        {a.data_fim && <><span style={S.documentMetaDot}>•</span><span>Conclusão: {formatarDataBR(a.data_fim)}</span></>}
+                        {a.dente && <><span style={S.documentMetaDot}>•</span><span>Dente / região: {a.dente}</span></>}
+                        {a.profissional && <><span style={S.documentMetaDot}>•</span><span>{a.profissional}</span></>}
+                        {Number(a.valor) > 0 && <><span style={S.documentMetaDot}>•</span><span>{formatarValor(a.valor)}</span></>}
+                      </div>
                     </div>
-                    <span style={S.cardId}>#{a.id}</span>
                   </div>
-
-                  {/* Status + Procedimento + Dente */}
-                  <div style={S.pillRow}>
-                    <span style={{
-                      ...S.pillStatus,
-                      background: statusCfg.bg,
-                      color: statusCfg.color,
-                      borderColor: statusCfg.border,
-                    }}>
+                  <div style={S.documentRowActions}>
+                    <span style={{ ...S.pillStatus, background: statusCfg.bg, color: statusCfg.color, borderColor: statusCfg.border }}>
                       {statusCfg.label}
                     </span>
-                    {a.procedimento && <span style={S.pillBlue}>{a.procedimento}</span>}
-                    {a.dente && (
-                      <span style={S.pill}>
-                        <span style={{ display: "flex" }}>{Icons.tooth}</span>
-                        {a.dente}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Valor */}
-                  {a.valor > 0 && (
-                    <div style={S.valorRow}>
-                      <span style={S.valorLabel}>Valor:</span>
-                      <span style={S.valorValue}>{formatarValor(a.valor)}</span>
-                    </div>
-                  )}
-
-                  {/* Descrição */}
-                  {a.descricao && (
-                    <div style={S.cardSection}>
-                      <span style={S.cardSectionLabel}>Descrição</span>
-                      <p style={S.cardSectionText}>{a.descricao}</p>
-                    </div>
-                  )}
-
-                  {/* Profissional */}
-                  {a.profissional && (
-                    <div style={S.metaRow}>
-                      <span style={S.metaChip}>Dr(a). {a.profissional}</span>
-                    </div>
-                  )}
-
-                  {/* Campos preenchidos */}
-                  <div style={S.metaRow}>
-                    <span style={S.metaChip}>{camposPreenchidos} campo{camposPreenchidos !== 1 ? "s" : ""} preenchido{camposPreenchidos !== 1 ? "s" : ""}</span>
-                  </div>
-
-                  {/* Ações */}
-                  <div style={S.cardActions}>
-                    <button
-                      style={{
-                        ...S.cardBtn,
-                        ...(hoveredBtn === `ver-${a.id}` ? S.cardBtnHover : {}),
-                      }}
-                      onMouseEnter={() => setHoveredBtn(`ver-${a.id}`)}
-                      onMouseLeave={() => setHoveredBtn(null)}
-                      onClick={() => abrirDetalhes(a)}
-                    >
-                      {Icons.eye}
-                      <span>Ver</span>
+                    <button type="button"
+                      style={{ ...S.listActionBtn, ...(hoveredBtn === `ver-${a.id}` ? S.listActionBtnHover : {}) }}
+                      onMouseEnter={() => setHoveredBtn(`ver-${a.id}`)} onMouseLeave={() => setHoveredBtn(null)}
+                      onClick={() => abrirDetalhes(a)}>
+                      {Icons.eye}<span>Ver</span>
                     </button>
-                    <button
-                      style={{
-                        ...S.cardBtn,
-                        ...(hoveredBtn === `editar-${a.id}` ? S.cardBtnHover : {}),
-                      }}
-                      onMouseEnter={() => setHoveredBtn(`editar-${a.id}`)}
-                      onMouseLeave={() => setHoveredBtn(null)}
-                      onClick={() => abrirFormEditar(a)}
-                    >
-                      {Icons.edit}
-                      <span>Editar</span>
+                    <button type="button"
+                      style={{ ...S.listActionBtn, ...(hoveredBtn === `editar-${a.id}` ? S.listActionBtnHover : {}) }}
+                      onMouseEnter={() => setHoveredBtn(`editar-${a.id}`)} onMouseLeave={() => setHoveredBtn(null)}
+                      onClick={() => abrirFormEditar(a)}>
+                      {Icons.edit}<span>Editar</span>
                     </button>
-                    <button
-                      style={{
-                        ...S.cardBtn,
-                        ...S.cardBtnDanger,
-                        ...(hoveredBtn === `excluir-${a.id}` ? S.cardBtnDangerHover : {}),
-                      }}
-                      onMouseEnter={() => setHoveredBtn(`excluir-${a.id}`)}
-                      onMouseLeave={() => setHoveredBtn(null)}
-                      onClick={() => setConfirmarExclusao(a)}
-                    >
+                    <button type="button" aria-label="Excluir tratamento" title="Excluir tratamento"
+                      style={{ ...S.listDeleteBtn, ...(hoveredBtn === `excluir-${a.id}` ? S.listDeleteBtnHover : {}) }}
+                      onMouseEnter={() => setHoveredBtn(`excluir-${a.id}`)} onMouseLeave={() => setHoveredBtn(null)}
+                      onClick={() => setConfirmarExclusao(a)}>
                       {Icons.trash}
-                      <span>Excluir</span>
                     </button>
                   </div>
                 </div>
@@ -991,6 +927,23 @@ const S = {
   },
   emptyTitle: { margin: 0, fontSize: "16px", fontWeight: "600", color: "#0f172a" },
   emptyText: { margin: 0, fontSize: "14px", color: "#94a3b8", lineHeight: 1.5, maxWidth: "360px" },
+
+  /* ── Lista no padrão de Anamneses e Orçamentos ───── */
+  documentList: { display: "flex", flexDirection: "column", background: "#fff", border: "1px solid #f1f5f9", borderRadius: "12px", overflow: "hidden" },
+  documentRow: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: "18px", padding: "13px 16px", borderBottom: "1px solid #f1f5f9", transition: "background 0.15s ease", minWidth: 0, flexWrap: "wrap" },
+  documentRowLast: { borderBottom: "none" },
+  documentRowHover: { background: "#fafcff" },
+  documentRowMain: { display: "flex", alignItems: "center", gap: "12px", minWidth: 0, flex: "1 1 260px" },
+  documentFileIcon: { width: "38px", height: "38px", borderRadius: "9px", background: "#f8fafc", color: "#64748b", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  documentRowInfo: { display: "flex", flexDirection: "column", gap: "4px", minWidth: 0 },
+  documentRowTitle: { color: "#1e293b", fontSize: "13px", fontWeight: "600", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+  documentRowMeta: { display: "flex", alignItems: "center", flexWrap: "wrap", gap: "7px", color: "#94a3b8", fontSize: "11px" },
+  documentMetaDot: { color: "#cbd5e1" },
+  documentRowActions: { display: "flex", alignItems: "center", gap: "7px", flexShrink: 0, flexWrap: "wrap" },
+  listActionBtn: { display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px", height: "32px", padding: "0 11px", border: "1px solid #e8edf3", borderRadius: "7px", background: "#fff", color: "#475569", fontSize: "12px", fontWeight: "600", cursor: "pointer" },
+  listActionBtnHover: { background: "#f8fafc", borderColor: "#cbd5e1" },
+  listDeleteBtn: { width: "32px", height: "32px", display: "inline-flex", alignItems: "center", justifyContent: "center", border: "1px solid transparent", borderRadius: "7px", background: "transparent", color: "#94a3b8", cursor: "pointer" },
+  listDeleteBtnHover: { color: "#dc2626", background: "#fef2f2", borderColor: "#fee2e2" },
 
   /* ── Card Grid ───────────────────────────────────── */
   cardGrid: {
