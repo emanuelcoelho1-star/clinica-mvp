@@ -211,7 +211,7 @@ router.post("/register", registerLimiter, async (req, res) => {
                           const token = jwt.sign(
                             { id: usuarioId, nome: nomeNormalizado, email: emailNormalizado },
                             SECRET,
-                            { expiresIn: "7d" }
+                            { expiresIn: "24h" }
                           );
                           return res.status(201).json({
                             mensagem: "Conta criada. Complete agora os dados da sua clínica.",
@@ -281,7 +281,7 @@ router.post("/login", loginLimiter, (req, res) => {
         const token = jwt.sign(
           { id: user.id, nome: user.nome, email: user.email },
           SECRET,
-          { expiresIn: "7d" }
+          { expiresIn: "24h" }
         );
 
         res.json({
