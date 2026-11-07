@@ -147,6 +147,7 @@ function AbaPagamentos({ pacienteId }) {
   const [erro, setErro] = useState("");
 
   const [tela, setTela] = useState("lista");
+  const [formEmModal, setFormEmModal] = useState(false);
   const [editando, setEditando] = useState(null);
   const [detalhes, setDetalhes] = useState(null);
 
@@ -212,6 +213,7 @@ function AbaPagamentos({ pacienteId }) {
 
   /* ── Abrir form ──────────────────────────── */
   function abrirFormNovo() {
+    setFormEmModal(true);
     setEditando(null);
     setFormData({ ...EMPTY_FORM });
     setErroForm("");
@@ -220,6 +222,7 @@ function AbaPagamentos({ pacienteId }) {
   }
 
   function abrirFormEditar(item) {
+    setFormEmModal(false);
     setEditando(item);
     setFormData({
       data: item.data || dataHojeISO(),
@@ -243,6 +246,7 @@ function AbaPagamentos({ pacienteId }) {
   }
 
   function voltarParaLista() {
+    setFormEmModal(false);
     setTela("lista");
     setEditando(null);
     setDetalhes(null);
@@ -579,7 +583,8 @@ function AbaPagamentos({ pacienteId }) {
      ═══════════════════════════════════════════ */
   if (tela === "form") {
     return (
-      <div style={S.wrapper}>
+      <div style={formEmModal ? S.overlay : S.wrapper} onClick={formEmModal ? voltarParaLista : undefined}>
+        <div style={formEmModal ? S.paymentModal : undefined} onClick={formEmModal ? (e) => e.stopPropagation() : undefined}>
 
         {/* Header */}
         <div style={S.header}>
@@ -720,6 +725,7 @@ function AbaPagamentos({ pacienteId }) {
             </button>
           </div>
         </form>
+        </div>
       </div>
     );
   }
@@ -1117,6 +1123,12 @@ const S = {
     background: "#fff", borderRadius: "20px", padding: "32px",
     maxWidth: "420px", width: "100%", textAlign: "center",
     boxShadow: "0 24px 48px rgba(15,23,42,0.12)",
+  },
+  paymentModal: {
+    background: "#fff", borderRadius: "18px", padding: "28px",
+    width: "min(760px, 100%)", maxHeight: "min(90vh, 900px)",
+    overflowY: "auto", boxShadow: "0 24px 64px rgba(15,23,42,0.18)",
+    animation: "pagamento-fade-in 0.2s ease",
   },
   modalIconWrap: { marginBottom: "16px", display: "flex", justifyContent: "center" },
   confirmTitle: { margin: "0 0 8px", fontSize: "17px", fontWeight: "700", color: "#0f172a" },
