@@ -93,6 +93,8 @@ function Login() {
 
       if (data.token) {
         localStorage.setItem("token", data.token);
+      localStorage.setItem("sorrisa_last_activity", String(Date.now()));
+        localStorage.setItem("sorrisa_last_activity", String(Date.now()));
         if (data.usuario) localStorage.setItem("usuario", JSON.stringify(data.usuario));
         window.location.href = "/cadastro-clinica";
         return;
