@@ -411,6 +411,7 @@ function AbaTratamentos({ pacienteId }) {
 
       setModalFinalizar(null);
       setImagensFinalizacao([]);
+      window.dispatchEvent(new CustomEvent("evolucao-criada", { detail: { pacienteId: Number(pacienteId) } }));
       await carregarTratamentos();
     } catch (error) {
       // Se o processo falhar antes de concluir o tratamento, desfaz os registros parciais.
