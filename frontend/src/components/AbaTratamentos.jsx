@@ -180,6 +180,12 @@ function AbaTratamentos({ pacienteId }) {
   const [confirmarExclusao, setConfirmarExclusao] = useState(null);
   const [excluindo, setExcluindo] = useState(false);
   const [finalizandoId, setFinalizandoId] = useState(null);
+  const [modalFinalizar, setModalFinalizar] = useState(null);
+  const [dadosFinalizacao, setDadosFinalizacao] = useState({ profissional: "", data: dataHojeISO(), evolucao: "" });
+  const [imagensFinalizacao, setImagensFinalizacao] = useState([]);
+  const [carregandoProfissional, setCarregandoProfissional] = useState(false);
+  const [salvandoFinalizacao, setSalvandoFinalizacao] = useState(false);
+  const [erroFinalizacao, setErroFinalizacao] = useState("");
 
   const [hoveredCardId, setHoveredCardId] = useState(null);
   const [hoveredBtn, setHoveredBtn] = useState(null);
@@ -310,34 +316,113 @@ function AbaTratamentos({ pacienteId }) {
     }
   }
 
-  /* ── Finalizar tratamento ───────────────── */
-  async function handleFinalizar(item) {
+  /* ── Modal de finalização ────────────────── */
+  async function abrirModalFinalizar(item) {
     if (!item?.id || item.status === "concluido") return;
+    setModalFinalizar(item);
+    setDadosFinalizacao({ profissional: "", data: dataHojeISO(), evolucao: "" });
+    setImagensFinalizacao([]);
+    setErroFinalizacao("");
+    setCarregandoProfissional(true);
     try {
-      setFinalizandoId(item.id);
-      setErro("");
       const tk = localStorage.getItem("token");
-      const r = await fetch(`${API_URL}/tratamentos/${item.id}`, {
+      const r = await fetch(`${API_URL}/auth/me`, { headers: { Authorization: tk || "" } });
+      if (!r.ok) throw new Error();
+      const data = await r.json();
+      setDadosFinalizacao((p) => ({ ...p, profissional: data.usuario?.nome || "" }));
+    } catch {
+      setErroFinalizacao("Não foi possível identificar o usuário conectado.");
+    } finally {
+      setCarregandoProfissional(false);
+    }
+  }
+
+  function fecharModalFinalizar() {
+    if (salvandoFinalizacao) return;
+    setModalFinalizar(null);
+    setImagensFinalizacao([]);
+    setErroFinalizacao("");
+  }
+
+  async function handleFinalizar() {
+    if (!modalFinalizar?.id || !dadosFinalizacao.profissional.trim() || !dadosFinalizacao.data || !dadosFinalizacao.evolucao.trim()) {
+      setErroFinalizacao("Preencha o profissional, a data e a evolução clínica.");
+      return;
+    }
+
+    const tk = localStorage.getItem("token");
+    let evolucaoId = null;
+    const arquivosEnviados = [];
+    setSalvandoFinalizacao(true);
+    setFinalizandoId(modalFinalizar.id);
+    setErroFinalizacao("");
+
+    try {
+      const evolucaoResponse = await fetch(`${API_URL}/evolucoes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: tk || "" },
+        body: JSON.stringify({
+          paciente_id: Number(pacienteId),
+          data: dadosFinalizacao.data,
+          procedimento: modalFinalizar.procedimento || "",
+          dente: modalFinalizar.dente || "",
+          descricao: dadosFinalizacao.evolucao.trim(),
+          observacoes: "",
+          profissional: dadosFinalizacao.profissional.trim(),
+        }),
+      });
+      if (!evolucaoResponse.ok) throw new Error("Não foi possível registrar a evolução clínica.");
+      const evolucaoCriada = await evolucaoResponse.json();
+      evolucaoId = evolucaoCriada.id;
+
+      for (const arquivo of imagensFinalizacao) {
+        const form = new FormData();
+        form.append("arquivo", arquivo);
+        form.append("paciente_id", String(pacienteId));
+        form.append("categoria", "evolucao");
+        form.append("descricao", `Evolução do tratamento #${modalFinalizar.id} - ${dadosFinalizacao.data}`);
+        const uploadResponse = await fetch(`${API_URL}/arquivos`, {
+          method: "POST",
+          headers: { Authorization: tk || "" },
+          body: form,
+        });
+        if (!uploadResponse.ok) throw new Error("Não foi possível enviar uma das imagens. Verifique se você tem permissão para adicionar arquivos.");
+        const arquivoCriado = await uploadResponse.json();
+        arquivosEnviados.push(arquivoCriado.id);
+      }
+
+      const tratamentoResponse = await fetch(`${API_URL}/tratamentos/${modalFinalizar.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", Authorization: tk || "" },
         body: JSON.stringify({
           paciente_id: Number(pacienteId),
-          data_inicio: item.data_inicio || dataHojeISO(),
-          data_fim: dataHojeISO(),
-          procedimento: item.procedimento,
-          dente: item.dente || "",
+          data_inicio: modalFinalizar.data_inicio || dadosFinalizacao.data,
+          data_fim: dadosFinalizacao.data,
+          procedimento: modalFinalizar.procedimento,
+          dente: modalFinalizar.dente || "",
           status: "concluido",
-          valor: Number(item.valor) || 0,
-          profissional: item.profissional || "",
-          descricao: item.descricao || "",
-          observacoes: item.observacoes || "",
+          valor: Number(modalFinalizar.valor) || 0,
+          profissional: modalFinalizar.profissional || "",
+          descricao: modalFinalizar.descricao || "",
+          observacoes: modalFinalizar.observacoes || "",
         }),
       });
-      if (!r.ok) throw new Error();
+      if (!tratamentoResponse.ok) throw new Error("A evolução foi registrada, mas não foi possível concluir o tratamento.");
+
+      setModalFinalizar(null);
+      setImagensFinalizacao([]);
       await carregarTratamentos();
-    } catch {
-      setErro("Não foi possível finalizar o tratamento.");
+    } catch (error) {
+      // Se o processo falhar antes de concluir o tratamento, desfaz os registros parciais.
+      if (evolucaoId) {
+        await fetch(`${API_URL}/evolucoes/${evolucaoId}`, { method: "DELETE", headers: { Authorization: tk || "" } }).catch(() => {});
+      }
+      for (const arquivoId of arquivosEnviados) {
+        await fetch(`${API_URL}/arquivos/${arquivoId}`, { method: "DELETE", headers: { Authorization: tk || "" } }).catch(() => {});
+      }
+      setErroFinalizacao(error.message || "Não foi possível finalizar o tratamento.");
     } finally {
+      setSalvandoFinalizacao(false);
       setFinalizandoId(null);
     }
   }
@@ -456,7 +541,7 @@ function AbaTratamentos({ pacienteId }) {
                       <button type="button" disabled={finalizandoId === a.id}
                         style={{ ...S.finishBtn, ...(hoveredBtn === `finalizar-${a.id}` ? S.finishBtnHover : {}), opacity: finalizandoId === a.id ? 0.65 : 1 }}
                         onMouseEnter={() => setHoveredBtn(`finalizar-${a.id}`)} onMouseLeave={() => setHoveredBtn(null)}
-                        onClick={() => handleFinalizar(a)}>
+                        onClick={() => abrirModalFinalizar(a)}>
                         <span>{finalizandoId === a.id ? "Finalizando..." : "Finalizar"}</span>
                       </button>
                     )}
@@ -476,6 +561,84 @@ function AbaTratamentos({ pacienteId }) {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* Modal finalizar tratamento */}
+        {modalFinalizar && (
+          <div style={S.formModalOverlay} onClick={fecharModalFinalizar}>
+            <div style={{ ...S.formModal, maxWidth: "680px" }} onClick={(e) => e.stopPropagation()}>
+              <div style={{ ...S.header, marginBottom: "20px" }}>
+                <div>
+                  <h2 style={S.title}>Finalizar tratamento</h2>
+                  <p style={S.subtitle}>{modalFinalizar.procedimento || "Tratamento"}{modalFinalizar.dente ? ` • Dente/região: ${modalFinalizar.dente}` : ""}</p>
+                </div>
+                <button type="button" aria-label="Fechar" onClick={fecharModalFinalizar} disabled={salvandoFinalizacao} style={S.listActionBtn}>✕</button>
+              </div>
+
+              <div style={S.formWrap}>
+                <div style={S.formCard}>
+                  <div style={S.fieldGroup}>
+                    <label style={S.label}>Profissional responsável</label>
+                    <input type="text" value={carregandoProfissional ? "Identificando usuário..." : dadosFinalizacao.profissional}
+                      readOnly style={{ ...S.input, background: "#f8fafc", color: "#64748b" }} />
+                  </div>
+                  <div style={{ ...S.fieldGroup, marginTop: "16px" }}>
+                    <label style={S.label}>Data da conclusão *</label>
+                    <input type="date" value={dadosFinalizacao.data}
+                      onChange={(e) => setDadosFinalizacao((p) => ({ ...p, data: e.target.value }))}
+                      style={S.input} />
+                  </div>
+                </div>
+
+                <div style={S.formCard}>
+                  <div style={S.formCardHeader}>
+                    <span style={S.formCardIcon}>{Icons.clipboard}</span>
+                    <span style={S.formCardTitle}>Evolução clínica</span>
+                  </div>
+                  <div style={S.fieldGroup}>
+                    <textarea value={dadosFinalizacao.evolucao}
+                      onChange={(e) => setDadosFinalizacao((p) => ({ ...p, evolucao: e.target.value }))}
+                      placeholder="Descreva o procedimento realizado e a evolução clínica..."
+                      rows={5} maxLength={5000} style={S.textarea} />
+                    <span style={S.charCount}>{dadosFinalizacao.evolucao.length}/5000</span>
+                  </div>
+                </div>
+
+                <div style={S.formCard}>
+                  <div style={S.formCardHeader}>
+                    <span style={S.formCardIcon}>{Icons.notes}</span>
+                    <span style={S.formCardTitle}>Imagens do procedimento</span>
+                  </div>
+                  <div style={S.fieldGroup}>
+                    <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple
+                      onChange={(e) => setImagensFinalizacao((p) => [...p, ...Array.from(e.target.files || []).filter((f) => f.type.startsWith("image/"))].slice(0, 5))}
+                      style={S.input} />
+                    <span style={{ color: "#94a3b8", fontSize: "12px" }}>Adicione até 5 imagens. Cada imagem deve ter no máximo 10 MB.</span>
+                    {imagensFinalizacao.length > 0 && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "8px" }}>
+                        {imagensFinalizacao.map((arquivo, indice) => (
+                          <div key={`${arquivo.name}-${indice}`} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", fontSize: "13px", color: "#475569" }}>
+                            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{arquivo.name}</span>
+                            <button type="button" onClick={() => setImagensFinalizacao((p) => p.filter((_, i) => i !== indice))}
+                              style={{ ...S.listDeleteBtn, flexShrink: 0 }} aria-label={`Remover ${arquivo.name}`}>✕</button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {erroFinalizacao && <div style={S.errorBox}><span>{erroFinalizacao}</span></div>}
+                <div style={S.formActions}>
+                  <button type="button" style={S.btnSecondary} onClick={fecharModalFinalizar} disabled={salvandoFinalizacao}>Cancelar</button>
+                  <button type="button" style={S.btnPrimary} onClick={handleFinalizar}
+                    disabled={salvandoFinalizacao || carregandoProfissional || !dadosFinalizacao.profissional.trim()}>
+                    {salvandoFinalizacao ? "Salvando..." : "Salvar e finalizar"}
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
