@@ -149,6 +149,11 @@ function AbaEvolucoes({ pacienteId }) {
   /* ── Carregar ────────────────────────────── */
   useEffect(() => {
     carregarEvolucoes();
+    const atualizarAposCriacao = (evento) => {
+      if (Number(evento.detail?.pacienteId) === Number(pacienteId)) carregarEvolucoes();
+    };
+    window.addEventListener("evolucao-criada", atualizarAposCriacao);
+    return () => window.removeEventListener("evolucao-criada", atualizarAposCriacao);
   }, [pacienteId]);
 
   async function carregarEvolucoes() {
