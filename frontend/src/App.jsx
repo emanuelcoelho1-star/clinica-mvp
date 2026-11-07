@@ -405,8 +405,19 @@ function Layout() {
       localStorage.setItem(SESSION_ACTIVITY_KEY, String(agora));
     };
     const eventos = ["pointerdown", "keydown", "touchstart", "scroll"];
+    const verificarInatividade = () => {
+      const ultimaAtividade = Number(localStorage.getItem(SESSION_ACTIVITY_KEY));
+      if (!ultimaAtividade || Date.now() - ultimaAtividade >= SESSION_IDLE_LIMIT_MS) {
+        clearSession();
+        window.location.href = "/";
+      }
+    };
     eventos.forEach((evento) => window.addEventListener(evento, registrarAtividade, { passive: true }));
-    return () => eventos.forEach((evento) => window.removeEventListener(evento, registrarAtividade));
+    const verificacao = window.setInterval(verificarInatividade, 60 * 1000);
+    return () => {
+      eventos.forEach((evento) => window.removeEventListener(evento, registrarAtividade));
+      window.clearInterval(verificacao);
+    };
   }, []);
 
   useEffect(() => {
