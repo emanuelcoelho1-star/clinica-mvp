@@ -327,11 +327,33 @@ function AbaEvolucoes({ pacienteId }) {
     return (
       <div style={S.wrapper}>
 
-        <div style={S.timelineHeader}>
-          <h2 style={S.title}>Evoluções</h2>
-          <div style={S.toolbar}>
-            <button type="button" title="Adicionar evolução" style={S.toolbarBtn} onClick={abrirFormNovo}>{Icons.plus}</button>
-            <button type="button" title="Imprimir evoluções" style={S.toolbarBtn} onClick={() => window.print()}>
+        <div style={S.header}>
+          <div>
+            <h2 style={S.title}>Evoluções</h2>
+            <p style={S.subtitle}>
+              {evolucoes.length} registro{evolucoes.length !== 1 ? "s" : ""} clínico{evolucoes.length !== 1 ? "s" : ""}
+            </p>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <button
+              type="button"
+              style={{
+                ...S.btnPrimary,
+                ...(hoveredBtn === "novo" ? S.btnPrimaryHover : {}),
+              }}
+              onMouseEnter={() => setHoveredBtn("novo")}
+              onMouseLeave={() => setHoveredBtn(null)}
+              onClick={abrirFormNovo}
+            >
+              {Icons.plus}
+              <span>Nova evolução</span>
+            </button>
+            <button
+              type="button"
+              title="Imprimir evoluções"
+              style={S.toolbarBtn}
+              onClick={() => window.print()}
+            >
               <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
             </button>
           </div>
