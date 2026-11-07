@@ -128,7 +128,9 @@ const Icons = {
    COMPONENTE
    ═══════════════════════════════════════════════════════════ */
 function AbaEvolucoes({ pacienteId }) {
-  const [evolucoes, setEvolucoes] = useState([]);\n  const [arquivosEvolucao, setArquivosEvolucao] = useState([]);\n  const [menuAberto, setMenuAberto] = useState(null);
+  const [evolucoes, setEvolucoes] = useState([]);
+  const [arquivosEvolucao, setArquivosEvolucao] = useState([]);
+  const [menuAberto, setMenuAberto] = useState(null);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
 
