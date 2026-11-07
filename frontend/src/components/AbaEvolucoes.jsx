@@ -230,6 +230,7 @@ function AbaEvolucoes({ pacienteId }) {
   const [imagensNova, setImagensNova] = useState([]);
   const [carregandoProfissionalNova, setCarregandoProfissionalNova] = useState(false);
   const [salvandoNova, setSalvandoNova] = useState(false);
+  const [evolucaoEditandoModal, setEvolucaoEditandoModal] = useState(null);
 
   const [confirmarExclusao, setConfirmarExclusao] = useState(null);
   const [excluindo, setExcluindo] = useState(false);
@@ -294,6 +295,7 @@ function AbaEvolucoes({ pacienteId }) {
     if (salvandoNova) return;
     setModalNova(false);
     setImagensNova([]);
+    setEvolucaoEditandoModal(null);
     setErroForm("");
   }
 
@@ -305,17 +307,29 @@ function AbaEvolucoes({ pacienteId }) {
     const tk = localStorage.getItem("token");
     const enviados = [];
     let idCriado = null;
+    const editandoExistente = Boolean(evolucaoEditandoModal?.id);
     setSalvandoNova(true);
     setErroForm("");
     try {
-      const r = await fetch(`${API_URL}/evolucoes`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: tk || "" },
-        body: JSON.stringify({ paciente_id: Number(pacienteId), data: dadosNova.data, procedimento: "", dente: "", descricao: dadosNova.evolucao.trim(), observacoes: "", profissional: dadosNova.profissional.trim() }),
-      });
-      if (!r.ok) throw new Error("Não foi possível registrar a evolução clínica.");
-      const criada = await r.json();
-      idCriado = criada.id;
+      const r = await fetch(
+        editandoExistente ? `${API_URL}/evolucoes/${evolucaoEditandoModal.id}` : `${API_URL}/evolucoes`,
+        {
+          method: editandoExistente ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json", Authorization: tk || "" },
+          body: JSON.stringify({
+            paciente_id: Number(pacienteId),
+            data: dadosNova.data,
+            procedimento: editandoExistente ? (evolucaoEditandoModal.procedimento || "") : "",
+            dente: editandoExistente ? (evolucaoEditandoModal.dente || "") : "",
+            descricao: dadosNova.evolucao.trim(),
+            observacoes: editandoExistente ? (evolucaoEditandoModal.observacoes || "") : "",
+            profissional: dadosNova.profissional.trim(),
+          }),
+        }
+      );
+      if (!r.ok) throw new Error("Não foi possível salvar a evolução clínica.");
+      const salva = await r.json();
+      if (!editandoExistente) idCriado = salva.id;
       for (const arquivo of imagensNova) {
         const form = new FormData();
         form.append("arquivo", arquivo);
@@ -328,6 +342,7 @@ function AbaEvolucoes({ pacienteId }) {
       }
       setModalNova(false);
       setImagensNova([]);
+      setEvolucaoEditandoModal(null);
       window.dispatchEvent(new CustomEvent("evolucao-criada", { detail: { pacienteId: Number(pacienteId) } }));
       await carregarEvolucoes();
     } catch (error) {
@@ -340,17 +355,16 @@ function AbaEvolucoes({ pacienteId }) {
   }
 
   function abrirFormEditar(item) {
-    setEditando(item);
-    setFormData({
-      data: item.data || dataHojeISO(),
-      procedimento: item.procedimento || "",
-      dente: item.dente || "",
-      descricao: item.descricao || "",
-      observacoes: item.observacoes || "",
+    setEvolucaoEditandoModal(item);
+    setDadosNova({
       profissional: item.profissional || "",
+      data: item.data || dataHojeISO(),
+      evolucao: item.descricao || "",
     });
+    setImagensNova([]);
     setErroForm("");
-    setTela("form");
+    setCarregandoProfissionalNova(false);
+    setModalNova(true);
   }
 
   function abrirDetalhes(item) {
@@ -576,7 +590,7 @@ function AbaEvolucoes({ pacienteId }) {
           <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(15,23,42,.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }} onClick={fecharModalNova}>
             <div style={{ width: "100%", maxWidth: 680, maxHeight: "90vh", overflowY: "auto", background: "#fff", borderRadius: 16, padding: 24, boxShadow: "0 24px 70px rgba(0,0,0,.22)" }} onClick={(e) => e.stopPropagation()}>
               <div style={{ ...S.header, marginBottom: 20 }}>
-                <div><h2 style={S.title}>Nova evolução</h2><p style={S.subtitle}>Registre a evolução clínica do paciente.</p></div>
+                <div><h2 style={S.title}>{evolucaoEditandoModal ? "Editar evolução" : "Nova evolução"}</h2><p style={S.subtitle}>{evolucaoEditandoModal ? "Atualize as informações da evolução clínica." : "Registre a evolução clínica do paciente."}</p></div>
                 <button type="button" aria-label="Fechar" onClick={fecharModalNova} disabled={salvandoNova} style={S.listActionBtn}>✕</button>
               </div>
               <div style={S.formWrap}>
@@ -597,7 +611,7 @@ function AbaEvolucoes({ pacienteId }) {
                   </div>
                 </div>
                 {erroForm && <div style={S.errorBox}><span>{erroForm}</span></div>}
-                <div style={S.formActions}><button type="button" style={S.btnSecondary} onClick={fecharModalNova} disabled={salvandoNova}>Cancelar</button><button type="button" style={S.btnPrimary} onClick={handleSalvarNova} disabled={salvandoNova || carregandoProfissionalNova || !dadosNova.profissional.trim()}>{salvandoNova ? "Salvando..." : "Salvar evolução"}</button></div>
+                <div style={S.formActions}><button type="button" style={S.btnSecondary} onClick={fecharModalNova} disabled={salvandoNova}>Cancelar</button><button type="button" style={S.btnPrimary} onClick={handleSalvarNova} disabled={salvandoNova || carregandoProfissionalNova || !dadosNova.profissional.trim()}>{salvandoNova ? "Salvando..." : evolucaoEditandoModal ? "Salvar alterações" : "Salvar evolução"}</button></div>
               </div>
             </div>
           </div>
