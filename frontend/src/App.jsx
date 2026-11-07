@@ -12,6 +12,9 @@ import Financeiro from "./pages/Financeiro";
 import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
 import API_URL from "./api";
 
+const SESSION_IDLE_LIMIT_MS = 12 * 60 * 60 * 1000;
+const SESSION_ACTIVITY_KEY = "sorrisa_last_activity";
+
 /* ═══════════════════════════════════════════════════════════
    HELPER: Validar token JWT sem dependência externa
    ═══════════════════════════════════════════════════════════ */
@@ -22,7 +25,9 @@ function isTokenValid(token) {
     if (parts.length !== 3) return false;
     const payload = JSON.parse(atob(parts[1]));
     if (!payload.exp) return false;
-    return payload.exp * 1000 > Date.now();
+    const agora = Date.now();
+    const ultimaAtividade = Number(localStorage.getItem(SESSION_ACTIVITY_KEY));
+    return payload.exp * 1000 > agora && Number.isFinite(ultimaAtividade) && ultimaAtividade > 0 && agora - ultimaAtividade < SESSION_IDLE_LIMIT_MS;
   } catch {
     return false;
   }
@@ -34,6 +39,7 @@ function isTokenValid(token) {
 function clearSession() {
   localStorage.removeItem("token");
   localStorage.removeItem("usuario");
+  localStorage.removeItem(SESSION_ACTIVITY_KEY);
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -389,6 +395,20 @@ function RotaComPermissao({ acesso, modulo, children }) {
 }
 
 function Layout() {
+  useEffect(() => {
+    let ultimaGravacao = Number(localStorage.getItem(SESSION_ACTIVITY_KEY)) || 0;
+    const registrarAtividade = () => {
+      if (!localStorage.getItem("token")) return;
+      const agora = Date.now();
+      if (agora - ultimaGravacao < 60 * 1000) return;
+      ultimaGravacao = agora;
+      localStorage.setItem(SESSION_ACTIVITY_KEY, String(agora));
+    };
+    const eventos = ["pointerdown", "keydown", "touchstart", "scroll"];
+    eventos.forEach((evento) => window.addEventListener(evento, registrarAtividade, { passive: true }));
+    return () => eventos.forEach((evento) => window.removeEventListener(evento, registrarAtividade));
+  }, []);
+
   useEffect(() => {
     let inicioArraste = null;
     let bloquearProximoClique = false;
