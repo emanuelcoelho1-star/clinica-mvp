@@ -395,54 +395,50 @@ function AbaEvolucoes({ pacienteId }) {
 
         {!carregando && !erro && evolucoes.length > 0 && (
           <div style={S.timelineList}>
-            {[...new Set(evolucoes.map((item) => item.data || "Sem data"))].sort((a,b) => String(b).localeCompare(String(a))).map((dataGrupo) => (
-              <section key={dataGrupo} style={S.timelineGroup}>
-                <div style={S.timelineDate}>
-                  <span style={S.timelineDot} />
-                  <strong>{dataGrupo === "Sem data" ? dataGrupo : new Date(`${dataGrupo}T12:00:00`).toLocaleDateString("pt-BR", { day: "numeric", month: "long", year: "numeric" })}</strong>
-                </div>
-                <div style={S.timelineCards}>
-                  {evolucoes.filter((item) => (item.data || "Sem data") === dataGrupo).map((a) => {
-                    const imagens = arquivosEvolucao.filter((arquivo) =>
-                      arquivo.categoria === "evolucao" &&
-                      String(arquivo.descricao || "").includes(`Evolução do tratamento #${a.tratamento_id || "__nenhum__"}`)
-                    );
-                    const imagensDaData = arquivosEvolucao.filter((arquivo) =>
-                      arquivo.categoria === "evolucao" &&
-                      String(arquivo.descricao || "").includes(` - ${a.data}`) &&
-                      String(arquivo.descricao || "").includes("Evolução do tratamento #")
-                    );
-                    const anexos = imagens.length ? imagens : imagensDaData;
-                    return (
-                      <article key={a.id} style={S.timelineCard}>
-                        <div style={S.evolutionTop}>
-                          <span style={S.signatureBadge}>Sem assinatura</span>
-                          <div style={{ position: "relative" }}>
-                            <button type="button" title="Opções" style={S.moreBtn} onClick={() => setMenuAberto(menuAberto === a.id ? null : a.id)}>⋮</button>
-                            {menuAberto === a.id && (
-                              <div style={S.moreMenu}>
-                                <button type="button" onClick={() => { setMenuAberto(null); abrirFormEditar(a); }}>Editar</button>
-                                <button type="button" onClick={() => { setMenuAberto(null); setConfirmarExclusao(a); }}>Excluir</button>
-                              </div>
-                            )}
-                          </div>
+            {[...evolucoes].sort((a, b) => String(b.data || "").localeCompare(String(a.data || ""))).map((a) => {
+              const imagens = arquivosEvolucao.filter((arquivo) =>
+                arquivo.categoria === "evolucao" &&
+                String(arquivo.descricao || "").includes(`Evolução do tratamento #${a.tratamento_id || "__nenhum__"}`)
+              );
+              const imagensDaData = arquivosEvolucao.filter((arquivo) =>
+                arquivo.categoria === "evolucao" &&
+                String(arquivo.descricao || "").includes(` - ${a.data}`) &&
+                String(arquivo.descricao || "").includes("Evolução do tratamento #")
+              );
+              const anexos = imagens.length ? imagens : imagensDaData;
+              return (
+                <article key={a.id} style={S.timelineCard}>
+                  <div style={S.evolutionTop}>
+                    <div style={S.evolutionMeta}>
+                      <span style={S.evolutionDate}>
+                        <span aria-hidden="true">▦</span>
+                        {a.data ? formatarDataBR(a.data) : "Sem data"}
+                      </span>
+                      <span style={S.signatureBadge}>Sem assinatura</span>
+                    </div>
+                    <div style={{ position: "relative" }}>
+                      <button type="button" title="Opções" style={S.moreBtn} onClick={() => setMenuAberto(menuAberto === a.id ? null : a.id)}>⋮</button>
+                      {menuAberto === a.id && (
+                        <div style={S.moreMenu}>
+                          <button type="button" onClick={() => { setMenuAberto(null); abrirFormEditar(a); }}>Editar</button>
+                          <button type="button" onClick={() => { setMenuAberto(null); setConfirmarExclusao(a); }}>Excluir</button>
                         </div>
-                        {a.descricao && <p style={S.evolutionDescription}>{a.descricao}</p>}
-                        {(a.procedimento || a.dente) && <p style={S.evolutionProcedure}>{[a.procedimento, a.dente ? `Dente ${a.dente}` : ""].filter(Boolean).join(" · ")}</p>}
-                        {a.observacoes && <p style={S.evolutionNotes}>{a.observacoes}</p>}
-                        {a.profissional && <div style={S.evolutionProfessional}>Dr(a). {a.profissional}</div>}
-                        {anexos.length > 0 && (
-                          <div style={S.evolutionImages}>
-                            <div style={S.imagesTitle}>Imagens <span title="Imagens anexadas a esta evolução">ⓘ</span></div>
-                            <div style={S.imageThumbs}>{anexos.map((arquivo) => <MiniaturaEvolucao key={arquivo.id} arquivo={arquivo} />)}</div>
-                          </div>
-                        )}
-                      </article>
-                    );
-                  })}
-                </div>
-              </section>
-            ))}
+                      )}
+                    </div>
+                  </div>
+                  {a.descricao && <p style={S.evolutionDescription}>{a.descricao}</p>}
+                  {(a.procedimento || a.dente) && <p style={S.evolutionProcedure}>{[a.procedimento, a.dente ? `Dente ${a.dente}` : ""].filter(Boolean).join(" · ")}</p>}
+                  {a.observacoes && <p style={S.evolutionNotes}>{a.observacoes}</p>}
+                  {a.profissional && <div style={S.evolutionProfessional}>Dr(a). {a.profissional}</div>}
+                  {anexos.length > 0 && (
+                    <div style={S.evolutionImages}>
+                      <div style={S.imagesTitle}>Imagens <span title="Imagens anexadas a esta evolução">ⓘ</span></div>
+                      <div style={S.imageThumbs}>{anexos.map((arquivo) => <MiniaturaEvolucao key={arquivo.id} arquivo={arquivo} />)}</div>
+                    </div>
+                  )}
+                </article>
+              );
+            })}
           </div>
         )}
 
@@ -774,7 +770,9 @@ const S = {
   timelineDot: { width: "8px", height: "8px", borderRadius: "50%", background: "#2563eb", flexShrink: 0 },
   timelineCards: { display: "flex", flexDirection: "column", gap: "10px" },
   timelineCard: { position: "relative", background: "#fff", border: "1px solid #f1f5f9", borderRadius: "12px", padding: "18px 20px", display: "flex", flexDirection: "column", gap: "10px", color: "#334155", transition: "border-color 0.15s ease, box-shadow 0.15s ease" },
-  evolutionTop: { display: "flex", alignItems: "center", justifyContent: "space-between", minHeight: "28px", marginBottom: "2px" },
+  evolutionTop: { display: "flex", alignItems: "center", justifyContent: "space-between", minHeight: "32px", marginBottom: "2px" },
+  evolutionMeta: { display: "flex", alignItems: "center", flexWrap: "wrap", gap: "9px" },
+  evolutionDate: { display: "inline-flex", alignItems: "center", gap: "7px", color: "#475569", fontSize: "12px", fontWeight: "600" },
   signatureBadge: { display: "inline-flex", alignItems: "center", background: "#f8fafc", color: "#94a3b8", border: "1px solid #f1f5f9", borderRadius: "6px", padding: "5px 9px", fontSize: "11px", fontWeight: "600" },
   moreBtn: { width: "32px", height: "32px", border: "1px solid transparent", borderRadius: "8px", background: "transparent", color: "#94a3b8", fontSize: "21px", lineHeight: 1, cursor: "pointer" },
   moreMenu: { position: "absolute", right: 0, top: "36px", zIndex: 5, minWidth: "132px", padding: "5px", background: "#fff", border: "1px solid #e8edf3", borderRadius: "9px", boxShadow: "0 8px 24px rgba(15,23,42,.10)", display: "flex", flexDirection: "column" },
