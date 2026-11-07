@@ -127,6 +127,44 @@ const Icons = {
 /* ═══════════════════════════════════════════════════════════
    COMPONENTE
    ═══════════════════════════════════════════════════════════ */
+function MiniaturaEvolucao({ arquivo }) {
+  const [url, setUrl] = useState("");
+  useEffect(() => {
+    let cancelado = false;
+    let objectUrl = "";
+    const token = localStorage.getItem("token");
+    fetch(`${API_URL}/arquivos/${arquivo.id}/download`, {
+      headers: { Authorization: token || "" },
+    })
+      .then((response) => {
+        if (!response.ok) throw new Error("Falha ao carregar imagem");
+        return response.blob();
+      })
+      .then((blob) => {
+        const extensao = String(arquivo.nome_original || "").split(".").pop().toLowerCase();
+        const mimePorExtensao = {
+          jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png",
+          gif: "image/gif", webp: "image/webp",
+        };
+        const mime = blob.type && blob.type.startsWith("image/")
+          ? blob.type
+          : (mimePorExtensao[extensao] || "image/*");
+        objectUrl = URL.createObjectURL(new Blob([blob], { type: mime }));
+        if (cancelado) URL.revokeObjectURL(objectUrl);
+        else setUrl(objectUrl);
+      })
+      .catch(() => {});
+    return () => {
+      cancelado = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [arquivo.id, arquivo.nome_original]);
+
+  return url
+    ? <img src={url} alt={arquivo.nome_original || "Imagem da evolução"} style={{ width: 48, height: 48, objectFit: "cover", borderRadius: 3, border: "1px solid #e5e7eb" }} />
+    : <div aria-label="Carregando imagem" style={{ width: 48, height: 48, borderRadius: 3, background: "#f1f5f9" }} />;
+}
+
 function AbaEvolucoes({ pacienteId }) {
   const [evolucoes, setEvolucoes] = useState([]);
   const [arquivosEvolucao, setArquivosEvolucao] = useState([]);
