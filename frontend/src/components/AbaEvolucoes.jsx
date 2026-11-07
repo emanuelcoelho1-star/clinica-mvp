@@ -225,7 +225,11 @@ function AbaEvolucoes({ pacienteId }) {
 
   const [formData, setFormData] = useState({ ...EMPTY_FORM });
   const [salvando, setSalvando] = useState(false);
-  const [erroForm, setErroForm] = useState("");
+  const [erroForm, setErroForm] = useState("");  const [modalNova, setModalNova] = useState(false);
+  const [dadosNova, setDadosNova] = useState({ profissional: "", data: dataHojeISO(), evolucao: "" });
+  const [imagensNova, setImagensNova] = useState([]);
+  const [carregandoProfissionalNova, setCarregandoProfissionalNova] = useState(false);
+  const [salvandoNova, setSalvandoNova] = useState(false);
 
   const [confirmarExclusao, setConfirmarExclusao] = useState(null);
   const [excluindo, setExcluindo] = useState(false);
@@ -267,11 +271,72 @@ function AbaEvolucoes({ pacienteId }) {
   }
 
   /* ── Abrir form ──────────────────────────── */
-  function abrirFormNovo() {
-    setEditando(null);
-    setFormData({ ...EMPTY_FORM });
+  async function abrirFormNovo() {
+    setDadosNova({ profissional: "", data: dataHojeISO(), evolucao: "" });
+    setImagensNova([]);
     setErroForm("");
-    setTela("form");
+    setModalNova(true);
+    setCarregandoProfissionalNova(true);
+    try {
+      const tk = localStorage.getItem("token");
+      const r = await fetch(`${API_URL}/auth/me`, { headers: { Authorization: tk || "" } });
+      if (!r.ok) throw new Error();
+      const data = await r.json();
+      setDadosNova((p) => ({ ...p, profissional: data.usuario?.nome || "" }));
+    } catch {
+      setErroForm("Não foi possível identificar o usuário conectado.");
+    } finally {
+      setCarregandoProfissionalNova(false);
+    }
+  }
+
+  function fecharModalNova() {
+    if (salvandoNova) return;
+    setModalNova(false);
+    setImagensNova([]);
+    setErroForm("");
+  }
+
+  async function handleSalvarNova() {
+    if (!dadosNova.profissional.trim() || !dadosNova.data || !dadosNova.evolucao.trim()) {
+      setErroForm("Preencha o profissional, a data e a evolução clínica.");
+      return;
+    }
+    const tk = localStorage.getItem("token");
+    const enviados = [];
+    let idCriado = null;
+    setSalvandoNova(true);
+    setErroForm("");
+    try {
+      const r = await fetch(`${API_URL}/evolucoes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: tk || "" },
+        body: JSON.stringify({ paciente_id: Number(pacienteId), data: dadosNova.data, procedimento: "", dente: "", descricao: dadosNova.evolucao.trim(), observacoes: "", profissional: dadosNova.profissional.trim() }),
+      });
+      if (!r.ok) throw new Error("Não foi possível registrar a evolução clínica.");
+      const criada = await r.json();
+      idCriado = criada.id;
+      for (const arquivo of imagensNova) {
+        const form = new FormData();
+        form.append("arquivo", arquivo);
+        form.append("paciente_id", String(pacienteId));
+        form.append("categoria", "evolucao");
+        form.append("descricao", `Evolução clínica - ${dadosNova.data}`);
+        const upload = await fetch(`${API_URL}/arquivos`, { method: "POST", headers: { Authorization: tk || "" }, body: form });
+        if (!upload.ok) throw new Error("Não foi possível enviar uma das imagens.");
+        enviados.push((await upload.json()).id);
+      }
+      setModalNova(false);
+      setImagensNova([]);
+      window.dispatchEvent(new CustomEvent("evolucao-criada", { detail: { pacienteId: Number(pacienteId) } }));
+      await carregarEvolucoes();
+    } catch (error) {
+      if (idCriado) await fetch(`${API_URL}/evolucoes/${idCriado}`, { method: "DELETE", headers: { Authorization: tk || "" } }).catch(() => {});
+      for (const id of enviados) await fetch(`${API_URL}/arquivos/${id}`, { method: "DELETE", headers: { Authorization: tk || "" } }).catch(() => {});
+      setErroForm(error.message || "Não foi possível salvar a evolução.");
+    } finally {
+      setSalvandoNova(false);
+    }
   }
 
   function abrirFormEditar(item) {
@@ -507,6 +572,36 @@ function AbaEvolucoes({ pacienteId }) {
           </div>
         )}
 
+        {modalNova && (
+          <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(15,23,42,.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }} onClick={fecharModalNova}>
+            <div style={{ width: "100%", maxWidth: 680, maxHeight: "90vh", overflowY: "auto", background: "#fff", borderRadius: 16, padding: 24, boxShadow: "0 24px 70px rgba(0,0,0,.22)" }} onClick={(e) => e.stopPropagation()}>
+              <div style={{ ...S.header, marginBottom: 20 }}>
+                <div><h2 style={S.title}>Nova evolução</h2><p style={S.subtitle}>Registre a evolução clínica do paciente.</p></div>
+                <button type="button" aria-label="Fechar" onClick={fecharModalNova} disabled={salvandoNova} style={S.listActionBtn}>✕</button>
+              </div>
+              <div style={S.formWrap}>
+                <div style={{ ...S.formCard, display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 16 }}>
+                  <div style={S.fieldGroup}><label style={S.label}>Profissional responsável</label><input value={carregandoProfissionalNova ? "Identificando usuário..." : dadosNova.profissional} readOnly style={{ ...S.input, background: "#f8fafc", color: "#64748b", width: "100%" }} /></div>
+                  <div style={S.fieldGroup}><label style={S.label}>Data da evolução *</label><input type="date" value={dadosNova.data} onChange={(e) => setDadosNova((p) => ({ ...p, data: e.target.value }))} style={{ ...S.input, width: "100%" }} /></div>
+                </div>
+                <div style={S.formCard}>
+                  <div style={S.formCardHeader}><span style={S.formCardIcon}>{Icons.activity}</span><span style={S.formCardTitle}>Evolução clínica</span></div>
+                  <div style={S.fieldGroup}><textarea value={dadosNova.evolucao} onChange={(e) => setDadosNova((p) => ({ ...p, evolucao: e.target.value }))} placeholder="Descreva o procedimento realizado e a evolução clínica..." rows={5} maxLength={5000} style={S.textarea} /><span style={{ display: "block", textAlign: "right", color: "#94a3b8", fontSize: 12 }}>{dadosNova.evolucao.length}/5000</span></div>
+                </div>
+                <div style={S.formCard}>
+                  <div style={S.formCardHeader}><span style={S.formCardIcon}>{Icons.image}</span><span style={S.formCardTitle}>Imagens do procedimento</span></div>
+                  <div style={S.fieldGroup}>
+                    <input id="imagens-nova-evolucao" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple style={{ display: "none" }} onChange={(e) => { const files = Array.from(e.target.files || []).filter((f) => f.type.startsWith("image/") && f.size <= 10 * 1024 * 1024); setImagensNova((p) => [...p, ...files].slice(0, 5)); e.target.value = ""; }} />
+                    <label htmlFor="imagens-nova-evolucao" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, minHeight: 116, padding: 18, border: "1px dashed #cbd5e1", borderRadius: 10, background: "rgba(148,163,184,.06)", cursor: "pointer", textAlign: "center" }}><span style={{ fontSize: 24, color: "#64748b" }}>＋</span><span style={{ fontSize: 13, fontWeight: 600 }}>Adicionar imagens</span><span style={{ fontSize: 12, color: "#94a3b8" }}>Até 5 imagens • JPG, PNG, WEBP ou GIF • 10 MB cada</span></label>
+                    {imagensNova.length > 0 && <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(112px,1fr))", gap: 10, marginTop: 12 }}>{imagensNova.map((f, i) => <div key={`${f.name}-${i}`} style={{ position: "relative", border: "1px solid #e2e8f0", borderRadius: 9, padding: 6 }}><img src={URL.createObjectURL(f)} alt={f.name} style={{ width: "100%", height: 82, objectFit: "cover", borderRadius: 6 }} /><div style={{ fontSize: 11, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: 6 }}>{f.name}</div><button type="button" onClick={() => setImagensNova((p) => p.filter((_, n) => n !== i))} style={{ ...S.listDeleteBtn, position: "absolute", top: 9, right: 9, background: "#fff", borderRadius: "50%" }}>✕</button></div>)}</div>}
+                  </div>
+                </div>
+                {erroForm && <div style={S.errorBox}><span>{erroForm}</span></div>}
+                <div style={S.formActions}><button type="button" style={S.btnSecondary} onClick={fecharModalNova} disabled={salvandoNova}>Cancelar</button><button type="button" style={S.btnPrimary} onClick={handleSalvarNova} disabled={salvandoNova || carregandoProfissionalNova || !dadosNova.profissional.trim()}>{salvandoNova ? "Salvando..." : "Salvar evolução"}</button></div>
+              </div>
+            </div>
+          </div>
+        )}
         {/* Modal confirmar exclusão */}
         {confirmarExclusao && (
           <div style={S.overlay} onClick={() => setConfirmarExclusao(null)}>
