@@ -452,7 +452,9 @@ function AbaEvolucoes({ pacienteId }) {
               </section>
             ))}
           </div>
-        )}\n\n        {/* Modal confirmar exclusão */}
+        )}
+
+        {/* Modal confirmar exclusão */}
         {confirmarExclusao && (
           <div style={S.overlay} onClick={() => setConfirmarExclusao(null)}>
             <div style={S.modal} onClick={(e) => e.stopPropagation()}>
