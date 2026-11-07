@@ -607,7 +607,7 @@ function AbaTratamentos({ pacienteId }) {
 
                 <div style={S.formCard}>
                   <div style={S.formCardHeader}>
-                    <span style={S.formCardIcon}>{Icons.notes}</span>
+                    <span style={S.formCardIcon}>{Icons.clipboard}</span>
                     <span style={S.formCardTitle}>Imagens do procedimento</span>
                   </div>
                   <div style={S.fieldGroup}>
