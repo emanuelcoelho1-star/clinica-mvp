@@ -136,6 +136,8 @@ const Icons = {
    ═══════════════════════════════════════════════════════════ */
 function MiniaturaEvolucao({ arquivo }) {
   const [url, setUrl] = useState("");
+  const [previewAberto, setPreviewAberto] = useState(false);
+
   useEffect(() => {
     let cancelado = false;
     let objectUrl = "";
@@ -167,9 +169,47 @@ function MiniaturaEvolucao({ arquivo }) {
     };
   }, [arquivo.id, arquivo.nome_original]);
 
-  return url
-    ? <img src={url} alt={arquivo.nome_original || "Imagem da evolução"} style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 9, border: "1px solid #e8edf3" }} />
-    : <div aria-label="Carregando imagem" style={{ width: 64, height: 64, borderRadius: 9, background: "#f1f5f9" }} />;
+  return (
+    <>
+      {url ? (
+        <button
+          type="button"
+          onClick={() => setPreviewAberto(true)}
+          aria-label={`Visualizar imagem: ${arquivo.nome_original || "Imagem da evolução"}`}
+          title="Clique para ampliar"
+          style={{ display: "block", padding: 0, border: 0, background: "transparent", borderRadius: 9, cursor: "zoom-in", lineHeight: 0 }}
+        >
+          <img src={url} alt={arquivo.nome_original || "Imagem da evolução"} style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 9, border: "1px solid #e8edf3" }} />
+        </button>
+      ) : (
+        <div aria-label="Carregando imagem" style={{ width: 64, height: 64, borderRadius: 9, background: "#f1f5f9" }} />
+      )}
+      {previewAberto && url && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Prévia da imagem"
+          onClick={() => setPreviewAberto(false)}
+          style={{ position: "fixed", inset: 0, zIndex: 10000, background: "rgba(15, 23, 42, 0.82)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, cursor: "zoom-out" }}
+        >
+          <button
+            type="button"
+            onClick={() => setPreviewAberto(false)}
+            aria-label="Fechar prévia"
+            style={{ position: "absolute", top: 20, right: 24, width: 42, height: 42, border: "1px solid rgba(255,255,255,.35)", borderRadius: "50%", background: "rgba(255,255,255,.12)", color: "#fff", fontSize: 28, lineHeight: 1, cursor: "pointer" }}
+          >
+            ×
+          </button>
+          <img
+            src={url}
+            alt={arquivo.nome_original || "Imagem da evolução"}
+            onClick={(e) => e.stopPropagation()}
+            style={{ display: "block", maxWidth: "min(1100px, 92vw)", maxHeight: "86vh", objectFit: "contain", borderRadius: 10, boxShadow: "0 20px 60px rgba(0,0,0,.35)", cursor: "default" }}
+          />
+        </div>
+      )}
+    </>
+  );
 }
 
 function AbaEvolucoes({ pacienteId }) {
