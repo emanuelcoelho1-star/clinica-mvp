@@ -578,17 +578,17 @@ function AbaTratamentos({ pacienteId }) {
               </div>
 
               <div style={S.formWrap}>
-                <div style={S.formCard}>
+                <div style={{ ...S.formCard, display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: "16px", alignItems: "end" }}>
                   <div style={S.fieldGroup}>
                     <label style={S.label}>Profissional responsável</label>
                     <input type="text" value={carregandoProfissional ? "Identificando usuário..." : dadosFinalizacao.profissional}
-                      readOnly style={{ ...S.input, background: "#f8fafc", color: "#64748b" }} />
+                      readOnly style={{ ...S.input, background: "#f8fafc", color: "#64748b", width: "100%", minWidth: 0 }} />
                   </div>
-                  <div style={{ ...S.fieldGroup, marginTop: "16px" }}>
+                  <div style={S.fieldGroup}>
                     <label style={S.label}>Data da conclusão *</label>
                     <input type="date" value={dadosFinalizacao.data}
                       onChange={(e) => setDadosFinalizacao((p) => ({ ...p, data: e.target.value }))}
-                      style={S.input} />
+                      style={{ ...S.input, width: "100%", minWidth: 0 }} />
                   </div>
                 </div>
 
@@ -612,17 +612,27 @@ function AbaTratamentos({ pacienteId }) {
                     <span style={S.formCardTitle}>Imagens do procedimento</span>
                   </div>
                   <div style={S.fieldGroup}>
-                    <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple
-                      onChange={(e) => setImagensFinalizacao((p) => [...p, ...Array.from(e.target.files || []).filter((f) => f.type.startsWith("image/"))].slice(0, 5))}
-                      style={S.input} />
-                    <span style={{ color: "#94a3b8", fontSize: "12px" }}>Adicione até 5 imagens. Cada imagem deve ter no máximo 10 MB.</span>
+                    <input id="imagens-finalizacao-tratamento" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple
+                      onChange={(e) => {
+                        const selecionadas = Array.from(e.target.files || []).filter((f) => f.type.startsWith("image/") && f.size <= 10 * 1024 * 1024);
+                        setImagensFinalizacao((p) => [...p, ...selecionadas].slice(0, 5));
+                        e.target.value = "";
+                      }}
+                      style={{ display: "none" }} />
+                    <label htmlFor="imagens-finalizacao-tratamento" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "8px", minHeight: "116px", padding: "18px", border: "1px dashed #cbd5e1", borderRadius: "10px", background: "rgba(148,163,184,0.06)", cursor: "pointer", textAlign: "center" }}>
+                      <span style={{ fontSize: "24px", color: "#64748b" }}>＋</span>
+                      <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-primary, #334155)" }}>Adicionar imagens</span>
+                      <span style={{ fontSize: "12px", color: "#94a3b8" }}>Selecione imagens do dispositivo • até 5 imagens</span>
+                    </label>
+                    <span style={{ color: "#94a3b8", fontSize: "12px", display: "block", marginTop: "8px" }}>Formatos JPG, PNG, WEBP ou GIF. Máximo de 10 MB por imagem.</span>
                     {imagensFinalizacao.length > 0 && (
-                      <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "8px" }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(112px, 1fr))", gap: "10px", marginTop: "12px" }}>
                         {imagensFinalizacao.map((arquivo, indice) => (
-                          <div key={`${arquivo.name}-${indice}`} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", fontSize: "13px", color: "#475569" }}>
-                            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{arquivo.name}</span>
+                          <div key={`${arquivo.name}-${indice}`} style={{ position: "relative", border: "1px solid #e2e8f0", borderRadius: "9px", padding: "6px", minWidth: 0 }}>
+                            <img src={URL.createObjectURL(arquivo)} alt={arquivo.name} style={{ width: "100%", height: "82px", objectFit: "cover", borderRadius: "6px", display: "block" }} />
+                            <div title={arquivo.name} style={{ fontSize: "11px", color: "#64748b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginTop: "6px" }}>{arquivo.name}</div>
                             <button type="button" onClick={() => setImagensFinalizacao((p) => p.filter((_, i) => i !== indice))}
-                              style={{ ...S.listDeleteBtn, flexShrink: 0 }} aria-label={`Remover ${arquivo.name}`}>✕</button>
+                              style={{ ...S.listDeleteBtn, position: "absolute", top: "9px", right: "9px", background: "#fff", borderRadius: "50%", width: "24px", height: "24px" }} aria-label={`Remover ${arquivo.name}`}>✕</button>
                           </div>
                         ))}
                       </div>
