@@ -128,7 +128,7 @@ const Icons = {
    COMPONENTE
    ═══════════════════════════════════════════════════════════ */
 function AbaEvolucoes({ pacienteId }) {
-  const [evolucoes, setEvolucoes] = useState([]);
+  const [evolucoes, setEvolucoes] = useState([]);\n  const [arquivosEvolucao, setArquivosEvolucao] = useState([]);\n  const [menuAberto, setMenuAberto] = useState(null);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState("");
 
@@ -167,6 +167,11 @@ function AbaEvolucoes({ pacienteId }) {
       if (!r.ok) throw new Error();
       const data = await r.json();
       setEvolucoes(Array.isArray(data) ? data : []);
+      const ra = await fetch(`${API_URL}/arquivos/paciente/${pacienteId}`, { headers: { Authorization: tk || "" } });
+      if (ra.ok) {
+        const anexos = await ra.json();
+        setArquivosEvolucao(Array.isArray(anexos) ? anexos : []);
+      }
     } catch {
       setErro("Erro ao carregar evoluções.");
     } finally {
@@ -282,26 +287,14 @@ function AbaEvolucoes({ pacienteId }) {
     return (
       <div style={S.wrapper}>
 
-        {/* Header */}
-        <div style={S.header}>
-          <div>
-            <h2 style={S.title}>Evoluções</h2>
-            <p style={S.subtitle}>
-              {evolucoes.length} registro{evolucoes.length !== 1 ? "s" : ""} clínico{evolucoes.length !== 1 ? "s" : ""}
-            </p>
+        <div style={S.timelineHeader}>
+          <h2 style={S.title}>Evoluções</h2>
+          <div style={S.toolbar}>
+            <button type="button" title="Adicionar evolução" style={S.toolbarBtn} onClick={abrirFormNovo}>{Icons.plus}</button>
+            <button type="button" title="Imprimir evoluções" style={S.toolbarBtn} onClick={() => window.print()}>
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
+            </button>
           </div>
-          <button
-            style={{
-              ...S.btnPrimary,
-              ...(hoveredBtn === "novo" ? S.btnPrimaryHover : {}),
-            }}
-            onMouseEnter={() => setHoveredBtn("novo")}
-            onMouseLeave={() => setHoveredBtn(null)}
-            onClick={abrirFormNovo}
-          >
-            {Icons.plus}
-            <span>Nova evolução</span>
-          </button>
         </div>
 
         {/* Loading */}
@@ -346,108 +339,58 @@ function AbaEvolucoes({ pacienteId }) {
           </div>
         )}
 
-        {/* Lista de cards */}
         {!carregando && !erro && evolucoes.length > 0 && (
-          <div style={S.cardGrid}>
-            {evolucoes.map((a) => {
-              const hovered = hoveredCardId === a.id;
-              const camposPreenchidos = contarCamposPreenchidos(a);
-              return (
-                <div
-                  key={a.id}
-                  style={{ ...S.card, ...(hovered ? S.cardHover : {}) }}
-                  onMouseEnter={() => setHoveredCardId(a.id)}
-                  onMouseLeave={() => setHoveredCardId(null)}
-                >
-                  {/* Topo do card */}
-                  <div style={S.cardTop}>
-                    <div style={S.cardDateBadge}>
-                      <span style={{ display: "flex", color: "#2563eb" }}>{Icons.calendar}</span>
-                      {formatarDataBR(a.data)}
-                    </div>
-                    <span style={S.cardId}>#{a.id}</span>
-                  </div>
-
-                  {/* Procedimento + Dente */}
-                  {(a.procedimento || a.dente) && (
-                    <div style={S.pillRow}>
-                      {a.procedimento && <span style={S.pillBlue}>{a.procedimento}</span>}
-                      {a.dente && (
-                        <span style={S.pill}>
-                          <span style={{ display: "flex" }}>{Icons.tooth}</span>
-                          {a.dente}
-                        </span>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Descrição */}
-                  {a.descricao && (
-                    <div style={S.cardSection}>
-                      <span style={S.cardSectionLabel}>Descrição</span>
-                      <p style={S.cardSectionText}>{a.descricao}</p>
-                    </div>
-                  )}
-
-                  {/* Profissional */}
-                  {a.profissional && (
-                    <div style={S.metaRow}>
-                      <span style={S.metaChip}>Dr(a). {a.profissional}</span>
-                    </div>
-                  )}
-
-                  {/* Campos preenchidos */}
-                  <div style={S.metaRow}>
-                    <span style={S.metaChip}>{camposPreenchidos} campo{camposPreenchidos !== 1 ? "s" : ""} preenchido{camposPreenchidos !== 1 ? "s" : ""}</span>
-                  </div>
-
-                  {/* Ações */}
-                  <div style={S.cardActions}>
-                    <button
-                      style={{
-                        ...S.cardBtn,
-                        ...(hoveredBtn === `ver-${a.id}` ? S.cardBtnHover : {}),
-                      }}
-                      onMouseEnter={() => setHoveredBtn(`ver-${a.id}`)}
-                      onMouseLeave={() => setHoveredBtn(null)}
-                      onClick={() => abrirDetalhes(a)}
-                    >
-                      {Icons.eye}
-                      <span>Ver</span>
-                    </button>
-                    <button
-                      style={{
-                        ...S.cardBtn,
-                        ...(hoveredBtn === `editar-${a.id}` ? S.cardBtnHover : {}),
-                      }}
-                      onMouseEnter={() => setHoveredBtn(`editar-${a.id}`)}
-                      onMouseLeave={() => setHoveredBtn(null)}
-                      onClick={() => abrirFormEditar(a)}
-                    >
-                      {Icons.edit}
-                      <span>Editar</span>
-                    </button>
-                    <button
-                      style={{
-                        ...S.cardBtn,
-                        ...S.cardBtnDanger,
-                        ...(hoveredBtn === `excluir-${a.id}` ? S.cardBtnDangerHover : {}),
-                      }}
-                      onMouseEnter={() => setHoveredBtn(`excluir-${a.id}`)}
-                      onMouseLeave={() => setHoveredBtn(null)}
-                      onClick={() => setConfirmarExclusao(a)}
-                    >
-                      {Icons.trash}
-                      <span>Excluir</span>
-                    </button>
-                  </div>
+          <div style={S.timelineList}>
+            {[...new Set(evolucoes.map((item) => item.data || "Sem data"))].sort((a,b) => String(b).localeCompare(String(a))).map((dataGrupo) => (
+              <section key={dataGrupo} style={S.timelineGroup}>
+                <div style={S.timelineDate}>
+                  <span style={S.timelineDot} />
+                  <strong>{dataGrupo === "Sem data" ? dataGrupo : new Date(`${dataGrupo}T12:00:00`).toLocaleDateString("pt-BR", { day: "numeric", month: "long", year: "numeric" })}</strong>
                 </div>
-              );
-            })}
+                <div style={S.timelineCards}>
+                  {evolucoes.filter((item) => (item.data || "Sem data") === dataGrupo).map((a) => {
+                    const imagens = arquivosEvolucao.filter((arquivo) =>
+                      arquivo.categoria === "evolucao" &&
+                      String(arquivo.descricao || "").includes(`Evolução do tratamento #${a.tratamento_id || "__nenhum__"}`)
+                    );
+                    const imagensDaData = arquivosEvolucao.filter((arquivo) =>
+                      arquivo.categoria === "evolucao" &&
+                      String(arquivo.descricao || "").includes(` - ${a.data}`) &&
+                      String(arquivo.descricao || "").includes("Evolução do tratamento #")
+                    );
+                    const anexos = imagens.length ? imagens : imagensDaData;
+                    return (
+                      <article key={a.id} style={S.timelineCard}>
+                        <div style={S.evolutionTop}>
+                          <span style={S.signatureBadge}>Sem assinatura</span>
+                          <div style={{ position: "relative" }}>
+                            <button type="button" title="Opções" style={S.moreBtn} onClick={() => setMenuAberto(menuAberto === a.id ? null : a.id)}>⋮</button>
+                            {menuAberto === a.id && (
+                              <div style={S.moreMenu}>
+                                <button type="button" onClick={() => { setMenuAberto(null); abrirFormEditar(a); }}>Editar</button>
+                                <button type="button" onClick={() => { setMenuAberto(null); setConfirmarExclusao(a); }}>Excluir</button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        {a.descricao && <p style={S.evolutionDescription}>{a.descricao}</p>}
+                        {(a.procedimento || a.dente) && <p style={S.evolutionProcedure}>{[a.procedimento, a.dente ? `Dente ${a.dente}` : ""].filter(Boolean).join(" · ")}</p>}
+                        {a.observacoes && <p style={S.evolutionNotes}>{a.observacoes}</p>}
+                        {a.profissional && <div style={S.evolutionProfessional}>Dr(a). {a.profissional}</div>}
+                        {anexos.length > 0 && (
+                          <div style={S.evolutionImages}>
+                            <div style={S.imagesTitle}>Imagens <span title="Imagens anexadas a esta evolução">ⓘ</span></div>
+                            <div style={S.imageThumbs}>{anexos.map((arquivo) => <MiniaturaEvolucao key={arquivo.id} arquivo={arquivo} />)}</div>
+                          </div>
+                        )}
+                      </article>
+                    );
+                  })}
+                </div>
+              </section>
+            ))}
           </div>
-        )}
-
-        {/* Modal confirmar exclusão */}
+        )}\n\n        {/* Modal confirmar exclusão */}
         {confirmarExclusao && (
           <div style={S.overlay} onClick={() => setConfirmarExclusao(null)}>
             <div style={S.modal} onClick={(e) => e.stopPropagation()}>
@@ -766,6 +709,26 @@ const S = {
     animation: "evolucao-fade-in 0.3s ease",
   },
 
+  timelineHeader: { display: "flex", alignItems: "center", justifyContent: "space-between", minHeight: "48px", padding: "0 12px", background: "#f8f8f8", borderBottom: "1px solid #ededed" },
+  toolbar: { display: "flex", alignItems: "center", gap: "10px" },
+  toolbarBtn: { width: "28px", height: "28px", display: "inline-flex", alignItems: "center", justifyContent: "center", border: "none", background: "transparent", color: "#666", cursor: "pointer", borderRadius: "5px" },
+  timelineList: { display: "flex", flexDirection: "column", gap: "14px", padding: "12px 12px 18px" },
+  timelineGroup: { display: "flex", flexDirection: "column", gap: "10px" },
+  timelineDate: { display: "flex", alignItems: "center", gap: "10px", color: "#555", fontSize: "12px", paddingLeft: "0" },
+  timelineDot: { width: "8px", height: "8px", borderRadius: "50%", background: "#777", flexShrink: 0 },
+  timelineCards: { display: "flex", flexDirection: "column", gap: "10px", paddingLeft: "18px" },
+  timelineCard: { position: "relative", background: "#fff", border: "1px solid #dedede", borderRadius: "3px", padding: "14px 12px 12px", display: "flex", flexDirection: "column", gap: "12px", color: "#333" },
+  evolutionTop: { display: "flex", alignItems: "center", justifyContent: "space-between", minHeight: "22px" },
+  signatureBadge: { background: "#f5f5f5", color: "#999", borderRadius: "4px", padding: "4px 9px", fontSize: "10px" },
+  moreBtn: { width: "25px", height: "25px", border: "none", background: "transparent", color: "#555", fontSize: "22px", lineHeight: 1, cursor: "pointer" },
+  moreMenu: { position: "absolute", right: 0, top: "26px", zIndex: 5, minWidth: "112px", padding: "5px", background: "#fff", border: "1px solid #e5e5e5", borderRadius: "5px", boxShadow: "0 4px 14px rgba(0,0,0,.12)", display: "flex", flexDirection: "column" },
+  evolutionDescription: { margin: "0", color: "#333", fontSize: "13px", lineHeight: 1.45, whiteSpace: "pre-wrap" },
+  evolutionProcedure: { margin: "-4px 0 0", color: "#555", fontSize: "12px" },
+  evolutionNotes: { margin: "-4px 0 0", color: "#666", fontSize: "12px", whiteSpace: "pre-wrap" },
+  evolutionProfessional: { color: "#777", fontSize: "11px", marginTop: "2px" },
+  evolutionImages: { display: "flex", flexDirection: "column", gap: "8px", marginTop: "2px" },
+  imagesTitle: { fontSize: "11px", fontWeight: "600", color: "#555", display: "flex", alignItems: "center", gap: "4px" },
+  imageThumbs: { display: "flex", flexWrap: "wrap", gap: "8px" },
   /* ── Header ──────────────────────────────────────── */
   header: {
     display: "flex",
