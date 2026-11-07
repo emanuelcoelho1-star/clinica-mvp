@@ -161,8 +161,8 @@ function MiniaturaEvolucao({ arquivo }) {
   }, [arquivo.id, arquivo.nome_original]);
 
   return url
-    ? <img src={url} alt={arquivo.nome_original || "Imagem da evolução"} style={{ width: 48, height: 48, objectFit: "cover", borderRadius: 3, border: "1px solid #e5e7eb" }} />
-    : <div aria-label="Carregando imagem" style={{ width: 48, height: 48, borderRadius: 3, background: "#f1f5f9" }} />;
+    ? <img src={url} alt={arquivo.nome_original || "Imagem da evolução"} style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 9, border: "1px solid #e8edf3" }} />
+    : <div aria-label="Carregando imagem" style={{ width: 64, height: 64, borderRadius: 9, background: "#f1f5f9" }} />;
 }
 
 function AbaEvolucoes({ pacienteId }) {
@@ -768,22 +768,22 @@ const S = {
   timelineHeader: { display: "flex", alignItems: "center", justifyContent: "space-between", minHeight: "48px", padding: "0 12px", background: "#f8f8f8", borderBottom: "1px solid #ededed" },
   toolbar: { display: "flex", alignItems: "center", gap: "10px" },
   toolbarBtn: { width: "28px", height: "28px", display: "inline-flex", alignItems: "center", justifyContent: "center", border: "none", background: "transparent", color: "#666", cursor: "pointer", borderRadius: "5px" },
-  timelineList: { display: "flex", flexDirection: "column", gap: "14px", padding: "12px 12px 18px" },
+  timelineList: { display: "flex", flexDirection: "column", gap: "18px" },
   timelineGroup: { display: "flex", flexDirection: "column", gap: "10px" },
-  timelineDate: { display: "flex", alignItems: "center", gap: "10px", color: "#555", fontSize: "12px", paddingLeft: "0" },
-  timelineDot: { width: "8px", height: "8px", borderRadius: "50%", background: "#777", flexShrink: 0 },
-  timelineCards: { display: "flex", flexDirection: "column", gap: "10px", paddingLeft: "18px" },
-  timelineCard: { position: "relative", background: "#fff", border: "1px solid #dedede", borderRadius: "3px", padding: "14px 12px 12px", display: "flex", flexDirection: "column", gap: "12px", color: "#333" },
-  evolutionTop: { display: "flex", alignItems: "center", justifyContent: "space-between", minHeight: "22px" },
-  signatureBadge: { background: "#f5f5f5", color: "#999", borderRadius: "4px", padding: "4px 9px", fontSize: "10px" },
-  moreBtn: { width: "25px", height: "25px", border: "none", background: "transparent", color: "#555", fontSize: "22px", lineHeight: 1, cursor: "pointer" },
-  moreMenu: { position: "absolute", right: 0, top: "26px", zIndex: 5, minWidth: "112px", padding: "5px", background: "#fff", border: "1px solid #e5e5e5", borderRadius: "5px", boxShadow: "0 4px 14px rgba(0,0,0,.12)", display: "flex", flexDirection: "column" },
-  evolutionDescription: { margin: "0", color: "#333", fontSize: "13px", lineHeight: 1.45, whiteSpace: "pre-wrap" },
-  evolutionProcedure: { margin: "-4px 0 0", color: "#555", fontSize: "12px" },
-  evolutionNotes: { margin: "-4px 0 0", color: "#666", fontSize: "12px", whiteSpace: "pre-wrap" },
-  evolutionProfessional: { color: "#777", fontSize: "11px", marginTop: "2px" },
-  evolutionImages: { display: "flex", flexDirection: "column", gap: "8px", marginTop: "2px" },
-  imagesTitle: { fontSize: "11px", fontWeight: "600", color: "#555", display: "flex", alignItems: "center", gap: "4px" },
+  timelineDate: { display: "flex", alignItems: "center", gap: "9px", color: "#334155", fontSize: "13px", fontWeight: "600", padding: "10px 14px", background: "#f8fafc", border: "1px solid #f1f5f9", borderRadius: "10px" },
+  timelineDot: { width: "8px", height: "8px", borderRadius: "50%", background: "#2563eb", flexShrink: 0 },
+  timelineCards: { display: "flex", flexDirection: "column", gap: "10px" },
+  timelineCard: { position: "relative", background: "#fff", border: "1px solid #f1f5f9", borderRadius: "12px", padding: "18px 20px", display: "flex", flexDirection: "column", gap: "10px", color: "#334155", transition: "border-color 0.15s ease, box-shadow 0.15s ease" },
+  evolutionTop: { display: "flex", alignItems: "center", justifyContent: "space-between", minHeight: "28px", marginBottom: "2px" },
+  signatureBadge: { display: "inline-flex", alignItems: "center", background: "#f8fafc", color: "#94a3b8", border: "1px solid #f1f5f9", borderRadius: "6px", padding: "5px 9px", fontSize: "11px", fontWeight: "600" },
+  moreBtn: { width: "32px", height: "32px", border: "1px solid transparent", borderRadius: "8px", background: "transparent", color: "#94a3b8", fontSize: "21px", lineHeight: 1, cursor: "pointer" },
+  moreMenu: { position: "absolute", right: 0, top: "36px", zIndex: 5, minWidth: "132px", padding: "5px", background: "#fff", border: "1px solid #e8edf3", borderRadius: "9px", boxShadow: "0 8px 24px rgba(15,23,42,.10)", display: "flex", flexDirection: "column" },
+  evolutionDescription: { margin: "0", color: "#334155", fontSize: "14px", lineHeight: 1.6, whiteSpace: "pre-wrap" },
+  evolutionProcedure: { margin: "0", color: "#64748b", fontSize: "12px", fontWeight: "600" },
+  evolutionNotes: { margin: "0", color: "#64748b", fontSize: "13px", lineHeight: 1.5, whiteSpace: "pre-wrap" },
+  evolutionProfessional: { color: "#94a3b8", fontSize: "12px", fontWeight: "500", marginTop: "2px" },
+  evolutionImages: { display: "flex", flexDirection: "column", gap: "9px", marginTop: "6px", paddingTop: "12px", borderTop: "1px solid #f1f5f9" },
+  imagesTitle: { fontSize: "11px", fontWeight: "700", color: "#94a3b8", display: "flex", alignItems: "center", gap: "5px", textTransform: "uppercase", letterSpacing: "0.04em" },
   imageThumbs: { display: "flex", flexWrap: "wrap", gap: "8px" },
   /* ── Header ──────────────────────────────────────── */
   header: {
