@@ -420,8 +420,26 @@ function AbaEvolucoes({ pacienteId }) {
                       <button type="button" title="Opções" style={S.moreBtn} onClick={() => setMenuAberto(menuAberto === a.id ? null : a.id)}>⋮</button>
                       {menuAberto === a.id && (
                         <div style={S.moreMenu}>
-                          <button type="button" onClick={() => { setMenuAberto(null); abrirFormEditar(a); }}>Editar</button>
-                          <button type="button" onClick={() => { setMenuAberto(null); setConfirmarExclusao(a); }}>Excluir</button>
+                          <button
+                            type="button"
+                            style={S.moreMenuItem}
+                            onMouseEnter={(e) => { e.currentTarget.style.background = "#f8fafc"; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                            onClick={() => { setMenuAberto(null); abrirFormEditar(a); }}
+                          >
+                            <span style={S.moreMenuIcon}>✎</span>
+                            Editar evolução
+                          </button>
+                          <button
+                            type="button"
+                            style={{ ...S.moreMenuItem, ...S.moreMenuDanger }}
+                            onMouseEnter={(e) => { e.currentTarget.style.background = "#fef2f2"; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                            onClick={() => { setMenuAberto(null); setConfirmarExclusao(a); }}
+                          >
+                            <span style={S.moreMenuIcon}>⌫</span>
+                            Excluir evolução
+                          </button>
                         </div>
                       )}
                     </div>
@@ -775,7 +793,10 @@ const S = {
   evolutionDate: { display: "inline-flex", alignItems: "center", gap: "7px", color: "#475569", fontSize: "12px", fontWeight: "600" },
   signatureBadge: { display: "inline-flex", alignItems: "center", background: "#f8fafc", color: "#94a3b8", border: "1px solid #f1f5f9", borderRadius: "6px", padding: "5px 9px", fontSize: "11px", fontWeight: "600" },
   moreBtn: { width: "32px", height: "32px", border: "1px solid transparent", borderRadius: "8px", background: "transparent", color: "#94a3b8", fontSize: "21px", lineHeight: 1, cursor: "pointer" },
-  moreMenu: { position: "absolute", right: 0, top: "36px", zIndex: 5, minWidth: "132px", padding: "5px", background: "#fff", border: "1px solid #e8edf3", borderRadius: "9px", boxShadow: "0 8px 24px rgba(15,23,42,.10)", display: "flex", flexDirection: "column" },
+  moreMenu: { position: "absolute", right: 0, top: "38px", zIndex: 20, minWidth: "184px", padding: "6px", background: "#fff", border: "1px solid #e2e8f0", borderRadius: "12px", boxShadow: "0 12px 32px rgba(15,23,42,.14)", display: "flex", flexDirection: "column", gap: "3px" },
+  moreMenuItem: { width: "100%", display: "flex", alignItems: "center", gap: "10px", padding: "9px 11px", border: "none", borderRadius: "8px", background: "transparent", color: "#334155", fontSize: "13px", fontWeight: "500", textAlign: "left", cursor: "pointer", transition: "background .15s ease" },
+  moreMenuDanger: { color: "#dc2626" },
+  moreMenuIcon: { width: "16px", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: "15px" },
   evolutionDescription: { margin: "0", color: "#334155", fontSize: "14px", lineHeight: 1.6, whiteSpace: "pre-wrap" },
   evolutionProcedure: { margin: "0", color: "#64748b", fontSize: "12px", fontWeight: "600" },
   evolutionNotes: { margin: "0", color: "#64748b", fontSize: "13px", lineHeight: 1.5, whiteSpace: "pre-wrap" },
