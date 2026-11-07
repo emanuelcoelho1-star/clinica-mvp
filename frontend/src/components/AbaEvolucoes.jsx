@@ -100,6 +100,13 @@ const Icons = {
       <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
     </svg>
   ),
+  image: (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <circle cx="8.5" cy="8.5" r="1.5" />
+      <path d="m21 15-5-5L5 21" />
+    </svg>
+  ),
   calendar: (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
@@ -411,7 +418,7 @@ function AbaEvolucoes({ pacienteId }) {
                   <div style={S.evolutionTop}>
                     <div style={S.evolutionMeta}>
                       <span style={S.evolutionDate}>
-                        <span aria-hidden="true">▦</span>
+                        {Icons.calendar}
                         {a.data ? formatarDataBR(a.data) : "Sem data"}
                       </span>
                       <span style={S.signatureBadge}>Sem assinatura</span>
@@ -450,7 +457,7 @@ function AbaEvolucoes({ pacienteId }) {
                   {a.profissional && <div style={S.evolutionProfessional}>Dr(a). {a.profissional}</div>}
                   {anexos.length > 0 && (
                     <div style={S.evolutionImages}>
-                      <div style={S.imagesTitle}>Imagens <span title="Imagens anexadas a esta evolução">ⓘ</span></div>
+                      <div style={S.imagesTitle}>{Icons.image} <span>Imagens</span></div>
                       <div style={S.imageThumbs}>{anexos.map((arquivo) => <MiniaturaEvolucao key={arquivo.id} arquivo={arquivo} />)}</div>
                     </div>
                   )}
@@ -790,7 +797,7 @@ const S = {
   timelineCard: { position: "relative", background: "#fff", border: "1px solid #f1f5f9", borderRadius: "12px", padding: "18px 20px", display: "flex", flexDirection: "column", gap: "10px", color: "#334155", transition: "border-color 0.15s ease, box-shadow 0.15s ease" },
   evolutionTop: { display: "flex", alignItems: "center", justifyContent: "space-between", minHeight: "32px", marginBottom: "2px" },
   evolutionMeta: { display: "flex", alignItems: "center", flexWrap: "wrap", gap: "9px" },
-  evolutionDate: { display: "inline-flex", alignItems: "center", gap: "7px", color: "#475569", fontSize: "12px", fontWeight: "600" },
+  evolutionDate: { display: "inline-flex", alignItems: "center", gap: "7px", color: "#64748b", fontSize: "12px", fontWeight: "500" },
   signatureBadge: { display: "inline-flex", alignItems: "center", background: "#f8fafc", color: "#94a3b8", border: "1px solid #f1f5f9", borderRadius: "6px", padding: "5px 9px", fontSize: "11px", fontWeight: "600" },
   moreBtn: { width: "32px", height: "32px", border: "1px solid transparent", borderRadius: "8px", background: "transparent", color: "#94a3b8", fontSize: "21px", lineHeight: 1, cursor: "pointer" },
   moreMenu: { position: "absolute", right: 0, top: "38px", zIndex: 20, minWidth: "184px", padding: "6px", background: "#fff", border: "1px solid #e2e8f0", borderRadius: "12px", boxShadow: "0 12px 32px rgba(15,23,42,.14)", display: "flex", flexDirection: "column", gap: "3px" },
@@ -802,7 +809,7 @@ const S = {
   evolutionNotes: { margin: "0", color: "#64748b", fontSize: "13px", lineHeight: 1.5, whiteSpace: "pre-wrap" },
   evolutionProfessional: { color: "#94a3b8", fontSize: "12px", fontWeight: "500", marginTop: "2px" },
   evolutionImages: { display: "flex", flexDirection: "column", gap: "9px", marginTop: "6px", paddingTop: "12px", borderTop: "1px solid #f1f5f9" },
-  imagesTitle: { fontSize: "11px", fontWeight: "700", color: "#94a3b8", display: "flex", alignItems: "center", gap: "5px", textTransform: "uppercase", letterSpacing: "0.04em" },
+  imagesTitle: { fontSize: "11px", fontWeight: "600", color: "#64748b", display: "flex", alignItems: "center", gap: "7px", textTransform: "uppercase", letterSpacing: "0.04em" },
   imageThumbs: { display: "flex", flexWrap: "wrap", gap: "8px" },
   /* ── Header ──────────────────────────────────────── */
   header: {
