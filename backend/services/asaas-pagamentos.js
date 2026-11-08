@@ -77,17 +77,45 @@ async function ativarCobrancaConfirmada(paymentId) {
     return { confirmado: false, motivo: "O Asaas ainda não informa o pagamento como confirmado." };
   }
 
-  const cobranca = await consultar(
+  let cobranca = await consultar(
     "SELECT * FROM sorrisa_assinatura_cobrancas WHERE provedor = 'asaas' AND provedor_pagamento_id = ? LIMIT 1",
     [paymentId]
   );
-  if (!cobranca) throw new Error("Cobrança não localizada no cadastro de pagamentos da Sorrisa.");
 
-  const assinatura = await consultar(
-    "SELECT s.clinica_id, s.provedor_assinatura_id, s.provedor_cliente_id, s.status AS assinatura_status, s.plano AS assinatura_plano, c.status AS clinica_status FROM assinaturas s INNER JOIN clinicas c ON c.id = s.clinica_id WHERE s.clinica_id = ? LIMIT 1",
-    [cobranca.clinica_id]
-  );
-  if (!assinatura) throw new Error("Assinatura vinculada à cobrança não foi encontrada.");
+  // A primeira cobrança é registrada no checkout. Nas renovações seguintes,
+  // o Asaas cria novos IDs; nesses casos, vinculamos pela assinatura recorrente.
+  let assinatura = null;
+  if (cobranca) {
+    assinatura = await consultar(
+      "SELECT s.clinica_id, s.provedor_assinatura_id, s.provedor_cliente_id, s.status AS assinatura_status, s.plano AS assinatura_plano, c.status AS clinica_status FROM assinaturas s INNER JOIN clinicas c ON c.id = s.clinica_id WHERE s.clinica_id = ? LIMIT 1",
+      [cobranca.clinica_id]
+    );
+  } else if (pagamento.subscription) {
+    assinatura = await consultar(
+      "SELECT s.clinica_id, s.provedor_assinatura_id, s.provedor_cliente_id, s.status AS assinatura_status, s.plano AS assinatura_plano, c.status AS clinica_status FROM assinaturas s INNER JOIN clinicas c ON c.id = s.clinica_id WHERE s.provedor = 'asaas' AND s.provedor_assinatura_id = ? LIMIT 1",
+      [pagamento.subscription]
+    );
+    if (assinatura) {
+      const planoAnual = String(assinatura.assinatura_plano || "").endsWith("_anual");
+      const ciclo = planoAnual ? "anual" : "mensal";
+      const valorEsperado = planoAnual ? 799.90 : 79.99;
+      if (Math.abs(Number(pagamento.value || 0) - valorEsperado) > 0.01) {
+        throw new Error("O valor da renovação não corresponde ao plano registrado na Sorrisa.");
+      }
+      await executar(
+        "INSERT OR IGNORE INTO sorrisa_assinatura_cobrancas (clinica_id, provedor, provedor_pagamento_id, provedor_assinatura_id, plano, ciclo, valor, status) VALUES (?, 'asaas', ?, ?, ?, ?, ?, ?)",
+        [assinatura.clinica_id, paymentId, assinatura.provedor_assinatura_id, assinatura.assinatura_plano, ciclo, valorEsperado, statusPagamento]
+      );
+      cobranca = await consultar(
+        "SELECT * FROM sorrisa_assinatura_cobrancas WHERE provedor = 'asaas' AND provedor_pagamento_id = ? LIMIT 1",
+        [paymentId]
+      );
+    }
+  }
+
+  if (!cobranca || !assinatura) {
+    throw new Error("Cobrança não vinculada a uma assinatura válida da Sorrisa.");
+  }
 
   if (
     !assinatura.provedor_assinatura_id ||
