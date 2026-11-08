@@ -37,6 +37,7 @@ function Icone({ tipo, size = 18 }) {
     sun: <><circle cx="12" cy="12" r="4" /><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42" /></>,
     moon: <path d="M20.9 13A9 9 0 0 1 11 3.1 9 9 0 1 0 20.9 13Z" />,
     lock: <><rect x="4" y="10" width="16" height="11" rx="2" /><path d="M8 10V7a4 4 0 1 1 8 0v3" /></>,
+    creditCard: <><rect x="2.5" y="5" width="19" height="14" rx="2.5" /><path d="M2.5 10h19M7 15h3" /></>,
     arrow: <><path d="M5 12h14" /><path d="m13 6 6 6-6 6" /></>
   };
   return <svg {...comum} aria-hidden="true">{caminhos[tipo] || caminhos.grid}</svg>;
@@ -65,6 +66,7 @@ export default function AdminPortal() {
   const [salvandoAcao, setSalvandoAcao] = useState(false);
   const [feedbackAcao, setFeedbackAcao] = useState("");
   const [modalSuspensaoAberto, setModalSuspensaoAberto] = useState(false);
+  const [abaPainel, setAbaPainel] = useState("visao-geral");
 
   async function carregarPainel(chave = token) {
     if (!chave) return;
@@ -450,9 +452,14 @@ export default function AdminPortal() {
           <button className="admin-secondary-button" type="button" onClick={() => carregarPainel()} disabled={carregando}><Icone tipo="refresh" size={15} />{carregando ? "Atualizando..." : "Atualizar dados"}</button>
         </div>
 
+        <nav className="admin-detail-tabs admin-main-tabs" aria-label="Seções administrativas">
+          <button type="button" className={abaPainel === "visao-geral" ? "active" : ""} onClick={() => setAbaPainel("visao-geral")}><Icone tipo="grid" size={16} /> Visão geral</button>
+          <button type="button" className={abaPainel === "pagamentos" ? "active" : ""} onClick={() => setAbaPainel("pagamentos")}><Icone tipo="creditCard" size={16} /> Integração de pagamentos</button>
+        </nav>
+
         {erro && <div className="admin-alert admin-dashboard-alert" role="alert">{erro}</div>}
 
-        {carregando && !dados ? <div className="admin-panel admin-loading">Carregando informações da plataforma...</div> : <>
+        {abaPainel === "visao-geral" && (carregando && !dados ? <div className="admin-panel admin-loading">Carregando informações da plataforma...</div> : <>
           <section className="admin-stats-grid">
             <article className="admin-stat-card">
               <div className="admin-stat-top"><span className="admin-stat-icon blue"><Icone tipo="clinic" /></span><span className="admin-stat-label">Clínicas cadastradas</span></div>
@@ -507,7 +514,35 @@ export default function AdminPortal() {
             </div>
             <div className="admin-table-footer"><span>Exibindo {clinicasFiltradas.length} de {(dados?.clinicas || []).length} clínicas</span><span>Dados atualizados ao carregar o painel</span></div>
           </section>
-        </>}
+        </>)}
+
+        {abaPainel === "pagamentos" && <section className="admin-payment-settings">
+          <div className="admin-panel">
+            <div className="admin-panel-header">
+              <div><h2>Provedor de pagamentos</h2><p>Área central para escolher e administrar o serviço responsável pelas cobranças das assinaturas.</p></div>
+              <span className="admin-payment-status">Ainda não conectado</span>
+            </div>
+            <div className="admin-payment-content">
+              <article className="admin-provider-card selected">
+                <div className="admin-provider-brand"><span className="admin-provider-mark">A</span><div><strong>Asaas</strong><span>Provedor escolhido para a primeira integração</span></div></div>
+                <span className="admin-provider-tag">Escolha inicial</span>
+                <p>Será a primeira opção avaliada para processar Pix, boleto e cartão das assinaturas da Sorrisa.</p>
+                <div className="admin-provider-state"><span className="admin-provider-dot" /> Integração ainda não configurada</div>
+              </article>
+              <div className="admin-payment-info">
+                <h3>Preparado para trocar de provedor</h3>
+                <p>A integração será construída por meio de uma camada independente. Assim, se a Sorrisa precisar trocar de empresa de pagamentos no futuro, poderemos adaptar o conector e selecionar outro provedor sem reescrever o controle de planos e assinaturas.</p>
+                <ul>
+                  <li>Configurações do provedor separadas das regras de assinatura.</li>
+                  <li>Credenciais protegidas exclusivamente no backend.</li>
+                  <li>Confirmações de pagamento recebidas por notificações seguras (webhooks).</li>
+                  <li>Histórico das assinaturas preservado mesmo em uma futura troca.</li>
+                </ul>
+              </div>
+            </div>
+            <div className="admin-payment-notice"><Icone tipo="lock" size={16} /><span><strong>Integração desativada nesta etapa.</strong> Nenhuma cobrança real será processada por esta tela. A conexão, as credenciais e os testes serão configurados quando iniciarmos a integração do provedor.</span></div>
+          </div>
+        </section>}
         </>}
       </main>
       {modalSuspensaoAberto && (
