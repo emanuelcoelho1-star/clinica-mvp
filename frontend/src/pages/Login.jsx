@@ -159,9 +159,7 @@ function Login() {
         {/* ── Logo / Header ──────────────────── */}
         <div style={S.logoSection}>
           <div style={S.logoBox}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 5.5c-1.5-2-4-2.5-6-1s-2.5 4.5-1 7c1.3 2.2 5 6 7 8.5 2-2.5 5.7-6.3 7-8.5 1.5-2.5.5-5.5-1-7s-4.5-1-6 1z" />
-            </svg>
+            <span style={{ color: "#fff", fontSize: "24px", fontWeight: 800, letterSpacing: "-1px", lineHeight: 1 }}>S</span>
           </div>
           <div>
             <h1 style={S.logoTitle}>Sorrisa</h1>
