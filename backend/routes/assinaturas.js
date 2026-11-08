@@ -2,6 +2,7 @@ const express = require("express");
 const crypto = require("crypto");
 const db = require("../database");
 const auth = require("../middleware/auth");
+const { sincronizarAssinatura } = require("../services/asaas-pagamentos");
 
 const router = express.Router();
 router.use(auth.semAssinatura);
@@ -114,7 +115,28 @@ function carregarContexto(clinicaId, callback) {
   );
 }
 
-router.get("/status", (req, res) => {
+router.get("/status", async (req, res) => {
+  // Também reconcilia pagamentos já confirmados antes da configuração do webhook.
+  // Isso permite recuperar a cobrança de teste atual sem gerar outro pagamento.
+  try {
+    const atual = await new Promise((resolve, reject) => {
+      db.get(
+        "SELECT status, provedor FROM assinaturas WHERE clinica_id = ? LIMIT 1",
+        [req.user.clinica_id],
+        (err, row) => err ? reject(err) : resolve(row || null)
+      );
+    });
+    if (atual?.status === "pendente" && atual.provedor === "asaas") {
+      try {
+        await sincronizarAssinatura(req.user.clinica_id);
+      } catch (syncError) {
+        console.error("Não foi possível sincronizar a cobrança Asaas neste acesso:", syncError.message);
+      }
+    }
+  } catch (syncLookupError) {
+    console.error("Não foi possível verificar a sincronização da assinatura:", syncLookupError.message);
+  }
+
   carregarContexto(req.user.clinica_id, (err, row) => {
     if (err) return res.status(500).json({ erro: "Não foi possível consultar a assinatura." });
     if (!row) return res.status(404).json({ erro: "Clínica não encontrada." });
