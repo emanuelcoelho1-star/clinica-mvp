@@ -65,3 +65,5 @@ button.sorrisa-subscription-method{cursor:pointer}
 .sorrisa-subscription-payment-modal .sorrisa-subscription-payment-result{padding:0;border:0;background:transparent}
 @keyframes sorrisaPaymentModalIn{from{opacity:0;transform:translateY(8px) scale(.99)}to{opacity:1;transform:translateY(0) scale(1)}}
 @media(max-width:600px){.sorrisa-subscription-modal-backdrop{align-items:flex-end;padding:10px}.sorrisa-subscription-payment-modal{max-height:92vh;padding:18px;border-radius:16px 16px 12px 12px}.sorrisa-subscription-payment-modal .sorrisa-subscription-pix{grid-template-columns:1fr}}
+
+.sorrisa-subscription-checkout-link{display:inline-flex;align-items:center;justify-content:center;align-self:flex-start;text-decoration:none}
