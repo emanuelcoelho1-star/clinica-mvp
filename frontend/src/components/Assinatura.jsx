@@ -138,10 +138,19 @@ export default function Assinatura({ administrador = false }) {
       </div>
 
       {pagamento && (
-        <div className="sorrisa-subscription-payment-result">
+        <div className="sorrisa-subscription-modal-backdrop" role="presentation" onMouseDown={(evento) => { if (evento.target === evento.currentTarget) setPagamento(null); }}>
+          <div className="sorrisa-subscription-payment-modal" role="dialog" aria-modal="true" aria-labelledby="sorrisa-payment-modal-title">
+            <div className="sorrisa-subscription-modal-heading">
+              <div>
+                <span className="sorrisa-subscription-eyebrow">Pagamento da assinatura</span>
+                <h3 id="sorrisa-payment-modal-title">{pagamento.tipo === "PIX" ? "Pague com Pix" : "Pague com boleto"}</h3>
+              </div>
+              <button type="button" className="sorrisa-subscription-modal-close" aria-label="Fechar pagamento" onClick={() => setPagamento(null)}>×</button>
+            </div>
+            <div className="sorrisa-subscription-payment-result">
           <div className="sorrisa-subscription-payment-result-heading">
             <div>
-              <strong>{pagamento.tipo === "PIX" ? "Pague com Pix" : "Pague com boleto"}</strong>
+              <strong>{pagamento.tipo === "PIX" ? "Pagamento via Pix" : "Pagamento via boleto"}</strong>
               <span>Valor: {Number(pagamento.valor || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} · Vencimento: {dataBR(pagamento.vencimento)}</span>
             </div>
             <span className="sorrisa-subscription-pending">Aguardando pagamento</span>
@@ -166,6 +175,8 @@ export default function Assinatura({ administrador = false }) {
             </div>
           )}
           <p className="sorrisa-subscription-footnote">O pagamento será confirmado pelo Asaas. A criação desta cobrança, por si só, não libera o acesso.</p>
+            </div>
+          </div>
         </div>
       )}
 
