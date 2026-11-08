@@ -698,7 +698,6 @@ db.serialize(() => {
   adicionarColunaSeNaoExistir("procedimentos_catalogo", "custo_tratamento", "REAL NOT NULL DEFAULT 0");
   adicionarColunaSeNaoExistir("procedimentos_catalogo", "usar_na_frente", "INTEGER NOT NULL DEFAULT 1");
 
-  adicionarColunaSeNaoExistir("clinicas", "cpf", "TEXT");
   adicionarColunaSeNaoExistir("usuarios", "nome", "TEXT DEFAULT 'Administrador'");
   adicionarColunaSeNaoExistir("usuarios", "created_at", "TEXT");
   adicionarColunaSeNaoExistir("usuarios", "role_id", "INTEGER DEFAULT 1"); // ← NOVO: RBAC
@@ -751,6 +750,8 @@ function executarMigracaoSaaS(onComplete = () => {}) {
         updated_at TEXT DEFAULT (datetime('now','localtime'))
       )
     `);
+
+    adicionarColunaSeNaoExistir("clinicas", "cpf", "TEXT");
 
     db.run(`
       CREATE TABLE IF NOT EXISTS assinaturas (
