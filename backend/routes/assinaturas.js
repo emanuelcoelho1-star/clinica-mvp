@@ -204,10 +204,79 @@ router.post("/checkout", async (req, res) => {
           if (assinaturaAtual.provedor_assinatura_id && assinaturaAtual.status === "ativa") {
             return res.status(409).json({ erro: "Esta clínica já possui uma assinatura ativa. A alteração de plano será disponibilizada em uma etapa posterior." });
           }
-          if (meioPagamento === "CARTAO" && assinaturaAtual.provedor_assinatura_id && assinaturaAtual.status === "pendente") {
-            return res.status(409).json({ erro: "Já existe uma assinatura com cobrança pendente por outra forma de pagamento. Conclua ou regularize essa cobrança antes de iniciar o cartão." });
+          if (assinaturaAtual.provedor_assinatura_id && assinaturaAtual.status === "pendente" && meioPagamento === "CARTAO") {
+            const assinaturaAnteriorId = String(assinaturaAtual.provedor_assinatura_id);
+            const cobrancasAnteriores = await chamarAsaas(
+              baseUrl,
+              credenciais.apiKey,
+              "/subscriptions/" + encodeURIComponent(assinaturaAnteriorId) + "/payments"
+            );
+            const pagamentosAnteriores = Array.isArray(cobrancasAnteriores.data) ? cobrancasAnteriores.data : [];
+            const statusPagamentos = pagamentosAnteriores.map((item) => String(item.status || "").toUpperCase());
+
+            if (statusPagamentos.some((status) => ["RECEIVED", "CONFIRMED"].includes(status))) {
+              try {
+                await sincronizarAssinatura(req.user.clinica_id);
+              } catch (syncError) {
+                console.error("Não foi possível reconciliar a cobrança anterior antes da troca para cartão:", syncError.message);
+              }
+              return res.status(409).json({
+                codigo: "COBRANCA_ANTERIOR_CONFIRMADA",
+                erro: "A assinatura anterior possui uma cobrança paga ou confirmada. Ela foi preservada; atualize a situação da assinatura antes de iniciar outro checkout."
+              });
+            }
+
+            const statusEncerrados = ["REFUNDED", "DELETED", "CANCELED"];
+            const statusCancelaveis = ["PENDING", "OVERDUE"];
+            const statusInesperados = statusPagamentos.filter((status) =>
+              !statusCancelaveis.includes(status) && !statusEncerrados.includes(status)
+            );
+            if (statusInesperados.length) {
+              return res.status(409).json({
+                codigo: "COBRANCA_ANTERIOR_EM_PROCESSAMENTO",
+                erro: "A cobrança anterior ainda está em processamento no Asaas. Por segurança, nenhuma assinatura foi cancelada. Aguarde a atualização e tente novamente."
+              });
+            }
+
+            // O DELETE da assinatura encerra a recorrência e remove no Asaas
+            // as cobranças pendentes ou vencidas, preservando as já pagas.
+            await chamarAsaas(
+              baseUrl,
+              credenciais.apiKey,
+              "/subscriptions/" + encodeURIComponent(assinaturaAnteriorId),
+              "DELETE"
+            );
+
+            await new Promise((resolve, reject) => {
+              db.serialize(() => {
+                db.run("BEGIN IMMEDIATE");
+                db.run(
+                  "UPDATE sorrisa_assinatura_cobrancas SET status = 'DELETED', updated_at = datetime('now','localtime') WHERE clinica_id = ? AND provedor_assinatura_id = ? AND upper(status) IN ('PENDING','OVERDUE')",
+                  [req.user.clinica_id, assinaturaAnteriorId],
+                  (historyErr) => {
+                    if (historyErr) {
+                      return db.run("ROLLBACK", () => reject(historyErr));
+                    }
+                    db.run(
+                      "UPDATE assinaturas SET provedor_assinatura_id = NULL, updated_at = datetime('now','localtime') WHERE clinica_id = ? AND provedor_assinatura_id = ? AND status = 'pendente'",
+                      [req.user.clinica_id, assinaturaAnteriorId],
+                      function (clearErr) {
+                        if (clearErr) {
+                          return db.run("ROLLBACK", () => reject(clearErr));
+                        }
+                        if (!this.changes) {
+                          return db.run("ROLLBACK", () => reject(new Error("A assinatura local mudou durante a troca. Atualize a página antes de tentar novamente.")));
+                        }
+                        db.run("COMMIT", (commitErr) => commitErr ? reject(commitErr) : resolve());
+                      }
+                    );
+                  }
+                );
+              });
+            });
           }
-          if (assinaturaAtual.provedor_assinatura_id && assinaturaAtual.status === "pendente") {
+
+          if (assinaturaAtual.provedor_assinatura_id && assinaturaAtual.status === "pendente" && meioPagamento !== "CARTAO") {
             const cobrancas = await chamarAsaas(baseUrl, credenciais.apiKey, "/subscriptions/" + encodeURIComponent(assinaturaAtual.provedor_assinatura_id) + "/payments");
             let pagamentoPendente = (cobrancas.data || []).find((item) => !["RECEIVED", "CONFIRMED", "REFUNDED", "DELETED", "CANCELED"].includes(String(item.status || "").toUpperCase()));
             if (pagamentoPendente) {
