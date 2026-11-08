@@ -97,7 +97,59 @@ router.get("/clinicas/:id", exigirAdmin, (req, res) => {
           console.error("Falha ao consultar usuários da clínica:", usersErr.message);
           return res.status(500).json({ erro: "Não foi possível carregar os usuários da clínica." });
         }
-        return res.json({ clinica, usuarios: usuarios || [] });
+
+        const sqlUso = `
+          SELECT
+            (SELECT COUNT(*) FROM pacientes WHERE clinica_id = ?) AS pacientes,
+            (SELECT COUNT(*) FROM consultas WHERE clinica_id = ?) AS consultas,
+            (SELECT COUNT(*) FROM orcamentos WHERE clinica_id = ?) AS orcamentos,
+            (SELECT COUNT(*) FROM documentos WHERE clinica_id = ?) AS documentos,
+            (SELECT COUNT(*) FROM arquivos WHERE clinica_id = ?) AS arquivos,
+            (SELECT COALESCE(SUM(tamanho), 0) FROM arquivos WHERE clinica_id = ?) AS armazenamento_bytes
+        `;
+        db.get(sqlUso, [clinicId, clinicId, clinicId, clinicId, clinicId, clinicId], (usageErr, utilizacao) => {
+          if (usageErr) {
+            console.error("Falha ao consultar utilização da clínica:", usageErr.message);
+            return res.status(500).json({ erro: "Não foi possível carregar a utilização da clínica." });
+          }
+
+          db.get(
+            `SELECT id, provedor, plano, status, periodo_inicio, periodo_fim,
+                    cancelamento_no_fim, created_at, updated_at
+             FROM assinaturas WHERE clinica_id = ? LIMIT 1`,
+            [clinicId],
+            (subscriptionErr, assinatura) => {
+              if (subscriptionErr) {
+                console.error("Falha ao consultar assinatura da clínica:", subscriptionErr.message);
+                return res.status(500).json({ erro: "Não foi possível carregar a assinatura da clínica." });
+              }
+
+              db.all(
+                `SELECT a.id, a.acao, a.recurso, a.recurso_id, a.detalhes, a.ip,
+                        a.created_at, u.nome AS usuario_nome
+                 FROM auditoria a
+                 LEFT JOIN usuarios u ON u.id = a.usuario_id
+                 WHERE a.clinica_id = ?
+                 ORDER BY a.created_at DESC, a.id DESC
+                 LIMIT 50`,
+                [clinicId],
+                (activityErr, atividades) => {
+                  if (activityErr) {
+                    console.error("Falha ao consultar atividades da clínica:", activityErr.message);
+                    return res.status(500).json({ erro: "Não foi possível carregar o histórico de atividades." });
+                  }
+                  return res.json({
+                    clinica,
+                    usuarios: usuarios || [],
+                    utilizacao: utilizacao || {},
+                    assinatura: assinatura || null,
+                    atividades: atividades || [],
+                  });
+                }
+              );
+            }
+          );
+        });
       }
     );
   });
