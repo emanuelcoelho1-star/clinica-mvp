@@ -98,6 +98,7 @@ export default function AdminPortal() {
     }
     let ativo = true;
     async function carregarDetalhe() {
+      setDetalheClinica(null);
       setCarregandoDetalhe(true);
       setErroDetalhe("");
       try {
