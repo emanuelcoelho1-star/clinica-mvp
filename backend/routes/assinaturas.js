@@ -60,6 +60,34 @@ async function chamarAsaas(baseUrl, apiKey, caminho, metodo = "GET", body) {
   return dados;
 }
 
+async function montarDadosPagamento(baseUrl, apiKey, cobranca, tipo) {
+  const dados = {
+    id: cobranca.id,
+    status: cobranca.status || "PENDING",
+    vencimento: cobranca.dueDate || null,
+    valor: Number(cobranca.value || 0),
+    tipo,
+  };
+
+  if (tipo === "PIX") {
+    const pix = await chamarAsaas(baseUrl, apiKey, "/payments/" + encodeURIComponent(cobranca.id) + "/pixQrCode");
+    dados.pix = {
+      imagem: pix.encodedImage || null,
+      copiaECola: pix.payload || null,
+      expiracao: pix.expirationDate || null,
+    };
+  } else if (tipo === "BOLETO") {
+    const boleto = await chamarAsaas(baseUrl, apiKey, "/payments/" + encodeURIComponent(cobranca.id) + "/identificationField");
+    dados.boleto = {
+      linhaDigitavel: boleto.identificationField || null,
+      url: cobranca.bankSlipUrl || null,
+      codigoBarras: boleto.barCode || null,
+    };
+  }
+
+  return dados;
+}
+
 function carregarContexto(clinicaId, callback) {
   db.get(
     `SELECT c.id, c.nome, c.nome_fantasia, c.cnpj, c.cpf, c.email_contato, c.telefone,
@@ -101,7 +129,11 @@ router.get("/status", (req, res) => {
 router.post("/checkout", async (req, res) => {
   const planoEscolhido = String(req.body?.plano || "").trim().toLowerCase();
   const plano = PLANOS[planoEscolhido];
+  const meioPagamento = String(req.body?.meioPagamento || "PIX").trim().toUpperCase();
   if (!plano) return res.status(400).json({ erro: "Selecione um plano válido." });
+  if (!["PIX", "BOLETO"].includes(meioPagamento)) {
+    return res.status(400).json({ erro: "Selecione Pix ou boleto. O pagamento por cartão será integrado em uma etapa segura separada." });
+  }
 
   db.get(
     "SELECT protegido FROM roles WHERE id = (SELECT role_id FROM usuarios WHERE id = ? AND clinica_id = ?)",
@@ -143,9 +175,10 @@ router.post("/checkout", async (req, res) => {
           }
           if (assinaturaAtual.provedor_assinatura_id && assinaturaAtual.status === "pendente") {
             const cobrancas = await chamarAsaas(baseUrl, credenciais.apiKey, "/subscriptions/" + encodeURIComponent(assinaturaAtual.provedor_assinatura_id) + "/payments");
-            const pagamentoPendente = (cobrancas.data || []).find((item) => !["RECEIVED", "CONFIRMED", "REFUNDED", "DELETED"].includes(String(item.status || "").toUpperCase()));
-            if (pagamentoPendente?.invoiceUrl) {
-              return res.json({ sucesso: true, checkout_url: pagamentoPendente.invoiceUrl, mensagem: "Já existe uma cobrança aguardando pagamento." });
+            const pagamentoPendente = (cobrancas.data || []).find((item) => !["RECEIVED", "CONFIRMED", "REFUNDED", "DELETED", "CANCELED"].includes(String(item.status || "").toUpperCase()));
+            if (pagamentoPendente) {
+              const dadosPagamento = await montarDadosPagamento(baseUrl, credenciais.apiKey, pagamentoPendente, meioPagamento);
+              return res.json({ sucesso: true, pagamento: dadosPagamento, mensagem: "Já existe uma cobrança aguardando pagamento. Os dados foram carregados nesta tela." });
             }
             return res.status(409).json({ erro: "Já existe uma assinatura em processamento. Aguarde a geração da cobrança antes de tentar novamente." });
           }
@@ -185,7 +218,7 @@ router.post("/checkout", async (req, res) => {
 
           const novaAssinatura = await chamarAsaas(baseUrl, credenciais.apiKey, "/subscriptions", "POST", {
             customer: clienteId,
-            billingType: "UNDEFINED",
+            billingType: meioPagamento,
             value: plano.valor,
             nextDueDate: dataHoje(),
             cycle: plano.ciclo,
@@ -206,7 +239,7 @@ router.post("/checkout", async (req, res) => {
               }
               try {
                 const cobrancas = await chamarAsaas(baseUrl, credenciais.apiKey, "/subscriptions/" + encodeURIComponent(novaAssinatura.id) + "/payments");
-                const primeiraCobranca = (cobrancas.data || []).find((item) => item.invoiceUrl);
+                const primeiraCobranca = (cobrancas.data || []).find((item) => !["RECEIVED", "CONFIRMED", "REFUNDED", "DELETED", "CANCELED"].includes(String(item.status || "").toUpperCase()));
                 if (primeiraCobranca) {
                   db.run(
                     `INSERT OR IGNORE INTO sorrisa_assinatura_cobrancas
@@ -214,12 +247,17 @@ router.post("/checkout", async (req, res) => {
                      VALUES (?, 'asaas', ?, ?, ?, ?, ?, ?, ?)`,
                     [req.user.clinica_id, primeiraCobranca.id, novaAssinatura.id, "sorrisa_completo_" + planoEscolhido, planoEscolhido, plano.valor, primeiraCobranca.status || "PENDING", primeiraCobranca.invoiceUrl]
                   );
-                  return res.json({ sucesso: true, checkout_url: primeiraCobranca.invoiceUrl, mensagem: "Cobrança criada no ambiente de testes. O acesso só será liberado após confirmação do pagamento." });
+                  const dadosPagamento = await montarDadosPagamento(baseUrl, credenciais.apiKey, primeiraCobranca, meioPagamento);
+                  return res.json({
+                    sucesso: true,
+                    pagamento: dadosPagamento,
+                    mensagem: "Cobrança criada no ambiente de testes. O acesso só será liberado após confirmação do pagamento.",
+                  });
                 }
-                return res.json({ sucesso: true, checkout_url: novaAssinatura.invoiceUrl || null, mensagem: "Assinatura criada. A primeira cobrança está sendo preparada pelo Asaas." });
+                return res.json({ sucesso: true, mensagem: "Assinatura criada. A primeira cobrança ainda está sendo preparada pelo Asaas. Tente atualizar em instantes." });
               } catch (paymentErr) {
                 console.error("Falha ao recuperar a primeira cobrança Asaas:", paymentErr.message);
-                return res.json({ sucesso: true, checkout_url: novaAssinatura.invoiceUrl || null, mensagem: "Assinatura criada, mas o link da primeira cobrança ainda não está disponível." });
+                return res.status(502).json({ erro: "A assinatura foi criada, mas não foi possível carregar os dados do pagamento. Atualize a tela em instantes ou contate o suporte antes de tentar novamente." });
               }
             }
           );
