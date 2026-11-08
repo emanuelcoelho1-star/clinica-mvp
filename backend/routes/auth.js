@@ -311,7 +311,7 @@ router.post("/login", loginLimiter, (req, res) => {
 });
 
 /* ── Permissões do usuário autenticado ────────── */
-router.get("/permissoes", authGeneralLimiter, auth, (req, res) => {
+router.get("/permissoes", authGeneralLimiter, auth.semAssinatura, (req, res) => {
   db.get(
     `SELECT r.protegido
      FROM usuarios u
@@ -351,7 +351,7 @@ router.get("/permissoes", authGeneralLimiter, auth, (req, res) => {
 });
 
 /* ── Verificar token (me) ─────────────────────── */
-router.get("/me", authGeneralLimiter, auth, (req, res) => {
+router.get("/me", authGeneralLimiter, auth.semAssinatura, (req, res) => {
   db.get(
     "SELECT id, nome, email FROM usuarios WHERE id = ? AND clinica_id = ?",
     [req.user.id, req.user.clinica_id],
