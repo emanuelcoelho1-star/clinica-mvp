@@ -215,6 +215,77 @@ export default function AdminPortal() {
       </header>
 
       <main className="admin-main">
+        {clinicaSelecionada ? (
+          <>
+            <div className="admin-page-heading admin-detail-heading">
+              <div>
+                <button className="admin-back-button" type="button" onClick={voltarParaClinicas}><Icone tipo="arrow" size={15} /> Voltar para clínicas</button>
+                <div className="admin-eyebrow">DETALHES DA CLÍNICA</div>
+                <h1>{detalheClinica?.clinica?.nome || "Clínica"}</h1>
+                <p>Informações cadastrais e usuários vinculados a esta clínica.</p>
+              </div>
+              <span className="admin-detail-id">#{clinicaSelecionada}</span>
+            </div>
+            {erroDetalhe && <div className="admin-alert admin-dashboard-alert" role="alert">{erroDetalhe}</div>}
+            {carregandoDetalhe && !detalheClinica ? (
+              <div className="admin-panel admin-loading">Carregando dados da clínica...</div>
+            ) : detalheClinica ? (
+              <>
+                <section className="admin-panel admin-detail-card">
+                  <div className="admin-panel-header"><div><h2>Dados da clínica</h2><p>Informações cadastradas na plataforma.</p></div></div>
+                  <div className="admin-detail-fields">
+                    {[
+                      ["Nome da clínica", detalheClinica.clinica.nome],
+                      ["Nome fantasia", detalheClinica.clinica.nome_fantasia],
+                      ["Razão social", detalheClinica.clinica.razao_social],
+                      ["CNPJ", detalheClinica.clinica.cnpj],
+                      ["E-mail de contato", detalheClinica.clinica.email_contato],
+                      ["Telefone", detalheClinica.clinica.telefone],
+                      ["Telefone secundário", detalheClinica.clinica.telefone_secundario],
+                      ["Responsável técnico", detalheClinica.clinica.responsavel_tecnico],
+                      ["CRO", detalheClinica.clinica.cro],
+                      ["Site", detalheClinica.clinica.site],
+                      ["CEP", detalheClinica.clinica.cep],
+                      ["Rua", detalheClinica.clinica.rua],
+                      ["Número", detalheClinica.clinica.numero],
+                      ["Complemento", detalheClinica.clinica.complemento],
+                      ["Bairro", detalheClinica.clinica.bairro],
+                      ["Cidade", detalheClinica.clinica.cidade],
+                      ["Estado", detalheClinica.clinica.estado],
+                      ["Plano", detalheClinica.clinica.plano],
+                      ["Situação", detalheClinica.clinica.status],
+                      ["Data de cadastro", dataBR(detalheClinica.clinica.created_at)],
+                    ].map(([rotulo, valor]) => (
+                      <div className="admin-detail-field" key={rotulo}>
+                        <span>{rotulo}</span><strong>{valor || "—"}</strong>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+                <section className="admin-panel admin-detail-users">
+                  <div className="admin-panel-header">
+                    <div><h2>Usuários cadastrados</h2><p>{detalheClinica.usuarios.length} usuário(s) vinculado(s) a esta clínica.</p></div>
+                  </div>
+                  <div className="admin-table-scroll">
+                    <table className="admin-table">
+                      <thead><tr><th>Nome</th><th>E-mail</th><th>Cadastro</th></tr></thead>
+                      <tbody>
+                        {detalheClinica.usuarios.map((usuario) => (
+                          <tr key={usuario.id}>
+                            <td><div className="admin-clinic-name">{usuario.nome || "Usuário"}</div></td>
+                            <td>{usuario.email || "Sem e-mail cadastrado"}</td>
+                            <td>{dataBR(usuario.created_at)}</td>
+                          </tr>
+                        ))}
+                        {!detalheClinica.usuarios.length && <tr><td className="admin-empty-cell" colSpan="3">Nenhum usuário cadastrado nesta clínica.</td></tr>}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+              </>
+            ) : null}
+          </>
+        ) : <>
         <div className="admin-page-heading">
           <div>
             <div className="admin-eyebrow">PAINEL DA PLATAFORMA</div>
@@ -281,6 +352,7 @@ export default function AdminPortal() {
             </div>
             <div className="admin-table-footer"><span>Exibindo {clinicasFiltradas.length} de {(dados?.clinicas || []).length} clínicas</span><span>Dados atualizados ao carregar o painel</span></div>
           </section>
+        </>}
         </>}
       </main>
     </div>
