@@ -34,11 +34,17 @@ function verificarAcessoAssinatura(clinicaId, callback) {
       const statusAssinatura = String(
         row.assinatura_status || (row.plano_clinica === "trial" ? "trial" : "")
       ).toLowerCase();
-      const fimPeriodo = row.periodo_fim || row.trial_ate;
-      const statusComAcesso = ["trial", "ativa"].includes(statusAssinatura);
+
+      // Uma cobrança pendente não deve encerrar antecipadamente o período de teste.
+      // Enquanto trial_ate estiver válido, a clínica mantém o acesso de avaliação.
+      const usandoPeriodoTeste = statusAssinatura === "pendente" && Boolean(row.trial_ate);
+      const fimPeriodo = usandoPeriodoTeste
+        ? row.trial_ate
+        : (row.periodo_fim || row.trial_ate);
+      const statusComAcesso = ["trial", "ativa"].includes(statusAssinatura) || usandoPeriodoTeste;
 
       if (!statusComAcesso || !fimPeriodo) {
-        return callback(null, { permitido: statusComAcesso, mensagem: MENSAGEM_ASSINATURA_EXPIRADA });
+        return callback(null, { permitido: false, mensagem: MENSAGEM_ASSINATURA_EXPIRADA });
       }
 
       db.get(
