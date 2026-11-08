@@ -400,4 +400,95 @@ router.get("/dashboard", exigirAdmin, (req, res) => {
   });
 });
 
+
+router.post("/clinicas/:id/dias-gratis", exigirAdmin, (req, res) => {
+  const clinicId = Number(req.params.id);
+  const dias = Number(req.body?.dias);
+  if (!Number.isSafeInteger(clinicId) || clinicId <= 0) {
+    return res.status(400).json({ erro: "Identificador de clínica inválido." });
+  }
+  if (!Number.isSafeInteger(dias) || dias < 1 || dias > 365) {
+    return res.status(400).json({ erro: "Informe uma quantidade de 1 a 365 dias." });
+  }
+
+  db.get(
+    `SELECT c.id, c.status AS clinica_status, c.trial_ate,
+            s.status AS assinatura_status, s.provedor,
+            s.provedor_assinatura_id
+     FROM clinicas c
+     LEFT JOIN assinaturas s ON s.clinica_id = c.id
+     WHERE c.id = ? LIMIT 1`,
+    [clinicId],
+    (findErr, atual) => {
+      if (findErr) {
+        console.error("Falha ao consultar período gratuito:", findErr.message);
+        return res.status(500).json({ erro: "Não foi possível consultar a assinatura da clínica." });
+      }
+      if (!atual) return res.status(404).json({ erro: "Clínica não encontrada." });
+
+      const statusAssinatura = String(atual.assinatura_status || "trial").toLowerCase();
+      const possuiAssinaturaPaga = Boolean(atual.provedor_assinatura_id) ||
+        ["ativa", "pendente", "past_due", "inadimplente"].includes(statusAssinatura);
+      if (possuiAssinaturaPaga) {
+        return res.status(409).json({ erro: "Esta clínica possui uma assinatura paga ou cobrança em andamento. Os dias grátis não foram alterados." });
+      }
+
+      db.serialize(() => {
+        db.run(
+          `UPDATE clinicas
+           SET trial_ate = datetime(
+             CASE
+               WHEN trial_ate IS NOT NULL AND length(trial_ate) = 10 THEN datetime(trial_ate, '+1 day')
+               WHEN trial_ate IS NOT NULL AND datetime(trial_ate) > datetime('now', 'localtime') THEN trial_ate
+               ELSE datetime('now', 'localtime')
+             END,
+             '+' || ? || ' days'
+           ),
+           updated_at = datetime('now', 'localtime')
+           WHERE id = ?`,
+          [dias, clinicId],
+          function (updateErr) {
+            if (updateErr) {
+              console.error("Falha ao ampliar período gratuito:", updateErr.message);
+              return res.status(500).json({ erro: "Não foi possível adicionar os dias gratuitos." });
+            }
+
+            db.get("SELECT trial_ate FROM clinicas WHERE id = ?", [clinicId], (dateErr, clinicaAtualizada) => {
+              if (dateErr || !clinicaAtualizada) {
+                return res.status(500).json({ erro: "Os dias foram processados, mas não foi possível confirmar a nova data." });
+              }
+              db.run(
+                `INSERT INTO assinaturas (clinica_id, plano, status, periodo_inicio, periodo_fim)
+                 VALUES (?, 'trial', 'trial', datetime('now', 'localtime'), ?)
+                 ON CONFLICT(clinica_id) DO UPDATE SET
+                   status = 'trial',
+                   periodo_fim = excluded.periodo_fim,
+                   updated_at = datetime('now', 'localtime')`,
+                [clinicId, clinicaAtualizada.trial_ate],
+                (subscriptionErr) => {
+                  if (subscriptionErr) {
+                    console.error("Falha ao sincronizar período gratuito:", subscriptionErr.message);
+                    return res.status(500).json({ erro: "A data foi atualizada, mas não foi possível sincronizar a assinatura." });
+                  }
+                  const detalhes = dias + " dia(s) grátis adicionados. Novo vencimento: " + clinicaAtualizada.trial_ate;
+                  db.run(
+                    "INSERT INTO auditoria (clinica_id, acao, recurso, recurso_id, detalhes, ip) VALUES (?, ?, ?, ?, ?, ?)",
+                    [clinicId, "ampliacao_periodo_gratis", "assinatura", String(clinicId), detalhes, req.ip || null]
+                  );
+                  return res.json({
+                    sucesso: true,
+                    dias_adicionados: dias,
+                    trial_ate: clinicaAtualizada.trial_ate,
+                    clinica_status: atual.clinica_status,
+                  });
+                }
+              );
+            });
+          }
+        );
+      });
+    }
+  );
+});
+
 module.exports = router;
