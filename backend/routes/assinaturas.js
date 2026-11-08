@@ -26,9 +26,8 @@ function decifrarCredenciais(valor) {
   return JSON.parse(conteudo.toString("utf8"));
 }
 
-function dataAmanha() {
-  const data = new Date(Date.now() + 24 * 60 * 60 * 1000);
-  return data.toISOString().slice(0, 10);
+function dataHoje() {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date());
 }
 
 async function chamarAsaas(baseUrl, apiKey, caminho, metodo = "GET", body) {
@@ -122,6 +121,7 @@ router.post("/checkout", async (req, res) => {
             });
           });
           if (config.provedor !== "asaas") throw new Error("O provedor configurado ainda não possui checkout disponível.");
+          if (config.ambiente !== "sandbox") throw new Error("Durante esta etapa, o checkout está liberado somente no ambiente Sandbox.");
           const credenciais = decifrarCredenciais(config.credenciais_cifradas);
           if (!credenciais.apiKey) throw new Error("A chave de API do Asaas não está configurada.");
           const baseUrl = config.ambiente === "producao"
@@ -131,12 +131,16 @@ router.post("/checkout", async (req, res) => {
           const assinaturaAtual = await new Promise((resolve, reject) => {
             db.get("SELECT provedor_assinatura_id, provedor_cliente_id, status FROM assinaturas WHERE clinica_id = ?", [req.user.clinica_id], (err, row) => err ? reject(err) : resolve(row || {}));
           });
+          if (assinaturaAtual.provedor_assinatura_id && assinaturaAtual.status === "ativa") {
+            return res.status(409).json({ erro: "Esta clínica já possui uma assinatura ativa. A alteração de plano será disponibilizada em uma etapa posterior." });
+          }
           if (assinaturaAtual.provedor_assinatura_id && assinaturaAtual.status === "pendente") {
             const cobrancas = await chamarAsaas(baseUrl, credenciais.apiKey, "/subscriptions/" + encodeURIComponent(assinaturaAtual.provedor_assinatura_id) + "/payments");
             const pagamentoPendente = (cobrancas.data || []).find((item) => !["RECEIVED", "CONFIRMED", "REFUNDED", "DELETED"].includes(String(item.status || "").toUpperCase()));
             if (pagamentoPendente?.invoiceUrl) {
               return res.json({ sucesso: true, checkout_url: pagamentoPendente.invoiceUrl, mensagem: "Já existe uma cobrança aguardando pagamento." });
             }
+            return res.status(409).json({ erro: "Já existe uma assinatura em processamento. Aguarde a geração da cobrança antes de tentar novamente." });
           }
 
           let clienteId = assinaturaAtual.provedor_cliente_id;
@@ -155,7 +159,7 @@ router.post("/checkout", async (req, res) => {
             customer: clienteId,
             billingType: "UNDEFINED",
             value: plano.valor,
-            nextDueDate: dataAmanha(),
+            nextDueDate: dataHoje(),
             cycle: plano.ciclo,
             description: plano.descricao,
             externalReference: "sorrisa-clinica-" + clinica.id + "-" + planoEscolhido,
