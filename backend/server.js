@@ -41,6 +41,7 @@ const clinicaRoutes = require("./routes/clinica");
 const planosRoutes = require("./routes/planos");
 const adminRoutes = require("./routes/admin");
 const assinaturasRoutes = require("./routes/assinaturas");
+const webhooksRoutes = require("./routes/webhooks");
 
 const db = require("./database");
 
@@ -117,6 +118,8 @@ app.use("/clinica", clinicaRoutes);
 app.use("/planos", planosRoutes);
 app.use("/admin", adminRoutes);
 app.use("/assinaturas", assinaturasRoutes);
+// Endpoint público, protegido pelo token de autenticação configurado no Asaas.
+app.use("/webhooks", webhooksRoutes);
 db.run(`
   CREATE TABLE IF NOT EXISTS sorrisa_assinatura_cobrancas (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -135,6 +138,18 @@ db.run(`
   )
 `);
 
+db.run(`
+  CREATE TABLE IF NOT EXISTS sorrisa_asaas_webhook_eventos (
+    evento_id TEXT PRIMARY KEY,
+    evento TEXT NOT NULL,
+    pagamento_id TEXT,
+    status TEXT NOT NULL DEFAULT 'recebido',
+    erro TEXT,
+    recebido_em TEXT DEFAULT (datetime('now','localtime')),
+    processado_em TEXT,
+    updated_at TEXT DEFAULT (datetime('now','localtime'))
+  )
+`);
 
 // Respostas consistentes para rotas inexistentes e erros inesperados.
 // Não expõe stack traces, caminhos locais ou detalhes internos da API.
