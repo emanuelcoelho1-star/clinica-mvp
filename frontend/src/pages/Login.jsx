@@ -164,7 +164,7 @@ function Login() {
             </svg>
           </div>
           <div>
-            <h1 style={S.logoTitle}>OdontoPro</h1>
+            <h1 style={S.logoTitle}>Sorrisa</h1>
             <p style={S.logoSub}>Sistema de gestão odontológica</p>
           </div>
         </div>
@@ -357,7 +357,7 @@ function Login() {
         </div>
 
         {/* Versão */}
-        <p style={S.version}>OdontoPro v1.0 — © 2025</p>
+        <p style={S.version}>Sorrisa v1.0 — © 2025</p>
       </div>
 
       {/* Keyframes */}
