@@ -241,7 +241,6 @@ export default function AdminPortal() {
                   </button>
                   <button type="button" className={abaDetalhe === "usuarios" ? "active" : ""} onClick={() => setAbaDetalhe("usuarios")}>
                     <Icone tipo="users" size={16} /> Usuários cadastrados
-                    <span className="admin-detail-tab-count">{detalheClinica.usuarios.length}</span>
                   </button>
                 </nav>
                 {abaDetalhe === "dados" && <section className="admin-panel admin-detail-card">
