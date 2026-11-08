@@ -208,6 +208,65 @@ function CustomDropdown({ value, options, onChange, placeholder = "Selecione", d
   );
 }
 
+function CartaoAgendamento({ ag, stCfg, ativo, estilo, onClick }) {
+  const cardRef = useRef(null);
+  const [dimensoes, setDimensoes] = useState({ largura: 0, altura: 0 });
+
+  useEffect(() => {
+    const elemento = cardRef.current;
+    if (!elemento || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect;
+      setDimensoes({ largura: width, altura: height });
+    });
+    observer.observe(elemento);
+    return () => observer.disconnect();
+  }, []);
+
+  const estreito = dimensoes.largura > 0 && dimensoes.largura < 132;
+  const muitoEstreito = dimensoes.largura > 0 && dimensoes.largura < 104;
+  const mostrarProcedimento = dimensoes.largura >= 132 && dimensoes.altura >= 88;
+  const mostrarStatus = dimensoes.largura >= 150 && dimensoes.altura >= 116;
+
+  return (
+    <button
+      ref={cardRef}
+      type="button"
+      title={`${ag.paciente} • ${ag.inicio}–${ag.fim} • ${ag.procedimento} • ${obterLabelStatus(ag.status)}`}
+      aria-label={`Agendamento de ${ag.paciente}, das ${ag.inicio} às ${ag.fim}, ${ag.procedimento}, ${obterLabelStatus(ag.status)}`}
+      onClick={onClick}
+      style={{
+        ...S.eventCard,
+        ...estilo,
+        background: stCfg.bg,
+        borderColor: stCfg.border,
+        ...(ativo ? S.eventActive : {}),
+        padding: muitoEstreito ? "5px 4px" : estreito ? "5px 6px" : "7px 9px",
+        gap: muitoEstreito ? "1px" : "2px",
+        minWidth: 0,
+      }}
+    >
+      <div style={{ ...S.eventTime, fontSize: estreito ? "9px" : "10px", lineHeight: 1.15, whiteSpace: "nowrap" }}>
+        {ag.inicio}–{ag.fim}
+      </div>
+      <div style={{ ...S.eventName, fontSize: estreito ? "10px" : "12px", lineHeight: 1.2 }}>
+        {ag.paciente}
+      </div>
+      {mostrarProcedimento && (
+        <div style={{ ...S.eventProc, fontSize: "10px", marginBottom: 0 }}>
+          {ag.procedimento}
+        </div>
+      )}
+      {mostrarStatus && (
+        <span style={{ ...S.eventBadge, padding: "2px 5px", fontSize: "9px", maxWidth: "100%", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis", background: stCfg.bg, color: stCfg.color, borderColor: stCfg.border }}>
+          <span style={{ ...S.eventDot, background: stCfg.dot }} />
+          {obterLabelStatus(ag.status)}
+        </span>
+      )}
+    </button>
+  );
+}
+
 /* ═══════════════════════════════════════════════════════════
    COMPONENTE PRINCIPAL
    ═══════════════════════════════════════════════════════════ */
@@ -884,16 +943,13 @@ function Agenda() {
                       onClick={() => { if (!ag && !bloq) abrirModal(null, dia.iso, hora); }}>
 
                       {ag ? (
-                        <button type="button" onClick={(e) => { e.stopPropagation(); const rect = e.currentTarget.getBoundingClientRect(); const largura = 392; const altura = 420; const left = rect.right + largura + 12 <= window.innerWidth ? rect.right + 8 : Math.max(8, rect.left - largura - 8); const top = Math.min(Math.max(8, rect.top), Math.max(8, window.innerHeight - altura - 8)); setConsultaPreviewPos({ top, left }); setConsultaPreview(ag); }}
-                          style={{ ...S.eventCard, ...(Number(ag.duracao) > 30 ? { position: "absolute", top: "4px", left: "4px", right: "4px", width: "auto", zIndex: 12, overflow: "hidden", height: `${(Number(ag.duracao) / 30) * 68 - 8}px` } : {}), background: stCfg.bg, borderColor: stCfg.border, ...(agendamentoEditando?.id === ag.id ? S.eventActive : {}) }}>
-                          <div style={S.eventTime}>{ag.inicio} – {ag.fim}</div>
-                          <div style={S.eventName}>{ag.paciente}</div>
-                          <div style={S.eventProc}>{ag.procedimento}</div>
-                          <span style={{ ...S.eventBadge, background: stCfg.bg, color: stCfg.color, borderColor: stCfg.border }}>
-                            <span style={{ ...S.eventDot, background: stCfg.dot }} />
-                            {obterLabelStatus(ag.status)}
-                          </span>
-                        </button>
+                        <CartaoAgendamento
+                          ag={ag}
+                          stCfg={stCfg}
+                          ativo={agendamentoEditando?.id === ag.id}
+                          estilo={Number(ag.duracao) > 30 ? { position: "absolute", top: "4px", left: "4px", right: "4px", width: "auto", zIndex: 12, overflow: "hidden", height: `${(Number(ag.duracao) / 30) * 68 - 8}px` } : {}}
+                          onClick={(e) => { e.stopPropagation(); const rect = e.currentTarget.getBoundingClientRect(); const largura = 392; const altura = 420; const left = rect.right + largura + 12 <= window.innerWidth ? rect.right + 8 : Math.max(8, rect.left - largura - 8); const top = Math.min(Math.max(8, rect.top), Math.max(8, window.innerHeight - altura - 8)); setConsultaPreviewPos({ top, left }); setConsultaPreview(ag); }}
+                        />
                       ) : agSobreposto ? (
                         <div style={{ width: "100%", minHeight: "58px", pointerEvents: "none" }} />
                       ) : bloq ? (
