@@ -300,3 +300,8 @@
  .admin-payment-form-footer {align-items:stretch;flex-direction:column}
  .admin-payment-form-footer button {width:100%}
 }
+
+
+/* Controle de dias gratuitos por clínica */
+.admin-action-block input[type="number"] {font-variant-numeric:tabular-nums}
+.admin-clinic-actions-grid {grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
