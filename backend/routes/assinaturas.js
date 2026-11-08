@@ -177,6 +177,10 @@ router.post("/checkout", async (req, res) => {
                 (saveCustomerErr) => saveCustomerErr ? reject(saveCustomerErr) : resolve()
               );
             });
+          } else {
+            await chamarAsaas(baseUrl, credenciais.apiKey, "/customers/" + encodeURIComponent(clienteId), "PUT", {
+              cpfCnpj: documento,
+            });
           }
 
           const novaAssinatura = await chamarAsaas(baseUrl, credenciais.apiKey, "/subscriptions", "POST", {
