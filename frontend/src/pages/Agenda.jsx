@@ -30,10 +30,10 @@ const statusOptions = [
 ];
 
 const STATUS_STYLE = {
-  agendado:   { bg: "#eff6ff", color: "#1d4ed8", dot: "#60a5fa", border: "#bfdbfe" },
-  confirmado: { bg: "#f0fdf4", color: "#15803d", dot: "#4ade80", border: "#bbf7d0" },
-  concluido:  { bg: "#faf5ff", color: "#7c3aed", dot: "#a78bfa", border: "#ddd6fe" },
-  cancelado:  { bg: "#fef2f2", color: "#dc2626", dot: "#f87171", border: "#fecaca" },
+  agendado:   { bg: "#dbeafe", color: "#1e40af", dot: "#2563eb", border: "#60a5fa" },
+  confirmado: { bg: "#dcfce7", color: "#166534", dot: "#16a34a", border: "#4ade80" },
+  concluido:  { bg: "#f3e8ff", color: "#6b21a8", dot: "#9333ea", border: "#c084fc" },
+  cancelado:  { bg: "#fee2e2", color: "#991b1b", dot: "#dc2626", border: "#f87171" },
 };
 
 /* ═══════════════════════════════════════════════════════════
@@ -214,8 +214,6 @@ function CustomDropdown({ value, options, onChange, placeholder = "Selecione", d
 function Agenda() {
   const navigate = useNavigate();
   const [filtroProfissional, setFiltroProfissional] = useState("Todos");
-  const [busca, setBusca] = useState("");
-  const [searchFocused, setSearchFocused] = useState(false);
   const [mostrarGerenciador, setMostrarGerenciador] = useState(false);
   const [modalFuncionamentoAberto, setModalFuncionamentoAberto] = useState(false);
   const [salvandoFuncionamento, setSalvandoFuncionamento] = useState(false);
@@ -346,11 +344,9 @@ function Agenda() {
   const agendamentosFiltrados = useMemo(() => {
     return consultas.filter((item) => {
       const pp = filtroProfissional === "Todos" || item.dentista === filtroProfissional;
-      const t = busca.toLowerCase();
-      const pb = item.paciente.toLowerCase().includes(t) || item.procedimento.toLowerCase().includes(t) || item.dentista.toLowerCase().includes(t);
-      return pp && pb && diasSemana.map((d) => d.iso).includes(item.data);
+      return pp && diasSemana.map((d) => d.iso).includes(item.data);
     });
-  }, [consultas, filtroProfissional, busca, diasSemana]);
+  }, [consultas, filtroProfissional, diasSemana]);
 
   const weekStats = useMemo(() => {
     // Os indicadores mostram o total geral de consultas cadastradas, não apenas a semana visível.
@@ -738,14 +734,6 @@ function Agenda() {
           <div style={{ minWidth: "150px", position: "relative" }}>
             <CustomDropdown value={filtroProfissional} options={profissionaisOptions} onChange={setFiltroProfissional}
               placeholder="Profissional" triggerStyle={S.filterTrigger} menuStyle={{ zIndex: 3000 }} />
-          </div>
-          <div style={{ ...S.searchWrap, borderColor: searchFocused ? "#2563eb" : "#e2e8f0", boxShadow: searchFocused ? "0 0 0 3px rgba(37,99,235,0.1)" : "none" }}>
-            <span style={{ display: "flex", color: searchFocused ? "#2563eb" : "#94a3b8", transition: "color 0.2s" }}>{Icons.search}</span>
-            <input type="text" placeholder="Buscar paciente, procedimento..." value={busca}
-              onChange={(e) => setBusca(e.target.value)}
-              onFocus={() => setSearchFocused(true)} onBlur={() => setSearchFocused(false)}
-              style={S.searchInput} />
-            {busca && <button style={S.searchClear} onClick={() => setBusca("")}>✕</button>}
           </div>
           <button type="button" style={mostrarGerenciador ? S.btnManageActive : S.btnRefresh}
             onClick={() => setMostrarGerenciador((v) => !v)}>
