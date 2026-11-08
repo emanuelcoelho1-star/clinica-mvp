@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
+import { useTheme } from "../contexts/ThemeContext";
 import API_URL from "../api";
+import "./AdminPortal.css";
 
 const TOKEN_KEY = "sorrisa_admin_token";
+
 const formatarBytes = (bytes = 0) => {
   const valor = Number(bytes) || 0;
   if (valor < 1024) return valor + " B";
@@ -14,12 +17,35 @@ const formatarBytes = (bytes = 0) => {
   }
   return tamanho.toLocaleString("pt-BR", { maximumFractionDigits: 2 }) + " " + unidades[indice];
 };
+
 const dataBR = (valor) => valor ? new Date(String(valor).replace(" ", "T")).toLocaleDateString("pt-BR") : "—";
 
+function Icone({ tipo, size = 18 }) {
+  const comum = { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round", strokeLinejoin: "round" };
+  const caminhos = {
+    grid: <><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /></>,
+    clinic: <><path d="M3 21h18" /><path d="M5 21V7l7-4 7 4v14" /><path d="M9 21v-5h6v5" /><path d="M9 9h.01M15 9h.01M9 12h.01M15 12h.01" /></>,
+    users: <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></>,
+    storage: <><ellipse cx="12" cy="5" rx="8" ry="3" /><path d="M4 5v14c0 1.66 3.58 3 8 3s8-1.34 8-3V5" /><path d="M4 12c0 1.66 3.58 3 8 3s8-1.34 8-3" /></>,
+    check: <><path d="m5 12 4 4L19 6" /><circle cx="12" cy="12" r="9" /></>,
+    clock: <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>,
+    search: <><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></>,
+    refresh: <><path d="M20 7v5h-5" /><path d="M4 17v-5h5" /><path d="M5.6 9a7 7 0 0 1 11.6-2L20 12M4 12l2.8 5a7 7 0 0 0 11.6-2" /></>,
+    logout: <><path d="M10 17l5-5-5-5" /><path d="M15 12H3" /><path d="M12 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6" /></>,
+    sun: <><circle cx="12" cy="12" r="4" /><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42" /></>,
+    moon: <path d="M20.9 13A9 9 0 0 1 11 3.1 9 9 0 1 0 20.9 13Z" />,
+    lock: <><rect x="4" y="10" width="16" height="11" rx="2" /><path d="M8 10V7a4 4 0 1 1 8 0v3" /></>,
+    arrow: <><path d="M5 12h14" /><path d="m13 6 6 6-6 6" /></>
+  };
+  return <svg {...comum} aria-hidden="true">{caminhos[tipo] || caminhos.grid}</svg>;
+}
+
 export default function AdminPortal() {
+  const { tema, alternarTema } = useTheme();
   const [token, setToken] = useState(() => localStorage.getItem(TOKEN_KEY) || "");
   const [email, setEmail] = useState("emanuelcoelho1@gmail.com");
   const [senha, setSenha] = useState("");
+  const [mostrarSenha, setMostrarSenha] = useState(false);
   const [dados, setDados] = useState(null);
   const [erro, setErro] = useState("");
   const [carregando, setCarregando] = useState(false);
@@ -30,9 +56,7 @@ export default function AdminPortal() {
     setCarregando(true);
     setErro("");
     try {
-      const resposta = await fetch(API_URL + "/admin/dashboard", {
-        headers: { Authorization: "Bearer " + chave },
-      });
+      const resposta = await fetch(API_URL + "/admin/dashboard", { headers: { Authorization: "Bearer " + chave } });
       const corpo = await resposta.json();
       if (!resposta.ok) throw new Error(corpo.erro || "Não foi possível carregar o painel.");
       setDados(corpo);
@@ -48,9 +72,7 @@ export default function AdminPortal() {
     }
   }
 
-  useEffect(() => {
-    if (token) carregarPainel(token);
-  }, []);
+  useEffect(() => { if (token) carregarPainel(token); }, []);
 
   async function entrar(evento) {
     evento.preventDefault();
@@ -79,79 +101,135 @@ export default function AdminPortal() {
     localStorage.removeItem(TOKEN_KEY);
     setToken("");
     setDados(null);
+    setErro("");
   }
 
   const clinicasFiltradas = (dados?.clinicas || []).filter((c) =>
     [c.nome, c.email_contato, String(c.id)].some((v) => String(v || "").toLowerCase().includes(busca.toLowerCase()))
   );
-
-  const base = { minHeight: "100vh", background: "#f5f7fb", color: "#172033", fontFamily: "Inter, Arial, sans-serif" };
-  const card = { background: "#fff", border: "1px solid #e8edf5", borderRadius: 16, padding: 20, boxShadow: "0 4px 18px rgba(20,35,70,.04)" };
-  const button = { border: 0, borderRadius: 10, padding: "11px 16px", background: "#2563eb", color: "#fff", fontWeight: 600, cursor: "pointer" };
+  const indicadores = dados?.indicadores || {};
 
   if (!token) return (
-    <div style={{ ...base, display: "grid", placeItems: "center", padding: 20 }}>
-      <form onSubmit={entrar} style={{ ...card, width: "100%", maxWidth: 420, padding: 32 }}>
-        <div style={{ color: "#2563eb", fontSize: 13, fontWeight: 700, letterSpacing: 1.5, marginBottom: 12 }}>SORRISA · CONTROLE INTERNO</div>
-        <h1 style={{ fontSize: 26, margin: "0 0 8px" }}>Administração</h1>
-        <p style={{ color: "#64748b", fontSize: 14, margin: "0 0 26px" }}>Acesso exclusivo do administrador da plataforma.</p>
-        <label style={{ display: "block", fontSize: 13, fontWeight: 600, marginBottom: 7 }}>E-mail</label>
-        <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" autoComplete="username" required style={campo} />
-        <label style={{ display: "block", fontSize: 13, fontWeight: 600, margin: "17px 0 7px" }}>Senha</label>
-        <input value={senha} onChange={(e) => setSenha(e.target.value)} type="password" autoComplete="current-password" required style={campo} />
-        {erro && <p role="alert" style={{ color: "#dc2626", fontSize: 13, margin: "14px 0 0" }}>{erro}</p>}
-        <button type="submit" disabled={carregando} style={{ ...button, width: "100%", marginTop: 22, opacity: carregando ? .7 : 1 }}>{carregando ? "Verificando..." : "Entrar no painel"}</button>
-      </form>
+    <div className="admin-login-page">
+      <button className="admin-theme-toggle" type="button" onClick={alternarTema}>
+        <Icone tipo={tema === "dark" ? "sun" : "moon"} size={15} />
+        {tema === "dark" ? "Modo claro" : "Modo escuro"}
+      </button>
+      <div className="admin-login-wrap">
+        <div className="admin-brand admin-login-brand">
+          <div className="admin-brand-mark">S</div>
+          <div><div className="admin-brand-name">Sorrisa</div><div className="admin-brand-caption">Gestão inteligente para clínicas</div></div>
+        </div>
+        <form className="admin-login-card" onSubmit={entrar}>
+          <div className="admin-login-icon"><Icone tipo="lock" size={22} /></div>
+          <h1>Acesso administrativo</h1>
+          <p className="admin-login-description">Entre com suas credenciais para gerenciar a plataforma Sorrisa.</p>
+          <div className="admin-field">
+            <label htmlFor="admin-email">E-mail</label>
+            <input id="admin-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" required />
+          </div>
+          <div className="admin-field">
+            <label htmlFor="admin-password">Senha</label>
+            <div className="admin-password-wrap">
+              <input id="admin-password" type={mostrarSenha ? "text" : "password"} value={senha} onChange={(e) => setSenha(e.target.value)} autoComplete="current-password" required />
+              <button type="button" className="admin-password-toggle" onClick={() => setMostrarSenha((v) => !v)} aria-label={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}>{mostrarSenha ? "Ocultar" : "Mostrar"}</button>
+            </div>
+          </div>
+          {erro && <div className="admin-alert" role="alert">{erro}</div>}
+          <button className="admin-primary-button admin-login-submit" type="submit" disabled={carregando}>{carregando ? "Verificando acesso..." : <>Entrar no painel <Icone tipo="arrow" size={16} /></>}</button>
+          <div className="admin-secure-note"><Icone tipo="lock" size={13} /> Acesso restrito ao administrador da plataforma</div>
+        </form>
+        <div className="admin-login-footer">SORRISA · PAINEL DE CONTROLE</div>
+      </div>
     </div>
   );
 
   return (
-    <div style={base}>
-      <header style={{ background: "#fff", borderBottom: "1px solid #e8edf5", padding: "18px 28px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16 }}>
-        <div><div style={{ color: "#2563eb", fontWeight: 800, letterSpacing: 1.2, fontSize: 12 }}>SORRISA</div><strong style={{ fontSize: 19 }}>Administração da plataforma</strong></div>
-        <button onClick={sair} style={{ ...button, background: "#eef2ff", color: "#334155" }}>Sair</button>
-      </header>
-      <main style={{ maxWidth: 1400, margin: "0 auto", padding: 28 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: 22 }}>
-          <div><h1 style={{ margin: 0, fontSize: 25 }}>Visão geral</h1><p style={{ margin: "6px 0 0", color: "#64748b", fontSize: 14 }}>Indicadores gerais de todas as clínicas cadastradas.</p></div>
-          <button onClick={() => carregarPainel()} style={{ ...button, background: "#fff", color: "#334155", border: "1px solid #dbe3ef" }}>Atualizar dados</button>
+    <div className="admin-app">
+      <header className="admin-topbar">
+        <div className="admin-topbar-inner">
+          <div className="admin-brand">
+            <div className="admin-brand-mark">S</div>
+            <span className="admin-brand-name">Sorrisa</span>
+          </div>
+          <div className="admin-topbar-divider" />
+          <div className="admin-topbar-section"><Icone tipo="grid" size={16} /><span>Administração</span></div>
+          <div className="admin-topbar-spacer" />
+          <button className="admin-icon-button" type="button" onClick={alternarTema} title={tema === "dark" ? "Modo claro" : "Modo escuro"} aria-label={tema === "dark" ? "Modo claro" : "Modo escuro"}><Icone tipo={tema === "dark" ? "sun" : "moon"} size={16} /></button>
+          <div className="admin-user-chip"><span className="admin-user-avatar">E</span><span className="admin-user-email">Administrador</span></div>
+          <button className="admin-logout-button" type="button" onClick={sair}><Icone tipo="logout" size={15} /><span>Sair</span></button>
         </div>
-        {erro && <div role="alert" style={{ ...card, color: "#b91c1c", marginBottom: 18 }}>{erro}</div>}
-        {carregando && !dados ? <div style={card}>Carregando dados...</div> : <>
-          <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(190px,1fr))", gap: 14, marginBottom: 26 }}>
-            {[
-              ["Clínicas cadastradas", dados?.indicadores.total_clinicas ?? 0],
-              ["Clínicas ativas", dados?.indicadores.clinicas_ativas ?? 0],
-              ["Usuários", dados?.indicadores.total_usuarios ?? 0],
-              ["Armazenamento total", formatarBytes(dados?.indicadores.armazenamento_bytes)],
-              ["Assinaturas ativas", dados?.indicadores.assinaturas_ativas ?? 0],
-              ["Assinaturas pendentes", dados?.indicadores.assinaturas_pendentes ?? 0],
-            ].map(([titulo, valor]) => <div key={titulo} style={card}><div style={{ color: "#64748b", fontSize: 13 }}>{titulo}</div><div style={{ fontSize: 27, fontWeight: 750, marginTop: 9 }}>{valor}</div></div>)}
+      </header>
+
+      <main className="admin-main">
+        <div className="admin-page-heading">
+          <div>
+            <div className="admin-eyebrow">PAINEL DA PLATAFORMA</div>
+            <h1>Visão geral</h1>
+            <p>Acompanhe o desempenho e a operação de todas as clínicas cadastradas.</p>
+          </div>
+          <button className="admin-secondary-button" type="button" onClick={() => carregarPainel()} disabled={carregando}><Icone tipo="refresh" size={15} />{carregando ? "Atualizando..." : "Atualizar dados"}</button>
+        </div>
+
+        {erro && <div className="admin-alert admin-dashboard-alert" role="alert">{erro}</div>}
+
+        {carregando && !dados ? <div className="admin-panel admin-loading">Carregando informações da plataforma...</div> : <>
+          <section className="admin-stats-grid">
+            <article className="admin-stat-card">
+              <div className="admin-stat-top"><span className="admin-stat-icon blue"><Icone tipo="clinic" /></span><span className="admin-stat-label">Clínicas cadastradas</span></div>
+              <div className="admin-stat-value">{indicadores.total_clinicas ?? 0}</div>
+              <div className="admin-stat-foot">Total de contas criadas</div>
+            </article>
+            <article className="admin-stat-card">
+              <div className="admin-stat-top"><span className="admin-stat-icon green"><Icone tipo="check" /></span><span className="admin-stat-label">Clínicas ativas</span></div>
+              <div className="admin-stat-value">{indicadores.clinicas_ativas ?? 0}</div>
+              <div className="admin-stat-foot">Clínicas em funcionamento</div>
+            </article>
+            <article className="admin-stat-card">
+              <div className="admin-stat-top"><span className="admin-stat-icon violet"><Icone tipo="users" /></span><span className="admin-stat-label">Usuários</span></div>
+              <div className="admin-stat-value">{indicadores.total_usuarios ?? 0}</div>
+              <div className="admin-stat-foot">Usuários em todas as clínicas</div>
+            </article>
+            <article className="admin-stat-card">
+              <div className="admin-stat-top"><span className="admin-stat-icon amber"><Icone tipo="storage" /></span><span className="admin-stat-label">Armazenamento utilizado</span></div>
+              <div className="admin-stat-value admin-stat-storage">{formatarBytes(indicadores.armazenamento_bytes)}</div>
+              <div className="admin-stat-foot">Espaço ocupado pelos arquivos</div>
+            </article>
           </section>
-          <section style={card}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, marginBottom: 18 }}>
-              <div><h2 style={{ margin: 0, fontSize: 18 }}>Clínicas</h2><p style={{ color: "#64748b", fontSize: 13, margin: "5px 0 0" }}>Usuários, armazenamento e situação da assinatura.</p></div>
-              <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar clínica..." style={{ ...campo, maxWidth: 280 }} />
+
+          <section className="admin-subscription-strip">
+            <div className="admin-subscription-title"><span className="admin-subscription-icon"><Icone tipo="check" size={17} /></span><div><strong>Assinaturas</strong><span>Resumo da situação atual</span></div></div>
+            <div className="admin-subscription-metric"><strong>{indicadores.assinaturas_ativas ?? 0}</strong><span>Ativas</span></div>
+            <div className="admin-subscription-separator" />
+            <div className="admin-subscription-metric pending"><strong>{indicadores.assinaturas_pendentes ?? 0}</strong><span>Pendentes</span></div>
+            <div className="admin-subscription-separator" />
+            <div className="admin-subscription-metric trial"><strong>{indicadores.assinaturas_trial ?? 0}</strong><span>Em período de teste</span></div>
+          </section>
+
+          <section className="admin-panel admin-clinics-panel">
+            <div className="admin-panel-header">
+              <div><h2>Clínicas cadastradas</h2><p>Consulte usuários, arquivos e situação de cada clínica.</p></div>
+              <div className="admin-search"><Icone tipo="search" size={16} /><input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar clínica..." aria-label="Buscar clínica" /></div>
             </div>
-            <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, textAlign: "left" }}>
-                <thead><tr>{["Clínica","Usuários","Arquivos","Armazenamento","Plano","Assinatura","Cadastro"].map((h) => <th key={h} style={th}>{h}</th>)}</tr></thead>
-                <tbody>{clinicasFiltradas.map((c) => <tr key={c.id}>
-                  <td style={td}><strong>{c.nome}</strong><div style={{ color: "#94a3b8", marginTop: 3 }}>{c.email_contato || "Sem e-mail"} · #{c.id}</div></td>
-                  <td style={td}>{c.total_usuarios}</td><td style={td}>{c.total_arquivos}</td><td style={td}>{formatarBytes(c.armazenamento_bytes)}</td>
-                  <td style={td}>{c.plano || "—"}</td><td style={td}><span style={{ padding: "4px 8px", borderRadius: 20, background: c.assinatura_status === "ativa" ? "#dcfce7" : "#fef3c7", color: c.assinatura_status === "ativa" ? "#166534" : "#92400e" }}>{c.assinatura_status || "sem assinatura"}</span></td>
-                  <td style={td}>{dataBR(c.created_at)}</td>
-                </tr>)}
-                {!clinicasFiltradas.length && <tr><td colSpan="7" style={{ ...td, textAlign: "center", color: "#64748b" }}>Nenhuma clínica encontrada.</td></tr>}</tbody>
+            <div className="admin-table-scroll">
+              <table className="admin-table">
+                <thead><tr><th>Clínica</th><th>Usuários</th><th>Arquivos</th><th>Armazenamento</th><th>Plano</th><th>Assinatura</th><th>Cadastro</th></tr></thead>
+                <tbody>
+                  {clinicasFiltradas.map((c) => <tr key={c.id}>
+                    <td><div className="admin-clinic-name">{c.nome}</div><div className="admin-clinic-meta">{c.email_contato || "Sem e-mail"} · #{c.id}</div></td>
+                    <td>{c.total_usuarios ?? 0}</td><td>{c.total_arquivos ?? 0}</td><td>{formatarBytes(c.armazenamento_bytes)}</td>
+                    <td><span className="admin-plan-label">{c.plano || "—"}</span></td>
+                    <td><span className={"admin-status " + (c.assinatura_status === "ativa" ? "active" : c.assinatura_status === "pendente" || c.assinatura_status === "past_due" ? "pending" : "neutral")}>{c.assinatura_status || "Sem assinatura"}</span></td>
+                    <td>{dataBR(c.created_at)}</td>
+                  </tr>)}
+                  {!clinicasFiltradas.length && <tr><td className="admin-empty-cell" colSpan="7">Nenhuma clínica encontrada.</td></tr>}
+                </tbody>
               </table>
             </div>
+            <div className="admin-table-footer"><span>Exibindo {clinicasFiltradas.length} de {(dados?.clinicas || []).length} clínicas</span><span>Dados atualizados ao carregar o painel</span></div>
           </section>
         </>}
       </main>
     </div>
   );
 }
-
-const campo = { width: "100%", height: 44, border: "1px solid #dbe3ef", borderRadius: 10, padding: "0 12px", fontSize: 14, outline: "none", background: "#fff", color: "#172033" };
-const th = { padding: "12px 10px", color: "#64748b", fontWeight: 600, borderBottom: "1px solid #e8edf5", whiteSpace: "nowrap" };
-const td = { padding: "14px 10px", borderBottom: "1px solid #eef2f7", verticalAlign: "top" };
