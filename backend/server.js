@@ -40,6 +40,7 @@ const rbacRoutes = require("./routes/rbac");
 const clinicaRoutes = require("./routes/clinica");
 const planosRoutes = require("./routes/planos");
 const adminRoutes = require("./routes/admin");
+const assinaturasRoutes = require("./routes/assinaturas");
 
 const db = require("./database");
 
@@ -115,6 +116,25 @@ app.use("/rbac", rbacRoutes);
 app.use("/clinica", clinicaRoutes);
 app.use("/planos", planosRoutes);
 app.use("/admin", adminRoutes);
+app.use("/assinaturas", assinaturasRoutes);
+db.run(`
+  CREATE TABLE IF NOT EXISTS sorrisa_assinatura_cobrancas (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    clinica_id INTEGER NOT NULL,
+    provedor TEXT NOT NULL,
+    provedor_pagamento_id TEXT NOT NULL UNIQUE,
+    provedor_assinatura_id TEXT,
+    plano TEXT NOT NULL,
+    ciclo TEXT NOT NULL,
+    valor REAL NOT NULL,
+    status TEXT NOT NULL,
+    checkout_url TEXT,
+    created_at TEXT DEFAULT (datetime('now','localtime')),
+    updated_at TEXT DEFAULT (datetime('now','localtime')),
+    FOREIGN KEY (clinica_id) REFERENCES clinicas(id)
+  )
+`);
+
 
 // Respostas consistentes para rotas inexistentes e erros inesperados.
 // Não expõe stack traces, caminhos locais ou detalhes internos da API.
