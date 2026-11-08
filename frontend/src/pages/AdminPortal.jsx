@@ -64,6 +64,7 @@ export default function AdminPortal() {
   const [notaSuporte, setNotaSuporte] = useState("");
   const [salvandoAcao, setSalvandoAcao] = useState(false);
   const [feedbackAcao, setFeedbackAcao] = useState("");
+  const [modalSuspensaoAberto, setModalSuspensaoAberto] = useState(false);
 
   async function carregarPainel(chave = token) {
     if (!chave) return;
@@ -143,6 +144,7 @@ export default function AdminPortal() {
         assinatura: payload.plano !== undefined ? { ...(atual.assinatura || {}), plano: corpo.clinica.plano } : atual.assinatura,
       } : atual);
       if (payload.plano !== undefined) setPlanoEditado("");
+      if (payload.status === "suspensa") setModalSuspensaoAberto(false);
       setFeedbackAcao("Alterações salvas com sucesso.");
       carregarPainel();
     } catch (e) { setFeedbackAcao(e.message || "Não foi possível concluir a ação."); }
@@ -305,7 +307,7 @@ export default function AdminPortal() {
                       <div className="admin-action-block">
                         <strong>Acesso à clínica</strong>
                         <p>Status atual: <span className={detalheClinica.clinica.status === "ativa" ? "admin-status-active" : "admin-status-suspended"}>{detalheClinica.clinica.status || "—"}</span></p>
-                        <button className="admin-secondary-button" type="button" disabled={salvandoAcao || detalheClinica.clinica.status === "cancelada"} onClick={() => { const suspender = detalheClinica.clinica.status !== "suspensa"; if (!suspender || window.confirm("Tem certeza de que deseja suspender o acesso desta clínica? Os usuários perderão o acesso ao sistema até a reativação.")) atualizarClinica({ status: suspender ? "suspensa" : "ativa" }); }}>{salvandoAcao ? "Salvando..." : detalheClinica.clinica.status === "suspensa" ? "Reativar clínica" : "Suspender acesso"}</button>
+                        <button className="admin-secondary-button" type="button" disabled={salvandoAcao || detalheClinica.clinica.status === "cancelada"} onClick={() => { if (detalheClinica.clinica.status === "suspensa") atualizarClinica({ status: "ativa" }); else setModalSuspensaoAberto(true); }}>{salvandoAcao ? "Salvando..." : detalheClinica.clinica.status === "suspensa" ? "Reativar clínica" : "Suspender acesso"}</button>
                       </div>
                       <form className="admin-action-block" onSubmit={(e) => { e.preventDefault(); atualizarClinica({ plano: planoEditado || detalheClinica.clinica.plano }); }}>
                         <label htmlFor="admin-clinic-plan">Plano cadastrado</label>
@@ -508,6 +510,19 @@ export default function AdminPortal() {
         </>}
         </>}
       </main>
+      {modalSuspensaoAberto && (
+        <div className="admin-modal-overlay" role="presentation" onMouseDown={(evento) => { if (evento.target === evento.currentTarget && !salvandoAcao) setModalSuspensaoAberto(false); }}>
+          <section className="admin-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="admin-suspend-title">
+            <div className="admin-confirm-icon"><Icone tipo="lock" size={22} /></div>
+            <h2 id="admin-suspend-title">Suspender acesso da clínica?</h2>
+            <p>Ao confirmar, todos os usuários desta clínica perderão o acesso à Sorrisa até que a clínica seja reativada.</p>
+            <div className="admin-confirm-actions">
+              <button className="admin-secondary-button" type="button" disabled={salvandoAcao} onClick={() => setModalSuspensaoAberto(false)}>Cancelar</button>
+              <button className="admin-primary-button admin-confirm-danger" type="button" disabled={salvandoAcao} onClick={() => atualizarClinica({ status: "suspensa" })}>{salvandoAcao ? "Suspendendo..." : "Confirmar suspensão"}</button>
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   );
 }
