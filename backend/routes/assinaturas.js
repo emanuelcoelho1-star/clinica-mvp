@@ -162,8 +162,8 @@ router.post("/checkout", async (req, res) => {
   const plano = PLANOS[planoEscolhido];
   const meioPagamento = String(req.body?.meioPagamento || "PIX").trim().toUpperCase();
   if (!plano) return res.status(400).json({ erro: "Selecione um plano válido." });
-  if (!["PIX", "BOLETO"].includes(meioPagamento)) {
-    return res.status(400).json({ erro: "Selecione Pix ou boleto. O pagamento por cartão será integrado em uma etapa segura separada." });
+  if (!["PIX", "BOLETO", "CARTAO"].includes(meioPagamento)) {
+    return res.status(400).json({ erro: "Selecione Pix, boleto ou cartão." });
   }
 
   db.get(
@@ -203,6 +203,9 @@ router.post("/checkout", async (req, res) => {
           });
           if (assinaturaAtual.provedor_assinatura_id && assinaturaAtual.status === "ativa") {
             return res.status(409).json({ erro: "Esta clínica já possui uma assinatura ativa. A alteração de plano será disponibilizada em uma etapa posterior." });
+          }
+          if (meioPagamento === "CARTAO" && assinaturaAtual.provedor_assinatura_id && assinaturaAtual.status === "pendente") {
+            return res.status(409).json({ erro: "Já existe uma assinatura com cobrança pendente por outra forma de pagamento. Conclua ou regularize essa cobrança antes de iniciar o cartão." });
           }
           if (assinaturaAtual.provedor_assinatura_id && assinaturaAtual.status === "pendente") {
             const cobrancas = await chamarAsaas(baseUrl, credenciais.apiKey, "/subscriptions/" + encodeURIComponent(assinaturaAtual.provedor_assinatura_id) + "/payments");
@@ -276,6 +279,49 @@ router.post("/checkout", async (req, res) => {
           } else {
             await chamarAsaas(baseUrl, credenciais.apiKey, "/customers/" + encodeURIComponent(clienteId), "PUT", {
               cpfCnpj: documento,
+            });
+          }
+
+          if (meioPagamento === "CARTAO") {
+            const externalReference = "sorrisa-checkout-" + crypto.randomUUID();
+            const urlPublica = String(process.env.APP_PUBLIC_URL || "https://sorrisa.com.br").replace(/\/$/, "");
+            const checkout = await chamarAsaas(baseUrl, credenciais.apiKey, "/checkouts", "POST", {
+              billingTypes: ["CREDIT_CARD"],
+              chargeTypes: ["RECURRENT"],
+              minutesToExpire: 60,
+              externalReference,
+              customer: clienteId,
+              callback: {
+                successUrl: urlPublica + "/assinatura?checkout=sucesso",
+                cancelUrl: urlPublica + "/assinatura?checkout=cancelado",
+                expiredUrl: urlPublica + "/assinatura?checkout=expirado"
+              },
+              items: [{
+                name: plano.descricao,
+                description: "Assinatura recorrente da plataforma Sorrisa",
+                quantity: 1,
+                value: plano.valor
+              }],
+              subscription: {
+                cycle: plano.ciclo,
+                nextDueDate: dataHoje()
+              }
+            });
+            if (!checkout.id) throw new Error("O Asaas não retornou o identificador do checkout.");
+            const checkoutUrl = "https://asaas.com/checkoutSession/show?id=" + encodeURIComponent(checkout.id);
+            await new Promise((resolve, reject) => {
+              db.run(
+                `INSERT INTO sorrisa_asaas_checkouts
+                 (clinica_id, checkout_id, external_reference, customer_id, plano, ciclo, valor, status, checkout_url)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, 'criado', ?)`,
+                [req.user.clinica_id, checkout.id, externalReference, clienteId, "sorrisa_completo_" + planoEscolhido, planoEscolhido, plano.valor, checkoutUrl],
+                (saveCheckoutErr) => saveCheckoutErr ? reject(saveCheckoutErr) : resolve()
+              );
+            });
+            return res.json({
+              sucesso: true,
+              mensagem: "Checkout seguro criado no Asaas. Conclua o pagamento na página protegida do provedor.",
+              pagamento: { tipo: "CARTAO", checkoutUrl, valor: plano.valor, ciclo: planoEscolhido, checkoutId: checkout.id }
             });
           }
 
