@@ -37,6 +37,12 @@ function dataHoje() {
   return valores.year + "-" + valores.month + "-" + valores.day;
 }
 
+function dataMinimaBoleto() {
+  const [ano, mes, dia] = dataHoje().split("-").map(Number);
+  const amanha = new Date(Date.UTC(ano, mes - 1, dia + 1));
+  return amanha.toISOString().slice(0, 10);
+}
+
 async function chamarAsaas(baseUrl, apiKey, caminho, metodo = "GET", body) {
   const resposta = await fetch(baseUrl + caminho, {
     method: metodo,
@@ -198,7 +204,9 @@ router.post("/checkout", async (req, res) => {
                   {
                     billingType: meioPagamento,
                     value: Number(pagamentoPendente.value),
-                    dueDate: pagamentoPendente.dueDate || dataHoje(),
+                    dueDate: meioPagamento === "BOLETO"
+                      ? dataMinimaBoleto()
+                      : (pagamentoPendente.dueDate || dataHoje()),
                   }
                 );
                 pagamentoPendente = await chamarAsaas(
@@ -253,7 +261,7 @@ router.post("/checkout", async (req, res) => {
             customer: clienteId,
             billingType: meioPagamento,
             value: plano.valor,
-            nextDueDate: dataHoje(),
+            nextDueDate: meioPagamento === "BOLETO" ? dataMinimaBoleto() : dataHoje(),
             cycle: plano.ciclo,
             description: plano.descricao,
             externalReference: "sorrisa-clinica-" + clinica.id + "-" + planoEscolhido,
