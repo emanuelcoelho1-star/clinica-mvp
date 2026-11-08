@@ -62,19 +62,10 @@ function verificarAcessoAssinatura(clinicaId, callback) {
               [clinicaId],
               (subscriptionErr) => {
                 if (subscriptionErr) return callback(subscriptionErr);
-                db.run(
-                  `UPDATE clinicas
-                   SET status = 'suspensa', updated_at = datetime('now', 'localtime')
-                   WHERE id = ? AND status = 'ativa'`,
-                  [clinicaId],
-                  (clinicErr) => {
-                    if (clinicErr) return callback(clinicErr);
-                    return callback(null, {
-                      permitido: false,
-                      mensagem: MENSAGEM_ASSINATURA_EXPIRADA,
-                    });
-                  }
-                );
+                return callback(null, {
+                  permitido: false,
+                  mensagem: MENSAGEM_ASSINATURA_EXPIRADA,
+                });
               }
             );
           });
