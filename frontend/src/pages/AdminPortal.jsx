@@ -142,6 +142,7 @@ export default function AdminPortal() {
         ...atual, clinica: { ...atual.clinica, ...corpo.clinica },
         assinatura: payload.plano !== undefined ? { ...(atual.assinatura || {}), plano: corpo.clinica.plano } : atual.assinatura,
       } : atual);
+      if (payload.plano !== undefined) setPlanoEditado("");
       setFeedbackAcao("Alterações salvas com sucesso.");
       carregarPainel();
     } catch (e) { setFeedbackAcao(e.message || "Não foi possível concluir a ação."); }
@@ -304,7 +305,7 @@ export default function AdminPortal() {
                       <div className="admin-action-block">
                         <strong>Acesso à clínica</strong>
                         <p>Status atual: <span className={detalheClinica.clinica.status === "ativa" ? "admin-status-active" : "admin-status-suspended"}>{detalheClinica.clinica.status || "—"}</span></p>
-                        <button className={detalheClinica.clinica.status === "suspensa" ? "admin-primary-button" : "admin-secondary-button"} type="button" disabled={salvandoAcao || detalheClinica.clinica.status === "cancelada"} onClick={() => atualizarClinica({ status: detalheClinica.clinica.status === "suspensa" ? "ativa" : "suspensa" })}>{salvandoAcao ? "Salvando..." : detalheClinica.clinica.status === "suspensa" ? "Reativar clínica" : "Suspender acesso"}</button>
+                        <button className={detalheClinica.clinica.status === "suspensa" ? "admin-primary-button" : "admin-secondary-button"} type="button" disabled={salvandoAcao || detalheClinica.clinica.status === "cancelada"} onClick={() => { const suspender = detalheClinica.clinica.status !== "suspensa"; if (!suspender || window.confirm("Tem certeza de que deseja suspender o acesso desta clínica? Os usuários perderão o acesso ao sistema até a reativação.")) atualizarClinica({ status: suspender ? "suspensa" : "ativa" }); }}>{salvandoAcao ? "Salvando..." : detalheClinica.clinica.status === "suspensa" ? "Reativar clínica" : "Suspender acesso"}</button>
                       </div>
                       <form className="admin-action-block" onSubmit={(e) => { e.preventDefault(); atualizarClinica({ plano: planoEditado || detalheClinica.clinica.plano }); }}>
                         <label htmlFor="admin-clinic-plan">Plano cadastrado</label>
