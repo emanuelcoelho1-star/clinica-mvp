@@ -85,34 +85,3 @@ button.sorrisa-subscription-method{cursor:pointer}
 @media(max-width:520px){.sorrisa-subscription-missing-content ul{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.sorrisa-subscription *{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
 
-
-/* Alinhamento central de toda a aba de assinatura */
-.sorrisa-subscription{width:100%;max-width:920px;margin-inline:auto;align-items:center;text-align:center}
-.sorrisa-subscription-heading{width:100%;justify-content:center;flex-direction:column;text-align:center}
-.sorrisa-subscription-heading>div{width:100%}
-.sorrisa-subscription-current{width:100%;justify-content:center;flex-direction:column;text-align:center}
-.sorrisa-subscription-current>div{align-items:center}
-.sorrisa-subscription-plans{width:100%}
-.sorrisa-subscription-plan{align-items:center;text-align:center}
-.sorrisa-subscription-plan-top{justify-content:center;flex-wrap:wrap}
-.sorrisa-subscription-payment-methods{width:100%;align-items:center;text-align:center}
-.sorrisa-subscription-payment-heading{align-items:center;text-align:center}
-.sorrisa-subscription-method-grid{width:100%}
-.sorrisa-subscription-method{align-items:center;text-align:center}
-.sorrisa-subscription-includes{width:100%;align-items:center;text-align:center}
-.sorrisa-subscription-includes span{justify-content:center}
-.sorrisa-subscription-actions{width:100%;justify-content:center}
-.sorrisa-subscription-alert{width:100%;text-align:center}
-.sorrisa-subscription-footnote,.sorrisa-subscription-muted{text-align:center}
-.sorrisa-subscription-payment-result-heading{justify-content:center;text-align:center}
-.sorrisa-subscription-payment-result-heading>div{align-items:center}
-.sorrisa-subscription-pix{justify-items:center;text-align:center}
-.sorrisa-subscription-copy-area,.sorrisa-subscription-boleto{align-items:center;text-align:center;width:100%}
-.sorrisa-subscription-copy-area textarea,.sorrisa-subscription-boleto textarea{text-align:center}
-.sorrisa-subscription-missing-content{align-items:center;text-align:center}
-.sorrisa-subscription-missing-content ul{text-align:left}
-.sorrisa-subscription-modal-heading{justify-content:center;text-align:center}
-.sorrisa-subscription-modal-heading>div{align-items:center}
-.sorrisa-subscription-payment-modal .sorrisa-subscription-payment-result{align-items:center;text-align:center}
-.sorrisa-subscription-payment-modal .sorrisa-subscription-footnote{text-align:center}
-@media(max-width:760px){.sorrisa-subscription-method-grid{grid-template-columns:1fr}.sorrisa-subscription-method{align-items:center;text-align:center}}
