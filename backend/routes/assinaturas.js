@@ -259,13 +259,48 @@ router.post("/checkout", async (req, res) => {
             return res.status(400).json({ erro: "Para gerar a cobrança, informe um CPF com 11 números ou um CNPJ com 14 números em Configurações → Clínica." });
           }
 
+          const telefoneAsaas = String(clinica.telefone || "").replace(/\D/g, "");
+          const enderecoAsaas = {
+            phone: telefoneAsaas || undefined,
+            address: String(clinica.rua || "").trim() || undefined,
+            addressNumber: String(clinica.numero || "").trim() || undefined,
+            postalCode: String(clinica.cep || "").replace(/\D/g, "") || undefined,
+            province: String(clinica.bairro || "").trim() || undefined,
+            city: String(clinica.cidade || "").trim() || undefined,
+          };
+
+          if (meioPagamento === "CARTAO") {
+            const camposObrigatorios = [
+              ["phone", enderecoAsaas.phone, "telefone"],
+              ["address", enderecoAsaas.address, "rua/avenida"],
+              ["addressNumber", enderecoAsaas.addressNumber, "número"],
+              ["postalCode", enderecoAsaas.postalCode, "CEP"],
+              ["province", enderecoAsaas.province, "bairro"],
+              ["city", enderecoAsaas.city, "cidade"],
+            ];
+            const faltantes = camposObrigatorios
+              .filter(([, valor]) => !valor)
+              .map(([, , rotulo]) => rotulo);
+            if (faltantes.length) {
+              return res.status(400).json({
+                erro: "Para pagar com cartão, complete os seguintes dados em Configurações → Clínica: " + faltantes.join(", ") + ".",
+              });
+            }
+            if (enderecoAsaas.postalCode.length !== 8) {
+              return res.status(400).json({ erro: "Informe um CEP válido com 8 números em Configurações → Clínica." });
+            }
+          }
+
           let clienteId = assinaturaAtual.provedor_cliente_id;
+          const dadosClienteAsaas = {
+            name: String(clinica.nome_fantasia || clinica.nome).slice(0, 100),
+            email: String(clinica.email_contato || clinica.email_usuario || "").trim() || undefined,
+            cpfCnpj: documento,
+            ...enderecoAsaas,
+          };
           if (!clienteId) {
             const cliente = await chamarAsaas(baseUrl, credenciais.apiKey, "/customers", "POST", {
-              name: String(clinica.nome_fantasia || clinica.nome).slice(0, 100),
-              email: String(clinica.email_contato || clinica.email_usuario || "").trim() || undefined,
-              phone: String(clinica.telefone || "").replace(/\D/g, "") || undefined,
-              cpfCnpj: documento,
+              ...dadosClienteAsaas,
               externalReference: "sorrisa-clinica-" + clinica.id,
             });
             clienteId = cliente.id;
@@ -277,9 +312,7 @@ router.post("/checkout", async (req, res) => {
               );
             });
           } else {
-            await chamarAsaas(baseUrl, credenciais.apiKey, "/customers/" + encodeURIComponent(clienteId), "PUT", {
-              cpfCnpj: documento,
-            });
+            await chamarAsaas(baseUrl, credenciais.apiKey, "/customers/" + encodeURIComponent(clienteId), "PUT", dadosClienteAsaas);
           }
 
           if (meioPagamento === "CARTAO") {
