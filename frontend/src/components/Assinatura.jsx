@@ -122,11 +122,11 @@ export default function Assinatura({ administrador = false }) {
               <strong>Boleto</strong>
               <small>Linha digitável e documento</small>
             </button>
-            <div className="sorrisa-subscription-method is-disabled" aria-disabled="true">
+            <button type="button" className={"sorrisa-subscription-method " + (meioPagamento === "CARTAO" ? "selected" : "")} onClick={() => { setMeioPagamento("CARTAO"); setPagamento(null); }}>
               <span className="sorrisa-subscription-method-icon">▣</span>
-              <strong>Cartão</strong>
-              <small>Integração segura em preparação</small>
-            </div>
+              <strong>Cartão de crédito</strong>
+              <small>Cobrança recorrente segura</small>
+            </button>
           </div>
         </div>
       )}
@@ -143,7 +143,7 @@ export default function Assinatura({ administrador = false }) {
             <div className="sorrisa-subscription-modal-heading">
               <div>
                 <span className="sorrisa-subscription-eyebrow">Pagamento da assinatura</span>
-                <h3 id="sorrisa-payment-modal-title">{pagamento.tipo === "PIX" ? "Pague com Pix" : "Pague com boleto"}</h3>
+                <h3 id="sorrisa-payment-modal-title">{pagamento.tipo === "PIX" ? "Pague com Pix" : pagamento.tipo === "BOLETO" ? "Pague com boleto" : "Finalize com cartão"}</h3>
               </div>
               <button type="button" className="sorrisa-subscription-modal-close" aria-label="Fechar pagamento" onClick={() => setPagamento(null)}>×</button>
             </div>
@@ -163,6 +163,12 @@ export default function Assinatura({ administrador = false }) {
                 <textarea id="sorrisa-pix-code" readOnly value={pagamento.pix?.copiaECola || ""} rows={3} />
                 <button type="button" className="sorrisa-subscription-secondary" disabled={!pagamento.pix?.copiaECola} onClick={() => navigator.clipboard?.writeText(pagamento.pix.copiaECola).then(() => setMensagem("Código Pix copiado."), () => setErro("Não foi possível copiar automaticamente. Selecione e copie o código."))}>Copiar código Pix</button>
               </div>
+            </div>
+          )}
+          {pagamento.tipo === "CARTAO" && (
+            <div className="sorrisa-subscription-boleto">
+              <p>Você será direcionado à página protegida do Asaas para informar os dados do cartão. A Sorrisa não recebe nem armazena os dados do cartão.</p>
+              <a className="sorrisa-subscription-primary sorrisa-subscription-checkout-link" href={pagamento.checkoutUrl} target="_blank" rel="noopener noreferrer">Ir para pagamento seguro</a>
             </div>
           )}
           {pagamento.tipo === "BOLETO" && (
@@ -191,7 +197,7 @@ export default function Assinatura({ administrador = false }) {
         <p className="sorrisa-subscription-muted">Somente o administrador da clínica pode contratar ou alterar o plano.</p>
       )}
 
-      <p className="sorrisa-subscription-footnote">Ambiente de testes: nenhuma cobrança real será realizada enquanto o provedor estiver configurado como Sandbox. Pix e boleto são exibidos nesta tela. A integração segura de cartão e a confirmação automática por webhook serão concluídas em etapas seguintes.</p>
+      <p className="sorrisa-subscription-footnote">Ambiente de testes: nenhuma cobrança real será realizada enquanto o provedor estiver configurado como Sandbox. O cartão é processado na página segura do Asaas; a liberação do acesso depende da confirmação do pagamento pelo webhook.</p>
     </section>
   );
 }
