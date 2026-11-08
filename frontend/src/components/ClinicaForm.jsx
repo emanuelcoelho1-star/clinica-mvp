@@ -8,6 +8,7 @@ const SECOES = [
     { name: "nome_fantasia", label: "Nome fantasia" },
     { name: "razao_social", label: "Razão social" },
     { name: "cnpj", label: "CNPJ", placeholder: "00.000.000/0000-00" },
+    { name: "cpf", label: "CPF do titular", placeholder: "000.000.000-00" },
   ]},
   { titulo: "Contato", descricao: "Canais de contato que poderão aparecer nos documentos.", campos: [
     { name: "email_contato", label: "E-mail de contato", type: "email" },
@@ -31,7 +32,7 @@ const SECOES = [
 ];
 
 const DADOS_INICIAIS = {
-  nome: "", nome_fantasia: "", razao_social: "", cnpj: "", email_contato: "",
+  nome: "", nome_fantasia: "", razao_social: "", cnpj: "", cpf: "", email_contato: "",
   telefone: "", telefone_secundario: "", cep: "", rua: "", numero: "",
   complemento: "", bairro: "", cidade: "", estado: "", responsavel_tecnico: "",
   cro: "", site: "", logo_url: "",
@@ -175,6 +176,7 @@ export default function ClinicaForm({ onComplete, modoOnboarding = false }) {
                 <div><h2 style={S.sectionTitle}>{secao.titulo}</h2><p style={S.sectionDescription}>{secao.descricao}</p></div>
               </div>
               <div style={S.grid}>
+                {indice === 0 && <p style={{ gridColumn: "1 / -1", margin: "0 0 2px", fontSize: 12, lineHeight: 1.5, color: "var(--text-secondary, #64748b)" }}>Para a assinatura da Sorrisa, informe apenas um documento: CNPJ da clínica ou CPF do titular.</p>}
                 {secao.campos.map((campo) => (
                   <label key={campo.name} style={{ ...S.field, ...(campo.wide ? S.wide : {}) }}>
                     <span style={S.label}>{campo.label}</span>
