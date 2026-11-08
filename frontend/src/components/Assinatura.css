@@ -66,7 +66,7 @@ button.sorrisa-subscription-method{cursor:pointer}
 @keyframes sorrisaPaymentModalIn{from{opacity:0;transform:translateY(8px) scale(.99)}to{opacity:1;transform:translateY(0) scale(1)}}
 @media(max-width:600px){.sorrisa-subscription-modal-backdrop{align-items:flex-end;padding:10px}.sorrisa-subscription-payment-modal{max-height:92vh;padding:18px;border-radius:16px 16px 12px 12px}.sorrisa-subscription-payment-modal .sorrisa-subscription-pix{grid-template-columns:1fr}}
 
-.sorrisa-subscription-checkout-link{display:inline-flex;align-items:center;justify-content:center;align-self:flex-start;text-decoration:none}
+.sorrisa-subscription-checkout-link{display:flex;align-items:center;justify-content:center;align-self:center;width:min(100%,320px);min-height:48px;padding:14px 24px;text-align:center;text-decoration:none;font-size:14px;font-weight:750;letter-spacing:.01em;border-radius:11px;box-shadow:0 6px 18px color-mix(in srgb,var(--accent) 30%,transparent);transition:transform .18s ease,box-shadow .18s ease,filter .18s ease}.sorrisa-subscription-checkout-link:hover{filter:brightness(1.08);transform:translateY(-2px);box-shadow:0 9px 24px color-mix(in srgb,var(--accent) 38%,transparent)}.sorrisa-subscription-checkout-link:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 45%,transparent);outline-offset:3px}
 
 .sorrisa-subscription-missing-content{display:flex;flex-direction:column;align-items:flex-start;gap:12px}
 .sorrisa-subscription-missing-content>p{margin:0;color:var(--text-secondary);font-size:13px;line-height:1.6}
