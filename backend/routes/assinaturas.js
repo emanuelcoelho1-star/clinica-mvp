@@ -62,7 +62,7 @@ async function chamarAsaas(baseUrl, apiKey, caminho, metodo = "GET", body) {
 
 function carregarContexto(clinicaId, callback) {
   db.get(
-    `SELECT c.id, c.nome, c.nome_fantasia, c.cnpj, c.email_contato, c.telefone,
+    `SELECT c.id, c.nome, c.nome_fantasia, c.cnpj, c.cpf, c.email_contato, c.telefone,
             c.status AS clinica_status, s.provedor, s.provedor_cliente_id,
             s.provedor_assinatura_id, s.status AS assinatura_status, s.plano,
             s.periodo_fim, u.email AS email_usuario
@@ -150,13 +150,23 @@ router.post("/checkout", async (req, res) => {
             return res.status(409).json({ erro: "Já existe uma assinatura em processamento. Aguarde a geração da cobrança antes de tentar novamente." });
           }
 
+          const cnpj = String(clinica.cnpj || "").replace(/\D/g, "");
+          const cpf = String(clinica.cpf || "").replace(/\D/g, "");
+          if (cnpj && cpf) {
+            return res.status(400).json({ erro: "Preencha somente um documento para a cobrança: CPF ou CNPJ." });
+          }
+          const documento = cnpj || cpf;
+          if (![11, 14].includes(documento.length)) {
+            return res.status(400).json({ erro: "Para gerar a cobrança, informe um CPF com 11 números ou um CNPJ com 14 números em Configurações → Clínica." });
+          }
+
           let clienteId = assinaturaAtual.provedor_cliente_id;
           if (!clienteId) {
             const cliente = await chamarAsaas(baseUrl, credenciais.apiKey, "/customers", "POST", {
               name: String(clinica.nome_fantasia || clinica.nome).slice(0, 100),
               email: String(clinica.email_contato || clinica.email_usuario || "").trim() || undefined,
               phone: String(clinica.telefone || "").replace(/\D/g, "") || undefined,
-              cpfCnpj: String(clinica.cnpj || "").replace(/\D/g, "") || undefined,
+              cpfCnpj: documento,
               externalReference: "sorrisa-clinica-" + clinica.id,
             });
             clienteId = cliente.id;
