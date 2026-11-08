@@ -72,6 +72,7 @@ function copiarPlanoParticularPadrao(clinicaDestinoId, callback) {
 }
 
 const db = require("../database");
+const verificarAcessoAssinatura = require("../services/assinaturas");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const rateLimit = require("express-rate-limit");
@@ -178,7 +179,7 @@ router.post("/register", registerLimiter, async (req, res) => {
             if (roleErr || !role) return rollback(503, "Perfil Administrador indisponível. Reinicie a API e tente novamente.");
 
             db.run(
-              "INSERT INTO clinicas (nome, slug, plano, status, trial_ate) VALUES (?, ?, 'trial', 'ativa', date('now', '+14 days'))",
+              "INSERT INTO clinicas (nome, slug, plano, status, trial_ate) VALUES (?, ?, 'trial', 'ativa', datetime('now', '+7 days'))",
               [`${nomeNormalizado} - Clínica`, slug],
               function (clinicErr) {
                 if (clinicErr) {
@@ -198,7 +199,7 @@ router.post("/register", registerLimiter, async (req, res) => {
                     const usuarioId = this.lastID;
 
                     db.run(
-                      "INSERT INTO assinaturas (clinica_id, plano, status, periodo_inicio, periodo_fim) VALUES (?, 'trial', 'trial', date('now'), date('now', '+14 days'))",
+                      "INSERT INTO assinaturas (clinica_id, plano, status, periodo_inicio, periodo_fim) VALUES (?, 'trial', 'trial', datetime('now'), datetime('now', '+7 days'))",
                       [clinicaId],
                       (subscriptionErr) => {
                         if (subscriptionErr) return rollback(500, "Erro ao preparar o período de teste.");
@@ -278,19 +279,29 @@ router.post("/login", loginLimiter, (req, res) => {
           return res.status(403).json({ erro: "O perfil de acesso não pertence a esta clínica." });
         }
 
-        const token = jwt.sign(
-          { id: user.id, nome: user.nome, email: user.email },
-          SECRET,
-          { expiresIn: "24h" }
-        );
+        verificarAcessoAssinatura(user.clinica_id, (assinaturaErr, acesso) => {
+          if (assinaturaErr) {
+            console.error("Falha ao validar assinatura no login:", assinaturaErr.message);
+            return res.status(500).json({ erro: "Não foi possível validar a assinatura da clínica." });
+          }
+          if (!acesso.permitido) {
+            return res.status(403).json({ erro: acesso.mensagem });
+          }
 
-        res.json({
-          token,
-          usuario: {
-            id: user.id,
-            nome: user.nome || "Administrador",
-            email: emailParaExibicao(user.email),
-          },
+          const token = jwt.sign(
+            { id: user.id, nome: user.nome, email: user.email },
+            SECRET,
+            { expiresIn: "24h" }
+          );
+
+          return res.json({
+            token,
+            usuario: {
+              id: user.id,
+              nome: user.nome || "Administrador",
+              email: emailParaExibicao(user.email),
+            },
+          });
         });
       }
     );
