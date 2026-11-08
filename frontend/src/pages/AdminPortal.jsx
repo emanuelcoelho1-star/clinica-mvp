@@ -104,6 +104,9 @@ export default function AdminPortal() {
       return;
     }
     let ativo = true;
+    setPlanoEditado("");
+    setNotaSuporte("");
+    setFeedbackAcao("");
     async function carregarDetalhe() {
       setDetalheClinica(null);
       setCarregandoDetalhe(true);
