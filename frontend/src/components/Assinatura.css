@@ -27,3 +27,31 @@
 .sorrisa-subscription-link{font-size:13px;color:var(--accent);font-weight:600;text-decoration:none}
 .sorrisa-subscription-footnote{margin:0;color:var(--text-muted);font-size:11px;line-height:1.6}
 @media(max-width:640px){.sorrisa-subscription-heading{flex-direction:column}.sorrisa-subscription-plans{grid-template-columns:1fr}}
+
+.sorrisa-subscription-payment-methods{display:flex;flex-direction:column;gap:12px}
+.sorrisa-subscription-payment-heading{display:flex;flex-direction:column;gap:5px}
+.sorrisa-subscription-payment-heading strong{font-size:14px}
+.sorrisa-subscription-payment-heading span{font-size:12px;color:var(--text-muted)}
+.sorrisa-subscription-method-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.sorrisa-subscription-method{display:flex;flex-direction:column;align-items:flex-start;gap:7px;min-height:108px;padding:15px;border:1px solid var(--border-primary);border-radius:12px;background:var(--bg-card);color:var(--text-primary);text-align:left}
+button.sorrisa-subscription-method{cursor:pointer}
+.sorrisa-subscription-method.selected{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 13%,transparent)}
+.sorrisa-subscription-method-icon{font-size:22px;color:var(--accent)}
+.sorrisa-subscription-method strong{font-size:13px}
+.sorrisa-subscription-method small{font-size:11px;color:var(--text-muted)}
+.sorrisa-subscription-method.is-disabled{opacity:.55}
+.sorrisa-subscription-payment-result{display:flex;flex-direction:column;gap:16px;padding:18px;border:1px solid var(--border-primary);border-radius:14px;background:var(--bg-card)}
+.sorrisa-subscription-payment-result-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.sorrisa-subscription-payment-result-heading>div{display:flex;flex-direction:column;gap:5px}
+.sorrisa-subscription-payment-result-heading strong{font-size:15px}
+.sorrisa-subscription-payment-result-heading span{font-size:12px;color:var(--text-muted)}
+.sorrisa-subscription-pending{padding:5px 9px;border-radius:999px;background:var(--bg-badge);white-space:nowrap}
+.sorrisa-subscription-pix{display:grid;grid-template-columns:minmax(160px,220px) minmax(0,1fr);gap:20px;align-items:center}
+.sorrisa-subscription-qr{display:block;width:100%;max-width:220px;aspect-ratio:1;object-fit:contain;padding:8px;background:#fff;border-radius:10px}
+.sorrisa-subscription-copy-area,.sorrisa-subscription-boleto{display:flex;flex-direction:column;gap:9px;min-width:0}
+.sorrisa-subscription-copy-area label,.sorrisa-subscription-boleto label{font-size:12px;font-weight:650}
+.sorrisa-subscription-copy-area textarea,.sorrisa-subscription-boleto textarea{width:100%;resize:vertical;padding:10px;border:1px solid var(--border-primary);border-radius:8px;background:var(--bg-main);color:var(--text-primary);font:12px/1.5 monospace;overflow-wrap:anywhere}
+.sorrisa-subscription-secondary{align-self:flex-start;padding:9px 13px;border:1px solid var(--border-primary);border-radius:8px;background:var(--bg-card);color:var(--text-primary);font-size:12px;font-weight:650;cursor:pointer}
+.sorrisa-subscription-secondary:disabled{opacity:.5;cursor:not-allowed}
+.sorrisa-subscription-boleto-frame{width:100%;height:560px;border:1px solid var(--border-primary);border-radius:10px;background:#fff}
+@media(max-width:700px){.sorrisa-subscription-method-grid{grid-template-columns:1fr}.sorrisa-subscription-pix{grid-template-columns:1fr}.sorrisa-subscription-qr{margin:0 auto}.sorrisa-subscription-payment-result-heading{flex-direction:column}}
