@@ -74,7 +74,7 @@ async function ativarCobrancaConfirmada(paymentId) {
   const statusPagamento = String(pagamento.status || "").toUpperCase();
 
   if (!["CONFIRMED", "RECEIVED"].includes(statusPagamento)) {
-    return { confirmado: false, motivo: "O Asaas ainda não informa o pagamento como confirmado." };
+    throw new Error("O Asaas ainda não confirma o pagamento consultado; a notificação poderá ser processada novamente.");
   }
 
   let cobranca = await consultar(
