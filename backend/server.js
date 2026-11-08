@@ -139,6 +139,25 @@ db.run(`
 `);
 
 db.run(`
+  CREATE TABLE IF NOT EXISTS sorrisa_asaas_checkouts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    clinica_id INTEGER NOT NULL,
+    checkout_id TEXT NOT NULL UNIQUE,
+    external_reference TEXT NOT NULL UNIQUE,
+    customer_id TEXT NOT NULL,
+    plano TEXT NOT NULL,
+    ciclo TEXT NOT NULL,
+    valor REAL NOT NULL,
+    status TEXT NOT NULL DEFAULT 'criado',
+    checkout_url TEXT NOT NULL,
+    provedor_assinatura_id TEXT,
+    created_at TEXT DEFAULT (datetime('now','localtime')),
+    updated_at TEXT DEFAULT (datetime('now','localtime')),
+    FOREIGN KEY (clinica_id) REFERENCES clinicas(id)
+  )
+`);
+
+db.run(`
   CREATE TABLE IF NOT EXISTS sorrisa_asaas_webhook_eventos (
     evento_id TEXT PRIMARY KEY,
     evento TEXT NOT NULL,
