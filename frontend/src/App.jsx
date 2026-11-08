@@ -341,7 +341,7 @@ function TopBar({ acesso }) {
         {/* 1. Logo */}
         <Link to="/" style={S.brand}>
           <div style={S.brandIcon}>{LogoIcon}</div>
-          <span className="topbar-brand-name" style={S.brandName}>OdontoPro</span>
+          <span className="topbar-brand-name" style={S.brandName}>Sorrisa</span>
         </Link>
 
         {/* 2. Divider */}
