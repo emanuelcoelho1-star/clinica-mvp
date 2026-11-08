@@ -292,9 +292,9 @@ router.post("/checkout", async (req, res) => {
               externalReference,
               customer: clienteId,
               callback: {
-                successUrl: urlPublica + "/assinatura?checkout=sucesso",
-                cancelUrl: urlPublica + "/assinatura?checkout=cancelado",
-                expiredUrl: urlPublica + "/assinatura?checkout=expirado"
+                successUrl: urlPublica + "/?checkout=sucesso",
+                cancelUrl: urlPublica + "/?checkout=cancelado",
+                expiredUrl: urlPublica + "/?checkout=expirado"
               },
               items: [{
                 name: plano.descricao,
@@ -308,7 +308,9 @@ router.post("/checkout", async (req, res) => {
               }
             });
             if (!checkout.id) throw new Error("O Asaas não retornou o identificador do checkout.");
-            const checkoutUrl = "https://asaas.com/checkoutSession/show?id=" + encodeURIComponent(checkout.id);
+            const checkoutUrl = checkout.link || (config.ambiente === "sandbox"
+              ? "https://sandbox.asaas.com/checkoutSession/show/" + encodeURIComponent(checkout.id)
+              : "https://asaas.com/checkoutSession/show?id=" + encodeURIComponent(checkout.id));
             await new Promise((resolve, reject) => {
               db.run(
                 `INSERT INTO sorrisa_asaas_checkouts
