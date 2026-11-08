@@ -11,6 +11,7 @@ import CadastroClinica from "./pages/CadastroClinica";
 import Financeiro from "./pages/Financeiro";
 import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
 import API_URL from "./api";
+import AdminPortal from "./pages/AdminPortal";
 
 const SESSION_IDLE_LIMIT_MS = 12 * 60 * 60 * 1000;
 const SESSION_ACTIVITY_KEY = "sorrisa_last_activity";
@@ -546,6 +547,8 @@ function Layout() {
    APP
    ═══════════════════════════════════════════════════════════ */
 function App() {
+  if (window.location.pathname.startsWith("/administracao")) return <AdminPortal />;
+
   const token = localStorage.getItem("token");
   const autenticado = isTokenValid(token);
 
