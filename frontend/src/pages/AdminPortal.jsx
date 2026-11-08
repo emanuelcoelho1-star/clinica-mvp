@@ -19,6 +19,8 @@ const formatarBytes = (bytes = 0) => {
 };
 
 const dataBR = (valor) => valor ? new Date(String(valor).replace(" ", "T")).toLocaleDateString("pt-BR") : "—";
+const dataHoraBR = (valor) => valor ? new Date(String(valor).replace(" ", "T")).toLocaleString("pt-BR") : "—";
+const bytesBR = (valor = 0) => formatarBytes(valor);
 
 function Icone({ tipo, size = 18 }) {
   const comum = { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round", strokeLinejoin: "round" };
@@ -57,7 +59,7 @@ export default function AdminPortal() {
   const [detalheClinica, setDetalheClinica] = useState(null);
   const [carregandoDetalhe, setCarregandoDetalhe] = useState(false);
   const [erroDetalhe, setErroDetalhe] = useState("");
-  const [abaDetalhe, setAbaDetalhe] = useState("dados");
+  const [abaDetalhe, setAbaDetalhe] = useState("visao-geral");
 
   async function carregarPainel(chave = token) {
     if (!chave) return;
@@ -120,7 +122,7 @@ export default function AdminPortal() {
   }, [token, clinicaSelecionada]);
 
   function abrirClinica(id) {
-    setAbaDetalhe("dados");
+    setAbaDetalhe("visao-geral");
     window.history.pushState({ adminPage: "clinica", clinicId: id }, "", "/administracao/clinicas/" + id);
     setClinicaSelecionada(Number(id));
   }
@@ -226,7 +228,7 @@ export default function AdminPortal() {
                 <button className="admin-back-button" type="button" onClick={voltarParaClinicas}><Icone tipo="arrow" size={15} /> Voltar para clínicas</button>
                 <div className="admin-eyebrow">DETALHES DA CLÍNICA</div>
                 <h1>{detalheClinica?.clinica?.nome || "Clínica"}</h1>
-                <p>Informações cadastrais e usuários vinculados a esta clínica.</p>
+                <p>Acompanhe os dados, a utilização e a situação operacional desta clínica.</p>
               </div>
               <span className="admin-detail-id">#{clinicaSelecionada}</span>
             </div>
@@ -236,13 +238,33 @@ export default function AdminPortal() {
             ) : detalheClinica ? (
               <>
                 <nav className="admin-detail-tabs" aria-label="Seções dos detalhes da clínica">
-                  <button type="button" className={abaDetalhe === "dados" ? "active" : ""} onClick={() => setAbaDetalhe("dados")}>
-                    <Icone tipo="clinic" size={16} /> Dados da clínica
-                  </button>
-                  <button type="button" className={abaDetalhe === "usuarios" ? "active" : ""} onClick={() => setAbaDetalhe("usuarios")}>
-                    <Icone tipo="users" size={16} /> Usuários cadastrados
-                  </button>
+                  <button type="button" className={abaDetalhe === "visao-geral" ? "active" : ""} onClick={() => setAbaDetalhe("visao-geral")}><Icone tipo="grid" size={16} /> Visão geral</button>
+                  <button type="button" className={abaDetalhe === "dados" ? "active" : ""} onClick={() => setAbaDetalhe("dados")}><Icone tipo="clinic" size={16} /> Dados da clínica</button>
+                  <button type="button" className={abaDetalhe === "usuarios" ? "active" : ""} onClick={() => setAbaDetalhe("usuarios")}><Icone tipo="users" size={16} /> Usuários</button>
+                  <button type="button" className={abaDetalhe === "assinatura" ? "active" : ""} onClick={() => setAbaDetalhe("assinatura")}><Icone tipo="check" size={16} /> Assinatura</button>
+                  <button type="button" className={abaDetalhe === "utilizacao" ? "active" : ""} onClick={() => setAbaDetalhe("utilizacao")}><Icone tipo="storage" size={16} /> Utilização</button>
+                  <button type="button" className={abaDetalhe === "atividades" ? "active" : ""} onClick={() => setAbaDetalhe("atividades")}><Icone tipo="clock" size={16} /> Atividades</button>
                 </nav>
+                {abaDetalhe === "visao-geral" && <section className="admin-detail-overview">
+                  <div className="admin-detail-metrics">
+                    <article className="admin-stat-card"><div className="admin-stat-label">Usuários cadastrados</div><div className="admin-stat-value">{detalheClinica.usuarios.length}</div><div className="admin-stat-foot">Contas vinculadas à clínica</div></article>
+                    <article className="admin-stat-card"><div className="admin-stat-label">Pacientes</div><div className="admin-stat-value">{detalheClinica.utilizacao?.pacientes ?? 0}</div><div className="admin-stat-foot">Cadastros na clínica</div></article>
+                    <article className="admin-stat-card"><div className="admin-stat-label">Consultas</div><div className="admin-stat-value">{detalheClinica.utilizacao?.consultas ?? 0}</div><div className="admin-stat-foot">Registros de agenda</div></article>
+                    <article className="admin-stat-card"><div className="admin-stat-label">Armazenamento</div><div className="admin-stat-value admin-stat-storage">{bytesBR(detalheClinica.utilizacao?.armazenamento_bytes)}</div><div className="admin-stat-foot">Arquivos enviados</div></article>
+                  </div>
+                  <div className="admin-panel admin-detail-card">
+                    <div className="admin-panel-header"><div><h2>Resumo da conta</h2><p>Informações principais para acompanhamento administrativo.</p></div></div>
+                    <div className="admin-detail-fields">
+                      <div className="admin-detail-field"><span>Situação da clínica</span><strong>{detalheClinica.clinica.status || "—"}</strong></div>
+                      <div className="admin-detail-field"><span>Plano cadastrado</span><strong>{detalheClinica.assinatura?.plano || detalheClinica.clinica.plano || "—"}</strong></div>
+                      <div className="admin-detail-field"><span>Status da assinatura</span><strong>{detalheClinica.assinatura?.status || "Sem assinatura"}</strong></div>
+                      <div className="admin-detail-field"><span>Cadastro</span><strong>{dataBR(detalheClinica.clinica.created_at)}</strong></div>
+                      <div className="admin-detail-field"><span>Início do período atual</span><strong>{dataBR(detalheClinica.assinatura?.periodo_inicio)}</strong></div>
+                      <div className="admin-detail-field"><span>Fim do período atual</span><strong>{dataBR(detalheClinica.assinatura?.periodo_fim || detalheClinica.clinica.trial_ate)}</strong></div>
+                      <div className="admin-detail-field"><span>Última atividade registrada</span><strong>{dataHoraBR(detalheClinica.atividades?.[0]?.created_at)}</strong></div>
+                    </div>
+                  </div>
+                </section>}
                 {abaDetalhe === "dados" && <section className="admin-panel admin-detail-card">
                   <div className="admin-panel-header"><div><h2>Dados da clínica</h2><p>Informações cadastradas na plataforma.</p></div></div>
                   <div className="admin-detail-fields">
@@ -273,6 +295,47 @@ export default function AdminPortal() {
                       </div>
                     ))}
                   </div>
+                </section>}
+                {abaDetalhe === "assinatura" && <section className="admin-panel admin-detail-card">
+                  <div className="admin-panel-header"><div><h2>Assinatura</h2><p>Informações disponíveis no cadastro atual da assinatura.</p></div></div>
+                  <div className="admin-detail-fields">
+                    {[
+                      ["Plano", detalheClinica.assinatura?.plano || detalheClinica.clinica.plano],
+                      ["Situação", detalheClinica.assinatura?.status || "Sem assinatura"],
+                      ["Provedor", detalheClinica.assinatura?.provedor],
+                      ["Início do período", dataBR(detalheClinica.assinatura?.periodo_inicio)],
+                      ["Fim do período", dataBR(detalheClinica.assinatura?.periodo_fim)],
+                      ["Cancelamento ao fim do período", detalheClinica.assinatura ? (detalheClinica.assinatura.cancelamento_no_fim ? "Sim" : "Não") : "—"],
+                      ["Criada em", dataBR(detalheClinica.assinatura?.created_at)],
+                      ["Atualizada em", dataBR(detalheClinica.assinatura?.updated_at)],
+                    ].map(([rotulo, valor]) => <div className="admin-detail-field" key={rotulo}><span>{rotulo}</span><strong>{valor || "—"}</strong></div>)}
+                  </div>
+                  <div className="admin-detail-note">O histórico financeiro e os pagamentos ainda não estão disponíveis porque a plataforma não possui um registro de cobranças integrado nesta etapa.</div>
+                </section>}
+                {abaDetalhe === "utilizacao" && <section className="admin-panel admin-detail-card">
+                  <div className="admin-panel-header"><div><h2>Utilização do sistema</h2><p>Quantidade de registros associados a esta clínica.</p></div></div>
+                  <div className="admin-detail-metrics admin-detail-usage">
+                    {[
+                      ["Pacientes", detalheClinica.utilizacao?.pacientes],
+                      ["Consultas", detalheClinica.utilizacao?.consultas],
+                      ["Orçamentos", detalheClinica.utilizacao?.orcamentos],
+                      ["Documentos", detalheClinica.utilizacao?.documentos],
+                      ["Arquivos", detalheClinica.utilizacao?.arquivos],
+                      ["Armazenamento", bytesBR(detalheClinica.utilizacao?.armazenamento_bytes)],
+                    ].map(([rotulo, valor]) => <article className="admin-stat-card" key={rotulo}><div className="admin-stat-label">{rotulo}</div><div className="admin-stat-value">{valor ?? 0}</div></article>)}
+                  </div>
+                </section>}
+                {abaDetalhe === "atividades" && <section className="admin-panel admin-detail-users">
+                  <div className="admin-panel-header"><div><h2>Histórico de atividades</h2><p>Até 50 eventos mais recentes registrados para esta clínica.</p></div></div>
+                  <div className="admin-table-scroll"><table className="admin-table">
+                    <thead><tr><th>Data e hora</th><th>Usuário</th><th>Ação</th><th>Recurso</th><th>Detalhes</th></tr></thead>
+                    <tbody>
+                      {(detalheClinica.atividades || []).map((atividade) => <tr key={atividade.id}>
+                        <td>{dataHoraBR(atividade.created_at)}</td><td>{atividade.usuario_nome || "Sistema"}</td><td>{atividade.acao || "—"}</td><td>{atividade.recurso || "—"}</td><td className="admin-activity-details">{atividade.detalhes || "—"}</td>
+                      </tr>)}
+                      {!detalheClinica.atividades?.length && <tr><td className="admin-empty-cell" colSpan="5">Nenhuma atividade registrada para esta clínica.</td></tr>}
+                    </tbody>
+                  </table></div>
                 </section>}
                 {abaDetalhe === "usuarios" && <section className="admin-panel admin-detail-users">
                   <div className="admin-panel-header">
