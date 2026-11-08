@@ -9,7 +9,8 @@ if (!SECRET) {
   throw new Error("JWT_SECRET não configurado. Defina a variável de ambiente antes de iniciar a API.");
 }
 
-module.exports = (req, res, next) => {
+function criarAutenticacao({ ignorarAssinatura = false } = {}) {
+  return (req, res, next) => {
   const authHeader = req.headers["authorization"];
 
   if (!authHeader) {
@@ -68,17 +69,19 @@ module.exports = (req, res, next) => {
           return res.status(403).json({ erro: "O perfil de acesso não pertence a esta clínica." });
         }
 
+        const continuar = () => {
+          req.user = { ...decoded, nome: user.nome, email: user.email, clinica_id: user.clinica_id };
+          return next();
+        };
+        if (ignorarAssinatura) return continuar();
+
         verificarAcessoAssinatura(user.clinica_id, (assinaturaErr, acesso) => {
           if (assinaturaErr) {
             console.error("Falha ao validar assinatura da clínica:", assinaturaErr.message);
             return res.status(500).json({ erro: "Não foi possível validar a assinatura da clínica." });
           }
-          if (!acesso.permitido) {
-            return res.status(403).json({ erro: acesso.mensagem });
-          }
-
-          req.user = { ...decoded, nome: user.nome, email: user.email, clinica_id: user.clinica_id };
-          return next();
+          if (!acesso.permitido) return res.status(403).json({ erro: acesso.mensagem });
+          return continuar();
         });
       }
     );
@@ -88,4 +91,8 @@ module.exports = (req, res, next) => {
     }
     return res.status(401).json({ erro: "Token inválido." });
   }
-};
+  };
+}
+
+module.exports = criarAutenticacao();
+module.exports.semAssinatura = criarAutenticacao({ ignorarAssinatura: true });
