@@ -547,7 +547,7 @@ function Layout() {
    APP
    ═══════════════════════════════════════════════════════════ */
 function App() {
-  if (window.location.pathname.startsWith("/administracao")) return <AdminPortal />;
+  if (window.location.pathname.startsWith("/administracao")) return <ThemeProvider><AdminPortal /></ThemeProvider>;
 
   const token = localStorage.getItem("token");
   const autenticado = isTokenValid(token);
