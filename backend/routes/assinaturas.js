@@ -283,11 +283,17 @@ router.post("/checkout", async (req, res) => {
               .map(([, , rotulo]) => rotulo);
             if (faltantes.length) {
               return res.status(400).json({
-                erro: "Para pagar com cartão, complete os seguintes dados em Configurações → Clínica: " + faltantes.join(", ") + ".",
+                codigo: "DADOS_CLIENTE_INCOMPLETOS",
+                erro: "Complete os dados da clínica para continuar com o pagamento por cartão.",
+                camposFaltantes: faltantes,
               });
             }
             if (enderecoAsaas.postalCode.length !== 8) {
-              return res.status(400).json({ erro: "Informe um CEP válido com 8 números em Configurações → Clínica." });
+              return res.status(400).json({
+                codigo: "DADOS_CLIENTE_INCOMPLETOS",
+                erro: "O CEP cadastrado precisa ter 8 números.",
+                camposFaltantes: ["CEP válido (8 números)"],
+              });
             }
           }
 
