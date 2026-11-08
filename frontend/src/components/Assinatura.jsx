@@ -13,6 +13,7 @@ export default function Assinatura({ administrador = false }) {
   const [plano, setPlano] = useState("mensal");
   const [meioPagamento, setMeioPagamento] = useState("PIX");
   const [pagamento, setPagamento] = useState(null);
+  const [dadosIncompletos, setDadosIncompletos] = useState(null);
   const [mensagem, setMensagem] = useState("");
   const [erro, setErro] = useState("");
   const [carregando, setCarregando] = useState(true);
@@ -51,6 +52,13 @@ export default function Assinatura({ administrador = false }) {
         body: JSON.stringify({ plano, meioPagamento }),
       });
       const corpo = await resposta.json();
+      if (!resposta.ok && corpo.codigo === "DADOS_CLIENTE_INCOMPLETOS") {
+        setDadosIncompletos({
+          mensagem: corpo.erro || "Complete os dados da clínica para continuar.",
+          campos: Array.isArray(corpo.camposFaltantes) ? corpo.camposFaltantes : [],
+        });
+        return;
+      }
       if (!resposta.ok) throw new Error(corpo.erro || "Não foi possível iniciar a contratação.");
       setMensagem(corpo.mensagem || "Solicitação enviada ao Asaas.");
       setPagamento(corpo.pagamento || null);
@@ -136,6 +144,29 @@ export default function Assinatura({ administrador = false }) {
         <span>Todos os módulos, usuários e recursos disponíveis no sistema.</span>
         <span>Dados da clínica preservados mesmo em caso de expiração da assinatura.</span>
       </div>
+
+      {dadosIncompletos && (
+        <div className="sorrisa-subscription-modal-backdrop" role="presentation" onMouseDown={(evento) => { if (evento.target === evento.currentTarget) setDadosIncompletos(null); }}>
+          <div className="sorrisa-subscription-payment-modal sorrisa-subscription-missing-modal" role="dialog" aria-modal="true" aria-labelledby="sorrisa-missing-data-title">
+            <div className="sorrisa-subscription-modal-heading">
+              <div>
+                <span className="sorrisa-subscription-eyebrow">Dados da clínica</span>
+                <h3 id="sorrisa-missing-data-title">Complete seu cadastro</h3>
+              </div>
+              <button type="button" className="sorrisa-subscription-modal-close" aria-label="Fechar aviso" onClick={() => setDadosIncompletos(null)}>×</button>
+            </div>
+            <div className="sorrisa-subscription-missing-content">
+              <p>{dadosIncompletos.mensagem}</p>
+              <span className="sorrisa-subscription-missing-label">Confira os seguintes campos em Configurações → Clínica:</span>
+              <ul>
+                {dadosIncompletos.campos.map((campo) => <li key={campo}>{campo}</li>)}
+              </ul>
+              <p className="sorrisa-subscription-missing-note">Depois de salvar as alterações, volte aqui e tente novamente. Nenhuma cobrança foi criada.</p>
+              <button type="button" className="sorrisa-subscription-primary" onClick={() => setDadosIncompletos(null)}>Entendi</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {pagamento && (
         <div className="sorrisa-subscription-modal-backdrop" role="presentation" onMouseDown={(evento) => { if (evento.target === evento.currentTarget) setPagamento(null); }}>
