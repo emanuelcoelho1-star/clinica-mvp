@@ -218,3 +218,30 @@
  .admin-support-form,.admin-support-history {padding-left:14px;padding-right:14px}
  .admin-action-feedback {margin-left:14px;margin-right:14px}
 }
+
+
+.admin-modal-overlay {
+  position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;
+  padding:20px;background:rgba(15,23,42,.58);backdrop-filter:blur(3px);
+}
+.admin-confirm-modal {
+  width:100%;max-width:440px;padding:26px;background:var(--bg-card);
+  border:1px solid var(--border-primary);border-radius:16px;box-shadow:var(--shadow-md);
+  animation:admin-modal-enter .16s ease-out;
+}
+.admin-confirm-icon {
+  width:44px;height:44px;display:grid;place-items:center;margin-bottom:17px;
+  border-radius:12px;background:var(--warning-bg);color:var(--warning);
+}
+.admin-confirm-modal h2 {margin:0;color:var(--text-primary);font-size:18px;font-weight:700;letter-spacing:-.02em}
+.admin-confirm-modal p {margin:9px 0 23px;color:var(--text-secondary);font-size:13px;line-height:1.6}
+.admin-confirm-actions {display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+.admin-confirm-danger {min-height:40px;padding:0 15px;background:var(--danger);white-space:nowrap}
+.admin-confirm-danger:hover {background:var(--danger)}
+.admin-confirm-danger:disabled {opacity:.65;cursor:wait}
+@keyframes admin-modal-enter {from {opacity:0;transform:translateY(7px) scale(.985)}to {opacity:1;transform:translateY(0) scale(1)}}
+@media(max-width:480px) {
+  .admin-confirm-modal {padding:21px}
+  .admin-confirm-actions {flex-direction:column-reverse}
+  .admin-confirm-actions button {width:100%}
+}
