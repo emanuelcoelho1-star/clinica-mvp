@@ -126,3 +126,26 @@
  .admin-subscription-separator{height:20px}.admin-panel-header{padding:17px}.admin-search{width:100%;min-width:0}
  .admin-table-footer{flex-direction:column}.admin-login-card{padding:25px 21px}.admin-theme-toggle{top:12px;right:12px}
 }
+
+.admin-clinic-link {
+  display:inline-flex;align-items:center;gap:7px;padding:0;border:0;background:transparent;
+  color:var(--accent);font:inherit;font-size:13px;font-weight:700;cursor:pointer;text-align:left;
+}
+.admin-clinic-link:hover {color:var(--accent-hover);text-decoration:underline}
+.admin-detail-heading {align-items:flex-end}
+.admin-back-button {
+  display:inline-flex;align-items:center;gap:7px;padding:0;margin:0 0 18px;border:0;
+  background:transparent;color:var(--text-secondary);font:inherit;font-size:12px;font-weight:650;cursor:pointer;
+}
+.admin-back-button svg {transform:rotate(180deg)}
+.admin-back-button:hover {color:var(--accent)}
+.admin-detail-id {padding:7px 11px;border-radius:8px;background:var(--bg-badge);color:var(--text-muted);font-size:12px;font-weight:650}
+.admin-detail-grid {display:grid;grid-template-columns:minmax(0,1fr);gap:16px;margin-bottom:18px}
+.admin-detail-card {min-width:0}
+.admin-detail-fields {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 22px;padding:8px 22px 18px}
+.admin-detail-field {display:flex;flex-direction:column;gap:5px;padding:12px 0;border-bottom:1px solid var(--border-primary);min-width:0}
+.admin-detail-field span {font-size:11px;color:var(--text-muted);font-weight:600}
+.admin-detail-field strong {font-size:13px;color:var(--text-primary);font-weight:600;overflow-wrap:anywhere}
+.admin-detail-users {margin-bottom:20px}
+@media(max-width:800px){.admin-detail-fields{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.admin-detail-fields{grid-template-columns:1fr;padding:6px 17px 15px}}
