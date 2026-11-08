@@ -1,45 +1,53 @@
-.sorrisa-subscription{display:flex;flex-direction:column;gap:20px;color:var(--text-primary)}
-.sorrisa-subscription-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
-.sorrisa-subscription-heading h2{margin:0;font-size:20px;font-weight:700;letter-spacing:-.02em}
-.sorrisa-subscription-heading p{margin:6px 0 0;color:var(--text-muted);font-size:13px}
-.sorrisa-subscription-badge{padding:6px 10px;border-radius:999px;background:var(--bg-badge);color:var(--text-secondary);font-size:12px;font-weight:600;white-space:nowrap}
-.sorrisa-subscription-badge.is-active{background:var(--success-bg);color:var(--success)}
-.sorrisa-subscription-alert{padding:12px 14px;border:1px solid var(--border-primary);border-radius:10px;background:var(--bg-card);color:var(--text-secondary);font-size:13px}
+/* Assinatura — visual renovado */
+.sorrisa-subscription{display:flex;flex-direction:column;gap:24px;color:var(--text-primary);max-width:1120px}
+.sorrisa-subscription-heading{position:relative;display:flex;align-items:center;justify-content:space-between;gap:20px;padding:25px 28px;border:1px solid var(--border-primary);border-radius:18px;background:linear-gradient(115deg,color-mix(in srgb,var(--accent) 11%,var(--bg-card)),var(--bg-card) 68%);overflow:hidden}
+.sorrisa-subscription-heading:after{content:"";position:absolute;width:190px;height:190px;right:8%;top:-125px;border:1px solid color-mix(in srgb,var(--accent) 22%,transparent);border-radius:50%;box-shadow:0 0 0 24px color-mix(in srgb,var(--accent) 4%,transparent),0 0 0 48px color-mix(in srgb,var(--accent) 3%,transparent);pointer-events:none}
+.sorrisa-subscription-heading>div{position:relative;z-index:1}
+.sorrisa-subscription-heading h2{margin:0;font-size:23px;font-weight:750;letter-spacing:-.035em}
+.sorrisa-subscription-heading p{margin:7px 0 0;color:var(--text-muted);font-size:13px;line-height:1.5}
+.sorrisa-subscription-badge{position:relative;z-index:1;display:inline-flex;align-items:center;gap:7px;padding:8px 12px;border:1px solid var(--border-primary);border-radius:999px;background:var(--bg-card);color:var(--text-secondary);font-size:12px;font-weight:700;white-space:nowrap}
+.sorrisa-subscription-badge.is-active{border-color:color-mix(in srgb,var(--success) 30%,transparent);background:var(--success-bg);color:var(--success)}
+.sorrisa-subscription-alert{padding:13px 16px;border:1px solid var(--border-primary);border-radius:12px;background:var(--bg-card);color:var(--text-secondary);font-size:13px}
 .sorrisa-subscription-alert.is-error{border-color:var(--danger);color:var(--danger)}
-.sorrisa-subscription-current{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px;border:1px solid var(--border-primary);border-radius:14px;background:var(--bg-card)}
-.sorrisa-subscription-current>div{display:flex;flex-direction:column;gap:6px}
-.sorrisa-subscription-eyebrow,.sorrisa-subscription-muted{color:var(--text-muted);font-size:12px}
-.sorrisa-subscription-current strong{font-size:17px}
-.sorrisa-subscription-current-mark{display:grid;place-items:center;width:42px;height:42px;border-radius:12px;background:var(--accent);color:#fff;font-weight:800;font-size:20px}
-.sorrisa-subscription-plans{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
-.sorrisa-subscription-plan{display:flex;flex-direction:column;align-items:flex-start;gap:12px;padding:18px;border:1px solid var(--border-primary);border-radius:14px;background:var(--bg-card);color:var(--text-primary);text-align:left;cursor:pointer;transition:border-color .15s,box-shadow .15s}
-.sorrisa-subscription-plan.selected{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 13%,transparent)}
+.sorrisa-subscription-current{position:relative;display:flex;align-items:center;justify-content:space-between;gap:18px;padding:22px 24px;border:1px solid color-mix(in srgb,var(--accent) 28%,var(--border-primary));border-radius:16px;background:var(--bg-card);box-shadow:0 8px 26px rgba(0,0,0,.035)}
+.sorrisa-subscription-current>div{display:flex;flex-direction:column;gap:7px}
+.sorrisa-subscription-eyebrow{color:var(--text-muted);font-size:10px;font-weight:750;letter-spacing:.1em;text-transform:uppercase}
+.sorrisa-subscription-current strong{font-size:18px;font-weight:750;letter-spacing:-.02em}
+.sorrisa-subscription-current>div>span:last-child{color:var(--text-muted);font-size:12px}
+.sorrisa-subscription-current-mark{display:grid;place-items:center;width:48px;height:48px;border-radius:15px;background:var(--accent);color:#fff;font-size:22px;font-weight:850;box-shadow:0 7px 18px color-mix(in srgb,var(--accent) 25%,transparent)}
+.sorrisa-subscription-plans{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.sorrisa-subscription-plan{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:13px;min-height:155px;padding:21px;border:1px solid var(--border-primary);border-radius:16px;background:var(--bg-card);color:var(--text-primary);text-align:left;cursor:pointer;transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease}
+.sorrisa-subscription-plan:hover{border-color:color-mix(in srgb,var(--accent) 55%,var(--border-primary));transform:translateY(-2px)}
+.sorrisa-subscription-plan.selected{border:1.5px solid var(--accent);background:linear-gradient(145deg,color-mix(in srgb,var(--accent) 7%,var(--bg-card)),var(--bg-card) 75%);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 10%,transparent),0 10px 26px rgba(0,0,0,.045)}
 .sorrisa-subscription-plan-top{display:flex;align-items:center;justify-content:space-between;width:100%;gap:8px}
-.sorrisa-subscription-plan-top strong{font-size:15px}
-.sorrisa-subscription-plan-top span{font-size:11px;color:var(--accent);font-weight:700}
-.sorrisa-subscription-price{font-size:24px;font-weight:750;letter-spacing:-.03em}
-.sorrisa-subscription-price small{font-size:12px;font-weight:500;color:var(--text-muted);letter-spacing:0}
-.sorrisa-subscription-includes{display:flex;flex-direction:column;gap:7px;padding:16px;border-radius:12px;background:var(--bg-card);border:1px solid var(--border-primary);font-size:13px;color:var(--text-secondary)}
-.sorrisa-subscription-includes strong{color:var(--text-primary)}
-.sorrisa-subscription-actions{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-.sorrisa-subscription-primary{border:0;border-radius:9px;padding:11px 16px;background:var(--accent);color:#fff;font-size:13px;font-weight:650;cursor:pointer}
-.sorrisa-subscription-primary:disabled{opacity:.55;cursor:not-allowed}
-.sorrisa-subscription-link{font-size:13px;color:var(--accent);font-weight:600;text-decoration:none}
-.sorrisa-subscription-footnote{margin:0;color:var(--text-muted);font-size:11px;line-height:1.6}
-@media(max-width:640px){.sorrisa-subscription-heading{flex-direction:column}.sorrisa-subscription-plans{grid-template-columns:1fr}}
-
-.sorrisa-subscription-payment-methods{display:flex;flex-direction:column;gap:12px}
+.sorrisa-subscription-plan-top strong{font-size:14px;font-weight:750}
+.sorrisa-subscription-plan-top span{padding:5px 8px;border-radius:999px;background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);font-size:10px;font-weight:750}
+.sorrisa-subscription-price{font-size:27px;font-weight:800;letter-spacing:-.045em}
+.sorrisa-subscription-price small{font-size:12px;font-weight:550;color:var(--text-muted);letter-spacing:0}
+.sorrisa-subscription-muted{color:var(--text-muted);font-size:12px;line-height:1.5}
+.sorrisa-subscription-payment-methods{display:flex;flex-direction:column;gap:14px}
 .sorrisa-subscription-payment-heading{display:flex;flex-direction:column;gap:5px}
-.sorrisa-subscription-payment-heading strong{font-size:14px}
+.sorrisa-subscription-payment-heading strong{font-size:16px;font-weight:750;letter-spacing:-.02em}
 .sorrisa-subscription-payment-heading span{font-size:12px;color:var(--text-muted)}
-.sorrisa-subscription-method-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
-.sorrisa-subscription-method{display:flex;flex-direction:column;align-items:flex-start;gap:7px;min-height:108px;padding:15px;border:1px solid var(--border-primary);border-radius:12px;background:var(--bg-card);color:var(--text-primary);text-align:left}
+.sorrisa-subscription-method-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.sorrisa-subscription-method{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:9px;min-height:124px;padding:18px;border:1px solid var(--border-primary);border-radius:15px;background:var(--bg-card);color:var(--text-primary);text-align:left;transition:border-color .18s ease,background .18s ease,transform .18s ease}
 button.sorrisa-subscription-method{cursor:pointer}
-.sorrisa-subscription-method.selected{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 13%,transparent)}
-.sorrisa-subscription-method-icon{font-size:22px;color:var(--accent)}
-.sorrisa-subscription-method strong{font-size:13px}
-.sorrisa-subscription-method small{font-size:11px;color:var(--text-muted)}
+.sorrisa-subscription-method:hover{border-color:color-mix(in srgb,var(--accent) 55%,var(--border-primary));transform:translateY(-2px)}
+.sorrisa-subscription-method.selected{border:1.5px solid var(--accent);background:color-mix(in srgb,var(--accent) 6%,var(--bg-card));box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 9%,transparent)}
+.sorrisa-subscription-method-icon{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);font-size:19px}
+.sorrisa-subscription-method strong{font-size:13px;font-weight:750}
+.sorrisa-subscription-method small{font-size:11px;color:var(--text-muted);line-height:1.4}
 .sorrisa-subscription-method.is-disabled{opacity:.55}
+.sorrisa-subscription-includes{display:flex;flex-direction:column;gap:9px;padding:19px 21px;border:1px solid var(--border-primary);border-radius:15px;background:var(--bg-card);font-size:12px;color:var(--text-secondary);line-height:1.5}
+.sorrisa-subscription-includes strong{margin-bottom:2px;color:var(--text-primary);font-size:14px;font-weight:750}
+.sorrisa-subscription-includes span{display:flex;align-items:flex-start;gap:9px}
+.sorrisa-subscription-includes span:before{content:"✓";display:grid;place-items:center;flex:0 0 17px;width:17px;height:17px;border-radius:50%;background:var(--success-bg);color:var(--success);font-size:10px;font-weight:800}
+.sorrisa-subscription-actions{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding-top:2px}
+.sorrisa-subscription-primary{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:12px 20px;border:0;border-radius:10px;background:var(--accent);color:#fff;font-size:13px;font-weight:750;cursor:pointer;transition:filter .18s ease,transform .18s ease,box-shadow .18s ease}
+.sorrisa-subscription-primary:hover:not(:disabled){filter:brightness(1.07);transform:translateY(-1px);box-shadow:0 7px 18px color-mix(in srgb,var(--accent) 25%,transparent)}
+.sorrisa-subscription-primary:disabled{opacity:.55;cursor:not-allowed}
+.sorrisa-subscription-link{font-size:13px;color:var(--accent);font-weight:650;text-decoration:none}
+.sorrisa-subscription-footnote{margin:0;color:var(--text-muted);font-size:11px;line-height:1.65}
 .sorrisa-subscription-payment-result{display:flex;flex-direction:column;gap:16px;padding:18px;border:1px solid var(--border-primary);border-radius:14px;background:var(--bg-card)}
 .sorrisa-subscription-payment-result-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
 .sorrisa-subscription-payment-result-heading>div{display:flex;flex-direction:column;gap:5px}
@@ -48,30 +56,31 @@ button.sorrisa-subscription-method{cursor:pointer}
 .sorrisa-subscription-pending{padding:5px 9px;border-radius:999px;background:var(--bg-badge);white-space:nowrap}
 .sorrisa-subscription-pix{display:grid;grid-template-columns:minmax(160px,220px) minmax(0,1fr);gap:20px;align-items:center}
 .sorrisa-subscription-qr{display:block;width:100%;max-width:220px;aspect-ratio:1;object-fit:contain;padding:8px;background:#fff;border-radius:10px}
-.sorrisa-subscription-copy-area,.sorrisa-subscription-boleto{display:flex;flex-direction:column;gap:9px;min-width:0}
-.sorrisa-subscription-copy-area label,.sorrisa-subscription-boleto label{font-size:12px;font-weight:650}
-.sorrisa-subscription-copy-area textarea,.sorrisa-subscription-boleto textarea{width:100%;resize:vertical;padding:10px;border:1px solid var(--border-primary);border-radius:8px;background:var(--bg-main);color:var(--text-primary);font:12px/1.5 monospace;overflow-wrap:anywhere}
-.sorrisa-subscription-secondary{align-self:flex-start;padding:9px 13px;border:1px solid var(--border-primary);border-radius:8px;background:var(--bg-card);color:var(--text-primary);font-size:12px;font-weight:650;cursor:pointer}
+.sorrisa-subscription-copy-area,.sorrisa-subscription-boleto{display:flex;flex-direction:column;gap:10px;min-width:0}
+.sorrisa-subscription-copy-area label,.sorrisa-subscription-boleto label{font-size:12px;font-weight:700}
+.sorrisa-subscription-copy-area textarea,.sorrisa-subscription-boleto textarea{width:100%;resize:vertical;padding:11px;border:1px solid var(--border-primary);border-radius:9px;background:var(--bg-main);color:var(--text-primary);font:12px/1.5 monospace;overflow-wrap:anywhere}
+.sorrisa-subscription-secondary{align-self:flex-start;padding:10px 14px;border:1px solid var(--border-primary);border-radius:9px;background:var(--bg-card);color:var(--text-primary);font-size:12px;font-weight:700;cursor:pointer}
 .sorrisa-subscription-secondary:disabled{opacity:.5;cursor:not-allowed}
 .sorrisa-subscription-boleto-frame{width:100%;height:560px;border:1px solid var(--border-primary);border-radius:10px;background:#fff}
-@media(max-width:700px){.sorrisa-subscription-method-grid{grid-template-columns:1fr}.sorrisa-subscription-pix{grid-template-columns:1fr}.sorrisa-subscription-qr{margin:0 auto}.sorrisa-subscription-payment-result-heading{flex-direction:column}}
-
-.sorrisa-subscription-modal-backdrop{position:fixed;inset:0;z-index:1200;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(0,0,0,.58);backdrop-filter:blur(3px)}
-.sorrisa-subscription-payment-modal{width:min(680px,100%);max-height:min(88vh,820px);overflow:auto;padding:22px;border:1px solid var(--border-primary);border-radius:16px;background:var(--bg-card);color:var(--text-primary);box-shadow:0 24px 80px rgba(0,0,0,.28);animation:sorrisaPaymentModalIn .18s ease-out}
+.sorrisa-subscription-modal-backdrop{position:fixed;inset:0;z-index:1200;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(0,0,0,.58);backdrop-filter:blur(4px)}
+.sorrisa-subscription-payment-modal{width:min(680px,100%);max-height:min(88vh,820px);overflow:auto;padding:24px;border:1px solid var(--border-primary);border-radius:17px;background:var(--bg-card);color:var(--text-primary);box-shadow:0 24px 80px rgba(0,0,0,.28);animation:sorrisaPaymentModalIn .18s ease-out}
 .sorrisa-subscription-modal-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px}
 .sorrisa-subscription-modal-heading>div{display:flex;flex-direction:column;gap:5px}
-.sorrisa-subscription-modal-heading h3{margin:0;font-size:19px;font-weight:700}
+.sorrisa-subscription-modal-heading h3{margin:0;font-size:19px;font-weight:750}
 .sorrisa-subscription-modal-close{display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;border:1px solid var(--border-primary);border-radius:9px;background:var(--bg-card);color:var(--text-secondary);font-size:23px;line-height:1;cursor:pointer}
 .sorrisa-subscription-payment-modal .sorrisa-subscription-payment-result{padding:0;border:0;background:transparent}
-@keyframes sorrisaPaymentModalIn{from{opacity:0;transform:translateY(8px) scale(.99)}to{opacity:1;transform:translateY(0) scale(1)}}
-@media(max-width:600px){.sorrisa-subscription-modal-backdrop{align-items:flex-end;padding:10px}.sorrisa-subscription-payment-modal{max-height:92vh;padding:18px;border-radius:16px 16px 12px 12px}.sorrisa-subscription-payment-modal .sorrisa-subscription-pix{grid-template-columns:1fr}}
-
-.sorrisa-subscription-checkout-link{display:flex;align-items:center;justify-content:center;align-self:center;width:min(100%,320px);min-height:48px;padding:14px 24px;text-align:center;text-decoration:none;font-size:14px;font-weight:750;letter-spacing:.01em;border-radius:11px;box-shadow:0 6px 18px color-mix(in srgb,var(--accent) 30%,transparent);transition:transform .18s ease,box-shadow .18s ease,filter .18s ease}.sorrisa-subscription-checkout-link:hover{filter:brightness(1.08);transform:translateY(-2px);box-shadow:0 9px 24px color-mix(in srgb,var(--accent) 38%,transparent)}.sorrisa-subscription-checkout-link:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 45%,transparent);outline-offset:3px}
-
+.sorrisa-subscription-checkout-link{display:flex;align-items:center;justify-content:center;align-self:center;width:min(100%,320px);min-height:50px;padding:14px 24px;text-align:center;text-decoration:none;font-size:14px;font-weight:800;letter-spacing:.01em;border-radius:11px;box-shadow:0 6px 18px color-mix(in srgb,var(--accent) 30%,transparent);transition:transform .18s ease,box-shadow .18s ease,filter .18s ease}
+.sorrisa-subscription-checkout-link:hover{filter:brightness(1.08);transform:translateY(-2px);box-shadow:0 9px 24px color-mix(in srgb,var(--accent) 38%,transparent)}
+.sorrisa-subscription-checkout-link:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 45%,transparent);outline-offset:3px}
 .sorrisa-subscription-missing-content{display:flex;flex-direction:column;align-items:flex-start;gap:12px}
 .sorrisa-subscription-missing-content>p{margin:0;color:var(--text-secondary);font-size:13px;line-height:1.6}
-.sorrisa-subscription-missing-label{font-size:12px;font-weight:650;color:var(--text-primary)}
+.sorrisa-subscription-missing-label{font-size:12px;font-weight:700;color:var(--text-primary)}
 .sorrisa-subscription-missing-content ul{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px 22px;width:100%;margin:0;padding:14px 14px 14px 32px;border:1px solid var(--border-primary);border-radius:10px;background:var(--bg-main);color:var(--text-primary);font-size:13px}
 .sorrisa-subscription-missing-content li::marker{color:var(--accent)}
 .sorrisa-subscription-missing-note{padding-top:2px}
+@keyframes sorrisaPaymentModalIn{from{opacity:0;transform:translateY(8px) scale(.99)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(max-width:760px){.sorrisa-subscription-method-grid{grid-template-columns:1fr}.sorrisa-subscription-method{min-height:unset}.sorrisa-subscription-pix{grid-template-columns:1fr}.sorrisa-subscription-qr{margin:0 auto}.sorrisa-subscription-payment-result-heading{flex-direction:column}}
+@media(max-width:640px){.sorrisa-subscription-heading{align-items:flex-start;flex-direction:column;padding:21px}.sorrisa-subscription-heading h2{font-size:21px}.sorrisa-subscription-plans{grid-template-columns:1fr}.sorrisa-subscription-plan{min-height:unset}.sorrisa-subscription-current{padding:18px}.sorrisa-subscription-price{font-size:25px}}
+@media(max-width:600px){.sorrisa-subscription-modal-backdrop{align-items:flex-end;padding:10px}.sorrisa-subscription-payment-modal{max-height:92vh;padding:18px;border-radius:16px 16px 12px 12px}.sorrisa-subscription-payment-modal .sorrisa-subscription-pix{grid-template-columns:1fr}}
 @media(max-width:520px){.sorrisa-subscription-missing-content ul{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.sorrisa-subscription *{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
