@@ -214,10 +214,9 @@ router.patch("/clinicas/:id", exigirAdmin, (req, res) => {
           if (plano === undefined) return done();
           db.run(
             `INSERT INTO assinaturas (clinica_id, plano, status)
-             VALUES (?, ?, 'ativa')
+             VALUES (?, ?, 'trial')
              ON CONFLICT(clinica_id) DO UPDATE SET
                plano = excluded.plano,
-               status = CASE WHEN assinaturas.status = 'trial' THEN 'ativa' ELSE assinaturas.status END,
                updated_at = datetime('now','localtime')`,
             [clinicId, novoPlano],
             (subscriptionErr) => done(subscriptionErr)
