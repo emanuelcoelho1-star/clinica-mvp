@@ -105,7 +105,7 @@ export default function AdminPortal() {
   }
 
   const clinicasFiltradas = (dados?.clinicas || []).filter((c) =>
-    [c.nome, c.email_contato, String(c.id)].some((v) => String(v || "").toLowerCase().includes(busca.toLowerCase()))
+    [c.nome, c.email_contato, c.email_login, String(c.id)].some((v) => String(v || "").toLowerCase().includes(busca.toLowerCase()))
   );
   const indicadores = dados?.indicadores || {};
 
@@ -216,7 +216,7 @@ export default function AdminPortal() {
                 <thead><tr><th>Clínica</th><th>Usuários</th><th>Arquivos</th><th>Armazenamento</th><th>Plano</th><th>Assinatura</th><th>Cadastro</th></tr></thead>
                 <tbody>
                   {clinicasFiltradas.map((c) => <tr key={c.id}>
-                    <td><div className="admin-clinic-name">{c.nome}</div><div className="admin-clinic-meta">{c.email_contato || "Sem e-mail"} · #{c.id}</div></td>
+                    <td><div className="admin-clinic-name">{c.nome}</div><div className="admin-clinic-meta">E-mail de login: {c.email_login || c.email_contato || "Não identificado"} · #{c.id}</div></td>
                     <td>{c.total_usuarios ?? 0}</td><td>{c.total_arquivos ?? 0}</td><td>{formatarBytes(c.armazenamento_bytes)}</td>
                     <td><span className="admin-plan-label">{c.plano || "—"}</span></td>
                     <td><span className={"admin-status " + (c.assinatura_status === "ativa" ? "active" : c.assinatura_status === "pendente" || c.assinatura_status === "past_due" ? "pending" : "neutral")}>{c.assinatura_status || "Sem assinatura"}</span></td>
