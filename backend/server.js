@@ -39,6 +39,7 @@ const financeiroRoutes = require("./routes/financeiro");
 const rbacRoutes = require("./routes/rbac");
 const clinicaRoutes = require("./routes/clinica");
 const planosRoutes = require("./routes/planos");
+const adminRoutes = require("./routes/admin");
 
 const db = require("./database");
 
@@ -113,6 +114,7 @@ app.use("/financeiro", financeiroRoutes);
 app.use("/rbac", rbacRoutes);
 app.use("/clinica", clinicaRoutes);
 app.use("/planos", planosRoutes);
+app.use("/admin", adminRoutes);
 
 // Respostas consistentes para rotas inexistentes e erros inesperados.
 // Não expõe stack traces, caminhos locais ou detalhes internos da API.
