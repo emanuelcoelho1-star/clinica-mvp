@@ -55,3 +55,13 @@ button.sorrisa-subscription-method{cursor:pointer}
 .sorrisa-subscription-secondary:disabled{opacity:.5;cursor:not-allowed}
 .sorrisa-subscription-boleto-frame{width:100%;height:560px;border:1px solid var(--border-primary);border-radius:10px;background:#fff}
 @media(max-width:700px){.sorrisa-subscription-method-grid{grid-template-columns:1fr}.sorrisa-subscription-pix{grid-template-columns:1fr}.sorrisa-subscription-qr{margin:0 auto}.sorrisa-subscription-payment-result-heading{flex-direction:column}}
+
+.sorrisa-subscription-modal-backdrop{position:fixed;inset:0;z-index:1200;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(0,0,0,.58);backdrop-filter:blur(3px)}
+.sorrisa-subscription-payment-modal{width:min(680px,100%);max-height:min(88vh,820px);overflow:auto;padding:22px;border:1px solid var(--border-primary);border-radius:16px;background:var(--bg-card);color:var(--text-primary);box-shadow:0 24px 80px rgba(0,0,0,.28);animation:sorrisaPaymentModalIn .18s ease-out}
+.sorrisa-subscription-modal-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px}
+.sorrisa-subscription-modal-heading>div{display:flex;flex-direction:column;gap:5px}
+.sorrisa-subscription-modal-heading h3{margin:0;font-size:19px;font-weight:700}
+.sorrisa-subscription-modal-close{display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;border:1px solid var(--border-primary);border-radius:9px;background:var(--bg-card);color:var(--text-secondary);font-size:23px;line-height:1;cursor:pointer}
+.sorrisa-subscription-payment-modal .sorrisa-subscription-payment-result{padding:0;border:0;background:transparent}
+@keyframes sorrisaPaymentModalIn{from{opacity:0;transform:translateY(8px) scale(.99)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(max-width:600px){.sorrisa-subscription-modal-backdrop{align-items:flex-end;padding:10px}.sorrisa-subscription-payment-modal{max-height:92vh;padding:18px;border-radius:16px 16px 12px 12px}.sorrisa-subscription-payment-modal .sorrisa-subscription-pix{grid-template-columns:1fr}}
