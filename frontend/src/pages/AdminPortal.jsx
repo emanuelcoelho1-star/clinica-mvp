@@ -67,6 +67,12 @@ export default function AdminPortal() {
   const [feedbackAcao, setFeedbackAcao] = useState("");
   const [modalSuspensaoAberto, setModalSuspensaoAberto] = useState(false);
   const [abaPainel, setAbaPainel] = useState("visao-geral");
+  const [configPagamento, setConfigPagamento] = useState({ provedor: "asaas", ambiente: "sandbox", possui_chave_api: false, possui_token_webhook: false, atualizado_em: null });
+  const [chaveApiPagamento, setChaveApiPagamento] = useState("");
+  const [tokenWebhookPagamento, setTokenWebhookPagamento] = useState("");
+  const [salvandoPagamento, setSalvandoPagamento] = useState(false);
+  const [erroPagamento, setErroPagamento] = useState("");
+  const [sucessoPagamento, setSucessoPagamento] = useState("");
 
   async function carregarPainel(chave = token) {
     if (!chave) return;
@@ -90,6 +96,38 @@ export default function AdminPortal() {
   }
 
   useEffect(() => { if (token) carregarPainel(token); }, []);
+
+  useEffect(() => {
+    if (!token) return;
+    let ativo = true;
+    fetch(API_URL + "/admin/payment-settings", { headers: { Authorization: "Bearer " + token } })
+      .then(async (resposta) => {
+        const corpo = await resposta.json();
+        if (!resposta.ok) throw new Error(corpo.erro || "Não foi possível carregar a integração.");
+        if (ativo) setConfigPagamento(corpo);
+      })
+      .catch((e) => { if (ativo) setErroPagamento(e.message); });
+    return () => { ativo = false; };
+  }, [token]);
+
+  async function salvarConfiguracaoPagamento(evento) {
+    evento.preventDefault();
+    if (salvandoPagamento) return;
+    setSalvandoPagamento(true); setErroPagamento(""); setSucessoPagamento("");
+    try {
+      const resposta = await fetch(API_URL + "/admin/payment-settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+        body: JSON.stringify({ provedor: configPagamento.provedor, ambiente: configPagamento.ambiente, apiKey: chaveApiPagamento, webhookToken: tokenWebhookPagamento }),
+      });
+      const corpo = await resposta.json();
+      if (!resposta.ok) throw new Error(corpo.erro || "Não foi possível salvar a integração.");
+      setConfigPagamento(corpo);
+      setChaveApiPagamento(""); setTokenWebhookPagamento("");
+      setSucessoPagamento("Configurações salvas com proteção criptográfica no servidor.");
+    } catch (e) { setErroPagamento(e.message || "Falha ao salvar a integração."); }
+    finally { setSalvandoPagamento(false); }
+  }
 
   useEffect(() => {
     const sincronizarRota = () => {
@@ -519,28 +557,44 @@ export default function AdminPortal() {
         {abaPainel === "pagamentos" && <section className="admin-payment-settings">
           <div className="admin-panel">
             <div className="admin-panel-header">
-              <div><h2>Provedor de pagamentos</h2><p>Área central para escolher e administrar o serviço responsável pelas cobranças das assinaturas.</p></div>
-              <span className="admin-payment-status">Ainda não conectado</span>
+              <div><h2>Configuração do provedor</h2><p>Cadastre as credenciais e escolha o ambiente utilizado pela Sorrisa.</p></div>
+              <span className="admin-payment-status">{configPagamento.possui_chave_api ? "Credenciais cadastradas" : "Não configurado"}</span>
             </div>
-            <div className="admin-payment-content">
-              <article className="admin-provider-card selected">
-                <div className="admin-provider-brand"><span className="admin-provider-mark">A</span><div><strong>Asaas</strong><span>Provedor escolhido para a primeira integração</span></div></div>
-                <span className="admin-provider-tag">Escolha inicial</span>
-                <p>Será a primeira opção avaliada para processar Pix, boleto e cartão das assinaturas da Sorrisa.</p>
-                <div className="admin-provider-state"><span className="admin-provider-dot" /> Integração ainda não configurada</div>
-              </article>
-              <div className="admin-payment-info">
-                <h3>Preparado para trocar de provedor</h3>
-                <p>A integração será construída por meio de uma camada independente. Assim, se a Sorrisa precisar trocar de empresa de pagamentos no futuro, poderemos adaptar o conector e selecionar outro provedor sem reescrever o controle de planos e assinaturas.</p>
-                <ul>
-                  <li>Configurações do provedor separadas das regras de assinatura.</li>
-                  <li>Credenciais protegidas exclusivamente no backend.</li>
-                  <li>Confirmações de pagamento recebidas por notificações seguras (webhooks).</li>
-                  <li>Histórico das assinaturas preservado mesmo em uma futura troca.</li>
-                </ul>
+            <form className="admin-payment-form" onSubmit={salvarConfiguracaoPagamento}>
+              <div className="admin-payment-form-grid">
+                <div className="admin-field">
+                  <label htmlFor="admin-payment-provider">Provedor de pagamento</label>
+                  <select id="admin-payment-provider" value={configPagamento.provedor} onChange={(e) => setConfigPagamento((atual) => ({ ...atual, provedor: e.target.value }))}>
+                    <option value="asaas">Asaas</option>
+                    <option value="outro">Outro provedor (preparação para troca futura)</option>
+                  </select>
+                </div>
+                <div className="admin-field">
+                  <label htmlFor="admin-payment-environment">Ambiente</label>
+                  <select id="admin-payment-environment" value={configPagamento.ambiente} onChange={(e) => setConfigPagamento((atual) => ({ ...atual, ambiente: e.target.value }))}>
+                    <option value="sandbox">Testes (Sandbox)</option>
+                    <option value="producao">Produção</option>
+                  </select>
+                </div>
+                <div className="admin-field admin-payment-field-wide">
+                  <label htmlFor="admin-payment-api-key">Chave de API {configPagamento.possui_chave_api ? "(deixe em branco para manter a atual)" : ""}</label>
+                  <input id="admin-payment-api-key" type="password" value={chaveApiPagamento} onChange={(e) => setChaveApiPagamento(e.target.value)} autoComplete="new-password" placeholder={configPagamento.possui_chave_api ? "Chave já cadastrada e protegida" : "Cole aqui a chave de API"} required={!configPagamento.possui_chave_api} />
+                  <small>A chave nunca será exibida novamente nem enviada de volta ao navegador após salvar.</small>
+                </div>
+                <div className="admin-field admin-payment-field-wide">
+                  <label htmlFor="admin-payment-webhook">Token de autenticação do webhook (opcional)</label>
+                  <input id="admin-payment-webhook" type="password" value={tokenWebhookPagamento} onChange={(e) => setTokenWebhookPagamento(e.target.value)} autoComplete="new-password" placeholder={configPagamento.possui_token_webhook ? "Token já cadastrado e protegido" : "Token para validar notificações futuras"} />
+                  <small>Será utilizado quando implementarmos a recepção e validação das notificações de pagamento.</small>
+                </div>
               </div>
-            </div>
-            <div className="admin-payment-notice"><Icone tipo="lock" size={16} /><span><strong>Integração desativada nesta etapa.</strong> Nenhuma cobrança real será processada por esta tela. A conexão, as credenciais e os testes serão configurados quando iniciarmos a integração do provedor.</span></div>
+              {erroPagamento && <div className="admin-alert" role="alert">{erroPagamento}</div>}
+              {sucessoPagamento && <div className="admin-action-feedback" role="status">{sucessoPagamento}</div>}
+              <div className="admin-payment-form-footer">
+                <span>{configPagamento.atualizado_em ? "Última atualização: " + dataHoraBR(configPagamento.atualizado_em) : "Nenhuma configuração salva ainda"}</span>
+                <button className="admin-primary-button" type="submit" disabled={salvandoPagamento}>{salvandoPagamento ? "Salvando..." : "Salvar configuração"}</button>
+              </div>
+            </form>
+            <div className="admin-payment-notice"><Icone tipo="lock" size={16} /><span><strong>Credenciais protegidas.</strong> Os dados sensíveis são criptografados no backend. Salvar esta configuração não ativa cobranças: a conexão com a API, os webhooks e os testes ainda serão implementados separadamente.</span></div>
           </div>
         </section>}
         </>}
