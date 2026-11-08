@@ -67,3 +67,11 @@ button.sorrisa-subscription-method{cursor:pointer}
 @media(max-width:600px){.sorrisa-subscription-modal-backdrop{align-items:flex-end;padding:10px}.sorrisa-subscription-payment-modal{max-height:92vh;padding:18px;border-radius:16px 16px 12px 12px}.sorrisa-subscription-payment-modal .sorrisa-subscription-pix{grid-template-columns:1fr}}
 
 .sorrisa-subscription-checkout-link{display:inline-flex;align-items:center;justify-content:center;align-self:flex-start;text-decoration:none}
+
+.sorrisa-subscription-missing-content{display:flex;flex-direction:column;align-items:flex-start;gap:12px}
+.sorrisa-subscription-missing-content>p{margin:0;color:var(--text-secondary);font-size:13px;line-height:1.6}
+.sorrisa-subscription-missing-label{font-size:12px;font-weight:650;color:var(--text-primary)}
+.sorrisa-subscription-missing-content ul{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px 22px;width:100%;margin:0;padding:14px 14px 14px 32px;border:1px solid var(--border-primary);border-radius:10px;background:var(--bg-main);color:var(--text-primary);font-size:13px}
+.sorrisa-subscription-missing-content li::marker{color:var(--accent)}
+.sorrisa-subscription-missing-note{padding-top:2px}
+@media(max-width:520px){.sorrisa-subscription-missing-content ul{grid-template-columns:1fr}}
