@@ -103,8 +103,8 @@ async function ativarCobrancaConfirmada(paymentId) {
         throw new Error("O valor da renovação não corresponde ao plano registrado na Sorrisa.");
       }
       await executar(
-        "INSERT OR IGNORE INTO sorrisa_assinatura_cobrancas (clinica_id, provedor, provedor_pagamento_id, provedor_assinatura_id, plano, ciclo, valor, status) VALUES (?, 'asaas', ?, ?, ?, ?, ?, ?)",
-        [assinatura.clinica_id, paymentId, assinatura.provedor_assinatura_id, assinatura.assinatura_plano, ciclo, valorEsperado, statusPagamento]
+        "INSERT OR IGNORE INTO sorrisa_assinatura_cobrancas (clinica_id, provedor, provedor_pagamento_id, provedor_assinatura_id, plano, ciclo, valor, status) VALUES (?, 'asaas', ?, ?, ?, ?, ?, 'PENDING')",
+        [assinatura.clinica_id, paymentId, assinatura.provedor_assinatura_id, assinatura.assinatura_plano, ciclo, valorEsperado]
       );
       cobranca = await consultar(
         "SELECT * FROM sorrisa_assinatura_cobrancas WHERE provedor = 'asaas' AND provedor_pagamento_id = ? LIMIT 1",
