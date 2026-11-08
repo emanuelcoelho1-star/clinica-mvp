@@ -7,6 +7,7 @@ import RbacPermissoes from "./configuracoes/RbacPermissoes";
 import { API } from "./configuracoes/rbacHelpers";
 import ClinicaForm from "../components/ClinicaForm";
 import Planos from "../components/Planos";
+import Assinatura from "../components/Assinatura";
 
 /* ── Icons (mesmos SVGs do prontuário) ────────────────────── */
 const Icons = {
@@ -252,6 +253,7 @@ function Configuracoes({ administrador = false, permissoesAcesso = [] }) {
   const ABAS = [
     { id: "perfil", label: "Perfil" },
     { id: "seguranca", label: "Segurança" },
+    { id: "assinatura", label: "Assinatura" },
     ...(administrador ? [{ id: "clinica", label: "Clínica" }] : []),
     ...(podeAcessarPlanos ? [{ id: "planos", label: "Planos" }] : []),
     ...(administrador ? [{ id: "rbac", label: "Permissões & Acessos" }] : []),
@@ -502,6 +504,9 @@ function Configuracoes({ administrador = false, permissoesAcesso = [] }) {
 
       {/* ═══ Aba: Planos e tabelas de preços ═════ */}
       {abaAtiva === "planos" && podeAcessarPlanos && <Planos />}
+
+      {/* ═══ Aba: Assinatura Sorrisa ═══════════════ */}
+      {abaAtiva === "assinatura" && <Assinatura administrador={administrador} />}
 
       {/* ═══ Aba: RBAC — Permissões & Acessos ══════ */}
       {abaAtiva === "rbac" && (
