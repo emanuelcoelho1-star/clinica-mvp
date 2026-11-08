@@ -128,10 +128,10 @@
 }
 
 .admin-clinic-link {
-  display:inline-flex;align-items:center;gap:7px;padding:0;border:0;background:transparent;
-  color:var(--accent);font:inherit;font-size:13px;font-weight:700;cursor:pointer;text-align:left;
+  display:inline;padding:0;border:0;background:transparent;
+  color:var(--text-primary);font:inherit;font-size:13px;font-weight:650;cursor:pointer;text-align:left;
 }
-.admin-clinic-link:hover {color:var(--accent-hover);text-decoration:underline}
+.admin-clinic-link:hover {color:var(--text-primary);text-decoration:none}
 .admin-detail-heading {align-items:flex-end}
 .admin-back-button {
   display:inline-flex;align-items:center;gap:7px;padding:0;margin:0 0 18px;border:0;
