@@ -245,3 +245,35 @@
   .admin-confirm-actions {flex-direction:column-reverse}
   .admin-confirm-actions button {width:100%}
 }
+
+
+/* Área administrativa de integração de pagamentos */
+.admin-main-tabs {margin-top:2px;margin-bottom:20px}
+.admin-payment-settings {display:flex;flex-direction:column;gap:16px}
+.admin-payment-status {display:inline-flex;align-items:center;padding:6px 10px;border-radius:8px;background:var(--warning-bg);color:var(--warning);font-size:11px;font-weight:700;white-space:nowrap}
+.admin-payment-content {display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:18px;padding:22px}
+.admin-provider-card {padding:18px;border:1px solid var(--border-primary);border-radius:13px;background:var(--bg-card);min-width:0}
+.admin-provider-card.selected {border-color:var(--accent)}
+.admin-provider-brand {display:flex;align-items:center;gap:12px}
+.admin-provider-mark {width:42px;height:42px;display:grid;place-items:center;border-radius:12px;background:var(--accent-bg);color:var(--accent);font-size:20px;font-weight:800}
+.admin-provider-brand div {display:flex;flex-direction:column;gap:4px;min-width:0}
+.admin-provider-brand strong {font-size:15px;color:var(--text-primary)}
+.admin-provider-brand span {font-size:11px;color:var(--text-muted)}
+.admin-provider-tag {display:inline-flex;margin-top:16px;padding:5px 8px;border-radius:7px;background:var(--accent-bg);color:var(--accent);font-size:10px;font-weight:700}
+.admin-provider-card p,.admin-payment-info p {font-size:12px;line-height:1.65;color:var(--text-secondary)}
+.admin-provider-card p {margin:12px 0 16px}
+.admin-provider-state {display:flex;align-items:center;gap:8px;padding-top:13px;border-top:1px solid var(--border-primary);font-size:11px;color:var(--warning);font-weight:650}
+.admin-provider-dot {width:7px;height:7px;border-radius:50%;background:var(--warning);flex-shrink:0}
+.admin-payment-info {padding:5px 2px}
+.admin-payment-info h3 {margin:0 0 8px;font-size:14px;color:var(--text-primary)}
+.admin-payment-info p {margin:0 0 12px}
+.admin-payment-info ul {margin:0;padding-left:18px;color:var(--text-secondary);font-size:12px;line-height:1.9}
+.admin-payment-notice {display:flex;align-items:flex-start;gap:10px;margin:0 22px 22px;padding:13px 14px;border:1px solid var(--border-primary);border-radius:10px;background:var(--bg-table-header);color:var(--text-secondary);font-size:11px;line-height:1.6}
+.admin-payment-notice svg {flex-shrink:0;color:var(--accent);margin-top:1px}
+.admin-payment-notice strong {color:var(--text-primary)}
+@media(max-width:760px) {
+  .admin-payment-content {grid-template-columns:1fr;padding:16px}
+  .admin-payment-notice {margin:0 16px 16px}
+  .admin-main-tabs {overflow-x:auto}
+  .admin-main-tabs button {white-space:nowrap}
+}
