@@ -77,6 +77,9 @@ async function montarDadosPagamento(baseUrl, apiKey, cobranca, tipo) {
       expiracao: pix.expirationDate || null,
     };
   } else if (tipo === "BOLETO") {
+    if (String(cobranca.billingType || "").toUpperCase() !== "BOLETO") {
+      throw new Error("A cobrança existente ainda não está configurada como boleto. Atualize a forma de pagamento e tente novamente.");
+    }
     const boleto = await chamarAsaas(baseUrl, apiKey, "/payments/" + encodeURIComponent(cobranca.id) + "/identificationField");
     dados.boleto = {
       linhaDigitavel: boleto.identificationField || null,
@@ -175,10 +178,31 @@ router.post("/checkout", async (req, res) => {
           }
           if (assinaturaAtual.provedor_assinatura_id && assinaturaAtual.status === "pendente") {
             const cobrancas = await chamarAsaas(baseUrl, credenciais.apiKey, "/subscriptions/" + encodeURIComponent(assinaturaAtual.provedor_assinatura_id) + "/payments");
-            const pagamentoPendente = (cobrancas.data || []).find((item) => !["RECEIVED", "CONFIRMED", "REFUNDED", "DELETED", "CANCELED"].includes(String(item.status || "").toUpperCase()));
+            let pagamentoPendente = (cobrancas.data || []).find((item) => !["RECEIVED", "CONFIRMED", "REFUNDED", "DELETED", "CANCELED"].includes(String(item.status || "").toUpperCase()));
             if (pagamentoPendente) {
+              if (String(pagamentoPendente.billingType || "").toUpperCase() !== meioPagamento) {
+                await chamarAsaas(
+                  baseUrl,
+                  credenciais.apiKey,
+                  "/subscriptions/" + encodeURIComponent(assinaturaAtual.provedor_assinatura_id),
+                  "PUT",
+                  { billingType: meioPagamento, updatePendingPayments: true }
+                );
+                const cobrancasAtualizadas = await chamarAsaas(
+                  baseUrl,
+                  credenciais.apiKey,
+                  "/subscriptions/" + encodeURIComponent(assinaturaAtual.provedor_assinatura_id) + "/payments"
+                );
+                pagamentoPendente = (cobrancasAtualizadas.data || []).find((item) =>
+                  !["RECEIVED", "CONFIRMED", "REFUNDED", "DELETED", "CANCELED"].includes(String(item.status || "").toUpperCase()) &&
+                  String(item.billingType || "").toUpperCase() === meioPagamento
+                );
+              }
+              if (!pagamentoPendente) {
+                return res.status(409).json({ erro: "O Asaas recebeu a alteração da forma de pagamento, mas ainda não disponibilizou a cobrança atualizada. Tente novamente em instantes." });
+              }
               const dadosPagamento = await montarDadosPagamento(baseUrl, credenciais.apiKey, pagamentoPendente, meioPagamento);
-              return res.json({ sucesso: true, pagamento: dadosPagamento, mensagem: "Já existe uma cobrança aguardando pagamento. Os dados foram carregados nesta tela." });
+              return res.json({ sucesso: true, pagamento: dadosPagamento, mensagem: "Cobrança pendente atualizada e carregada nesta tela." });
             }
             return res.status(409).json({ erro: "Já existe uma assinatura em processamento. Aguarde a geração da cobrança antes de tentar novamente." });
           }
