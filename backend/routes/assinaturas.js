@@ -188,18 +188,27 @@ router.post("/checkout", async (req, res) => {
                   "PUT",
                   { billingType: meioPagamento, updatePendingPayments: true }
                 );
-                const cobrancasAtualizadas = await chamarAsaas(
+                // A atualização da recorrência não garante, por si só, que a cobrança
+                // já emitida tenha sido alterada. Atualizamos também a cobrança pendente.
+                await chamarAsaas(
                   baseUrl,
                   credenciais.apiKey,
-                  "/subscriptions/" + encodeURIComponent(assinaturaAtual.provedor_assinatura_id) + "/payments"
+                  "/payments/" + encodeURIComponent(pagamentoPendente.id),
+                  "PUT",
+                  {
+                    billingType: meioPagamento,
+                    value: Number(pagamentoPendente.value),
+                    dueDate: pagamentoPendente.dueDate || dataHoje(),
+                  }
                 );
-                pagamentoPendente = (cobrancasAtualizadas.data || []).find((item) =>
-                  !["RECEIVED", "CONFIRMED", "REFUNDED", "DELETED", "CANCELED"].includes(String(item.status || "").toUpperCase()) &&
-                  String(item.billingType || "").toUpperCase() === meioPagamento
+                pagamentoPendente = await chamarAsaas(
+                  baseUrl,
+                  credenciais.apiKey,
+                  "/payments/" + encodeURIComponent(pagamentoPendente.id)
                 );
               }
-              if (!pagamentoPendente) {
-                return res.status(409).json({ erro: "O Asaas recebeu a alteração da forma de pagamento, mas ainda não disponibilizou a cobrança atualizada. Tente novamente em instantes." });
+              if (String(pagamentoPendente.billingType || "").toUpperCase() !== meioPagamento) {
+                return res.status(409).json({ erro: "O Asaas não confirmou a alteração da cobrança para a forma de pagamento selecionada. Nenhum dado de boleto foi exibido. Tente novamente ou gere uma nova cobrança pelo suporte." });
               }
               const dadosPagamento = await montarDadosPagamento(baseUrl, credenciais.apiKey, pagamentoPendente, meioPagamento);
               return res.json({ sucesso: true, pagamento: dadosPagamento, mensagem: "Cobrança pendente atualizada e carregada nesta tela." });
