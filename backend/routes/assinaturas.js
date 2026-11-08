@@ -101,6 +101,7 @@ async function montarDadosPagamento(baseUrl, apiKey, cobranca, tipo) {
 function carregarContexto(clinicaId, callback) {
   db.get(
     `SELECT c.id, c.nome, c.nome_fantasia, c.cnpj, c.cpf, c.email_contato, c.telefone,
+            c.cep, c.rua, c.numero, c.complemento, c.bairro, c.cidade, c.estado,
             c.status AS clinica_status, s.provedor, s.provedor_cliente_id,
             s.provedor_assinatura_id, s.status AS assinatura_status, s.plano,
             s.periodo_fim, u.email AS email_usuario
