@@ -62,6 +62,47 @@ router.post("/login", loginLimiter, (req, res) => {
   return res.json({ token, administrador: { email: ADMIN_EMAIL } });
 });
 
+router.get("/clinicas/:id", exigirAdmin, (req, res) => {
+  const clinicId = Number(req.params.id);
+  if (!Number.isSafeInteger(clinicId) || clinicId <= 0) {
+    return res.status(400).json({ erro: "Identificador de clínica inválido." });
+  }
+
+  const sqlClinica = `
+    SELECT
+      id, nome, slug, email_contato, telefone, telefone_secundario,
+      cnpj, nome_fantasia, razao_social, cep, rua, numero, complemento,
+      bairro, cidade, estado, logo_url, responsavel_tecnico, cro, site,
+      status, plano, trial_ate, created_at, updated_at
+    FROM clinicas
+    WHERE id = ?
+    LIMIT 1
+  `;
+
+  db.get(sqlClinica, [clinicId], (clinicErr, clinica) => {
+    if (clinicErr) {
+      console.error("Falha ao consultar detalhes da clínica:", clinicErr.message);
+      return res.status(500).json({ erro: "Não foi possível carregar os dados da clínica." });
+    }
+    if (!clinica) return res.status(404).json({ erro: "Clínica não encontrada." });
+
+    db.all(
+      `SELECT id, nome, email, role_id, created_at
+       FROM usuarios
+       WHERE clinica_id = ?
+       ORDER BY nome COLLATE NOCASE ASC, id ASC`,
+      [clinicId],
+      (usersErr, usuarios) => {
+        if (usersErr) {
+          console.error("Falha ao consultar usuários da clínica:", usersErr.message);
+          return res.status(500).json({ erro: "Não foi possível carregar os usuários da clínica." });
+        }
+        return res.json({ clinica, usuarios: usuarios || [] });
+      }
+    );
+  });
+});
+
 router.get("/dashboard", exigirAdmin, (req, res) => {
   const sql = `
     SELECT
