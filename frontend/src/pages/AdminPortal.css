@@ -171,3 +171,22 @@
   .admin-detail-tabs {gap:0}
   .admin-detail-tabs button {flex:1;justify-content:center;padding:11px 7px;font-size:12px}
 }
+
+
+.admin-detail-overview {display:flex;flex-direction:column;gap:16px}
+.admin-detail-metrics {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.admin-detail-metrics .admin-stat-card {padding:18px 19px}
+.admin-detail-metrics .admin-stat-value {font-size:27px;margin:13px 0 5px}
+.admin-detail-usage {grid-template-columns:repeat(3,minmax(0,1fr));padding:18px}
+.admin-detail-note {padding:0 22px 20px;color:var(--text-muted);font-size:12px;line-height:1.5}
+.admin-activity-details {white-space:normal!important;min-width:180px;max-width:340px;overflow-wrap:anywhere}
+.admin-detail-tabs {overflow-x:auto;scrollbar-width:thin}
+.admin-detail-tabs button {white-space:nowrap;flex-shrink:0}
+@media(max-width:900px) {
+ .admin-detail-metrics {grid-template-columns:repeat(2,minmax(0,1fr))}
+ .admin-detail-usage {grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:520px) {
+ .admin-detail-metrics,.admin-detail-usage {grid-template-columns:1fr}
+ .admin-detail-metrics .admin-stat-card {padding:15px}
+}
