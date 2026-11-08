@@ -11,7 +11,8 @@ function dataBR(valor) {
 export default function Assinatura({ administrador = false }) {
   const [status, setStatus] = useState(null);
   const [plano, setPlano] = useState("mensal");
-  const [checkoutUrl, setCheckoutUrl] = useState("");
+  const [meioPagamento, setMeioPagamento] = useState("PIX");
+  const [pagamento, setPagamento] = useState(null);
   const [mensagem, setMensagem] = useState("");
   const [erro, setErro] = useState("");
   const [carregando, setCarregando] = useState(true);
@@ -42,17 +43,17 @@ export default function Assinatura({ administrador = false }) {
     setContratando(true);
     setErro("");
     setMensagem("");
-    setCheckoutUrl("");
+    setPagamento(null);
     try {
       const resposta = await fetch(API_URL + "/assinaturas/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
-        body: JSON.stringify({ plano }),
+        body: JSON.stringify({ plano, meioPagamento }),
       });
       const corpo = await resposta.json();
       if (!resposta.ok) throw new Error(corpo.erro || "Não foi possível iniciar a contratação.");
       setMensagem(corpo.mensagem || "Solicitação enviada ao Asaas.");
-      setCheckoutUrl(corpo.checkout_url || "");
+      setPagamento(corpo.pagamento || null);
     } catch (e) {
       setErro(e.message || "Falha ao iniciar a contratação.");
     } finally {
@@ -104,24 +105,82 @@ export default function Assinatura({ administrador = false }) {
         </button>
       </div>
 
+      {administrador && (
+        <div className="sorrisa-subscription-payment-methods">
+          <div className="sorrisa-subscription-payment-heading">
+            <strong>Forma de pagamento</strong>
+            <span>Escolha como deseja pagar sua assinatura</span>
+          </div>
+          <div className="sorrisa-subscription-method-grid">
+            <button type="button" className={"sorrisa-subscription-method " + (meioPagamento === "PIX" ? "selected" : "")} onClick={() => { setMeioPagamento("PIX"); setPagamento(null); }}>
+              <span className="sorrisa-subscription-method-icon">◇</span>
+              <strong>Pix</strong>
+              <small>QR Code ou copia e cola</small>
+            </button>
+            <button type="button" className={"sorrisa-subscription-method " + (meioPagamento === "BOLETO" ? "selected" : "")} onClick={() => { setMeioPagamento("BOLETO"); setPagamento(null); }}>
+              <span className="sorrisa-subscription-method-icon">▤</span>
+              <strong>Boleto</strong>
+              <small>Linha digitável e documento</small>
+            </button>
+            <div className="sorrisa-subscription-method is-disabled" aria-disabled="true">
+              <span className="sorrisa-subscription-method-icon">▣</span>
+              <strong>Cartão</strong>
+              <small>Integração segura em preparação</small>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="sorrisa-subscription-includes">
         <strong>Sorrisa Completo inclui:</strong>
         <span>Todos os módulos, usuários e recursos disponíveis no sistema.</span>
         <span>Dados da clínica preservados mesmo em caso de expiração da assinatura.</span>
       </div>
 
+      {pagamento && (
+        <div className="sorrisa-subscription-payment-result">
+          <div className="sorrisa-subscription-payment-result-heading">
+            <div>
+              <strong>{pagamento.tipo === "PIX" ? "Pague com Pix" : "Pague com boleto"}</strong>
+              <span>Valor: {Number(pagamento.valor || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} · Vencimento: {dataBR(pagamento.vencimento)}</span>
+            </div>
+            <span className="sorrisa-subscription-pending">Aguardando pagamento</span>
+          </div>
+          {pagamento.tipo === "PIX" && (
+            <div className="sorrisa-subscription-pix">
+              {pagamento.pix?.imagem ? <img className="sorrisa-subscription-qr" src={"data:image/png;base64," + pagamento.pix.imagem} alt="QR Code Pix para pagamento da assinatura" /> : <p>QR Code ainda não disponível.</p>}
+              <div className="sorrisa-subscription-copy-area">
+                <label htmlFor="sorrisa-pix-code">Pix copia e cola</label>
+                <textarea id="sorrisa-pix-code" readOnly value={pagamento.pix?.copiaECola || ""} rows={3} />
+                <button type="button" className="sorrisa-subscription-secondary" disabled={!pagamento.pix?.copiaECola} onClick={() => navigator.clipboard?.writeText(pagamento.pix.copiaECola).then(() => setMensagem("Código Pix copiado."), () => setErro("Não foi possível copiar automaticamente. Selecione e copie o código."))}>Copiar código Pix</button>
+              </div>
+            </div>
+          )}
+          {pagamento.tipo === "BOLETO" && (
+            <div className="sorrisa-subscription-boleto">
+              <label htmlFor="sorrisa-boleto-code">Linha digitável</label>
+              <textarea id="sorrisa-boleto-code" readOnly value={pagamento.boleto?.linhaDigitavel || ""} rows={2} />
+              <button type="button" className="sorrisa-subscription-secondary" disabled={!pagamento.boleto?.linhaDigitavel} onClick={() => navigator.clipboard?.writeText(pagamento.boleto.linhaDigitavel).then(() => setMensagem("Linha digitável copiada."), () => setErro("Não foi possível copiar automaticamente. Selecione e copie a linha digitável."))}>Copiar linha digitável</button>
+              {pagamento.boleto?.url && <iframe className="sorrisa-subscription-boleto-frame" title="Boleto da assinatura Sorrisa" src={pagamento.boleto.url} /> }
+              {!pagamento.boleto?.url && <p>O documento do boleto ainda não está disponível. A linha digitável pode ser utilizada para pagamento.</p>}
+            </div>
+          )}
+          <p className="sorrisa-subscription-footnote">O pagamento será confirmado pelo Asaas. A criação desta cobrança, por si só, não libera o acesso.</p>
+        </div>
+      )}
+
       {administrador ? (
         <div className="sorrisa-subscription-actions">
           <button type="button" className="sorrisa-subscription-primary" onClick={iniciarCheckout} disabled={contratando || carregando}>
             {contratando ? "Preparando cobrança..." : "Continuar para pagamento"}
           </button>
-          {checkoutUrl && <a className="sorrisa-subscription-link" href={checkoutUrl} target="_blank" rel="noopener noreferrer">Abrir página segura de pagamento</a>}
+
         </div>
       ) : (
         <p className="sorrisa-subscription-muted">Somente o administrador da clínica pode contratar ou alterar o plano.</p>
       )}
 
-      <p className="sorrisa-subscription-footnote">Ambiente de testes: nenhuma cobrança real será realizada enquanto o provedor estiver configurado como Sandbox. O acesso só será ativado após a confirmação do pagamento; a sincronização automática por webhook será implementada na próxima etapa.</p>
+      <p className="sorrisa-subscription-footnote">Ambiente de testes: nenhuma cobrança real será realizada enquanto o provedor estiver configurado como Sandbox. Pix e boleto são exibidos nesta tela. A integração segura de cartão e a confirmação automática por webhook serão concluídas em etapas seguintes.</p>
     </section>
   );
 }
