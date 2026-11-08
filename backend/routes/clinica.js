@@ -20,7 +20,7 @@ function exigirAdministrador(req, res, next) {
 }
 
 const CAMPOS = [
-  "nome", "nome_fantasia", "razao_social", "cnpj", "email_contato", "telefone",
+  "nome", "nome_fantasia", "razao_social", "cnpj", "cpf", "email_contato", "telefone",
   "telefone_secundario", "cep", "rua", "numero", "complemento", "bairro",
   "cidade", "estado", "logo_url", "responsavel_tecnico", "cro", "site"
 ];
@@ -28,7 +28,7 @@ const CAMPOS = [
 // Qualquer usuário autenticado da mesma clínica pode ler os dados para montar documentos.
 router.get("/", (req, res) => {
   db.get(
-    `SELECT id, nome, nome_fantasia, razao_social, cnpj, email_contato, telefone,
+    `SELECT id, nome, nome_fantasia, razao_social, cnpj, cpf, email_contato, telefone,
             telefone_secundario, cep, rua, numero, complemento, bairro, cidade,
             estado, logo_url, responsavel_tecnico, cro, site
      FROM clinicas WHERE id = ?`,
