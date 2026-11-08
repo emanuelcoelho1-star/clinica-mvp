@@ -311,7 +311,7 @@ router.get("/payment-settings", exigirAdmin, (req, res) => {
     if (!row) return res.json({ provedor: "asaas", ambiente: "sandbox", possui_chave_api: false, possui_token_webhook: false, atualizado_em: null });
     try {
       const credenciais = decifrarCredenciais(row.credenciais_cifradas);
-      return res.json({ provedor: row.provedor, ambiente: row.ambiente, possui_chave_api: Boolean(credenciais.apiKey), possui_token_webhook: Boolean(credenciais.webhookToken), atualizado_em: row.updated_at });
+      return res.json({ provedor: row.provedor, ambiente: row.ambiente, possui_chave_api: Boolean(credenciais.apiKey), possui_token_webhook: Boolean(credenciais.webhookToken || process.env.ASAAS_WEBHOOK_TOKEN), atualizado_em: row.updated_at });
     } catch (e) {
       console.error("Não foi possível descriptografar as credenciais de pagamento.");
       return res.status(503).json({ erro: "A chave de criptografia das credenciais não está disponível ou foi alterada." });
