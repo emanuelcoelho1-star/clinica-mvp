@@ -57,6 +57,7 @@ export default function AdminPortal() {
   const [detalheClinica, setDetalheClinica] = useState(null);
   const [carregandoDetalhe, setCarregandoDetalhe] = useState(false);
   const [erroDetalhe, setErroDetalhe] = useState("");
+  const [abaDetalhe, setAbaDetalhe] = useState("dados");
 
   async function carregarPainel(chave = token) {
     if (!chave) return;
@@ -119,11 +120,13 @@ export default function AdminPortal() {
   }, [token, clinicaSelecionada]);
 
   function abrirClinica(id) {
+    setAbaDetalhe("dados");
     window.history.pushState({ adminPage: "clinica", clinicId: id }, "", "/administracao/clinicas/" + id);
     setClinicaSelecionada(Number(id));
   }
 
   function voltarParaClinicas() {
+    setAbaDetalhe("dados");
     window.history.pushState({ adminPage: "dashboard" }, "", "/administracao");
     setClinicaSelecionada(null);
   }
@@ -232,7 +235,16 @@ export default function AdminPortal() {
               <div className="admin-panel admin-loading">Carregando dados da clínica...</div>
             ) : detalheClinica ? (
               <>
-                <section className="admin-panel admin-detail-card">
+                <nav className="admin-detail-tabs" aria-label="Seções dos detalhes da clínica">
+                  <button type="button" className={abaDetalhe === "dados" ? "active" : ""} onClick={() => setAbaDetalhe("dados")}>
+                    <Icone tipo="clinic" size={16} /> Dados da clínica
+                  </button>
+                  <button type="button" className={abaDetalhe === "usuarios" ? "active" : ""} onClick={() => setAbaDetalhe("usuarios")}>
+                    <Icone tipo="users" size={16} /> Usuários cadastrados
+                    <span className="admin-detail-tab-count">{detalheClinica.usuarios.length}</span>
+                  </button>
+                </nav>
+                {abaDetalhe === "dados" && <section className="admin-panel admin-detail-card">
                   <div className="admin-panel-header"><div><h2>Dados da clínica</h2><p>Informações cadastradas na plataforma.</p></div></div>
                   <div className="admin-detail-fields">
                     {[
@@ -262,8 +274,8 @@ export default function AdminPortal() {
                       </div>
                     ))}
                   </div>
-                </section>
-                <section className="admin-panel admin-detail-users">
+                </section>}
+                {abaDetalhe === "usuarios" && <section className="admin-panel admin-detail-users">
                   <div className="admin-panel-header">
                     <div><h2>Usuários cadastrados</h2><p>{detalheClinica.usuarios.length} usuário(s) vinculado(s) a esta clínica.</p></div>
                   </div>
@@ -282,7 +294,7 @@ export default function AdminPortal() {
                       </tbody>
                     </table>
                   </div>
-                </section>
+                </section>}
               </>
             ) : null}
           </>
