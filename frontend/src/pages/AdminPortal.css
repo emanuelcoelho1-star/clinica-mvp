@@ -277,3 +277,26 @@
   .admin-main-tabs {overflow-x:auto}
   .admin-main-tabs button {white-space:nowrap}
 }
+
+
+.admin-payment-form {padding:22px}
+.admin-payment-form-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 18px}
+.admin-payment-field-wide {grid-column:1 / -1}
+.admin-payment-form .admin-field {margin-top:0;margin-bottom:17px}
+.admin-payment-form .admin-field label {text-transform:none;letter-spacing:0;font-size:12px}
+.admin-payment-form input,.admin-payment-form select {
+  width:100%;height:43px;padding:0 12px;border:1px solid var(--border-input);border-radius:9px;
+  background:var(--bg-input-alt);color:var(--text-primary);font:inherit;font-size:13px;outline:none
+}
+.admin-payment-form input:focus,.admin-payment-form select:focus {border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-bg)}
+.admin-payment-form small {font-size:11px;color:var(--text-muted);line-height:1.5}
+.admin-payment-form-footer {display:flex;align-items:center;justify-content:space-between;gap:14px;padding-top:16px;border-top:1px solid var(--border-primary)}
+.admin-payment-form-footer span {font-size:11px;color:var(--text-muted)}
+.admin-payment-form-footer button {min-height:40px;padding:0 16px}
+@media(max-width:650px) {
+ .admin-payment-form {padding:16px}
+ .admin-payment-form-grid {grid-template-columns:1fr}
+ .admin-payment-field-wide {grid-column:auto}
+ .admin-payment-form-footer {align-items:stretch;flex-direction:column}
+ .admin-payment-form-footer button {width:100%}
+}
