@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const db = require("../database");
+const verificarAcessoAssinatura = require("../services/assinaturas");
 
 /* ── SECRET centralizado (mesmo do routes/auth.js) ── */
 const SECRET = process.env.JWT_SECRET;
@@ -67,8 +68,18 @@ module.exports = (req, res, next) => {
           return res.status(403).json({ erro: "O perfil de acesso não pertence a esta clínica." });
         }
 
-        req.user = { ...decoded, nome: user.nome, email: user.email, clinica_id: user.clinica_id };
-        next();
+        verificarAcessoAssinatura(user.clinica_id, (assinaturaErr, acesso) => {
+          if (assinaturaErr) {
+            console.error("Falha ao validar assinatura da clínica:", assinaturaErr.message);
+            return res.status(500).json({ erro: "Não foi possível validar a assinatura da clínica." });
+          }
+          if (!acesso.permitido) {
+            return res.status(403).json({ erro: acesso.mensagem });
+          }
+
+          req.user = { ...decoded, nome: user.nome, email: user.email, clinica_id: user.clinica_id };
+          return next();
+        });
       }
     );
   } catch (error) {
