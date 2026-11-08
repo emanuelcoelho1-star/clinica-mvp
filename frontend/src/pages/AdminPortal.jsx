@@ -60,6 +60,10 @@ export default function AdminPortal() {
   const [carregandoDetalhe, setCarregandoDetalhe] = useState(false);
   const [erroDetalhe, setErroDetalhe] = useState("");
   const [abaDetalhe, setAbaDetalhe] = useState("visao-geral");
+  const [planoEditado, setPlanoEditado] = useState("");
+  const [notaSuporte, setNotaSuporte] = useState("");
+  const [salvandoAcao, setSalvandoAcao] = useState(false);
+  const [feedbackAcao, setFeedbackAcao] = useState("");
 
   async function carregarPainel(chave = token) {
     if (!chave) return;
@@ -120,6 +124,44 @@ export default function AdminPortal() {
     carregarDetalhe();
     return () => { ativo = false; };
   }, [token, clinicaSelecionada]);
+
+  async function atualizarClinica(payload) {
+    if (!clinicaSelecionada || salvandoAcao) return;
+    setSalvandoAcao(true); setFeedbackAcao("");
+    try {
+      const resposta = await fetch(API_URL + "/admin/clinicas/" + clinicaSelecionada, {
+        method: "PATCH", headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+        body: JSON.stringify(payload),
+      });
+      const corpo = await resposta.json();
+      if (!resposta.ok) throw new Error(corpo.erro || "Não foi possível atualizar a clínica.");
+      setDetalheClinica((atual) => atual ? {
+        ...atual, clinica: { ...atual.clinica, ...corpo.clinica },
+        assinatura: payload.plano !== undefined ? { ...(atual.assinatura || {}), plano: corpo.clinica.plano } : atual.assinatura,
+      } : atual);
+      setFeedbackAcao("Alterações salvas com sucesso.");
+      carregarPainel();
+    } catch (e) { setFeedbackAcao(e.message || "Não foi possível concluir a ação."); }
+    finally { setSalvandoAcao(false); }
+  }
+
+  async function salvarNotaSuporte(evento) {
+    evento.preventDefault();
+    const nota = notaSuporte.trim();
+    if (!nota || !clinicaSelecionada || salvandoAcao) return;
+    setSalvandoAcao(true); setFeedbackAcao("");
+    try {
+      const resposta = await fetch(API_URL + "/admin/clinicas/" + clinicaSelecionada + "/notas-suporte", {
+        method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+        body: JSON.stringify({ nota }),
+      });
+      const corpo = await resposta.json();
+      if (!resposta.ok) throw new Error(corpo.erro || "Não foi possível salvar a anotação.");
+      setDetalheClinica((atual) => atual ? { ...atual, notasSuporte: [corpo.nota, ...(atual.notasSuporte || [])] } : atual);
+      setNotaSuporte(""); setFeedbackAcao("Anotação registrada.");
+    } catch (e) { setFeedbackAcao(e.message || "Não foi possível salvar a anotação."); }
+    finally { setSalvandoAcao(false); }
+  }
 
   function abrirClinica(id) {
     setAbaDetalhe("visao-geral");
@@ -244,6 +286,7 @@ export default function AdminPortal() {
                   <button type="button" className={abaDetalhe === "assinatura" ? "active" : ""} onClick={() => setAbaDetalhe("assinatura")}><Icone tipo="check" size={16} /> Assinatura</button>
                   <button type="button" className={abaDetalhe === "utilizacao" ? "active" : ""} onClick={() => setAbaDetalhe("utilizacao")}><Icone tipo="storage" size={16} /> Utilização</button>
                   <button type="button" className={abaDetalhe === "atividades" ? "active" : ""} onClick={() => setAbaDetalhe("atividades")}><Icone tipo="clock" size={16} /> Atividades</button>
+                  <button type="button" className={abaDetalhe === "suporte" ? "active" : ""} onClick={() => { setAbaDetalhe("suporte"); setFeedbackAcao(""); }}><Icone tipo="users" size={16} /> Suporte</button>
                 </nav>
                 {abaDetalhe === "visao-geral" && <section className="admin-detail-overview">
                   <div className="admin-detail-metrics">
@@ -251,6 +294,22 @@ export default function AdminPortal() {
                     <article className="admin-stat-card"><div className="admin-stat-label">Pacientes</div><div className="admin-stat-value">{detalheClinica.utilizacao?.pacientes ?? 0}</div><div className="admin-stat-foot">Cadastros na clínica</div></article>
                     <article className="admin-stat-card"><div className="admin-stat-label">Consultas</div><div className="admin-stat-value">{detalheClinica.utilizacao?.consultas ?? 0}</div><div className="admin-stat-foot">Registros de agenda</div></article>
                     <article className="admin-stat-card"><div className="admin-stat-label">Armazenamento</div><div className="admin-stat-value admin-stat-storage">{bytesBR(detalheClinica.utilizacao?.armazenamento_bytes)}</div><div className="admin-stat-foot">Arquivos enviados</div></article>
+                  </div>
+                  <div className="admin-panel admin-clinic-actions">
+                    <div className="admin-panel-header"><div><h2>Ações administrativas</h2><p>Gerencie o acesso e o plano cadastrado desta clínica.</p></div></div>
+                    <div className="admin-clinic-actions-grid">
+                      <div className="admin-action-block">
+                        <strong>Acesso à clínica</strong>
+                        <p>Status atual: <span className={detalheClinica.clinica.status === "ativa" ? "admin-status-active" : "admin-status-suspended"}>{detalheClinica.clinica.status || "—"}</span></p>
+                        <button className={detalheClinica.clinica.status === "suspensa" ? "admin-primary-button" : "admin-secondary-button"} type="button" disabled={salvandoAcao || detalheClinica.clinica.status === "cancelada"} onClick={() => atualizarClinica({ status: detalheClinica.clinica.status === "suspensa" ? "ativa" : "suspensa" })}>{salvandoAcao ? "Salvando..." : detalheClinica.clinica.status === "suspensa" ? "Reativar clínica" : "Suspender acesso"}</button>
+                      </div>
+                      <form className="admin-action-block" onSubmit={(e) => { e.preventDefault(); atualizarClinica({ plano: planoEditado || detalheClinica.clinica.plano }); }}>
+                        <label htmlFor="admin-clinic-plan">Plano cadastrado</label>
+                        <input id="admin-clinic-plan" value={planoEditado || detalheClinica.clinica.plano || ""} onChange={(e) => setPlanoEditado(e.target.value)} maxLength={40} required />
+                        <button className="admin-secondary-button" type="submit" disabled={salvandoAcao || !(planoEditado || detalheClinica.clinica.plano || "").trim()}>{salvandoAcao ? "Salvando..." : "Salvar plano"}</button>
+                      </form>
+                    </div>
+                    {feedbackAcao && <div className="admin-action-feedback" role="status">{feedbackAcao}</div>}
                   </div>
                   <div className="admin-panel admin-detail-card">
                     <div className="admin-panel-header"><div><h2>Resumo da conta</h2><p>Informações principais para acompanhamento administrativo.</p></div></div>
@@ -336,6 +395,21 @@ export default function AdminPortal() {
                       {!detalheClinica.atividades?.length && <tr><td className="admin-empty-cell" colSpan="5">Nenhuma atividade registrada para esta clínica.</td></tr>}
                     </tbody>
                   </table></div>
+                </section>}
+                {abaDetalhe === "suporte" && <section className="admin-panel admin-detail-card admin-support-panel">
+                  <div className="admin-panel-header"><div><h2>Suporte e observações internas</h2><p>Registre informações de atendimento visíveis apenas no painel administrativo.</p></div></div>
+                  <form className="admin-support-form" onSubmit={salvarNotaSuporte}>
+                    <label htmlFor="admin-support-note">Nova anotação</label>
+                    <textarea id="admin-support-note" value={notaSuporte} onChange={(e) => setNotaSuporte(e.target.value)} maxLength={5000} rows={4} placeholder="Descreva o contato, problema relatado ou orientação..." required />
+                    <div className="admin-support-form-footer"><span>{notaSuporte.length}/5000 caracteres</span><button className="admin-primary-button" type="submit" disabled={salvandoAcao || !notaSuporte.trim()}>{salvandoAcao ? "Salvando..." : "Registrar anotação"}</button></div>
+                  </form>
+                  {feedbackAcao && <div className="admin-action-feedback" role="status">{feedbackAcao}</div>}
+                  <div className="admin-support-history"><h3>Histórico de suporte</h3>
+                    {(detalheClinica.notasSuporte || []).map((item) => <article className="admin-support-note" key={item.id}>
+                      <div className="admin-support-note-meta"><strong>{item.administrador_email || "Administrador"}</strong><span>{dataHoraBR(item.created_at)}</span></div><p>{item.nota}</p>
+                    </article>)}
+                    {!detalheClinica.notasSuporte?.length && <div className="admin-empty-cell">Nenhuma anotação registrada para esta clínica.</div>}
+                  </div>
                 </section>}
                 {abaDetalhe === "usuarios" && <section className="admin-panel admin-detail-users">
                   <div className="admin-panel-header">
