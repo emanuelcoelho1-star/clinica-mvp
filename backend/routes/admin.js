@@ -7,6 +7,15 @@ const db = require("../database");
 const router = express.Router();
 
 db.run(`
+  CREATE TABLE IF NOT EXISTS admin_payment_settings (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    provedor TEXT NOT NULL DEFAULT 'asaas',
+    ambiente TEXT NOT NULL DEFAULT 'sandbox',
+    credenciais_cifradas TEXT,
+    updated_at TEXT DEFAULT (datetime('now','localtime'))
+  )
+`);
+db.run(`
   CREATE TABLE IF NOT EXISTS admin_clinica_notas (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     clinica_id INTEGER NOT NULL,
@@ -272,6 +281,77 @@ router.post("/clinicas/:id/notas-suporte", exigirAdmin, (req, res) => {
         });
       }
     );
+  });
+});
+
+
+function chaveCredenciaisPagamento() {
+  const segredo = String(process.env.PAYMENT_CREDENTIALS_KEY || "");
+  if (segredo.length < 32) throw new Error("PAYMENT_CREDENTIALS_KEY não configurada.");
+  return crypto.createHash("sha256").update(segredo, "utf8").digest();
+}
+function cifrarCredenciais(valor) {
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv("aes-256-gcm", chaveCredenciaisPagamento(), iv);
+  const conteudo = Buffer.concat([cipher.update(JSON.stringify(valor), "utf8"), cipher.final()]);
+  return JSON.stringify({ iv: iv.toString("base64"), tag: cipher.getAuthTag().toString("base64"), data: conteudo.toString("base64") });
+}
+function decifrarCredenciais(valor) {
+  if (!valor) return {};
+  const pacote = JSON.parse(valor);
+  const decipher = crypto.createDecipheriv("aes-256-gcm", chaveCredenciaisPagamento(), Buffer.from(pacote.iv, "base64"));
+  decipher.setAuthTag(Buffer.from(pacote.tag, "base64"));
+  const conteudo = Buffer.concat([decipher.update(Buffer.from(pacote.data, "base64")), decipher.final()]);
+  return JSON.parse(conteudo.toString("utf8"));
+}
+
+router.get("/payment-settings", exigirAdmin, (req, res) => {
+  db.get("SELECT provedor, ambiente, credenciais_cifradas, updated_at FROM admin_payment_settings WHERE id = 1", [], (err, row) => {
+    if (err) return res.status(500).json({ erro: "Não foi possível carregar as configurações de pagamento." });
+    if (!row) return res.json({ provedor: "asaas", ambiente: "sandbox", possui_chave_api: false, possui_token_webhook: false, atualizado_em: null });
+    try {
+      const credenciais = decifrarCredenciais(row.credenciais_cifradas);
+      return res.json({ provedor: row.provedor, ambiente: row.ambiente, possui_chave_api: Boolean(credenciais.apiKey), possui_token_webhook: Boolean(credenciais.webhookToken), atualizado_em: row.updated_at });
+    } catch (e) {
+      console.error("Não foi possível descriptografar as credenciais de pagamento.");
+      return res.status(503).json({ erro: "A chave de criptografia das credenciais não está disponível ou foi alterada." });
+    }
+  });
+});
+
+router.put("/payment-settings", exigirAdmin, (req, res) => {
+  const provedor = String(req.body?.provedor || "").trim().toLowerCase();
+  const ambiente = String(req.body?.ambiente || "").trim().toLowerCase();
+  const apiKeyNova = typeof req.body?.apiKey === "string" ? req.body.apiKey.trim() : "";
+  const webhookTokenNovo = typeof req.body?.webhookToken === "string" ? req.body.webhookToken.trim() : "";
+  if (!["asaas", "outro"].includes(provedor)) return res.status(400).json({ erro: "Selecione um provedor válido." });
+  if (!["sandbox", "producao"].includes(ambiente)) return res.status(400).json({ erro: "Selecione um ambiente válido." });
+  db.get("SELECT provedor, credenciais_cifradas FROM admin_payment_settings WHERE id = 1", [], (findErr, atual) => {
+    if (findErr) return res.status(500).json({ erro: "Não foi possível consultar a configuração atual." });
+    let credenciaisAtuais = {};
+    try {
+      if (atual?.credenciais_cifradas) credenciaisAtuais = decifrarCredenciais(atual.credenciais_cifradas);
+      if (atual && atual.provedor !== provedor && !apiKeyNova) return res.status(400).json({ erro: "Informe a nova chave de API ao trocar de provedor." });
+      const credenciais = {
+        apiKey: apiKeyNova || credenciaisAtuais.apiKey || "",
+        webhookToken: webhookTokenNovo || credenciaisAtuais.webhookToken || "",
+      };
+      if (!credenciais.apiKey) return res.status(400).json({ erro: "Informe a chave de API do provedor." });
+      const cifradas = cifrarCredenciais(credenciais);
+      db.run(`INSERT INTO admin_payment_settings (id, provedor, ambiente, credenciais_cifradas, updated_at)
+        VALUES (1, ?, ?, ?, datetime('now','localtime'))
+        ON CONFLICT(id) DO UPDATE SET provedor=excluded.provedor, ambiente=excluded.ambiente,
+        credenciais_cifradas=excluded.credenciais_cifradas, updated_at=datetime('now','localtime')`,
+        [provedor, ambiente, cifradas], function (saveErr) {
+          if (saveErr) return res.status(500).json({ erro: "Não foi possível salvar as configurações de pagamento." });
+          db.run("INSERT INTO auditoria (acao, recurso, detalhes, ip) VALUES (?, ?, ?, ?)",
+            ["configuracao_pagamentos", "integracao", "Configurações do provedor de pagamentos atualizadas.", req.ip || null]);
+          return res.json({ sucesso: true, provedor, ambiente, possui_chave_api: true, possui_token_webhook: Boolean(credenciais.webhookToken), atualizado_em: new Date().toISOString() });
+        });
+    } catch (e) {
+      console.error("Falha ao proteger credenciais de pagamento.");
+      return res.status(503).json({ erro: "Não foi possível proteger as credenciais. Verifique PAYMENT_CREDENTIALS_KEY no backend." });
+    }
   });
 });
 
