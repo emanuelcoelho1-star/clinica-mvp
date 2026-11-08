@@ -93,12 +93,12 @@ export default function Assinatura({ administrador = false }) {
       </div>
 
       <div className="sorrisa-subscription-plans">
-        <button type="button" className={"sorrisa-subscription-plan " + (plano === "mensal" ? "selected" : "")} onClick={() => { setPlano("mensal"); setCheckoutUrl(""); }}>
+        <button type="button" className={"sorrisa-subscription-plan " + (plano === "mensal" ? "selected" : "")} onClick={() => { setPlano("mensal"); setPagamento(null); }}>
           <span className="sorrisa-subscription-plan-top"><strong>Mensal</strong>{plano === "mensal" && <span>Selecionado</span>}</span>
           <span className="sorrisa-subscription-price">R$ 79,99 <small>/ mês</small></span>
           <span className="sorrisa-subscription-muted">Cobrança mensal recorrente</span>
         </button>
-        <button type="button" className={"sorrisa-subscription-plan " + (plano === "anual" ? "selected" : "")} onClick={() => { setPlano("anual"); setCheckoutUrl(""); }}>
+        <button type="button" className={"sorrisa-subscription-plan " + (plano === "anual" ? "selected" : "")} onClick={() => { setPlano("anual"); setPagamento(null); }}>
           <span className="sorrisa-subscription-plan-top"><strong>Anual</strong>{plano === "anual" && <span>Selecionado</span>}</span>
           <span className="sorrisa-subscription-price">R$ 799,90 <small>/ ano</small></span>
           <span className="sorrisa-subscription-muted">Equivalente a 10 mensalidades · economize R$ 159,98</span>
