@@ -27,7 +27,14 @@ function decifrarCredenciais(valor) {
 }
 
 function dataHoje() {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date());
+  const partes = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const valores = Object.fromEntries(partes.map((parte) => [parte.type, parte.value]));
+  return valores.year + "-" + valores.month + "-" + valores.day;
 }
 
 async function chamarAsaas(baseUrl, apiKey, caminho, metodo = "GET", body) {
@@ -153,6 +160,13 @@ router.post("/checkout", async (req, res) => {
               externalReference: "sorrisa-clinica-" + clinica.id,
             });
             clienteId = cliente.id;
+            await new Promise((resolve, reject) => {
+              db.run(
+                "UPDATE assinaturas SET provedor = 'asaas', provedor_cliente_id = ?, updated_at = datetime('now','localtime') WHERE clinica_id = ?",
+                [clienteId, req.user.clinica_id],
+                (saveCustomerErr) => saveCustomerErr ? reject(saveCustomerErr) : resolve()
+              );
+            });
           }
 
           const novaAssinatura = await chamarAsaas(baseUrl, credenciais.apiKey, "/subscriptions", "POST", {
