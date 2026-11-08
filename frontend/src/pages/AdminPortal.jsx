@@ -65,6 +65,7 @@ export default function AdminPortal() {
   const [notaSuporte, setNotaSuporte] = useState("");
   const [salvandoAcao, setSalvandoAcao] = useState(false);
   const [feedbackAcao, setFeedbackAcao] = useState("");
+  const [diasGratis, setDiasGratis] = useState("7");
   const [modalSuspensaoAberto, setModalSuspensaoAberto] = useState(false);
   const [abaPainel, setAbaPainel] = useState("visao-geral");
   const [configPagamento, setConfigPagamento] = useState({ provedor: "asaas", ambiente: "sandbox", possui_chave_api: false, possui_token_webhook: false, atualizado_em: null });
@@ -207,6 +208,34 @@ export default function AdminPortal() {
       setNotaSuporte(""); setFeedbackAcao("Anotação registrada.");
     } catch (e) { setFeedbackAcao(e.message || "Não foi possível salvar a anotação."); }
     finally { setSalvandoAcao(false); }
+  }
+
+  async function adicionarDiasGratis(evento) {
+    evento.preventDefault();
+    const dias = Number(diasGratis);
+    if (!clinicaSelecionada || salvandoAcao || !Number.isInteger(dias) || dias < 1 || dias > 365) return;
+    setSalvandoAcao(true);
+    setFeedbackAcao("");
+    try {
+      const resposta = await fetch(API_URL + "/admin/clinicas/" + clinicaSelecionada + "/dias-gratis", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+        body: JSON.stringify({ dias }),
+      });
+      const corpo = await resposta.json();
+      if (!resposta.ok) throw new Error(corpo.erro || "Não foi possível adicionar os dias grátis.");
+      setDetalheClinica((atual) => atual ? {
+        ...atual,
+        clinica: { ...atual.clinica, trial_ate: corpo.trial_ate },
+        assinatura: { ...(atual.assinatura || {}), status: "trial", periodo_fim: corpo.trial_ate },
+      } : atual);
+      setFeedbackAcao(dias + " dia(s) grátis adicionados. Novo vencimento: " + dataHoraBR(corpo.trial_ate) + ".");
+      carregarPainel();
+    } catch (e) {
+      setFeedbackAcao(e.message || "Não foi possível adicionar os dias grátis.");
+    } finally {
+      setSalvandoAcao(false);
+    }
   }
 
   function abrirClinica(id) {
@@ -353,6 +382,13 @@ export default function AdminPortal() {
                         <label htmlFor="admin-clinic-plan">Plano cadastrado</label>
                         <input id="admin-clinic-plan" value={planoEditado || detalheClinica.clinica.plano || ""} onChange={(e) => setPlanoEditado(e.target.value)} maxLength={40} required />
                         <button className="admin-secondary-button" type="submit" disabled={salvandoAcao || !(planoEditado || detalheClinica.clinica.plano || "").trim()}>{salvandoAcao ? "Salvando..." : "Salvar plano"}</button>
+                      </form>
+                      <form className="admin-action-block" onSubmit={adicionarDiasGratis}>
+                        <strong>Período gratuito</strong>
+                        <p>Adicione dias de teste para esta clínica sem alterar outras contas.</p>
+                        <label htmlFor="admin-clinic-free-days">Dias grátis adicionais</label>
+                        <input id="admin-clinic-free-days" type="number" min="1" max="365" step="1" value={diasGratis} onChange={(e) => setDiasGratis(e.target.value)} required />
+                        <button className="admin-secondary-button" type="submit" disabled={salvandoAcao || !Number.isInteger(Number(diasGratis)) || Number(diasGratis) < 1 || Number(diasGratis) > 365}>{salvandoAcao ? "Aplicando..." : "Adicionar dias grátis"}</button>
                       </form>
                     </div>
                     {feedbackAcao && <div className="admin-action-feedback" role="status">{feedbackAcao}</div>}
