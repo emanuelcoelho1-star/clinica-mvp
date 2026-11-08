@@ -50,6 +50,13 @@ export default function AdminPortal() {
   const [erro, setErro] = useState("");
   const [carregando, setCarregando] = useState(false);
   const [busca, setBusca] = useState("");
+  const [clinicaSelecionada, setClinicaSelecionada] = useState(() => {
+    const match = window.location.pathname.match(/\/administracao\/clinicas\/(\d+)/);
+    return match ? Number(match[1]) : null;
+  });
+  const [detalheClinica, setDetalheClinica] = useState(null);
+  const [carregandoDetalhe, setCarregandoDetalhe] = useState(false);
+  const [erroDetalhe, setErroDetalhe] = useState("");
 
   async function carregarPainel(chave = token) {
     if (!chave) return;
@@ -73,6 +80,52 @@ export default function AdminPortal() {
   }
 
   useEffect(() => { if (token) carregarPainel(token); }, []);
+
+  useEffect(() => {
+    const sincronizarRota = () => {
+      const match = window.location.pathname.match(/\/administracao\/clinicas\/(\d+)/);
+      setClinicaSelecionada(match ? Number(match[1]) : null);
+    };
+    window.addEventListener("popstate", sincronizarRota);
+    return () => window.removeEventListener("popstate", sincronizarRota);
+  }, []);
+
+  useEffect(() => {
+    if (!token || !clinicaSelecionada) {
+      setDetalheClinica(null);
+      setErroDetalhe("");
+      return;
+    }
+    let ativo = true;
+    async function carregarDetalhe() {
+      setCarregandoDetalhe(true);
+      setErroDetalhe("");
+      try {
+        const resposta = await fetch(API_URL + "/admin/clinicas/" + clinicaSelecionada, {
+          headers: { Authorization: "Bearer " + token },
+        });
+        const corpo = await resposta.json();
+        if (!resposta.ok) throw new Error(corpo.erro || "Não foi possível carregar os dados da clínica.");
+        if (ativo) setDetalheClinica(corpo);
+      } catch (e) {
+        if (ativo) setErroDetalhe(e.message || "Falha ao carregar os dados da clínica.");
+      } finally {
+        if (ativo) setCarregandoDetalhe(false);
+      }
+    }
+    carregarDetalhe();
+    return () => { ativo = false; };
+  }, [token, clinicaSelecionada]);
+
+  function abrirClinica(id) {
+    window.history.pushState({ adminPage: "clinica", clinicId: id }, "", "/administracao/clinicas/" + id);
+    setClinicaSelecionada(Number(id));
+  }
+
+  function voltarParaClinicas() {
+    window.history.pushState({ adminPage: "dashboard" }, "", "/administracao");
+    setClinicaSelecionada(null);
+  }
 
   async function entrar(evento) {
     evento.preventDefault();
@@ -216,7 +269,7 @@ export default function AdminPortal() {
                 <thead><tr><th>Clínica</th><th>Usuários</th><th>Arquivos</th><th>Armazenamento</th><th>Plano</th><th>Assinatura</th><th>Cadastro</th></tr></thead>
                 <tbody>
                   {clinicasFiltradas.map((c) => <tr key={c.id}>
-                    <td><div className="admin-clinic-name">{c.nome}</div><div className="admin-clinic-meta">{c.email_login ? "Login: " + c.email_login : c.email_contato ? "Contato: " + c.email_contato + " · login não vinculado" : "Sem usuário com e-mail vinculado"} · #{c.id}</div></td>
+                    <td><button type="button" className="admin-clinic-link" onClick={() => abrirClinica(c.id)}>{c.nome}<Icone tipo="arrow" size={13} /></button><div className="admin-clinic-meta">{c.email_login ? "Login: " + c.email_login : c.email_contato ? "Contato: " + c.email_contato + " · login não vinculado" : "Sem usuário com e-mail vinculado"} · #{c.id}</div></td>
                     <td>{c.total_usuarios ?? 0}</td><td>{c.total_arquivos ?? 0}</td><td>{formatarBytes(c.armazenamento_bytes)}</td>
                     <td><span className="admin-plan-label">{c.plano || "—"}</span></td>
                     <td><span className={"admin-status " + (c.assinatura_status === "ativa" ? "active" : c.assinatura_status === "pendente" || c.assinatura_status === "past_due" ? "pending" : "neutral")}>{c.assinatura_status || "Sem assinatura"}</span></td>
