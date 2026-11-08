@@ -107,9 +107,11 @@ router.get("/dashboard", exigirAdmin, (req, res) => {
   const sql = `
     SELECT
       c.id, c.nome, c.email_contato,
-      (SELECT GROUP_CONCAT(DISTINCT TRIM(u.email))
+      (SELECT TRIM(u.email)
        FROM usuarios u
-       WHERE u.clinica_id = c.id AND TRIM(COALESCE(u.email, '')) <> '') AS email_login,
+       WHERE u.clinica_id = c.id AND TRIM(COALESCE(u.email, '')) <> ''
+       ORDER BY u.id ASC
+       LIMIT 1) AS email_login,
       c.status, c.plano, c.trial_ate, c.created_at,
       (SELECT COUNT(*) FROM usuarios u WHERE u.clinica_id = c.id) AS total_usuarios,
       (SELECT COUNT(*) FROM usuarios u WHERE u.clinica_id = c.id
