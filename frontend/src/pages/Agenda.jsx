@@ -869,7 +869,7 @@ function Agenda() {
 
                       {ag ? (
                         <button type="button" onClick={(e) => { e.stopPropagation(); const rect = e.currentTarget.getBoundingClientRect(); const largura = 392; const altura = 420; const left = rect.right + largura + 12 <= window.innerWidth ? rect.right + 8 : Math.max(8, rect.left - largura - 8); const top = Math.min(Math.max(8, rect.top), Math.max(8, window.innerHeight - altura - 8)); setConsultaPreviewPos({ top, left }); setConsultaPreview(ag); }}
-                          className="agenda-event-card" style={{ ...S.eventCard, ...(Number(ag.duracao) > 30 ? { position: "absolute", top: "4px", left: "4px", right: "4px", width: "auto", zIndex: 12, overflow: "hidden", height: `${(Number(ag.duracao) / 30) * 68 - 8}px` } : {}), background: "#ffffff", borderColor: stCfg.border, borderLeftColor: stCfg.dot, ...(agendamentoEditando?.id === ag.id ? S.eventActive : {}) }}>
+                          className="agenda-event-card" style={{ ...S.eventCard, ...(Number(ag.duracao) > 30 ? { position: "absolute", top: "4px", left: "4px", right: "4px", width: "auto", zIndex: 12, overflow: "hidden", height: `${(Number(ag.duracao) / 30) * 68 - 8}px` } : {}), background: stCfg.bg, borderColor: stCfg.border, borderLeftColor: stCfg.dot, ...(agendamentoEditando?.id === ag.id ? S.eventActive : {}) }}>
                           <div className="agenda-event-time" style={S.eventTime}>{ag.inicio} – {ag.fim}</div>
                           <div className="agenda-event-name" style={S.eventName}>{ag.paciente}</div>
                           <div className="agenda-event-proc" style={S.eventProc}>{ag.procedimento}</div>
