@@ -1,0 +1,25 @@
+name: PostgreSQL preparation tests
+
+on:
+  push:
+    branches:
+      - migration/postgresql
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  postgres-preparation:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Run PostgreSQL preparation tests
+        run: npm run test:postgres-prep
