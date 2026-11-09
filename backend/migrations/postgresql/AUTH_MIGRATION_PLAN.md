@@ -126,5 +126,8 @@ O workflow `.github/workflows/postgres-prep-tests.yml` executou com sucesso no G
 
 - [x] Workflow com serviço PostgreSQL 16 descartável.
 - [x] Teste de integração ponta a ponta dos serviços PostgreSQL preparados.
+- [x] Teste real de dois cadastros concorrentes criando clínicas independentes.
+- [x] Teste real de rollback: e-mail duplicado não deixa clínica órfã.
+- [x] Teste real de bloqueio explícito do cadastro público.
 - [ ] Adicionar `pg` como dependência de runtime e atualizar `package-lock.json`.
 - [ ] Integrar rotas de cadastro/login e middleware por seleção explícita de banco, mantendo SQLite como padrão.
