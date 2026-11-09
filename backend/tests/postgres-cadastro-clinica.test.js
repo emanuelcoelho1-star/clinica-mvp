@@ -11,7 +11,7 @@ function criarPoolSimulado({ duplicados = false, totalUsuarios = 0 } = {}) {
 
   const client = {
     async query(sql, params = []) {
-      const normalizado = sql.replace(/\\s+/g, " ").trim();
+      const normalizado = sql.replace(/\s+/g, " ").trim();
       comandos.push({ sql: normalizado, params });
 
       if (normalizado === "BEGIN") return { rows: [], rowCount: 0 };
