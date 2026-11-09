@@ -976,3 +976,26 @@
 [data-theme="dark"] .agenda-calendar [style*="min-height: 68px"] .agenda-slot-empty {
   background: #171717 !important;
 }
+
+
+/* AGENDA — cartões coloridos também no tema escuro, conforme o status */
+[data-theme="dark"] .agenda-calendar .agenda-event-card[style*="border-left-color: rgb(37, 99, 235)"] {
+  background: #14243b !important;
+  border-color: #294d78 !important;
+  border-left-color: #3b82f6 !important;
+}
+[data-theme="dark"] .agenda-calendar .agenda-event-card[style*="border-left-color: rgb(22, 163, 74)"] {
+  background: #142b20 !important;
+  border-color: #285a3b !important;
+  border-left-color: #22c55e !important;
+}
+[data-theme="dark"] .agenda-calendar .agenda-event-card[style*="border-left-color: rgb(147, 51, 234)"] {
+  background: #281a36 !important;
+  border-color: #593477 !important;
+  border-left-color: #a855f7 !important;
+}
+[data-theme="dark"] .agenda-calendar .agenda-event-card[style*="border-left-color: rgb(220, 38, 38)"] {
+  background: #321b1d !important;
+  border-color: #713238 !important;
+  border-left-color: #ef4444 !important;
+}
