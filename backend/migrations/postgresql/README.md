@@ -92,3 +92,8 @@ Para indicar outro arquivo SQLite, defina `SQLITE_PATH`.
 O workflow do GitHub Actions sobe PostgreSQL 16 em um serviço descartável, aplica as migrações `001` e `002` e executa `tests/postgres-real-integration.test.js`. O teste cobre criação de clínica e administrador, cópia do plano Particular e procedimentos, leitura de login/sessão, vínculo de clínica, middleware e expiração de assinatura.
 
 No CI, o driver `pg` é instalado temporariamente para esse teste. **Ele ainda precisa ser adicionado às dependências e ao package-lock antes de qualquer implantação que use PostgreSQL.** Os testes unitários com mocks não substituem esse teste real.
+
+
+## Cadastro público multiempresa
+
+O serviço PostgreSQL permite novos cadastros de clínicas por padrão, criando dados e administrador separados para cada clínica. O bloqueio de novos cadastros só ocorre quando a camada de aplicação passar explicitamente `{ permitirCadastroMultiplo: false }`. A rota pública ainda precisa ser integrada e deve respeitar a configuração administrativa da plataforma.
