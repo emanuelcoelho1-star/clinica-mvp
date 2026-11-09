@@ -80,3 +80,40 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_roles_clinica_nome
 -- O administrador protegido global é compartilhado, mas não pertence a uma clínica.
 CREATE INDEX IF NOT EXISTS idx_roles_protegido_global
   ON roles(protegido, ativo) WHERE clinica_id IS NULL;
+
+
+-- O baseline também declara algumas colunas clinica_id sem REFERENCES.
+-- Garante a integridade referencial independentemente de como a coluna surgiu.
+DO $$
+DECLARE
+  tabela TEXT;
+BEGIN
+  FOREACH tabela IN ARRAY ARRAY[
+    'usuarios', 'pacientes', 'consultas', 'odontogramas', 'anamneses',
+    'orcamentos', 'orcamento_itens', 'arquivos', 'pastas_arquivos',
+    'documentos', 'medicamentos', 'pagamentos', 'evolucoes', 'tratamentos',
+    'profissionais', 'categorias_financeiras', 'contas_pagar', 'contas_receber',
+    'comissoes', 'fluxo_caixa', 'centros_custo', 'formas_pagamento_config',
+    'metas_financeiras', 'planos', 'procedimentos_catalogo',
+    'plano_procedimentos', 'roles', 'permissoes', 'role_permissoes'
+  ]
+  LOOP
+    IF NOT EXISTS (
+      SELECT 1
+      FROM pg_constraint c
+      JOIN pg_attribute a
+        ON a.attrelid = c.conrelid
+       AND a.attname = 'clinica_id'
+       AND a.attnum = ANY(c.conkey)
+      WHERE c.conrelid = to_regclass(format('%I', tabela))
+        AND c.confrelid = 'clinicas'::regclass
+        AND c.contype = 'f'
+    ) THEN
+      EXECUTE format(
+        'ALTER TABLE %I ADD CONSTRAINT %I FOREIGN KEY (clinica_id) REFERENCES clinicas(id)',
+        tabela,
+        'fk_' || tabela || '_clinica'
+      );
+    END IF;
+  END LOOP;
+END $$;
