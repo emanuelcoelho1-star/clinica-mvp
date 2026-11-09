@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "nodemon server.js",
     "start": "node server.js",
-    "test:postgres-prep": "node --test tests/postgres-database.test.js tests/postgres-cadastro-clinica.test.js tests/postgres-seed-rbac.test.js tests/postgres-schema-compatibility.test.js"
+    "test:postgres-prep": "node --test tests/postgres-database.test.js tests/postgres-cadastro-clinica.test.js tests/postgres-seed-rbac.test.js tests/postgres-schema-compatibility.test.js tests/postgres-assinaturas.test.js"
   },
   "keywords": [],
   "author": "",
