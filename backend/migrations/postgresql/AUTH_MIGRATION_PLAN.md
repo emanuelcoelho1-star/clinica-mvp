@@ -110,16 +110,20 @@ A atualização para `expirada` deve ser atômica e limitada à clínica e aos s
 - [x] Migração estrutural `002_saas_compatibility.sql` para colunas SaaS/RBAC e campos adicionados posteriormente no SQLite.
 - [x] Testes unitários com pool simulado para os serviços isolados e teste estrutural das migrações.
 
-## Ainda não integrado
+## Adaptador de rotas PostgreSQL preparado, ainda não montado
 
-Os serviços acima ainda não substituem `routes/auth.js`, `middleware/auth.js` ou `services/assinaturas.js`. O middleware novo está preparado e testado, mas não está montado no `server.js`. O servidor continua usando SQLite. A integração deverá ser feita atrás de uma seleção explícita de banco, mantendo SQLite como padrão até que o conjunto completo de rotas esteja migrado e validado.
+Foi criado `routes/postgres-auth.js`, uma factory isolada que implementa os fluxos `/auth/register`, `/auth/login`, `/auth/me`, `/auth/permissoes`, `/auth/usuarios`, `/auth/perfil` e `/auth/alterar-senha` usando os serviços PostgreSQL. A factory aceita dependências injetadas para teste e não é importada pelo `server.js`.
 
-A dependência `pg` e o `package-lock.json` ainda não foram atualizados. Os testes simulados não comprovam compatibilidade SQL com PostgreSQL real. Antes da integração, executar as migrações e testes num PostgreSQL descartável e validar importação, constraints, índices, datas e isolamento entre duas clínicas.
+O cadastro público permite múltiplas clínicas por padrão SaaS; pode ser fechado explicitamente com `ALLOW_PUBLIC_SIGNUP=false`. O cadastro cria o hash antes da transação e só emite o JWT depois que o serviço transacional retorna após o COMMIT. O login mantém a regra de e-mail globalmente único, valida perfil, clínica e assinatura antes de emitir o token. As rotas de sessão e permissões usam o `clinica_id` fornecido pelo middleware após consultar o banco.
+
+O arquivo `tests/postgres-auth-routes.test.js` cobre o contrato HTTP básico do adaptador com dependências controladas. A factory ainda não está montada no `server.js`; isso é intencional até as demais rotas e serviços estarem migrados.
+
+A dependência `pg` e o `package-lock.json` ainda não foram atualizados. A integração PostgreSQL real continua sendo executada no workflow com instalação temporária do driver. Antes de montar o adaptador, será necessário adicionar `pg` como dependência de runtime e atualizar o lockfile, além de completar a migração das demais rotas.
 
 
 ## CI da preparação
 
-O workflow `.github/workflows/postgres-prep-tests.yml` executou com sucesso no GitHub Actions em 09/11/2026, incluindo instalação por `npm ci` e o comando `npm run test:postgres-prep`. Essa execução cobre testes unitários com dependências instaladas, mas ainda não sobe um serviço PostgreSQL real; portanto, não valida SQL executado contra o servidor PostgreSQL.
+O workflow `.github/workflows/postgres-prep-tests.yml` executa PostgreSQL 16 como service container, instala dependências por `npm ci`, instala temporariamente `pg@8.16.3`, executa `npm run test:postgres-prep` e depois `tests/postgres-real-integration.test.js` contra o banco real. As execuções aprovadas em 09/11/2026 validaram schema, FKs, cadastro, concorrência, rollback, autenticação, permissões, assinatura e isolamento.
 
 
 ## Próxima validação
@@ -130,5 +134,7 @@ O workflow `.github/workflows/postgres-prep-tests.yml` executou com sucesso no G
 - [x] Teste real de rollback: e-mail duplicado não deixa clínica órfã.
 - [x] Teste real de bloqueio explícito do cadastro público.
 - [x] Consultas reais de permissões administrativas e listagem de usuários limitadas à clínica.
+- [x] Criar factory isolada das rotas PostgreSQL de cadastro/login/sessão/permissões/perfil/senha, sem montá-la no servidor atual.
+- [x] Adicionar testes HTTP básicos para o adaptador PostgreSQL de autenticação.
 - [ ] Adicionar `pg` como dependência de runtime e atualizar `package-lock.json`.
-- [ ] Integrar rotas de cadastro/login e middleware por seleção explícita de banco, mantendo SQLite como padrão.
+- [ ] Montar rotas PostgreSQL somente após a migração das demais rotas e seleção explícita de banco, mantendo SQLite como padrão.
