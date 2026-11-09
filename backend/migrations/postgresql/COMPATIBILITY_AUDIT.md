@@ -74,3 +74,8 @@ A comparação direta com `backend/database.js` confirmou que a estrutura SQLite
 - índices para filtros por clínica e índice único de nome de perfil por clínica.
 
 O runner agora aplica as versões 001 e 002 separadamente, cada uma com transação e registro próprio. A alteração resolve diferenças estruturais identificadas nesta revisão, mas ainda exige aplicação e validação num PostgreSQL descartável, seguida de comparação de colunas e contagens após importação. Não representa autorização para conectar a aplicação ou produção.
+
+
+## Integridade referencial multiempresa
+
+A migração `002_saas_compatibility.sql` também garante chaves estrangeiras de `clinica_id` para `clinicas(id)` nas tabelas SaaS. Isso é necessário porque o baseline `001` já declara parte dessas colunas antes da migração `002`; apenas usar `ADD COLUMN IF NOT EXISTS ... REFERENCES` não criaria a constraint quando a coluna já existisse. A migração agora verifica as constraints existentes antes de adicioná-las.
