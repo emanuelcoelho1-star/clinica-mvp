@@ -155,7 +155,7 @@ test("PUT /perfil atualiza somente o usuário da clínica autenticada", async ()
   const chamadas = [];
   const pool = {
     async query(sql, params) {
-      chamadas.push({ sql: sql.replace(/\\s+/g, " ").trim(), params });
+      chamadas.push({ sql: sql.replace(/\s+/g, " ").trim(), params });
       return { rows: [{ id: 72 }], rowCount: 1 };
     },
   };
@@ -174,7 +174,7 @@ test("PUT /perfil atualiza somente o usuário da clínica autenticada", async ()
     assert.equal(resposta.status, 200);
     assert.deepEqual(await resposta.json(), { mensagem: "Perfil atualizado com sucesso." });
     assert.deepEqual(chamadas[0].params, ["Novo nome", 72, 41]);
-    assert.match(chamadas[0].sql, /WHERE id = \\$2 AND clinica_id = \\$3 RETURNING id/);
+    assert.match(chamadas[0].sql, /WHERE id = \$2 AND clinica_id = \$3 RETURNING id/);
   } finally {
     await servidor.fechar();
   }
@@ -186,7 +186,7 @@ test("PUT /alterar-senha confere a senha atual e grava hash na clínica autentic
   const chamadas = [];
   const pool = {
     async query(sql, params) {
-      chamadas.push({ sql: sql.replace(/\\s+/g, " ").trim(), params });
+      chamadas.push({ sql: sql.replace(/\s+/g, " ").trim(), params });
       if (chamadas.length === 1) {
         return { rows: [{ id: 72, senha: senhaHashAtual }], rowCount: 1 };
       }
