@@ -869,7 +869,7 @@ function Agenda() {
 
                       {ag ? (
                         <button type="button" onClick={(e) => { e.stopPropagation(); const rect = e.currentTarget.getBoundingClientRect(); const largura = 392; const altura = 420; const left = rect.right + largura + 12 <= window.innerWidth ? rect.right + 8 : Math.max(8, rect.left - largura - 8); const top = Math.min(Math.max(8, rect.top), Math.max(8, window.innerHeight - altura - 8)); setConsultaPreviewPos({ top, left }); setConsultaPreview(ag); }}
-                          style={{ ...S.eventCard, ...(Number(ag.duracao) > 30 ? { position: "absolute", top: "4px", left: "4px", right: "4px", width: "auto", zIndex: 12, overflow: "hidden", height: `${(Number(ag.duracao) / 30) * 68 - 8}px` } : {}), background: stCfg.bg, borderColor: stCfg.border, ...(agendamentoEditando?.id === ag.id ? S.eventActive : {}) }}>
+                          style={{ ...S.eventCard, ...(Number(ag.duracao) > 30 ? { position: "absolute", top: "4px", left: "4px", right: "4px", width: "auto", zIndex: 12, overflow: "hidden", height: `${(Number(ag.duracao) / 30) * 68 - 8}px` } : {}), background: "#ffffff", borderColor: stCfg.border, borderLeftColor: stCfg.dot, ...(agendamentoEditando?.id === ag.id ? S.eventActive : {}) }}>
                           <div style={S.eventTime}>{ag.inicio} – {ag.fim}</div>
                           <div style={S.eventName}>{ag.paciente}</div>
                           <div style={S.eventProc}>{ag.procedimento}</div>
@@ -1236,21 +1236,21 @@ function Agenda() {
    STYLES — Ultra Premium Minimal SaaS
    ═══════════════════════════════════════════════════════════ */
 const S = {
-  page: { display: "flex", flexDirection: "column", gap: "24px" },
+  page: { display: "flex", flexDirection: "column", gap: "20px" },
 
   /* ── Header ──────────────────────────────── */
-  header: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "16px", flexWrap: "wrap" },
-  headerLeft: { display: "flex", flexDirection: "column", gap: "4px" },
+  header: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "18px", flexWrap: "wrap", padding: "4px 2px 2px" },
+  headerLeft: { display: "flex", flexDirection: "column", gap: "6px" },
   headerTitleRow: { display: "flex", alignItems: "center", gap: "12px" },
-  headerTitle: { margin: 0, fontSize: "28px", fontWeight: "700", color: "#0f172a", letterSpacing: "-0.025em", lineHeight: 1.2 },
+  headerTitle: { margin: 0, fontSize: "30px", fontWeight: "750", color: "#111827", letterSpacing: "-0.04em", lineHeight: 1.15 },
   headerCount: { display: "inline-flex", alignItems: "center", background: "#f1f5f9", color: "#475569", borderRadius: "8px", fontSize: "13px", fontWeight: "600", padding: "4px 10px", lineHeight: 1 },
-  headerSub: { margin: 0, fontSize: "14px", color: "#94a3b8", fontWeight: "400" },
+  headerSub: { margin: 0, fontSize: "13px", color: "#7b8798", fontWeight: "400", letterSpacing: "0.005em" },
 
   /* ── Buttons ─────────────────────────────── */
-  btnPrimary: { display: "inline-flex", alignItems: "center", gap: "8px", border: "none", borderRadius: "10px", padding: "10px 20px", background: "#2563eb", color: "#fff", fontWeight: "600", fontSize: "14px", cursor: "pointer", boxShadow: "0 1px 3px rgba(37,99,235,0.2)", transition: "all 0.2s ease", whiteSpace: "nowrap", height: "40px", boxSizing: "border-box" },
+  btnPrimary: { display: "inline-flex", alignItems: "center", gap: "9px", border: "none", borderRadius: "11px", padding: "0 19px", background: "linear-gradient(135deg, #2875e8 0%, #1d5fd1 100%)", color: "#fff", fontWeight: "650", fontSize: "13px", cursor: "pointer", boxShadow: "0 5px 14px rgba(37,99,235,0.20)", transition: "all 0.2s ease", whiteSpace: "nowrap", height: "42px", boxSizing: "border-box" },
   btnSecondary: { display: "inline-flex", alignItems: "center", gap: "6px", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "0 16px", background: "#fff", color: "#475569", fontWeight: "500", fontSize: "13px", cursor: "pointer", transition: "all 0.15s ease", whiteSpace: "nowrap", height: "40px", boxSizing: "border-box" },
   btnDanger: { display: "inline-flex", alignItems: "center", gap: "6px", border: "none", borderRadius: "10px", padding: "0 16px", background: "#ef4444", color: "#fff", fontWeight: "600", fontSize: "13px", cursor: "pointer", height: "40px", boxSizing: "border-box" },
-  btnRefresh: { display: "inline-flex", alignItems: "center", gap: "6px", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "0 14px", background: "#fff", color: "#475569", fontWeight: "500", fontSize: "13px", cursor: "pointer", transition: "all 0.15s ease", height: "36px", boxSizing: "border-box" },
+  btnRefresh: { display: "inline-flex", alignItems: "center", gap: "7px", border: "1px solid #e5eaf2", borderRadius: "10px", padding: "0 14px", background: "#fff", color: "#475569", fontWeight: "600", fontSize: "12px", cursor: "pointer", transition: "all 0.15s ease", height: "38px", boxSizing: "border-box", boxShadow: "0 1px 2px rgba(15,23,42,0.03)" },
 
   /* ── Consulta management ───────────────────── */
   btnManageActive: { display: "inline-flex", alignItems: "center", gap: "8px", border: "1px solid #bfdbfe", borderRadius: "10px", padding: "0 14px", background: "#eff6ff", color: "#1d4ed8", fontWeight: "600", fontSize: "13px", cursor: "pointer", height: "36px", boxSizing: "border-box" },
@@ -1284,12 +1284,12 @@ const S = {
   statLabel: { fontWeight: "500", color: "#64748b", fontSize: "13px" },
 
   /* ── Toolbar ──────────────────────────────── */
-  toolbar: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap", position: "relative", zIndex: 20 },
-  navGroup: { display: "flex", alignItems: "center", gap: "6px" },
-  navBtn: { border: "1px solid #e2e8f0", background: "#fff", borderRadius: "8px", width: "36px", height: "36px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#475569", transition: "all 0.15s ease" },
-  navBtnToday: { border: "1px solid #bfdbfe", background: "#eff6ff", color: "#2563eb", borderRadius: "8px", padding: "0 14px", height: "36px", cursor: "pointer", fontWeight: "600", fontSize: "13px", transition: "all 0.15s ease" },
-  periodTitle: { fontSize: "15px", fontWeight: "600", color: "#0f172a", marginLeft: "8px" },
-  filters: { display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" },
+  toolbar: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: "14px", flexWrap: "wrap", position: "relative", zIndex: 20, background: "#fff", border: "1px solid #e9edf4", borderRadius: "15px", padding: "12px 14px", boxShadow: "0 3px 12px rgba(15,23,42,0.035)" },
+  navGroup: { display: "flex", alignItems: "center", gap: "7px", minHeight: "38px" },
+  navBtn: { border: "1px solid #e8edf4", background: "#fff", borderRadius: "9px", width: "36px", height: "36px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#536174", transition: "all 0.15s ease", boxShadow: "0 1px 2px rgba(15,23,42,0.03)" },
+  navBtnToday: { border: "1px solid #cfe0fb", background: "#f0f6ff", color: "#2364c9", borderRadius: "9px", padding: "0 15px", height: "36px", cursor: "pointer", fontWeight: "700", fontSize: "12px", transition: "all 0.15s ease" },
+  periodTitle: { fontSize: "14px", fontWeight: "700", color: "#253247", marginLeft: "10px", letterSpacing: "-0.015em" },
+  filters: { display: "flex", alignItems: "center", gap: "9px", flexWrap: "wrap" },
   filterTrigger: { height: "36px", borderRadius: "10px", border: "1px solid #e2e8f0", background: "#fff", padding: "0 12px", fontSize: "13px", minWidth: "150px" },
 
   /* ── Search ──────────────────────────────── */
@@ -1307,35 +1307,35 @@ const S = {
   errorCard: { background: "#fef2f2", border: "1px solid #fecaca", color: "#b91c1c", borderRadius: "12px", padding: "14px 18px", fontSize: "14px", fontWeight: "500" },
 
   /* ── Calendar ────────────────────────────── */
-  calWrap: { background: "#fff", border: "1px solid #f1f5f9", borderRadius: "16px", overflow: "hidden" },
-  calHead: { display: "grid", gridTemplateColumns: "68px repeat(6, 1fr)", borderBottom: "1px solid #f1f5f9", background: "#fafbfc" },
-  timeColHead: { padding: "14px 8px", borderRight: "1px solid #f1f5f9" },
-  dayHead: { padding: "12px 6px", display: "flex", flexDirection: "column", gap: "2px", alignItems: "center", justifyContent: "center", borderRight: "1px solid #f1f5f9", position: "relative" },
-  dayHeadToday: { background: "#fafcff" },
-  dayLabel: { fontSize: "11px", fontWeight: "600", color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em" },
-  dayNum: { fontSize: "18px", fontWeight: "700", color: "#0f172a", lineHeight: 1.2 },
-  dayNumToday: { color: "#2563eb" },
-  todayDot: { width: "5px", height: "5px", borderRadius: "50%", background: "#2563eb" },
+  calWrap: { background: "#fff", border: "1px solid #e7ecf3", borderRadius: "16px", overflow: "hidden", boxShadow: "0 5px 22px rgba(15,23,42,0.045)" },
+  calHead: { display: "grid", gridTemplateColumns: "68px repeat(6, 1fr)", borderBottom: "1px solid #e9edf4", background: "#f8fafd" },
+  timeColHead: { padding: "14px 8px", borderRight: "1px solid #e9edf4", background: "#f8fafd" },
+  dayHead: { padding: "13px 6px", display: "flex", flexDirection: "column", gap: "4px", alignItems: "center", justifyContent: "center", borderRight: "1px solid #e9edf4", position: "relative", transition: "background 0.15s ease" },
+  dayHeadToday: { background: "#edf5ff", boxShadow: "inset 0 -3px 0 #3478df" },
+  dayLabel: { fontSize: "10px", fontWeight: "750", color: "#8290a3", textTransform: "uppercase", letterSpacing: "0.09em" },
+  dayNum: { fontSize: "19px", fontWeight: "750", color: "#263449", lineHeight: 1.15, letterSpacing: "-0.03em" },
+  dayNumToday: { color: "#1e63c5" },
+  todayDot: { width: "5px", height: "5px", borderRadius: "50%", background: "#3478df", boxShadow: "0 0 0 3px rgba(52,120,223,0.10)" },
 
   calBody: { display: "flex", flexDirection: "column" },
-  calRow: { display: "grid", gridTemplateColumns: "68px repeat(6, 1fr)", minHeight: "68px", borderBottom: "1px solid #f8fafc" },
-  timeCell: { padding: "8px 8px", borderRight: "1px solid #f1f5f9", fontSize: "11px", fontWeight: "600", color: "#c1c9d4", background: "#fafbfc", display: "flex", alignItems: "flex-start", paddingTop: "10px" },
-  dayCell: { padding: "4px", borderRight: "1px solid #f8fafc", position: "relative", cursor: "pointer", background: "#fff", display: "flex", alignItems: "stretch", minHeight: "68px" },
-  dayCellToday: { background: "#fafcff" },
-  dayCellBlocked: { background: "#fafbfc", cursor: "not-allowed" },
+  calRow: { display: "grid", gridTemplateColumns: "68px repeat(6, 1fr)", minHeight: "68px", borderBottom: "1px solid #edf1f6" },
+  timeCell: { padding: "8px 8px", borderRight: "1px solid #e9edf4", fontSize: "10px", fontWeight: "700", color: "#8b98aa", background: "#f8fafd", display: "flex", alignItems: "flex-start", paddingTop: "11px", letterSpacing: "0.01em" },
+  dayCell: { padding: "4px", borderRight: "1px solid #edf1f6", position: "relative", cursor: "pointer", background: "#fff", display: "flex", alignItems: "stretch", minHeight: "68px", transition: "background 0.12s ease" },
+  dayCellToday: { background: "#f7faff" },
+  dayCellBlocked: { background: "#f8f9fb", cursor: "not-allowed" },
 
   /* ── Slots ───────────────────────────────── */
-  slotEmpty: { width: "100%", minHeight: "58px", border: "1px dashed #e8eef5", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.15s ease" },
-  slotPlus: { color: "#d1d5db", fontSize: "18px", fontWeight: "300", transition: "color 0.15s" },
-  slotBlocked: { width: "100%", minHeight: "58px", borderRadius: "10px", background: "#f8fafc", opacity: 0.4 },
+  slotEmpty: { width: "100%", minHeight: "58px", border: "1px dashed #e4eaf2", borderRadius: "9px", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.15s ease", background: "rgba(248,250,253,0.55)" },
+  slotPlus: { color: "#c3cedc", fontSize: "18px", fontWeight: "300", transition: "color 0.15s" },
+  slotBlocked: { width: "100%", minHeight: "58px", borderRadius: "9px", background: "#f1f3f6", opacity: 0.55 },
 
   /* ── Event Card ──────────────────────────── */
-  eventCard: { width: "100%", borderRadius: "10px", border: "1px solid", padding: "7px 9px", textAlign: "left", cursor: "pointer", display: "flex", flexDirection: "column", gap: "2px", position: "relative", zIndex: 10, transition: "all 0.15s ease" },
-  eventActive: { outline: "2px solid #2563eb", outlineOffset: "1px" },
-  eventTime: { fontSize: "10px", fontWeight: "600", color: "#94a3b8" },
-  eventName: { fontSize: "12px", fontWeight: "700", color: "#0f172a", lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
-  eventProc: { fontSize: "11px", color: "#64748b", fontWeight: "400", marginBottom: "2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
-  eventBadge: { display: "inline-flex", alignItems: "center", gap: "4px", padding: "2px 7px", borderRadius: "6px", fontSize: "10px", fontWeight: "600", alignSelf: "flex-start", border: "1px solid" },
+  eventCard: { width: "100%", borderRadius: "9px", border: "1px solid", borderLeftWidth: "4px", padding: "7px 8px", textAlign: "left", cursor: "pointer", display: "flex", flexDirection: "column", gap: "3px", position: "relative", zIndex: 10, transition: "all 0.15s ease", boxShadow: "0 2px 6px rgba(15,23,42,0.045)" },
+  eventActive: { outline: "2px solid #3478df", outlineOffset: "1px", boxShadow: "0 0 0 4px rgba(52,120,223,0.12)" },
+  eventTime: { fontSize: "10px", fontWeight: "700", color: "#738198", letterSpacing: "0.01em" },
+  eventName: { fontSize: "12px", fontWeight: "750", color: "#1c2a3d", lineHeight: 1.25, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+  eventProc: { fontSize: "10px", color: "#65758a", fontWeight: "500", marginBottom: "2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+  eventBadge: { display: "inline-flex", alignItems: "center", gap: "5px", padding: "3px 7px", borderRadius: "6px", fontSize: "9px", fontWeight: "700", alignSelf: "flex-start", border: "1px solid", letterSpacing: "0.01em" },
   eventDot: { width: "5px", height: "5px", borderRadius: "50%", flexShrink: 0 },
 
   /* ── Now line ────────────────────────────── */
