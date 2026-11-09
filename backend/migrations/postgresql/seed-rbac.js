@@ -58,7 +58,7 @@ async function semearRBAC(pool) {
        SELECT 'Administrador', 'Acesso total ao sistema', '#2563eb', 1, 1, NULL
        WHERE NOT EXISTS (
          SELECT 1 FROM roles
-         WHERE clinica_id IS NULL AND protegido = 1
+         WHERE protegido = 1 AND ativo = 1
            AND LOWER(BTRIM(nome)) = 'administrador'
        )`
     );
@@ -74,13 +74,13 @@ async function semearRBAC(pool) {
 
     const role = await client.query(
       `SELECT id FROM roles
-       WHERE clinica_id IS NULL AND protegido = 1
+       WHERE protegido = 1 AND ativo = 1
          AND LOWER(BTRIM(nome)) = 'administrador'
-       ORDER BY id LIMIT 1`
+       ORDER BY CASE WHEN clinica_id IS NULL THEN 0 ELSE 1 END, id LIMIT 1`
     );
 
     if (role.rowCount !== 1) {
-      throw new Error("Não foi possível garantir um perfil Administrador global único.");
+      throw new Error("Não foi possível garantir um perfil Administrador protegido ativo.");
     }
 
     return { roleId: role.rows[0].id, permissoes: PERMISSOES.length };
