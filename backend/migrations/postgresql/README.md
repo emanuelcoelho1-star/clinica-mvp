@@ -7,7 +7,10 @@ Esta pasta inicia a preparação do PostgreSQL sem alterar o banco SQLite atual.
 - `001_schema.sql`: estrutura-base convertida do banco atual, com tabelas SaaS, financeiras, RBAC, administração e agenda.
 - `apply-schema.js`: aplica a estrutura em um banco PostgreSQL vazio e registra a versão aplicada.
 - `import-sqlite.js`: ferramenta de importação conservadora. Só importa para tabelas vazias; não apaga nem sobrescreve dados no destino.
-- O backend principal **ainda usa SQLite** nesta etapa. Não configure o domínio nem aponte produção para este banco até concluir a adaptação das rotas e os testes.
+- `../database/postgres.js`: infraestrutura isolada para pool, health check e transações PostgreSQL.
+- `../tests/postgres-database.test.js`: testes unitários do contrato de transações e liberação de conexão.
+- O backend principal **ainda usa SQLite** nesta etapa. O módulo PostgreSQL ainda não é importado pelo `server.js`. Não configure o domínio nem aponte produção para este banco até concluir a adaptação das rotas e os testes.
+- A dependência `pg` ainda precisa ser adicionada ao projeto e ao lockfile antes de executar os scripts PostgreSQL.
 
 ## Pré-requisitos
 
@@ -18,6 +21,23 @@ Configure `DATABASE_URL` no ambiente, sem colocar credenciais no Git. Exemplo de
 ```env
 DATABASE_URL=postgresql://usuario:senha@localhost:5432/sorrisa
 ```
+
+Opções da conexão (todas opcionais):
+
+- `PG_POOL_MAX`: máximo de conexões no pool (padrão 10).
+- `PG_IDLE_TIMEOUT_MS`: tempo até liberar conexões ociosas (padrão 30000).
+- `PG_CONNECTION_TIMEOUT_MS`: timeout para conectar (padrão 5000).
+- `PGSSLMODE=require` ou `PGSSL=true`: habilita SSL. Por padrão, a validação do certificado permanece ativa; só altere `PGSSL_REJECT_UNAUTHORIZED=false` se o provedor exigir e após avaliar o certificado.
+
+## Testes da camada de conexão
+
+Na pasta `backend`:
+
+```bash
+node --test tests/postgres-database.test.js
+```
+
+Os testes atuais usam um pool simulado para verificar commit, rollback, validação do nível de isolamento e liberação de conexão. Eles não substituem testes contra um PostgreSQL real.
 
 ## Aplicar a estrutura
 
@@ -42,4 +62,6 @@ Para indicar outro arquivo SQLite, defina `SQLITE_PATH`.
 1. Não execute a importação em um banco com dados: o script interrompe a operação se encontrar registros.
 2. A importação ocorre em uma transação e preserva o arquivo SQLite de origem.
 3. Esta primeira versão é uma base de migração, não uma declaração de compatibilidade total. Consultas e transações específicas do SQLite ainda precisam ser adaptadas no backend antes de trocar o driver da aplicação.
-4. Revise a estrutura e valide contagens, chaves estrangeiras, IDs e dados clínicos antes de qualquer mudança de produção.
+4. O helper `comTransacao` usa uma conexão exclusiva por transação. Não use `pool.query("BEGIN")` seguido de outras chamadas ao pool para simular uma transação.
+5. Revise a estrutura e valide contagens, chaves estrangeiras, IDs e dados clínicos antes de qualquer mudança de produção.
+6. A conexão PostgreSQL ainda não foi testada contra um servidor real nesta etapa.
