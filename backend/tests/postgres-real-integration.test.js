@@ -17,6 +17,8 @@ test("integra schema, RBAC, cadastro, autenticação, assinatura e isolamento no
     buscarUsuarioLogin,
     buscarUsuarioSessao,
     buscarUsuarioAtual,
+    buscarPermissoesUsuario,
+    listarUsuariosDaClinica,
   } = require("../services/postgres-auth");
   const { verificarAcessoAssinaturaPostgres } = require("../services/postgres-assinaturas");
   const criarAutenticacaoPostgres = require("../middleware/postgres-auth");
@@ -114,6 +116,16 @@ test("integra schema, RBAC, cadastro, autenticação, assinatura e isolamento no
 
     assert.ok(await buscarUsuarioAtual(pool, cadastro.usuarioId, cadastro.clinicaId));
     assert.equal(await buscarUsuarioAtual(pool, cadastro.usuarioId, modeloId), null);
+
+    const permissoesAdmin = await buscarPermissoesUsuario(
+      pool, cadastro.usuarioId, cadastro.clinicaId
+    );
+    assert.equal(permissoesAdmin.encontrado, true);
+    assert.equal(permissoesAdmin.administrador, true);
+    assert.ok(permissoesAdmin.permissoes.length > 0);
+    const usuariosDaClinica = await listarUsuariosDaClinica(pool, cadastro.clinicaId);
+    assert.deepEqual(usuariosDaClinica.map((item) => item.id), [cadastro.usuarioId]);
+    assert.deepEqual(await listarUsuariosDaClinica(pool, modeloId), []);
 
     const acesso = await verificarAcessoAssinaturaPostgres(pool, cadastro.clinicaId);
     assert.equal(acesso.permitido, true);
