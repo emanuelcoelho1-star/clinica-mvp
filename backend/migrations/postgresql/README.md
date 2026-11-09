@@ -85,3 +85,10 @@ Para indicar outro arquivo SQLite, defina `SQLITE_PATH`.
 4. O helper `comTransacao` usa uma conexão exclusiva por transação. Não use `pool.query("BEGIN")` seguido de outras chamadas ao pool para simular uma transação.
 5. Revise a estrutura e valide contagens, chaves estrangeiras, IDs e dados clínicos antes de qualquer mudança de produção.
 6. A conexão PostgreSQL ainda não foi testada contra um servidor real nesta etapa.
+
+
+## Teste com PostgreSQL real
+
+O workflow do GitHub Actions sobe PostgreSQL 16 em um serviço descartável, aplica as migrações `001` e `002` e executa `tests/postgres-real-integration.test.js`. O teste cobre criação de clínica e administrador, cópia do plano Particular e procedimentos, leitura de login/sessão, vínculo de clínica, middleware e expiração de assinatura.
+
+No CI, o driver `pg` é instalado temporariamente para esse teste. **Ele ainda precisa ser adicionado às dependências e ao package-lock antes de qualquer implantação que use PostgreSQL.** Os testes unitários com mocks não substituem esse teste real.
