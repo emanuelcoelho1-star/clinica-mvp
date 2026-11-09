@@ -13,10 +13,12 @@ Esta pasta inicia a preparação do PostgreSQL sem alterar o banco SQLite atual.
 - `../services/postgres-cadastro-clinica.js`: serviço isolado para criar clínica, administrador, trial e catálogo Particular numa única transação PostgreSQL.
 - `../services/postgres-assinaturas.js`: validação isolada de acesso por status da clínica, trial, assinatura e cobrança pendente, com datas no fuso de São Paulo.
 - `../services/postgres-auth.js`: consultas PostgreSQL isoladas para login, sessão, usuário atual, permissões e listagem de profissionais, sempre filtrando o vínculo de clínica.
+- `../middleware/postgres-auth.js`: middleware isolado que valida token, perfil, clínica e assinatura usando dados atuais do PostgreSQL; não está conectado ao servidor SQLite.
 - `seed-rbac.js`: garante um perfil Administrador protegido ativo (reutiliza o perfil importado, quando existir) e as permissões padrão, de forma transacional e idempotente.
 - `../tests/postgres-seed-rbac.test.js`: verifica o seed RBAC e seu rollback.
 - `../tests/postgres-assinaturas.test.js`: verifica regras de acesso e expiração da assinatura.
 - `../tests/postgres-auth.test.js`: verifica consultas de autenticação e isolamento de permissões por clínica.
+- `../tests/postgres-middleware-auth.test.js`: verifica validação de sessão, perfil, clínica, assinatura e falhas de banco.
 - `../tests/postgres-cadastro-clinica.test.js`: testes com pool simulado para commit, rollback, bloqueio de cadastro duplicado e validação do catálogo.
 - O backend principal **ainda usa SQLite** nesta etapa. O módulo PostgreSQL ainda não é importado pelo `server.js`. Não configure o domínio nem aponte produção para este banco até concluir a adaptação das rotas e os testes.
 - A dependência `pg` ainda precisa ser adicionada ao projeto e ao lockfile antes de executar os scripts PostgreSQL.
