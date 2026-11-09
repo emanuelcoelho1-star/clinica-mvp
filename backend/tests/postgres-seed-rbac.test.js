@@ -57,7 +57,7 @@ test("faz rollback se o perfil Administrador não puder ser confirmado", async (
   };
   const pool = { async connect() { return client; } };
 
-  await assert.rejects(semearRBAC(pool), /Administrador global único/);
+  await assert.rejects(semearRBAC(pool), /Administrador protegido ativo/);
   assert.equal(comandos.at(-1), "ROLLBACK");
   assert.equal(comandos.includes("COMMIT"), false);
 });
