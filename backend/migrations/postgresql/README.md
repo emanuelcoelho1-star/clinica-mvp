@@ -36,7 +36,7 @@ Opções da conexão (todas opcionais):
 Na pasta `backend`:
 
 ```bash
-node --test tests/postgres-database.test.js
+npm run test:postgres-prep
 ```
 
 Os testes atuais usam um pool simulado para verificar commit, rollback, validação do nível de isolamento e liberação de conexão. Eles não substituem testes contra um PostgreSQL real.
