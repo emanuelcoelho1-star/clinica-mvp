@@ -12,7 +12,7 @@ Esta pasta inicia a preparação do PostgreSQL sem alterar o banco SQLite atual.
 - `../tests/postgres-database.test.js`: testes unitários do contrato de transações e liberação de conexão.
 - `../services/postgres-cadastro-clinica.js`: serviço isolado para criar clínica, administrador, trial e catálogo Particular numa única transação PostgreSQL.
 - `../services/postgres-assinaturas.js`: validação isolada de acesso por status da clínica, trial, assinatura e cobrança pendente, com datas no fuso de São Paulo.
-- `seed-rbac.js`: prepara o perfil Administrador global e as permissões padrão no PostgreSQL vazio, de forma transacional e idempotente.
+- `seed-rbac.js`: garante um perfil Administrador protegido ativo (reutiliza o perfil importado, quando existir) e as permissões padrão, de forma transacional e idempotente.
 - `../tests/postgres-seed-rbac.test.js`: verifica o seed RBAC e seu rollback.
 - `../tests/postgres-assinaturas.test.js`: verifica regras de acesso e expiração da assinatura.
 - `../tests/postgres-cadastro-clinica.test.js`: testes com pool simulado para commit, rollback, bloqueio de cadastro duplicado e validação do catálogo.
@@ -52,8 +52,16 @@ Na pasta `backend`, depois de instalar a dependência `pg`:
 
 ```bash
 node migrations/postgresql/apply-schema.js
+```
+
+Se houver dados SQLite para importar, importe primeiro para o banco vazio e só depois prepare o RBAC:
+
+```bash
+node migrations/postgresql/import-sqlite.js
 node migrations/postgresql/seed-rbac.js
 ```
+
+Não execute `seed-rbac.js` antes da importação: o importador exige que todas as tabelas de destino estejam vazias. Se estiver iniciando uma instalação nova sem dados legados, execute `seed-rbac.js` após aplicar o schema.
 
 ## Importar os dados locais
 
