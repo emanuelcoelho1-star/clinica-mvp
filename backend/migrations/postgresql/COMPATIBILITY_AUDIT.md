@@ -60,3 +60,17 @@ Também foram identificados usos de `lastID` e `changes` em rotas de pacientes, 
 ## Limites desta auditoria
 
 Esta é uma análise estática dos arquivos. Não prova compatibilidade do schema PostgreSQL já preparado, não valida a importação de dados reais e não substitui testes automatizados. O backend principal continua usando SQLite. Não execute os scripts de preparação em produção e não altere a branch `main` com base apenas nesta auditoria.
+
+
+## Atualização da auditoria — compatibilidade SaaS
+
+A comparação direta com `backend/database.js` confirmou que a estrutura SQLite recebe colunas SaaS/RBAC em migrações posteriores à criação das tabelas. A estrutura PostgreSQL inicial não continha todas elas. Foi criada a migração aditiva `002_saas_compatibility.sql`, que inclui:
+
+- `clinica_id` nas tabelas de usuários, pacientes, agenda, prontuário, financeiro, catálogo e RBAC;
+- `arquivos.pasta_id` e `pacientes.foto_url`;
+- campos adicionais de orçamento, faces e origem do tratamento;
+- `aceita_faces`, `custo_tratamento` e `usar_na_frente` em `procedimentos_catalogo`;
+- `clinicas.cpf`;
+- índices para filtros por clínica e índice único de nome de perfil por clínica.
+
+O runner agora aplica as versões 001 e 002 separadamente, cada uma com transação e registro próprio. A alteração resolve diferenças estruturais identificadas nesta revisão, mas ainda exige aplicação e validação num PostgreSQL descartável, seguida de comparação de colunas e contagens após importação. Não representa autorização para conectar a aplicação ou produção.
