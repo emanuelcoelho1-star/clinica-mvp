@@ -87,7 +87,9 @@ async function criarClinicaComAdministrador(pool, dados, options = {}) {
     throw new Error("Dados obrigatórios ausentes para criar a clínica.");
   }
 
-  // O padrão SaaS permite que cada nova clínica faça seu próprio cadastro.\n  // O bloqueio só é aplicado quando a plataforma o solicita explicitamente.\n  const permitirCadastroMultiplo = options.permitirCadastroMultiplo !== false;
+  // O padrão SaaS permite que cada nova clínica faça seu próprio cadastro.
+  // O bloqueio só é aplicado quando a plataforma o solicita explicitamente.
+  const permitirCadastroMultiplo = options.permitirCadastroMultiplo !== false;
 
   return comTransacao(pool, async (client) => {
     // Serializa a decisão do cadastro inicial entre todas as instâncias da API.
