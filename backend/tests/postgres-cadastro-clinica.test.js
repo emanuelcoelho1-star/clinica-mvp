@@ -110,7 +110,7 @@ test("bloqueia o segundo cadastro quando o signup público está desabilitado", 
   const pool = criarPoolSimulado({ totalUsuarios: 1 });
 
   await assert.rejects(
-    criarClinicaComAdministrador(pool, dados),
+    criarClinicaComAdministrador(pool, dados, { permitirCadastroMultiplo: false }),
     (erro) => erro.code === "PUBLIC_SIGNUP_CLOSED"
   );
 
