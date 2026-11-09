@@ -105,12 +105,18 @@ A atualização para `expirada` deve ser atômica e limitada à clínica e aos s
 
 - [x] Serviço de cadastro transacional em `postgres-cadastro-clinica.js`.
 - [x] Repositório de consultas de autenticação em `services/postgres-auth.js` (login, sessão, usuário atual, permissões e listagem de profissionais).
+- [x] Middleware isolado em `middleware/postgres-auth.js`, com validação do JWT, sessão atual no banco, vínculo de perfil/clínica e assinatura.
 - [x] Validador de assinatura em `services/postgres-assinaturas.js`, preservando as regras de trial/cobrança pendente e comparando datas no fuso `America/Sao_Paulo`.
 - [x] Migração estrutural `002_saas_compatibility.sql` para colunas SaaS/RBAC e campos adicionados posteriormente no SQLite.
 - [x] Testes unitários com pool simulado para os serviços isolados e teste estrutural das migrações.
 
 ## Ainda não integrado
 
-Os serviços acima ainda não substituem `routes/auth.js`, `middleware/auth.js` ou `services/assinaturas.js`. O servidor continua usando SQLite. A integração deverá ser feita atrás de uma seleção explícita de banco, mantendo SQLite como padrão até que o conjunto completo de rotas esteja migrado e validado.
+Os serviços acima ainda não substituem `routes/auth.js`, `middleware/auth.js` ou `services/assinaturas.js`. O middleware novo está preparado e testado, mas não está montado no `server.js`. O servidor continua usando SQLite. A integração deverá ser feita atrás de uma seleção explícita de banco, mantendo SQLite como padrão até que o conjunto completo de rotas esteja migrado e validado.
 
 A dependência `pg` e o `package-lock.json` ainda não foram atualizados. Os testes simulados não comprovam compatibilidade SQL com PostgreSQL real. Antes da integração, executar as migrações e testes num PostgreSQL descartável e validar importação, constraints, índices, datas e isolamento entre duas clínicas.
+
+
+## CI da preparação
+
+O workflow `.github/workflows/postgres-prep-tests.yml` executou com sucesso no GitHub Actions em 09/11/2026, incluindo instalação por `npm ci` e o comando `npm run test:postgres-prep`. Essa execução cobre testes unitários com dependências instaladas, mas ainda não sobe um serviço PostgreSQL real; portanto, não valida SQL executado contra o servidor PostgreSQL.
