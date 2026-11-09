@@ -41,7 +41,7 @@ Na pasta `backend`:
 npm run test:postgres-prep
 ```
 
-Os testes atuais usam um pool simulado para verificar commit, rollback, validação do nível de isolamento e liberação de conexão. Eles não substituem testes contra um PostgreSQL real.
+Os testes atuais usam pools simulados para verificar transações, rollback, validação do nível de isolamento, liberação de conexão, cadastro inicial e seed das permissões. Eles não substituem testes de integração contra um PostgreSQL real.
 
 ## Aplicar a estrutura
 
