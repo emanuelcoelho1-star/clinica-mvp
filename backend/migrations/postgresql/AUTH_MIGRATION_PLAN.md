@@ -129,5 +129,6 @@ O workflow `.github/workflows/postgres-prep-tests.yml` executou com sucesso no G
 - [x] Teste real de dois cadastros concorrentes criando clínicas independentes.
 - [x] Teste real de rollback: e-mail duplicado não deixa clínica órfã.
 - [x] Teste real de bloqueio explícito do cadastro público.
+- [x] Consultas reais de permissões administrativas e listagem de usuários limitadas à clínica.
 - [ ] Adicionar `pg` como dependência de runtime e atualizar `package-lock.json`.
 - [ ] Integrar rotas de cadastro/login e middleware por seleção explícita de banco, mantendo SQLite como padrão.
