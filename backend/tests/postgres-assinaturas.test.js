@@ -58,6 +58,8 @@ test("permite trial válido e cobrança pendente durante trial vigente", async (
   });
   assert.deepEqual(await verificarAcessoAssinaturaPostgres(pendente, 2), { permitido: true });
   assert.match(pendente.chamadas[1].sql, /America\/Sao_Paulo/);
+  assert.match(pendente.chamadas[1].sql, /::timestamptz/);
+  assert.match(pendente.chamadas[1].sql, /CURRENT_TIMESTAMP/);
   assert.equal(pendente.chamadas.length, 2);
 });
 
