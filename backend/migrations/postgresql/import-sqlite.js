@@ -65,7 +65,8 @@ async function main() {
         const columns = sqliteColumns.map((column) => column.name).filter((name) => pgColumns.has(name));
         if (!columns.length) continue;
 
-        const rows = await sqliteAll(sqlite, `SELECT ${columns.map(quote).join(", ")} FROM ${quote(table)}`);
+        const orderBy = columns.includes("id") ? " ORDER BY " + quote("id") : "";
+        const rows = await sqliteAll(sqlite, `SELECT ${columns.map(quote).join(", ")} FROM ${quote(table)}${orderBy}`);
         for (let offset = 0; offset < rows.length; offset += 250) {
           const batch = rows.slice(offset, offset + 250);
           for (const row of batch) {
@@ -82,7 +83,7 @@ async function main() {
           const sequence = await client.query("SELECT pg_get_serial_sequence($1, 'id') AS name", [table]);
           if (sequence.rows[0].name) {
             await client.query(
-              "SELECT setval($1, GREATEST(COALESCE((SELECT MAX(id) FROM " + quote(table) + "), 1), 1), EXISTS (SELECT 1 FROM " + quote(table) + "))",
+              "SELECT setval($1::regclass, GREATEST(COALESCE((SELECT MAX(id) FROM " + quote(table) + "), 1), 1), EXISTS (SELECT 1 FROM " + quote(table) + "))",
               [sequence.rows[0].name]
             );
           }
