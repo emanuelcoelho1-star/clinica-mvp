@@ -52,6 +52,7 @@ const PERMISSOES = [
 
 async function semearRBAC(pool) {
   return comTransacao(pool, async (client) => {
+    await client.query("SELECT pg_advisory_xact_lock($1::bigint)", [20261110]);
     await client.query(
       `INSERT INTO roles (nome, descricao, cor, protegido, ativo, clinica_id)
        SELECT 'Administrador', 'Acesso total ao sistema', '#2563eb', 1, 1, NULL
