@@ -150,3 +150,71 @@ test("rotas de sessão e permissões usam o clinica_id validado pelo middleware"
     await servidor.fechar();
   }
 });
+
+test("PUT /perfil atualiza somente o usuário da clínica autenticada", async () => {
+  const chamadas = [];
+  const pool = {
+    async query(sql, params) {
+      chamadas.push({ sql: sql.replace(/\\s+/g, " ").trim(), params });
+      return { rows: [{ id: 72 }], rowCount: 1 };
+    },
+  };
+  const router = criarRotasAuthPostgres({
+    pool,
+    secret: "segredo-teste",
+    autenticar: autenticacaoFake,
+  });
+  const servidor = await iniciarServidor(router);
+  try {
+    const resposta = await fetch(`${servidor.url}/perfil`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ nome: "  Novo nome  " }),
+    });
+    assert.equal(resposta.status, 200);
+    assert.deepEqual(await resposta.json(), { mensagem: "Perfil atualizado com sucesso." });
+    assert.deepEqual(chamadas[0].params, ["Novo nome", 72, 41]);
+    assert.match(chamadas[0].sql, /WHERE id = \\$2 AND clinica_id = \\$3 RETURNING id/);
+  } finally {
+    await servidor.fechar();
+  }
+});
+
+test("PUT /alterar-senha confere a senha atual e grava hash na clínica autenticada", async () => {
+  const bcrypt = require("bcrypt");
+  const senhaHashAtual = await bcrypt.hash("senha-atual-segura", 4);
+  const chamadas = [];
+  const pool = {
+    async query(sql, params) {
+      chamadas.push({ sql: sql.replace(/\\s+/g, " ").trim(), params });
+      if (chamadas.length === 1) {
+        return { rows: [{ id: 72, senha: senhaHashAtual }], rowCount: 1 };
+      }
+      return { rows: [{ id: 72 }], rowCount: 1 };
+    },
+  };
+  const router = criarRotasAuthPostgres({
+    pool,
+    secret: "segredo-teste",
+    autenticar: autenticacaoFake,
+  });
+  const servidor = await iniciarServidor(router);
+  try {
+    const resposta = await fetch(`${servidor.url}/alterar-senha`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        senha_atual: "senha-atual-segura",
+        nova_senha: "nova-senha-segura",
+      }),
+    });
+    assert.equal(resposta.status, 200);
+    assert.deepEqual(await resposta.json(), { mensagem: "Senha alterada com sucesso." });
+    assert.deepEqual(chamadas[0].params, [72, 41]);
+    assert.deepEqual(chamadas[1].params.slice(1), [72, 41]);
+    assert.notEqual(chamadas[1].params[0], "nova-senha-segura");
+    assert.equal(await bcrypt.compare("nova-senha-segura", chamadas[1].params[0]), true);
+  } finally {
+    await servidor.fechar();
+  }
+});
