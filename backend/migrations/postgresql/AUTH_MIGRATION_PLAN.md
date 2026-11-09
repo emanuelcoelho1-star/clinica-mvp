@@ -120,3 +120,11 @@ A dependência `pg` e o `package-lock.json` ainda não foram atualizados. Os tes
 ## CI da preparação
 
 O workflow `.github/workflows/postgres-prep-tests.yml` executou com sucesso no GitHub Actions em 09/11/2026, incluindo instalação por `npm ci` e o comando `npm run test:postgres-prep`. Essa execução cobre testes unitários com dependências instaladas, mas ainda não sobe um serviço PostgreSQL real; portanto, não valida SQL executado contra o servidor PostgreSQL.
+
+
+## Próxima validação
+
+- [x] Workflow com serviço PostgreSQL 16 descartável.
+- [x] Teste de integração ponta a ponta dos serviços PostgreSQL preparados.
+- [ ] Adicionar `pg` como dependência de runtime e atualizar `package-lock.json`.
+- [ ] Integrar rotas de cadastro/login e middleware por seleção explícita de banco, mantendo SQLite como padrão.
