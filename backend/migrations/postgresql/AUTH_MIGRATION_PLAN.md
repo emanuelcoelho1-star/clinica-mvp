@@ -99,3 +99,18 @@ A atualização para `expirada` deve ser atômica e limitada à clínica e aos s
 - O schema PostgreSQL precisa ser conferido contra as tabelas reais e dados legados antes de qualquer importação.
 
 **Regra de segurança:** não habilitar PostgreSQL no servidor nem executar importação em produção até os testes de integração acima passarem em um banco PostgreSQL descartável e houver backup restaurável do SQLite.
+
+
+## Progresso da implementação isolada
+
+- [x] Serviço de cadastro transacional em `postgres-cadastro-clinica.js`.
+- [x] Repositório de consultas de autenticação em `services/postgres-auth.js` (login, sessão, usuário atual, permissões e listagem de profissionais).
+- [x] Validador de assinatura em `services/postgres-assinaturas.js`, preservando as regras de trial/cobrança pendente e comparando datas no fuso `America/Sao_Paulo`.
+- [x] Migração estrutural `002_saas_compatibility.sql` para colunas SaaS/RBAC e campos adicionados posteriormente no SQLite.
+- [x] Testes unitários com pool simulado para os serviços isolados e teste estrutural das migrações.
+
+## Ainda não integrado
+
+Os serviços acima ainda não substituem `routes/auth.js`, `middleware/auth.js` ou `services/assinaturas.js`. O servidor continua usando SQLite. A integração deverá ser feita atrás de uma seleção explícita de banco, mantendo SQLite como padrão até que o conjunto completo de rotas esteja migrado e validado.
+
+A dependência `pg` e o `package-lock.json` ainda não foram atualizados. Os testes simulados não comprovam compatibilidade SQL com PostgreSQL real. Antes da integração, executar as migrações e testes num PostgreSQL descartável e validar importação, constraints, índices, datas e isolamento entre duas clínicas.
