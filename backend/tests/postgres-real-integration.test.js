@@ -136,6 +136,58 @@ test("integra schema, RBAC, cadastro, autenticação, assinatura e isolamento no
     assert.equal(res.statusCode, 200);
     assert.equal(Number(req.user.clinica_id), cadastro.clinicaId);
 
+    // Cadastros simultâneos devem criar clínicas independentes sem colisão.
+    const [cadastroA, cadastroB] = await Promise.all([
+      criarClinicaComAdministrador(pool, {
+        nomeClinica: "Clínica concorrente A",
+        slug: "clinica-concorrente-a",
+        nomeUsuario: "Administrador A",
+        email: "admin-a@sorrisa.test",
+        senhaHash: "hash-a",
+      }),
+      criarClinicaComAdministrador(pool, {
+        nomeClinica: "Clínica concorrente B",
+        slug: "clinica-concorrente-b",
+        nomeUsuario: "Administrador B",
+        email: "admin-b@sorrisa.test",
+        senhaHash: "hash-b",
+      }),
+    ]);
+    assert.notEqual(cadastroA.clinicaId, cadastroB.clinicaId);
+    assert.notEqual(cadastroA.usuarioId, cadastroB.usuarioId);
+    const cadastrosConcorrentes = await pool.query(
+      "SELECT COUNT(*)::int AS total FROM clinicas WHERE id = ANY($1::int[])",
+      [[cadastroA.clinicaId, cadastroB.clinicaId]]
+    );
+    assert.equal(cadastrosConcorrentes.rows[0].total, 2);
+
+    // E-mail duplicado deve reverter também a clínica criada antes do usuário.
+    const antesDoDuplicado = await pool.query("SELECT COUNT(*)::int AS total FROM clinicas");
+    await assert.rejects(
+      criarClinicaComAdministrador(pool, {
+        nomeClinica: "Clínica que deve sofrer rollback",
+        slug: "clinica-rollback-ci",
+        nomeUsuario: "Administrador duplicado",
+        email: "admin-integracao@sorrisa.test",
+        senhaHash: "hash-duplicado",
+      }),
+      (error) => error && error.code === "23505"
+    );
+    const depoisDoDuplicado = await pool.query("SELECT COUNT(*)::int AS total FROM clinicas");
+    assert.equal(depoisDoDuplicado.rows[0].total, antesDoDuplicado.rows[0].total);
+
+    // A plataforma pode fechar explicitamente o cadastro público.
+    await assert.rejects(
+      criarClinicaComAdministrador(pool, {
+        nomeClinica: "Clínica bloqueada",
+        slug: "clinica-bloqueada-ci",
+        nomeUsuario: "Administrador bloqueado",
+        email: "admin-bloqueado@sorrisa.test",
+        senhaHash: "hash-bloqueado",
+      }, { permitirCadastroMultiplo: false }),
+      (error) => error && error.code === "PUBLIC_SIGNUP_CLOSED"
+    );
+
     await pool.query(
       `UPDATE clinicas
        SET trial_ate = (CURRENT_TIMESTAMP - INTERVAL '1 day')::text
