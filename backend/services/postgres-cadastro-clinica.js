@@ -111,7 +111,7 @@ async function criarClinicaComAdministrador(pool, dados, options = {}) {
 
     const clinica = await client.query(
       `INSERT INTO clinicas (nome, slug, plano, status, trial_ate)
-       VALUES ($1, $2, 'trial', 'ativa', CURRENT_TIMESTAMP + INTERVAL '7 days')
+       VALUES ($1, $2, 'trial', 'ativa', (CURRENT_TIMESTAMP + INTERVAL '7 days')::text)
        RETURNING id`,
       [nomeClinica, slug]
     );
@@ -128,8 +128,8 @@ async function criarClinicaComAdministrador(pool, dados, options = {}) {
     await client.query(
       `INSERT INTO assinaturas
          (clinica_id, plano, status, periodo_inicio, periodo_fim)
-       VALUES ($1, 'trial', 'trial', CURRENT_TIMESTAMP,
-               CURRENT_TIMESTAMP + INTERVAL '7 days')`,
+       VALUES ($1, 'trial', 'trial', CURRENT_TIMESTAMP::text,
+               (CURRENT_TIMESTAMP + INTERVAL '7 days')::text)`,
       [clinicaId]
     );
 
