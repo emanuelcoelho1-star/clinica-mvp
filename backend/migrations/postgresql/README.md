@@ -9,6 +9,8 @@ Esta pasta inicia a preparação do PostgreSQL sem alterar o banco SQLite atual.
 - `import-sqlite.js`: ferramenta de importação conservadora. Só importa para tabelas vazias; não apaga nem sobrescreve dados no destino.
 - `../database/postgres.js`: infraestrutura isolada para pool, health check e transações PostgreSQL.
 - `../tests/postgres-database.test.js`: testes unitários do contrato de transações e liberação de conexão.
+- `../services/postgres-cadastro-clinica.js`: serviço isolado para criar clínica, administrador, trial e catálogo Particular numa única transação PostgreSQL.
+- `../tests/postgres-cadastro-clinica.test.js`: testes com pool simulado para commit, rollback, bloqueio de cadastro duplicado e validação do catálogo.
 - O backend principal **ainda usa SQLite** nesta etapa. O módulo PostgreSQL ainda não é importado pelo `server.js`. Não configure o domínio nem aponte produção para este banco até concluir a adaptação das rotas e os testes.
 - A dependência `pg` ainda precisa ser adicionada ao projeto e ao lockfile antes de executar os scripts PostgreSQL.
 
