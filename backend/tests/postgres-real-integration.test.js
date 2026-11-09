@@ -31,6 +31,20 @@ test("integra schema, RBAC, cadastro, autenticação, assinatura e isolamento no
       await pool.query(fs.readFileSync(pathModule.join(migrationDir, file), "utf8"));
     }
 
+    const fks = await pool.query(
+      `SELECT COUNT(*)::int AS total
+       FROM pg_constraint c
+       JOIN pg_class t ON t.oid = c.conrelid
+       JOIN pg_attribute a
+         ON a.attrelid = c.conrelid
+        AND a.attname = 'clinica_id'
+        AND a.attnum = ANY(c.conkey)
+       WHERE c.contype = 'f'
+         AND c.confrelid = 'clinicas'::regclass
+         AND t.relname IN ('usuarios', 'pacientes', 'roles', 'role_permissoes')`
+    );
+    assert.ok(fks.rows[0].total >= 4, "As tabelas SaaS precisam de FKs para clinicas");
+
     const rbac = await semearRBAC(pool);
     assert.ok(rbac.roleId > 0);
     assert.ok(rbac.permissoes > 0);
