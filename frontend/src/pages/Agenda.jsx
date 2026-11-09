@@ -699,22 +699,6 @@ function Agenda() {
         </div>
       )}
 
-      {/* ── Stats pills ───────────────────────────────────── */}
-      <div style={S.statsRow}>
-        {[
-          { label: "Agendados", value: weekStats.agendado, ...STATUS_STYLE.agendado },
-          { label: "Confirmados", value: weekStats.confirmado, ...STATUS_STYLE.confirmado },
-          { label: "Concluídos", value: weekStats.concluido, ...STATUS_STYLE.concluido },
-          { label: "Cancelados", value: weekStats.cancelado, ...STATUS_STYLE.cancelado },
-        ].map((st) => (
-          <div key={st.label} style={{ ...S.statPill, background: st.bg, borderColor: st.border }}>
-            <span style={{ ...S.statDot, background: st.dot }} />
-            <span style={{ ...S.statValue, color: st.color }}>{st.value}</span>
-            <span style={S.statLabel}>{st.label}</span>
-          </div>
-        ))}
-      </div>
-
       {/* ── Toolbar ───────────────────────────────────────── */}
       <div style={S.toolbar}>
         <div style={S.navGroup}>
