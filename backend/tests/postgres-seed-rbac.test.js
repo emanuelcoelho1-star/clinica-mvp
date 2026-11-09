@@ -11,6 +11,7 @@ test("prepara o perfil Administrador global e todas as permissões dentro de tra
       if (normalized === "BEGIN" || normalized === "COMMIT" || normalized === "ROLLBACK") {
         return { rows: [], rowCount: 0 };
       }
+      if (normalized.startsWith("SELECT pg_advisory_xact_lock")) return { rows: [{}], rowCount: 1 };
       if (normalized.startsWith("INSERT INTO roles")) {
         return { rows: [], rowCount: 1 };
       }
@@ -43,6 +44,7 @@ test("faz rollback se o perfil Administrador não puder ser confirmado", async (
       if (normalized === "BEGIN" || normalized === "COMMIT" || normalized === "ROLLBACK") {
         return { rows: [], rowCount: 0 };
       }
+      if (normalized.startsWith("SELECT pg_advisory_xact_lock")) return { rows: [{}], rowCount: 1 };
       if (normalized.startsWith("INSERT INTO roles") || normalized.startsWith("INSERT INTO permissoes")) {
         return { rows: [], rowCount: 1 };
       }
