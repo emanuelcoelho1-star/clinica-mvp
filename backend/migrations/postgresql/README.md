@@ -5,7 +5,8 @@ Esta pasta inicia a preparação do PostgreSQL sem alterar o banco SQLite atual.
 ## Estado desta etapa
 
 - `001_schema.sql`: estrutura-base convertida do banco atual, com tabelas SaaS, financeiras, RBAC, administração e agenda.
-- `apply-schema.js`: aplica a estrutura em um banco PostgreSQL vazio e registra a versão aplicada.
+- `002_saas_compatibility.sql`: adiciona as colunas de isolamento por clínica e campos que o SQLite atual cria por migrações posteriores (foto do paciente, orçamento, faces e catálogo de procedimentos).
+- `apply-schema.js`: aplica, em ordem e com controle de versão, as migrações `001_schema` e `002_saas_compatibility`.
 - `import-sqlite.js`: ferramenta de importação conservadora. Só importa para tabelas vazias; não apaga nem sobrescreve dados no destino.
 - `../database/postgres.js`: infraestrutura isolada para pool, health check e transações PostgreSQL.
 - `../tests/postgres-database.test.js`: testes unitários do contrato de transações e liberação de conexão.
