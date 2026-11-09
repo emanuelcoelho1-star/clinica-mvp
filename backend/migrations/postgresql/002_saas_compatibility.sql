@@ -43,6 +43,9 @@ ALTER TABLE procedimentos_catalogo ADD COLUMN IF NOT EXISTS usar_na_frente INTEG
 ALTER TABLE clinicas ADD COLUMN IF NOT EXISTS cpf TEXT;
 
 -- Índices usados nos filtros de isolamento por clínica.
+CREATE INDEX IF NOT EXISTS idx_pastas_arquivos_clinica_id ON pastas_arquivos(clinica_id);
+CREATE INDEX IF NOT EXISTS idx_medicamentos_clinica_id ON medicamentos(clinica_id);
+CREATE INDEX IF NOT EXISTS idx_auditoria_clinica_id ON auditoria(clinica_id);
 CREATE INDEX IF NOT EXISTS idx_usuarios_clinica_id ON usuarios(clinica_id);
 CREATE INDEX IF NOT EXISTS idx_pacientes_clinica_id ON pacientes(clinica_id);
 CREATE INDEX IF NOT EXISTS idx_consultas_clinica_id ON consultas(clinica_id);
