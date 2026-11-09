@@ -56,87 +56,18 @@ async function verificarAcessoAssinaturaPostgres(pool, clinicaId) {
     return { permitido: false, mensagem: MENSAGEM_ASSINATURA_EXPIRADA };
   }
 
-  // Os valores legados são horários locais da clínica, sem offset.
-  // Mantemos a regra do SQLite: datas sem horário valem até o fim daquele dia.
+  // Datas sem offset são horários locais de São Paulo; valores com offset/Z
+  // representam instantes absolutos e devem ser comparados como timestamptz.
   const data = await pool.query(
     `SELECT CASE
-       -- Datas sem horário representam o dia inteiro no fuso da clínica.
-       WHEN $1 ~ '^\\d{4}-\\d{2}-\\d{2}
-    [fimPeriodo]
-  );
-
-  if (Number(data.rows[0]?.expirou) !== 1) {
-    return { permitido: true };
-  }
-
-  await pool.query(
-    `UPDATE assinaturas
-     SET status = 'expirada', updated_at = CURRENT_TIMESTAMP::text
-     WHERE clinica_id = $1 AND status IN ('trial', 'ativa')`,
-    [clinicaId]
-  );
-
-  return { permitido: false, mensagem: MENSAGEM_ASSINATURA_EXPIRADA };
-}
-
-module.exports = {
-  verificarAcessoAssinaturaPostgres,
-  MENSAGEM_ASSINATURA_EXPIRADA,
-};
-
+       WHEN $1 ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'
          AND (($1::date + INTERVAL '1 day')::timestamp
               AT TIME ZONE 'America/Sao_Paulo') <= CURRENT_TIMESTAMP
          THEN 1
-       -- Timestamps com offset/Z já representam um instante absoluto.
-       WHEN $1 ~* '(Z|[+-][0-9]{2}(:[0-9]{2})?)
-    [fimPeriodo]
-  );
-
-  if (Number(data.rows[0]?.expirou) !== 1) {
-    return { permitido: true };
-  }
-
-  await pool.query(
-    `UPDATE assinaturas
-     SET status = 'expirada', updated_at = CURRENT_TIMESTAMP::text
-     WHERE clinica_id = $1 AND status IN ('trial', 'ativa')`,
-    [clinicaId]
-  );
-
-  return { permitido: false, mensagem: MENSAGEM_ASSINATURA_EXPIRADA };
-}
-
-module.exports = {
-  verificarAcessoAssinaturaPostgres,
-  MENSAGEM_ASSINATURA_EXPIRADA,
-};
-
+       WHEN $1 ~* '(Z|[+-][0-9]{2}(:[0-9]{2})?)$'
          AND $1::timestamptz <= CURRENT_TIMESTAMP
          THEN 1
-       -- Valores legados sem offset são horários locais de São Paulo.
-       WHEN $1 !~* '(Z|[+-][0-9]{2}(:[0-9]{2})?)
-    [fimPeriodo]
-  );
-
-  if (Number(data.rows[0]?.expirou) !== 1) {
-    return { permitido: true };
-  }
-
-  await pool.query(
-    `UPDATE assinaturas
-     SET status = 'expirada', updated_at = CURRENT_TIMESTAMP::text
-     WHERE clinica_id = $1 AND status IN ('trial', 'ativa')`,
-    [clinicaId]
-  );
-
-  return { permitido: false, mensagem: MENSAGEM_ASSINATURA_EXPIRADA };
-}
-
-module.exports = {
-  verificarAcessoAssinaturaPostgres,
-  MENSAGEM_ASSINATURA_EXPIRADA,
-};
-
+       WHEN $1 !~* '(Z|[+-][0-9]{2}(:[0-9]{2})?)$'
          AND ($1::timestamp AT TIME ZONE 'America/Sao_Paulo') <= CURRENT_TIMESTAMP
          THEN 1
        ELSE 0
