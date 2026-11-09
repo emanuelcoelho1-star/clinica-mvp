@@ -119,3 +119,17 @@ test("bloqueia o segundo cadastro quando o signup público está desabilitado", 
   assert.equal(sql.some((item) => item.startsWith("INSERT INTO clinicas")), false);
   assert.equal(pool.liberado, true);
 });
+
+
+test("permite cadastros independentes de novas clínicas por padrão SaaS", async () => {
+  const pool = criarPoolSimulado({ totalUsuarios: 3 });
+  const resultado = await criarClinicaComAdministrador(pool, {
+    ...dados,
+    slug: "segunda-clinica-exemplo",
+    email: "admin2@exemplo.com",
+  });
+
+  assert.equal(resultado.clinicaId, 41);
+  assert.ok(pool.comandos.some((item) => item.sql.startsWith("INSERT INTO clinicas")));
+  assert.equal(pool.comandos.at(-1).sql, "COMMIT");
+});
