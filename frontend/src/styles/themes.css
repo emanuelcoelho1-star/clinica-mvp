@@ -930,3 +930,49 @@
 [data-theme="dark"] *::-webkit-scrollbar-thumb:hover {
   background: #737373;
 }
+
+
+/* AGENDA — acabamento específico do tema escuro */
+[data-theme="dark"] .agenda-calendar {
+  background: #101010 !important;
+  border-color: #292929 !important;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, .28) !important;
+}
+[data-theme="dark"] .agenda-calendar .agenda-slot-empty {
+  background: #171717 !important;
+  border-color: #353535 !important;
+}
+[data-theme="dark"] .agenda-calendar .agenda-slot-empty:hover {
+  background: #202020 !important;
+  border-color: #3b82f6 !important;
+}
+[data-theme="dark"] .agenda-calendar .agenda-slot-empty span {
+  color: #737373 !important;
+}
+[data-theme="dark"] .agenda-calendar .agenda-slot-blocked {
+  background: #101010 !important;
+  opacity: 1 !important;
+}
+[data-theme="dark"] .agenda-calendar .agenda-event-card {
+  background: #1b1b1b !important;
+  color: #f5f5f5 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .28) !important;
+}
+[data-theme="dark"] .agenda-calendar .agenda-event-time {
+  color: #a3a3a3 !important;
+}
+[data-theme="dark"] .agenda-calendar .agenda-event-name {
+  color: #f5f5f5 !important;
+}
+[data-theme="dark"] .agenda-calendar .agenda-event-proc {
+  color: #c4c4c4 !important;
+}
+[data-theme="dark"] .agenda-calendar [style*="grid-template-columns: 68px"] {
+  background: #141414 !important;
+}
+[data-theme="dark"] .agenda-calendar [style*="min-height: 68px"] {
+  background: #141414 !important;
+}
+[data-theme="dark"] .agenda-calendar [style*="min-height: 68px"] .agenda-slot-empty {
+  background: #171717 !important;
+}
