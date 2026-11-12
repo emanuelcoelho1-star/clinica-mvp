@@ -84,6 +84,72 @@ router.post("/login", loginLimiter, (req, res) => {
   return res.json({ token, administrador: { email: ADMIN_EMAIL } });
 });
 
+
+async function cancelarAssinaturaExterna(clinicId) {
+  const assinatura = await new Promise((resolve, reject) => {
+    db.get(
+      "SELECT provedor, provedor_assinatura_id, status FROM assinaturas WHERE clinica_id = ? LIMIT 1",
+      [clinicId],
+      (err, row) => err ? reject(err) : resolve(row || null)
+    );
+  });
+
+  if (!assinatura || !assinatura.provedor_assinatura_id || String(assinatura.status || "").toLowerCase() === "cancelada") return;
+  if (String(assinatura.provedor || "").toLowerCase() !== "asaas") {
+    const erro = new Error("A clínica possui uma assinatura em outro provedor. Cancele a recorrência no provedor antes de excluir a clínica.");
+    erro.status = 409;
+    throw erro;
+  }
+
+  const configuracao = await new Promise((resolve, reject) => {
+    db.get(
+      "SELECT provedor, ambiente, credenciais_cifradas FROM admin_payment_settings WHERE id = 1",
+      [],
+      (err, row) => err ? reject(err) : resolve(row || null)
+    );
+  });
+  if (!configuracao || configuracao.provedor !== "asaas") {
+    const erro = new Error("A integração Asaas não está disponível para cancelar a assinatura. A clínica não foi excluída.");
+    erro.status = 503;
+    throw erro;
+  }
+
+  let credenciais;
+  try {
+    credenciais = decifrarCredenciais(configuracao.credenciais_cifradas);
+  } catch {
+    const erro = new Error("Não foi possível acessar com segurança as credenciais do Asaas. A clínica não foi excluída.");
+    erro.status = 503;
+    throw erro;
+  }
+  if (!credenciais.apiKey) {
+    const erro = new Error("A chave de API do Asaas não está configurada. A clínica não foi excluída.");
+    erro.status = 503;
+    throw erro;
+  }
+
+  const baseUrl = configuracao.ambiente === "producao"
+    ? "https://api.asaas.com/v3"
+    : "https://api-sandbox.asaas.com/v3";
+  const resposta = await fetch(baseUrl + "/subscriptions/" + encodeURIComponent(assinatura.provedor_assinatura_id), {
+    method: "DELETE",
+    headers: {
+      Accept: "application/json",
+      "User-Agent": "Sorrisa/1.0",
+      access_token: credenciais.apiKey,
+    },
+  });
+  const dados = await resposta.json().catch(() => ({}));
+  if (!resposta.ok) {
+    const mensagem = Array.isArray(dados.errors)
+      ? dados.errors.map((item) => item.description).filter(Boolean).join("; ")
+      : "";
+    const erro = new Error(mensagem || "O Asaas não confirmou o cancelamento da assinatura. A clínica não foi excluída.");
+    erro.status = 502;
+    throw erro;
+  }
+}
+
 router.get("/clinicas/:id", exigirAdmin, (req, res) => {
   const clinicId = Number(req.params.id);
   if (!Number.isSafeInteger(clinicId) || clinicId <= 0) {
@@ -218,7 +284,8 @@ router.delete("/clinicas/:id", exigirAdmin, (req, res) => {
       return res.status(400).json({ erro: "Digite o nome exato da clínica para confirmar a exclusão." });
     }
 
-    db.all("SELECT nome_salvo FROM arquivos WHERE clinica_id = ?", [clinicId], (filesErr, arquivos) => {
+    return cancelarAssinaturaExterna(clinicId).then(() => {
+    return db.all("SELECT nome_salvo FROM arquivos WHERE clinica_id = ?", [clinicId], (filesErr, arquivos) => {
       if (filesErr) {
         console.error("Falha ao listar arquivos da clínica para exclusão:", filesErr.message);
         return res.status(500).json({ erro: "Não foi possível preparar a exclusão dos arquivos." });
@@ -317,6 +384,12 @@ router.delete("/clinicas/:id", exigirAdmin, (req, res) => {
             );
           });
         });
+      });
+    });
+    }).catch((subscriptionErr) => {
+      console.error("Não foi possível encerrar a assinatura externa antes da exclusão:", subscriptionErr.message);
+      if (!res.headersSent) return res.status(subscriptionErr.status || 502).json({
+        erro: subscriptionErr.message || "Não foi possível encerrar a assinatura da clínica. A exclusão foi cancelada."
       });
     });
   });
