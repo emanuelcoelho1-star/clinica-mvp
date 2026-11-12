@@ -67,6 +67,10 @@ export default function AdminPortal() {
   const [feedbackAcao, setFeedbackAcao] = useState("");
   const [diasGratis, setDiasGratis] = useState("7");
   const [modalSuspensaoAberto, setModalSuspensaoAberto] = useState(false);
+  const [modalExclusaoAberto, setModalExclusaoAberto] = useState(false);
+  const [nomeConfirmacaoExclusao, setNomeConfirmacaoExclusao] = useState("");
+  const [erroExclusao, setErroExclusao] = useState("");
+  const [excluindoClinica, setExcluindoClinica] = useState(false);
   const [abaPainel, setAbaPainel] = useState("visao-geral");
   const [configPagamento, setConfigPagamento] = useState({ provedor: "asaas", ambiente: "sandbox", possui_chave_api: false, possui_token_webhook: false, atualizado_em: null });
   const [chaveApiPagamento, setChaveApiPagamento] = useState("");
@@ -190,6 +194,34 @@ export default function AdminPortal() {
       carregarPainel();
     } catch (e) { setFeedbackAcao(e.message || "Não foi possível concluir a ação."); }
     finally { setSalvandoAcao(false); }
+  }
+
+
+  async function excluirClinica() {
+    if (!clinicaSelecionada || !detalheClinica?.clinica || excluindoClinica) return;
+    setExcluindoClinica(true);
+    setErroExclusao("");
+    try {
+      const resposta = await fetch(API_URL + "/admin/clinicas/" + clinicaSelecionada, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+        body: JSON.stringify({ confirmacao: nomeConfirmacaoExclusao }),
+      });
+      const corpo = await resposta.json();
+      if (!resposta.ok) throw new Error(corpo.erro || "Não foi possível excluir a clínica.");
+
+      setModalExclusaoAberto(false);
+      setNomeConfirmacaoExclusao("");
+      setDetalheClinica(null);
+      setClinicaSelecionada(null);
+      setAbaPainel("visao-geral");
+      window.history.pushState({ adminPage: "dashboard" }, "", "/administracao");
+      await carregarPainel();
+    } catch (e) {
+      setErroExclusao(e.message || "Não foi possível excluir a clínica.");
+    } finally {
+      setExcluindoClinica(false);
+    }
   }
 
   async function salvarNotaSuporte(evento) {
@@ -390,6 +422,12 @@ export default function AdminPortal() {
                         <input id="admin-clinic-free-days" type="number" min="1" max="365" step="1" value={diasGratis} onChange={(e) => setDiasGratis(e.target.value)} required />
                         <button className="admin-secondary-button" type="submit" disabled={salvandoAcao || !Number.isInteger(Number(diasGratis)) || Number(diasGratis) < 1 || Number(diasGratis) > 365}>{salvandoAcao ? "Aplicando..." : "Adicionar dias grátis"}</button>
                       </form>
+
+                      <div className="admin-action-block admin-action-danger">
+                        <strong>Excluir clínica</strong>
+                        <p>Remove permanentemente esta clínica e todos os dados vinculados, incluindo usuários, pacientes, prontuários, agenda, financeiro e arquivos.</p>
+                        <button className="admin-danger-outline-button" type="button" onClick={() => { setNomeConfirmacaoExclusao(""); setErroExclusao(""); setModalExclusaoAberto(true); }}>Excluir clínica permanentemente</button>
+                      </div>
                     </div>
                     {feedbackAcao && <div className="admin-action-feedback" role="status">{feedbackAcao}</div>}
                   </div>
@@ -635,6 +673,25 @@ export default function AdminPortal() {
         </section>}
         </>}
       </main>
+
+      {modalExclusaoAberto && detalheClinica?.clinica && (
+        <div className="admin-modal-overlay" role="presentation" onMouseDown={(evento) => { if (evento.target === evento.currentTarget && !excluindoClinica) setModalExclusaoAberto(false); }}>
+          <section className="admin-confirm-modal admin-delete-modal" role="dialog" aria-modal="true" aria-labelledby="admin-delete-title">
+            <div className="admin-confirm-icon admin-delete-confirm-icon"><Icone tipo="lock" size={22} /></div>
+            <h2 id="admin-delete-title">Excluir clínica permanentemente?</h2>
+            <p>Esta ação apagará <strong>{detalheClinica.clinica.nome}</strong> e todos os dados vinculados a ela. Os arquivos enviados também serão removidos do servidor. Essa exclusão não poderá ser desfeita.</p>
+            <div className="admin-delete-confirm-field">
+              <label htmlFor="admin-delete-clinic-name">Digite o nome da clínica para confirmar: <strong>{detalheClinica.clinica.nome}</strong></label>
+              <input id="admin-delete-clinic-name" value={nomeConfirmacaoExclusao} onChange={(e) => setNomeConfirmacaoExclusao(e.target.value)} autoComplete="off" autoFocus disabled={excluindoClinica} />
+            </div>
+            {erroExclusao && <div className="admin-alert" role="alert">{erroExclusao}</div>}
+            <div className="admin-confirm-actions">
+              <button className="admin-secondary-button" type="button" disabled={excluindoClinica} onClick={() => setModalExclusaoAberto(false)}>Cancelar</button>
+              <button className="admin-primary-button admin-confirm-danger" type="button" disabled={excluindoClinica || nomeConfirmacaoExclusao.trim().toLocaleLowerCase("pt-BR") !== detalheClinica.clinica.nome.trim().toLocaleLowerCase("pt-BR")} onClick={excluirClinica}>{excluindoClinica ? "Excluindo dados..." : "Excluir definitivamente"}</button>
+            </div>
+          </section>
+        </div>
+      )}
       {modalSuspensaoAberto && (
         <div className="admin-modal-overlay" role="presentation" onMouseDown={(evento) => { if (evento.target === evento.currentTarget && !salvandoAcao) setModalSuspensaoAberto(false); }}>
           <section className="admin-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="admin-suspend-title">
