@@ -429,8 +429,6 @@ export default function AdminPortal() {
                         <button className="admin-danger-outline-button" type="button" onClick={() => { setNomeConfirmacaoExclusao(""); setErroExclusao(""); setModalExclusaoAberto(true); }}>Excluir clínica permanentemente</button>
                       </div>
                     </div>
-
-                    </div>
                     {feedbackAcao && <div className="admin-action-feedback" role="status">{feedbackAcao}</div>}
                   </div>
                   <div className="admin-panel admin-detail-card">
