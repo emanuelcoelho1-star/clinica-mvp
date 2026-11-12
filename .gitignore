@@ -5,3 +5,5 @@ dist/
 build/
 database.dbnode_modules/
 *.db
+
+backend/uploads/
