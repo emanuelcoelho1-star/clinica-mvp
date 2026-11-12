@@ -171,16 +171,15 @@ router.post("/register", registerLimiter, async (req, res) => {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailNormalizado)) {
       return res.status(400).json({ erro: "Informe um e-mail válido." });
     }
-    if (!process.env.RESEND_API_KEY || !process.env.EMAIL_FROM) {
-      return res.status(503).json({ erro: "O envio de e-mails ainda não está configurado. Configure RESEND_API_KEY e EMAIL_FROM no backend/.env." });
-    }
-
     const usuarioExistente = await new Promise((resolve, reject) => {
       db.get("SELECT id FROM usuarios WHERE LOWER(TRIM(email)) = ?", [emailNormalizado],
         (err, row) => err ? reject(err) : resolve(row));
     });
     if (usuarioExistente) {
       return res.status(409).json({ erro: "Este e-mail já está cadastrado. Utilize outro endereço ou faça login." });
+    }
+    if (!process.env.RESEND_API_KEY || !process.env.EMAIL_FROM) {
+      return res.status(503).json({ erro: "O envio de e-mails ainda não está configurado. Configure RESEND_API_KEY e EMAIL_FROM no backend/.env." });
     }
 
     const hash = await bcrypt.hash(senha, 12);
