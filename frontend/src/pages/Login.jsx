@@ -110,7 +110,7 @@ function Login() {
   const verificarDisponibilidadeEmail = async () => {
     if (!modoCadastro || !email.trim()) return;
     try {
-      const response = await fetch(\`\${API_URL}/auth/email-disponivel?email=\${encodeURIComponent(email.trim())}\`);
+      const response = await fetch(`${API_URL}/auth/email-disponivel?email=${encodeURIComponent(email.trim())}`);
       const data = await response.json();
       if (response.ok && !data.disponivel) {
         setErro("Este e-mail já está cadastrado. Utilize outro endereço ou faça login.");
@@ -127,7 +127,7 @@ function Login() {
     setReenviando(true);
     setErro("");
     try {
-      const response = await fetch(\`\${API_URL}/auth/reenviar-verificacao\`, {
+      const response = await fetch(`${API_URL}/auth/reenviar-verificacao`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: emailAguardando }),
@@ -159,6 +159,9 @@ function Login() {
 
       if (!response.ok) {
         setErro(data.erro || "Erro ao fazer login");
+        if (response.status === 403 && String(data.erro || "").includes("Confirme seu endereço de e-mail")) {
+          setEmailAguardando(email.trim());
+        }
         setCarregando(false);
         return;
       }
