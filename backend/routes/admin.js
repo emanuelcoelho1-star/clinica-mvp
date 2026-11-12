@@ -138,12 +138,28 @@ async function cancelarAssinaturaExterna(clinicId) {
       access_token: credenciais.apiKey,
     },
   });
-  const dados = await resposta.json().catch(() => ({}));
+  const corpoResposta = await resposta.text().catch(() => "");
+  let dados = {};
+  try {
+    dados = corpoResposta ? JSON.parse(corpoResposta) : {};
+  } catch {
+    dados = {};
+  }
   if (!resposta.ok) {
-    const mensagem = Array.isArray(dados.errors)
-      ? dados.errors.map((item) => item.description).filter(Boolean).join("; ")
-      : "";
-    const erro = new Error(mensagem || "O Asaas não confirmou o cancelamento da assinatura. A clínica não foi excluída.");
+    const errosAsaas = Array.isArray(dados.errors)
+      ? dados.errors.map((item) => ({
+          codigo: typeof item.code === "string" ? item.code : undefined,
+          descricao: typeof item.description === "string" ? item.description.slice(0, 300) : undefined,
+        })).filter((item) => item.codigo || item.descricao)
+      : [];
+    console.error("Asaas recusou o cancelamento da assinatura:", JSON.stringify({
+      status_http: resposta.status,
+      status_texto: resposta.statusText,
+      erros: errosAsaas,
+      resposta_sem_estrutura: errosAsaas.length === 0 ? corpoResposta.slice(0, 500) : undefined,
+    }));
+    const mensagem = errosAsaas.map((item) => item.descricao).filter(Boolean).join("; ");
+    const erro = new Error(mensagem || "O Asaas não confirmou o cancelamento da assinatura (HTTP " + resposta.status + "). A clínica não foi excluída.");
     erro.status = 502;
     throw erro;
   }
