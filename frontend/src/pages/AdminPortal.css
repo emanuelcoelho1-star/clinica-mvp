@@ -305,3 +305,19 @@
 /* Controle de dias gratuitos por clínica */
 .admin-action-block input[type="number"] {font-variant-numeric:tabular-nums}
 .admin-clinic-actions-grid {grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+
+
+/* Exclusão permanente de clínica no painel da plataforma */
+.admin-action-danger {border-color:rgba(220,38,38,.28);background:rgba(220,38,38,.035)}
+.admin-action-danger strong {color:var(--danger)}
+.admin-danger-outline-button {min-height:40px;padding:0 13px;border:1px solid var(--danger);border-radius:9px;background:transparent;color:var(--danger);font:inherit;font-size:12px;font-weight:700;cursor:pointer;transition:background .15s ease,color .15s ease}
+.admin-danger-outline-button:hover {background:var(--danger);color:#fff}
+.admin-delete-confirm-icon {background:rgba(220,38,38,.1);color:var(--danger)}
+.admin-delete-modal {max-width:500px}
+.admin-delete-confirm-field {display:flex;flex-direction:column;gap:8px;margin:0 0 18px}
+.admin-delete-confirm-field label {font-size:12px;line-height:1.5;color:var(--text-secondary)}
+.admin-delete-confirm-field label strong {color:var(--text-primary);overflow-wrap:anywhere}
+.admin-delete-confirm-field input {width:100%;min-height:42px;padding:9px 11px;border:1px solid var(--border-input);border-radius:9px;background:var(--bg-input-alt);color:var(--text-primary);font:inherit;font-size:13px;outline:none}
+.admin-delete-confirm-field input:focus {border-color:var(--danger);box-shadow:0 0 0 3px rgba(220,38,38,.1)}
+.admin-delete-modal .admin-alert {margin:0 0 16px}
+.admin-delete-modal .admin-confirm-danger:disabled {opacity:.45;cursor:not-allowed}
