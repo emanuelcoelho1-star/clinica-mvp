@@ -1,5 +1,7 @@
 const express = require("express");
 const crypto = require("crypto");
+const fs = require("fs");
+const path = require("path");
 const jwt = require("jsonwebtoken");
 const rateLimit = require("express-rate-limit");
 const db = require("../database");
@@ -187,6 +189,136 @@ router.get("/clinicas/:id", exigirAdmin, (req, res) => {
         });
       }
     );
+  });
+});
+
+
+router.delete("/clinicas/:id", exigirAdmin, (req, res) => {
+  const clinicId = Number(req.params.id);
+  if (!Number.isSafeInteger(clinicId) || clinicId <= 0) {
+    return res.status(400).json({ erro: "Identificador de clínica inválido." });
+  }
+
+  // A clínica 1 é a fonte do plano Particular e do catálogo copiados
+  // para todas as novas clínicas. Ela é protegida contra exclusão.
+  if (clinicId === 1) {
+    return res.status(403).json({ erro: "A clínica-modelo da plataforma não pode ser excluída." });
+  }
+
+  db.get("SELECT id, nome FROM clinicas WHERE id = ? LIMIT 1", [clinicId], (findErr, clinica) => {
+    if (findErr) {
+      console.error("Falha ao consultar clínica para exclusão:", findErr.message);
+      return res.status(500).json({ erro: "Não foi possível consultar a clínica." });
+    }
+    if (!clinica) return res.status(404).json({ erro: "Clínica não encontrada." });
+
+    const confirmacao = typeof req.body?.confirmacao === "string" ? req.body.confirmacao.trim() : "";
+    const normalizar = (valor) => String(valor || "").normalize("NFC").trim().toLocaleLowerCase("pt-BR");
+    if (!confirmacao || normalizar(confirmacao) !== normalizar(clinica.nome)) {
+      return res.status(400).json({ erro: "Digite o nome exato da clínica para confirmar a exclusão." });
+    }
+
+    db.all("SELECT nome_salvo FROM arquivos WHERE clinica_id = ?", [clinicId], (filesErr, arquivos) => {
+      if (filesErr) {
+        console.error("Falha ao listar arquivos da clínica para exclusão:", filesErr.message);
+        return res.status(500).json({ erro: "Não foi possível preparar a exclusão dos arquivos." });
+      }
+
+      db.serialize(() => {
+        db.run("BEGIN IMMEDIATE TRANSACTION", (beginErr) => {
+          if (beginErr) {
+            console.error("Falha ao iniciar exclusão da clínica:", beginErr.message);
+            return res.status(500).json({ erro: "Não foi possível iniciar a exclusão da clínica." });
+          }
+
+          const abortar = (err) => {
+            db.run("ROLLBACK", () => {
+              console.error("Exclusão da clínica revertida:", err?.message || err);
+              return res.status(500).json({ erro: "Não foi possível excluir todos os dados da clínica. Nenhuma alteração foi confirmada." });
+            });
+          };
+
+          db.run("PRAGMA defer_foreign_keys = ON", (pragmaErr) => {
+            if (pragmaErr) return abortar(pragmaErr);
+
+            db.all(
+              "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name",
+              [],
+              (tablesErr, tabelas) => {
+                if (tablesErr) return abortar(tablesErr);
+
+                const nomesTabelas = new Set((tabelas || []).map((t) => t.name));
+                const limparEventosPagamento = (callback) => {
+                  if (!nomesTabelas.has("sorrisa_asaas_webhook_eventos") || !nomesTabelas.has("sorrisa_assinatura_cobrancas")) {
+                    return callback();
+                  }
+                  db.run(
+                    "DELETE FROM sorrisa_asaas_webhook_eventos WHERE pagamento_id IN (SELECT provedor_pagamento_id FROM sorrisa_assinatura_cobrancas WHERE clinica_id = ?)",
+                    [clinicId],
+                    (eventErr) => eventErr ? callback(eventErr) : callback()
+                  );
+                };
+
+                limparEventosPagamento((eventErr) => {
+                  if (eventErr) return abortar(eventErr);
+
+                  const excluirTabelasDaClinica = (indice) => {
+                    if (indice >= (tabelas || []).length) {
+                      db.run("DELETE FROM clinicas WHERE id = ?", [clinicId], function (clinicDeleteErr) {
+                        if (clinicDeleteErr) return abortar(clinicDeleteErr);
+                        if (this.changes !== 1) return abortar(new Error("A clínica não foi removida."));
+                        db.run("COMMIT", (commitErr) => {
+                          if (commitErr) return abortar(commitErr);
+
+                          const uploadDir = path.join(__dirname, "..", "uploads");
+                          (arquivos || []).forEach((arquivo) => {
+                            const nome = path.basename(String(arquivo.nome_salvo || ""));
+                            if (!nome || nome === "." || nome === "..") return;
+                            fs.unlink(path.join(uploadDir, nome), (unlinkErr) => {
+                              if (unlinkErr && unlinkErr.code !== "ENOENT") {
+                                console.warn("Não foi possível remover arquivo físico da clínica:", nome, unlinkErr.message);
+                              }
+                            });
+                          });
+
+                          return res.json({
+                            sucesso: true,
+                            mensagem: "Clínica e dados vinculados excluídos com sucesso.",
+                            clinica_id: clinicId,
+                            arquivos_removidos: (arquivos || []).length,
+                          });
+                        });
+                      });
+                      return;
+                    }
+
+                    const nomeTabela = tabelas[indice].name;
+                    if (nomeTabela === "clinicas") {
+                      excluirTabelasDaClinica(indice + 1);
+                      return;
+                    }
+                    const nomeSeguro = '"' + String(nomeTabela).replace(/"/g, '""') + '"';
+                    db.all("PRAGMA table_info(" + nomeSeguro + ")", [], (columnsErr, colunas) => {
+                      if (columnsErr) return abortar(columnsErr);
+                      if (!(colunas || []).some((coluna) => coluna.name === "clinica_id")) {
+                        excluirTabelasDaClinica(indice + 1);
+                        return;
+                      }
+                      db.run("DELETE FROM " + nomeSeguro + " WHERE clinica_id = ?", [clinicId], (deleteErr) => {
+                        if (deleteErr) return abortar(deleteErr);
+                        excluirTabelasDaClinica(indice + 1);
+                      });
+                    });
+                  };
+
+                  excluirTabelasDaClinica(0);
+                });
+              }
+            );
+          });
+        });
+      });
+    });
   });
 });
 
