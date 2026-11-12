@@ -520,8 +520,15 @@ router.get("/payment-settings", exigirAdmin, (req, res) => {
       const credenciais = decifrarCredenciais(row.credenciais_cifradas);
       return res.json({ provedor: row.provedor, ambiente: row.ambiente, possui_chave_api: Boolean(credenciais.apiKey), possui_token_webhook: Boolean(credenciais.webhookToken || process.env.ASAAS_WEBHOOK_TOKEN), atualizado_em: row.updated_at });
     } catch (e) {
-      console.error("Não foi possível descriptografar as credenciais de pagamento.");
-      return res.status(503).json({ erro: "A chave de criptografia das credenciais não está disponível ou foi alterada." });
+      console.error("Não foi possível descriptografar as credenciais de pagamento; será necessário cadastrá-las novamente.");
+      return res.json({
+        provedor: row.provedor,
+        ambiente: row.ambiente,
+        possui_chave_api: false,
+        possui_token_webhook: Boolean(process.env.ASAAS_WEBHOOK_TOKEN),
+        precisa_reconfigurar: true,
+        atualizado_em: row.updated_at,
+      });
     }
   });
 });
@@ -536,12 +543,21 @@ router.put("/payment-settings", exigirAdmin, (req, res) => {
   db.get("SELECT provedor, credenciais_cifradas FROM admin_payment_settings WHERE id = 1", [], (findErr, atual) => {
     if (findErr) return res.status(500).json({ erro: "Não foi possível consultar a configuração atual." });
     let credenciaisAtuais = {};
+    let credenciaisAtuaisDisponiveis = true;
     try {
       if (atual?.credenciais_cifradas) credenciaisAtuais = decifrarCredenciais(atual.credenciais_cifradas);
-      if (atual && atual.provedor !== provedor && !apiKeyNova) return res.status(400).json({ erro: "Informe a nova chave de API ao trocar de provedor." });
+    } catch (decryptErr) {
+      credenciaisAtuaisDisponiveis = false;
+      console.warn("Credenciais antigas de pagamento não puderam ser recuperadas; uma nova chave será necessária.");
+    }
+    if (!apiKeyNova && !credenciaisAtuaisDisponiveis) {
+      return res.status(409).json({ erro: "As credenciais antigas não podem ser recuperadas. Informe novamente a chave de API para substituí-las." });
+    }
+    if (atual && atual.provedor !== provedor && !apiKeyNova) return res.status(400).json({ erro: "Informe a nova chave de API ao trocar de provedor." });
+    try {
       const credenciais = {
         apiKey: apiKeyNova || credenciaisAtuais.apiKey || "",
-        webhookToken: webhookTokenNovo || credenciaisAtuais.webhookToken || "",
+        webhookToken: webhookTokenNovo || (credenciaisAtuaisDisponiveis ? credenciaisAtuais.webhookToken || "" : ""),
       };
       if (!credenciais.apiKey) return res.status(400).json({ erro: "Informe a chave de API do provedor." });
       const cifradas = cifrarCredenciais(credenciais);
@@ -556,8 +572,8 @@ router.put("/payment-settings", exigirAdmin, (req, res) => {
           return res.json({ sucesso: true, provedor, ambiente, possui_chave_api: true, possui_token_webhook: Boolean(credenciais.webhookToken), atualizado_em: new Date().toISOString() });
         });
     } catch (e) {
-      console.error("Falha ao proteger credenciais de pagamento.");
-      return res.status(503).json({ erro: "Não foi possível proteger as credenciais. Verifique PAYMENT_CREDENTIALS_KEY no backend." });
+      console.error("Falha ao proteger credenciais de pagamento:", e.message);
+      return res.status(503).json({ erro: "Não foi possível proteger as credenciais. Verifique a configuração de PAYMENT_CREDENTIALS_KEY no backend." });
     }
   });
 });
