@@ -121,6 +121,15 @@ const registerLimiter = rateLimit({
   validate: { ip: false, trustProxy: false },
 });
 
+/* ── Reenvio de verificação: máximo 3 por hora/IP ── */
+const resendVerificationLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 3,
+  message: { erro: "Muitas solicitações de reenvio. Aguarde uma hora para tentar novamente." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 /* ── Geral (me, perfil, senha): 30 req por minuto ───────── */
 const authGeneralLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -295,7 +304,7 @@ router.post("/verificar-email", authGeneralLimiter, (req, res) => {
 });
 
 /* ── Reenviar e-mail de verificação ─────────────── */
-router.post("/reenviar-verificacao", authGeneralLimiter, async (req, res) => {
+router.post("/reenviar-verificacao", resendVerificationLimiter, async (req, res) => {
   const email = String((req.body && req.body.email) || "").trim().toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return res.status(400).json({ erro: "Informe um e-mail válido." });
