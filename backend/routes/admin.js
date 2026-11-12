@@ -334,25 +334,29 @@ router.delete("/clinicas/:id", exigirAdmin, (req, res) => {
                       db.run("DELETE FROM clinicas WHERE id = ?", [clinicId], function (clinicDeleteErr) {
                         if (clinicDeleteErr) return abortar(clinicDeleteErr);
                         if (this.changes !== 1) return abortar(new Error("A clínica não foi removida."));
-                        db.run("COMMIT", (commitErr) => {
+                        db.run("COMMIT", async (commitErr) => {
                           if (commitErr) return abortar(commitErr);
 
                           const uploadDir = path.join(__dirname, "..", "uploads");
-                          (arquivos || []).forEach((arquivo) => {
+                          const resultadosArquivos = await Promise.all((arquivos || []).map(async (arquivo) => {
                             const nome = path.basename(String(arquivo.nome_salvo || ""));
-                            if (!nome || nome === "." || nome === "..") return;
-                            fs.unlink(path.join(uploadDir, nome), (unlinkErr) => {
-                              if (unlinkErr && unlinkErr.code !== "ENOENT") {
-                                console.warn("Não foi possível remover arquivo físico da clínica:", nome, unlinkErr.message);
-                              }
-                            });
-                          });
+                            if (!nome || nome === "." || nome === "..") return true;
+                            try {
+                              await fs.promises.unlink(path.join(uploadDir, nome));
+                              return true;
+                            } catch (unlinkErr) {
+                              if (unlinkErr.code === "ENOENT") return true;
+                              console.warn("Não foi possível remover arquivo físico da clínica:", nome, unlinkErr.message);
+                              return false;
+                            }
+                          }));
 
                           return res.json({
                             sucesso: true,
                             mensagem: "Clínica e dados vinculados excluídos com sucesso.",
                             clinica_id: clinicId,
-                            arquivos_removidos: (arquivos || []).length,
+                            arquivos_removidos: resultadosArquivos.filter(Boolean).length,
+                            arquivos_pendentes: resultadosArquivos.filter((removido) => !removido).length,
                           });
                         });
                       });
