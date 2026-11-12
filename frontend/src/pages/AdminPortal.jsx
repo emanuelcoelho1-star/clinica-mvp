@@ -635,6 +635,7 @@ export default function AdminPortal() {
               <span className="admin-payment-status">{configPagamento.possui_chave_api ? "Credenciais cadastradas" : "Não configurado"}</span>
             </div>
             <form className="admin-payment-form" onSubmit={salvarConfiguracaoPagamento}>
+              {configPagamento.precisa_reconfigurar && <div className="admin-alert" role="alert">As credenciais antigas não podem ser recuperadas com a chave de criptografia atual. Cadastre novamente a chave de API do Asaas. Se você utilizava um token próprio de webhook, informe-o novamente.</div>}
               <div className="admin-payment-form-grid">
                 <div className="admin-field">
                   <label htmlFor="admin-payment-provider">Provedor de pagamento</label>
