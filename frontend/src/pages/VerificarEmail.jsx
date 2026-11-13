@@ -23,9 +23,15 @@ export default function VerificarEmail() {
       .then(async (res) => {
         const data = await res.json();
         if (!res.ok) throw new Error(data.erro || "Não foi possível verificar o e-mail.");
+        if (!data.token || !data.usuario) {
+          throw new Error("E-mail confirmado, mas não foi possível iniciar sua sessão. Faça login para continuar.");
+        }
         if (ativo) {
+          localStorage.setItem("token", data.token);
+          localStorage.setItem("sorrisa_last_activity", String(Date.now()));
+          localStorage.setItem("usuario", JSON.stringify(data.usuario));
           setEstado("sucesso");
-          setMensagem(data.mensagem || "E-mail verificado com sucesso. Você já pode entrar na Sorrisa.");
+          setMensagem(data.mensagem || "E-mail verificado com sucesso! Vamos continuar com o cadastro da sua clínica.");
         }
       })
       .catch((error) => {
@@ -46,7 +52,11 @@ export default function VerificarEmail() {
         </div>
         <h1 style={S.title}>{estado === "verificando" ? "Verificando e-mail" : sucesso ? "E-mail confirmado" : "Não foi possível confirmar"}</h1>
         <p style={S.message}>{mensagem}</p>
-        {estado !== "verificando" && <Link to="/" style={S.link}>Ir para o acesso</Link>}
+        {estado !== "verificando" && (
+          sucesso
+            ? <a href="/cadastro-clinica" style={S.link}>Continuar cadastro da clínica</a>
+            : <Link to="/" style={S.link}>Voltar para o acesso</Link>
+        )}
       </section>
     </main>
   );
