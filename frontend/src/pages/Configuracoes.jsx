@@ -401,6 +401,13 @@ function Configuracoes({ administrador = false, permissoesAcesso = [] }) {
                 <span style={S.cardIcon}>{Icons.user}</span>
                 <h2 style={S.cardTitle}>Editar perfil</h2>
               </div>
+              <button
+                type="button"
+                style={{ ...S.btnPrimary, marginTop: 0, height: "36px", padding: "8px 14px" }}
+                onClick={() => { setErroEmail(""); setMensagemEmail(""); setModalAlterarEmail(true); }}
+              >
+                {Icons.mail} Alterar e-mail
+              </button>
             </div>
 
             <form onSubmit={salvarPerfil} style={S.form}>
@@ -424,13 +431,7 @@ function Configuracoes({ administrador = false, permissoesAcesso = [] }) {
                   style={{ ...S.input, background: "#f8fafc", color: "#94a3b8", cursor: "not-allowed" }}
                   disabled
                 />
-                <button
-                  type="button"
-                  style={S.btnPrimary}
-                  onClick={() => { setErroEmail(""); setMensagemEmail(""); setModalAlterarEmail(true); }}
-                >
-                  {Icons.mail} Alterar e-mail
-                </button>
+                <span style={S.inputHint}>O e-mail não pode ser alterado.</span>
               </div>
 
               {erroPerfil && (
