@@ -78,6 +78,8 @@ const jwt = require("jsonwebtoken");
 const rateLimit = require("express-rate-limit");
 const auth = require("../middleware/auth");
 const { domainToUnicode } = require("url");
+const crypto = require("crypto");
+const { enviarEmailVerificacao, hashToken } = require("../services/email-verificacao");
 
 // Exibe domínios internacionalizados em Unicode sem alterar o e-mail usado no login.
 function emailParaExibicao(email) {
@@ -119,6 +121,15 @@ const registerLimiter = rateLimit({
   validate: { ip: false, trustProxy: false },
 });
 
+/* ── Reenvio de verificação: máximo 3 por hora/IP ── */
+const resendVerificationLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 3,
+  message: { erro: "Muitas solicitações de reenvio. Aguarde uma hora para tentar novamente." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 /* ── Geral (me, perfil, senha): 30 req por minuto ───────── */
 const authGeneralLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -127,6 +138,18 @@ const authGeneralLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   validate: { ip: false, trustProxy: false },
+});
+
+/* ── Consulta de disponibilidade do e-mail ───────── */
+router.get("/email-disponivel", authGeneralLimiter, (req, res) => {
+  const email = String(req.query.email || "").trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ erro: "Informe um e-mail válido." });
+  }
+  db.get("SELECT id FROM usuarios WHERE LOWER(TRIM(email)) = ?", [email], (err, user) => {
+    if (err) return res.status(500).json({ erro: "Não foi possível verificar o e-mail." });
+    return res.json({ disponivel: !user });
+  });
 });
 
 /* ── Cadastro inicial local ───────────────────── */
@@ -148,8 +171,21 @@ router.post("/register", registerLimiter, async (req, res) => {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailNormalizado)) {
       return res.status(400).json({ erro: "Informe um e-mail válido." });
     }
+    const usuarioExistente = await new Promise((resolve, reject) => {
+      db.get("SELECT id FROM usuarios WHERE LOWER(TRIM(email)) = ?", [emailNormalizado],
+        (err, row) => err ? reject(err) : resolve(row));
+    });
+    if (usuarioExistente) {
+      return res.status(409).json({ erro: "Este e-mail já está cadastrado. Utilize outro endereço ou faça login." });
+    }
+    if (!process.env.RESEND_API_KEY || !process.env.EMAIL_FROM) {
+      return res.status(503).json({ erro: "O envio de e-mails ainda não está configurado. Configure RESEND_API_KEY e EMAIL_FROM no backend/.env." });
+    }
 
     const hash = await bcrypt.hash(senha, 12);
+    const tokenVerificacao = crypto.randomBytes(32).toString("hex");
+    const tokenVerificacaoHash = hashToken(tokenVerificacao);
+    const tokenVerificacaoExpira = new Date(Date.now() + 30 * 60 * 1000).toISOString();
     const slugBase = nomeNormalizado
       .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
       .toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
@@ -189,8 +225,8 @@ router.post("/register", registerLimiter, async (req, res) => {
                 const clinicaId = this.lastID;
 
                 db.run(
-                  "INSERT INTO usuarios (nome, email, senha, role_id, clinica_id) VALUES (?, ?, ?, ?, ?)",
-                  [nomeNormalizado, emailNormalizado, hash, role.id, clinicaId],
+                  "INSERT INTO usuarios (nome, email, senha, role_id, clinica_id, email_verificado, email_verificacao_token_hash, email_verificacao_expira_em) VALUES (?, ?, ?, ?, ?, 0, ?, ?)",
+                  [nomeNormalizado, emailNormalizado, hash, role.id, clinicaId, tokenVerificacaoHash, tokenVerificacaoExpira],
                   function (userErr) {
                     if (userErr) {
                       if (userErr.message.includes("UNIQUE")) return rollback(409, "E-mail já cadastrado.");
@@ -207,19 +243,21 @@ router.post("/register", registerLimiter, async (req, res) => {
                         copiarPlanoParticularPadrao(clinicaId, (catalogoErr) => {
                           if (catalogoErr) return rollback(500, "Erro ao preparar o plano Particular e os procedimentos padrão.");
 
-                          db.run("COMMIT", (commitErr) => {
+                          db.run("COMMIT", async (commitErr) => {
                           if (commitErr) return rollback(500, "Não foi possível concluir o cadastro.");
-                          const token = jwt.sign(
-                            { id: usuarioId, nome: nomeNormalizado, email: emailNormalizado },
-                            SECRET,
-                            { expiresIn: "24h" }
-                          );
+                          let emailEnviado = true;
+                          try {
+                            await enviarEmailVerificacao({ email: emailNormalizado, nome: nomeNormalizado, token: tokenVerificacao });
+                          } catch (emailErr) {
+                            emailEnviado = false;
+                            console.error("Falha ao enviar verificação de e-mail:", emailErr.message);
+                          }
                           return res.status(201).json({
-                            mensagem: "Conta criada. Complete agora os dados da sua clínica.",
-                            id: usuarioId,
-                            clinica_id: clinicaId,
-                            token,
-                            usuario: { id: usuarioId, nome: nomeNormalizado, email: emailParaExibicao(emailNormalizado) },
+                            mensagem: emailEnviado
+                              ? "Conta criada! Enviamos um link para confirmar seu e-mail antes do primeiro acesso."
+                              : "Conta criada, mas não foi possível enviar o e-mail. Utilize a opção de reenviar a verificação.",
+                            emailEnviado,
+                            email: emailParaExibicao(emailNormalizado),
                           });
                         });
                       }
@@ -235,6 +273,67 @@ router.post("/register", registerLimiter, async (req, res) => {
     });
   } catch (error) {
     return res.status(500).json({ erro: "Erro interno no servidor." });
+  }
+});
+
+/* ── Confirmar endereço de e-mail ───────────────── */
+router.post("/verificar-email", authGeneralLimiter, (req, res) => {
+  const token = String((req.body && req.body.token) || "");
+  if (!/^[a-f0-9]{64}$/i.test(token)) {
+    return res.status(400).json({ erro: "Link de verificação inválido ou incompleto." });
+  }
+  const tokenHash = hashToken(token);
+  db.get(
+    "SELECT id FROM usuarios WHERE email_verificacao_token_hash = ? AND datetime(email_verificacao_expira_em) > datetime('now') AND email_verificado = 0",
+    [tokenHash],
+    (err, user) => {
+      if (err) return res.status(500).json({ erro: "Não foi possível confirmar o e-mail." });
+      if (!user) return res.status(400).json({ erro: "Este link é inválido, expirou ou já foi utilizado. Solicite um novo e-mail de verificação." });
+      db.run(
+        "UPDATE usuarios SET email_verificado = 1, email_verificacao_token_hash = NULL, email_verificacao_expira_em = NULL WHERE id = ? AND email_verificado = 0",
+        [user.id],
+        function (updateErr) {
+          if (updateErr) return res.status(500).json({ erro: "Não foi possível confirmar o e-mail." });
+          if (!this.changes) return res.status(400).json({ erro: "Este link já foi utilizado. Faça login." });
+          return res.json({ mensagem: "E-mail verificado com sucesso! Você já pode entrar na Sorrisa." });
+        }
+      );
+    }
+  );
+});
+
+/* ── Reenviar e-mail de verificação ─────────────── */
+router.post("/reenviar-verificacao", resendVerificationLimiter, async (req, res) => {
+  const email = String((req.body && req.body.email) || "").trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ erro: "Informe um e-mail válido." });
+  }
+  if (!process.env.RESEND_API_KEY || !process.env.EMAIL_FROM) {
+    return res.status(503).json({ erro: "O envio de e-mails não está configurado no servidor." });
+  }
+  try {
+    const user = await new Promise((resolve, reject) => {
+      db.get("SELECT id, nome, email, email_verificado FROM usuarios WHERE LOWER(TRIM(email)) = ?", [email],
+        (err, row) => err ? reject(err) : resolve(row));
+    });
+    // Resposta genérica evita revelar se um endereço possui conta cadastrada.
+    if (!user || Number(user.email_verificado) === 1) {
+      return res.json({ mensagem: "Se existir uma conta pendente para este endereço, enviaremos um novo link." });
+    }
+    const token = crypto.randomBytes(32).toString("hex");
+    const expira = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+    await new Promise((resolve, reject) => {
+      db.run(
+        "UPDATE usuarios SET email_verificacao_token_hash = ?, email_verificacao_expira_em = ? WHERE id = ? AND email_verificado = 0",
+        [hashToken(token), expira, user.id],
+        (err) => err ? reject(err) : resolve()
+      );
+    });
+    await enviarEmailVerificacao({ email: user.email, nome: user.nome, token });
+    return res.json({ mensagem: "Enviamos um novo link de verificação para seu e-mail." });
+  } catch (error) {
+    console.error("Falha ao reenviar verificação de e-mail:", error.message);
+    return res.status(500).json({ erro: "Não foi possível reenviar o e-mail agora. Tente novamente mais tarde." });
   }
 });
 
@@ -263,6 +362,10 @@ router.post("/login", loginLimiter, (req, res) => {
 
         if (!valido) {
           return res.status(401).json({ erro: "E-mail ou senha inválidos." });
+        }
+
+        if (Number(user.email_verificado) !== 1) {
+          return res.status(403).json({ erro: "Confirme seu endereço de e-mail antes de entrar. Verifique sua caixa de entrada ou solicite um novo link." });
         }
 
         if (!user.role_id || Number(user.role_ativo) !== 1) {

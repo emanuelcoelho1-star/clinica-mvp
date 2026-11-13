@@ -799,6 +799,9 @@ function executarMigracaoSaaS(onComplete = () => {}) {
 
     const colunasSaaS = [
       ["usuarios", "clinica_id", "INTEGER"],
+      ["usuarios", "email_verificado", "INTEGER NOT NULL DEFAULT 1"],
+      ["usuarios", "email_verificacao_token_hash", "TEXT"],
+      ["usuarios", "email_verificacao_expira_em", "TEXT"],
       ["pacientes", "clinica_id", "INTEGER"],
       ["consultas", "clinica_id", "INTEGER"],
       ["odontogramas", "clinica_id", "INTEGER"],

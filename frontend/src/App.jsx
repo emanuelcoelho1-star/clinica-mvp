@@ -12,6 +12,7 @@ import Financeiro from "./pages/Financeiro";
 import { ThemeProvider, useTheme } from "./contexts/ThemeContext";
 import API_URL from "./api";
 import AdminPortal from "./pages/AdminPortal";
+import VerificarEmail from "./pages/VerificarEmail";
 
 const SESSION_IDLE_LIMIT_MS = 12 * 60 * 60 * 1000;
 const SESSION_ACTIVITY_KEY = "sorrisa_last_activity";
@@ -559,6 +560,7 @@ function App() {
       <BrowserRouter>
         {!autenticado ? (
           <Routes>
+            <Route path="/verificar-email" element={<VerificarEmail />} />
             <Route path="*" element={<Login />} />
           </Routes>
         ) : (

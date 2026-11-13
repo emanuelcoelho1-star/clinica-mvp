@@ -56,6 +56,8 @@ function Login() {
   const [modoCadastro, setModoCadastro] = useState(false);
   const [erro, setErro] = useState("");
   const [sucesso, setSucesso] = useState("");
+  const [emailAguardando, setEmailAguardando] = useState("");
+  const [reenviando, setReenviando] = useState(false);
   const [carregando, setCarregando] = useState(false);
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [mostrarConfirmarSenha, setMostrarConfirmarSenha] = useState(false);
@@ -91,23 +93,52 @@ function Login() {
         return;
       }
 
-      if (data.token) {
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("sorrisa_last_activity", String(Date.now()));
-        if (data.usuario) localStorage.setItem("usuario", JSON.stringify(data.usuario));
-        window.location.href = "/cadastro-clinica";
-        return;
-      }
       setModoCadastro(false);
       setSenha("");
       setConfirmarSenha("");
       setNome("");
+      setEmailAguardando(data.email || email.trim());
       setErro("");
-      setSucesso("Cadastro realizado! Entre com seu e-mail e senha.");
+      setSucesso(data.mensagem || "Cadastro realizado. Confirme seu e-mail para continuar.");
       setCarregando(false);
     } catch (error) {
       setErro("Não foi possível conectar ao servidor.");
       setCarregando(false);
+    }
+  };
+
+  const verificarDisponibilidadeEmail = async () => {
+    if (!modoCadastro || !email.trim()) return;
+    try {
+      const response = await fetch(`${API_URL}/auth/email-disponivel?email=${encodeURIComponent(email.trim())}`);
+      const data = await response.json();
+      if (response.ok && !data.disponivel) {
+        setErro("Este e-mail já está cadastrado. Utilize outro endereço ou faça login.");
+      } else if (response.ok) {
+        setErro("");
+      }
+    } catch {
+      // A validação definitiva também é feita pelo servidor ao enviar o cadastro.
+    }
+  };
+
+  const reenviarVerificacao = async () => {
+    if (!emailAguardando) return;
+    setReenviando(true);
+    setErro("");
+    try {
+      const response = await fetch(`${API_URL}/auth/reenviar-verificacao`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: emailAguardando }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.erro || "Não foi possível reenviar o e-mail.");
+      setSucesso(data.mensagem || "Se houver uma conta pendente, enviaremos um novo link.");
+    } catch (error) {
+      setErro(error.message || "Não foi possível reenviar o e-mail.");
+    } finally {
+      setReenviando(false);
     }
   };
 
@@ -128,6 +159,9 @@ function Login() {
 
       if (!response.ok) {
         setErro(data.erro || "Erro ao fazer login");
+        if (response.status === 403 && String(data.erro || "").includes("Confirme seu endereço de e-mail")) {
+          setEmailAguardando(email.trim());
+        }
         setCarregando(false);
         return;
       }
@@ -201,6 +235,11 @@ function Login() {
           {sucesso && !modoCadastro && (
             <div className="login-success" role="status">{sucesso}</div>
           )}
+          {emailAguardando && !modoCadastro && (
+            <button type="button" onClick={reenviarVerificacao} disabled={reenviando} style={{ ...S.btnPrimary, marginTop: 12, background: "#0f766e", opacity: reenviando ? 0.7 : 1 }}>
+              {reenviando ? "Enviando..." : "Reenviar e-mail de verificação"}
+            </button>
+          )}
 
           <form onSubmit={modoCadastro ? cadastrar : fazerLogin} style={S.form}>
             {modoCadastro && (
@@ -236,7 +275,7 @@ function Login() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   onFocus={() => setFocusEmail(true)}
-                  onBlur={() => setFocusEmail(false)}
+                  onBlur={() => { setFocusEmail(false); verificarDisponibilidadeEmail(); }}
                   style={S.input}
                   required
                   autoComplete="email"
