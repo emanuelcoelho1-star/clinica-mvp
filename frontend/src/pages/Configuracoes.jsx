@@ -417,13 +417,20 @@ function Configuracoes({ administrador = false, permissoesAcesso = [] }) {
               </div>
 
               <div style={S.inputGroup}>
-                <label style={S.label}>E-mail de acesso</label>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
-                  <span style={{ ...S.infoValue, fontSize: "14px" }}>{usuario.email || "—"}</span>
-                  <button type="button" style={S.btnPrimary} onClick={() => { setErroEmail(""); setMensagemEmail(""); setModalAlterarEmail(true); }}>
-                    {Icons.mail} Alterar e-mail
-                  </button>
-                </div>
+                <label style={S.label}>E-mail</label>
+                <input
+                  type="email"
+                  value={usuario.email || ""}
+                  style={{ ...S.input, background: "#f8fafc", color: "#94a3b8", cursor: "not-allowed" }}
+                  disabled
+                />
+                <button
+                  type="button"
+                  style={S.btnPrimary}
+                  onClick={() => { setErroEmail(""); setMensagemEmail(""); setModalAlterarEmail(true); }}
+                >
+                  {Icons.mail} Alterar e-mail
+                </button>
               </div>
 
               {erroPerfil && (
