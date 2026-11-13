@@ -284,18 +284,28 @@ router.post("/verificar-email", authGeneralLimiter, (req, res) => {
   }
   const tokenHash = hashToken(token);
   db.get(
-    "SELECT id FROM usuarios WHERE email_verificacao_token_hash = ? AND datetime(email_verificacao_expira_em) > datetime('now') AND email_verificado = 0",
+    "SELECT id, nome, email, clinica_id FROM usuarios WHERE email_verificacao_token_hash = ? AND datetime(email_verificacao_expira_em) > datetime('now') AND email_verificado = 0",
     [tokenHash],
     (err, user) => {
       if (err) return res.status(500).json({ erro: "Não foi possível confirmar o e-mail." });
       if (!user) return res.status(400).json({ erro: "Este link é inválido, expirou ou já foi utilizado. Solicite um novo e-mail de verificação." });
+      if (!user.clinica_id) return res.status(400).json({ erro: "Não encontramos uma clínica vinculada a esta conta. Entre em contato com o suporte." });
       db.run(
         "UPDATE usuarios SET email_verificado = 1, email_verificacao_token_hash = NULL, email_verificacao_expira_em = NULL WHERE id = ? AND email_verificado = 0",
         [user.id],
         function (updateErr) {
           if (updateErr) return res.status(500).json({ erro: "Não foi possível confirmar o e-mail." });
           if (!this.changes) return res.status(400).json({ erro: "Este link já foi utilizado. Faça login." });
-          return res.json({ mensagem: "E-mail verificado com sucesso! Você já pode entrar na Sorrisa." });
+          const tokenAcesso = jwt.sign(
+            { id: user.id, nome: user.nome, email: user.email },
+            SECRET,
+            { expiresIn: "24h" }
+          );
+          return res.json({
+            mensagem: "E-mail verificado com sucesso! Vamos continuar com o cadastro da sua clínica.",
+            token: tokenAcesso,
+            usuario: { id: user.id, nome: user.nome || "Administrador", email: emailParaExibicao(user.email) },
+          });
         }
       );
     }
