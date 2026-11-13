@@ -50,6 +50,7 @@ const ShieldIcon = (
 function Login() {
   const { tema, alternarTema } = useTheme();
   const [email, setEmail] = useState("");
+  const [confirmarEmail, setConfirmarEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [nome, setNome] = useState("");
   const [confirmarSenha, setConfirmarSenha] = useState("");
@@ -69,6 +70,10 @@ function Login() {
     setErro("");
     setSucesso("");
 
+    if (email.trim().toLowerCase() !== confirmarEmail.trim().toLowerCase()) {
+      setErro("Os e-mails não coincidem.");
+      return;
+    }
     if (senha.length < 8) {
       setErro("A senha deve ter no mínimo 8 caracteres.");
       return;
@@ -98,6 +103,7 @@ function Login() {
       setConfirmarSenha("");
       setNome("");
       setEmailAguardando(data.email || email.trim());
+      setConfirmarEmail("");
       setErro("");
       setSucesso(data.mensagem || "Cadastro realizado. Confirme seu e-mail para continuar.");
       setCarregando(false);
@@ -283,6 +289,33 @@ function Login() {
                 />
               </div>
             </div>
+
+            {modoCadastro && (
+              <div style={S.inputGroup}>
+                <label style={S.label}>Confirmar e-mail</label>
+                <div style={{
+                  ...S.inputWrapper,
+                  borderColor: confirmarEmail && confirmarEmail.trim().toLowerCase() !== email.trim().toLowerCase() ? "#ef4444" : confirmarEmail && confirmarEmail.trim().toLowerCase() === email.trim().toLowerCase() ? "#16a34a" : "#e2e8f0",
+                }}>
+                  <span style={{ ...S.inputIcon, color: "#94a3b8" }}>{MailIcon}</span>
+                  <input
+                    type="email"
+                    placeholder="Digite o e-mail novamente"
+                    value={confirmarEmail}
+                    onChange={(e) => setConfirmarEmail(e.target.value)}
+                    style={S.input}
+                    required
+                    autoComplete="off"
+                    aria-invalid={Boolean(confirmarEmail && confirmarEmail.trim().toLowerCase() !== email.trim().toLowerCase())}
+                  />
+                </div>
+                {confirmarEmail && (
+                  <span style={{ fontSize: "12px", fontWeight: 600, color: confirmarEmail.trim().toLowerCase() === email.trim().toLowerCase() ? "#16a34a" : "#dc2626" }}>
+                    {confirmarEmail.trim().toLowerCase() === email.trim().toLowerCase() ? "✓ Os e-mails coincidem" : "Os e-mails ainda não coincidem"}
+                  </span>
+                )}
+              </div>
+            )}
 
             {/* Senha */}
             <div style={S.inputGroup}>

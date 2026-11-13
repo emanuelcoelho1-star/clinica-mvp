@@ -4,6 +4,7 @@ import API_URL from "../api";
 
 export default function VerificarEmail() {
   const [params] = useSearchParams();
+  const tipoAlteracao = params.get("tipo") === "alteracao";
   const [estado, setEstado] = useState("verificando");
   const [mensagem, setMensagem] = useState("Estamos confirmando seu endereço de e-mail...");
 
@@ -15,7 +16,8 @@ export default function VerificarEmail() {
       return;
     }
     let ativo = true;
-    fetch(`${API_URL}/auth/verificar-email`, {
+    const endpoint = tipoAlteracao ? "confirmar-alteracao-email" : "verificar-email";
+    fetch(`${API_URL}/auth/${endpoint}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token }),
@@ -24,8 +26,20 @@ export default function VerificarEmail() {
         const data = await res.json();
         if (!res.ok) throw new Error(data.erro || "Não foi possível verificar o e-mail.");
         if (ativo) {
+          if (tipoAlteracao) {
+            if (!data.usuario) throw new Error("O e-mail foi confirmado, mas não foi possível atualizar os dados da conta. Entre novamente.");
+            const usuarioAtual = JSON.parse(localStorage.getItem("usuario") || "{}");
+            localStorage.setItem("usuario", JSON.stringify({ ...usuarioAtual, ...data.usuario }));
+          } else {
+            if (!data.token || !data.usuario) {
+              throw new Error("E-mail confirmado, mas não foi possível iniciar sua sessão. Faça login para continuar.");
+            }
+            localStorage.setItem("token", data.token);
+            localStorage.setItem("sorrisa_last_activity", String(Date.now()));
+            localStorage.setItem("usuario", JSON.stringify(data.usuario));
+          }
           setEstado("sucesso");
-          setMensagem(data.mensagem || "E-mail verificado com sucesso. Você já pode entrar na Sorrisa.");
+          setMensagem(data.mensagem || (tipoAlteracao ? "Novo e-mail confirmado e atualizado." : "E-mail verificado com sucesso! Vamos continuar com o cadastro da sua clínica."));
         }
       })
       .catch((error) => {
@@ -44,9 +58,15 @@ export default function VerificarEmail() {
         <div style={{ ...S.icon, background: sucesso ? "#dcfce7" : estado === "erro" ? "#fee2e2" : "#dbeafe", color: sucesso ? "#15803d" : estado === "erro" ? "#b91c1c" : "#1d4ed8" }}>
           {estado === "verificando" ? "…" : sucesso ? "✓" : "!"}
         </div>
-        <h1 style={S.title}>{estado === "verificando" ? "Verificando e-mail" : sucesso ? "E-mail confirmado" : "Não foi possível confirmar"}</h1>
+        <h1 style={S.title}>{estado === "verificando" ? (tipoAlteracao ? "Confirmando novo e-mail" : "Verificando e-mail") : sucesso ? (tipoAlteracao ? "E-mail atualizado" : "E-mail confirmado") : "Não foi possível confirmar"}</h1>
         <p style={S.message}>{mensagem}</p>
-        {estado !== "verificando" && <Link to="/" style={S.link}>Ir para o acesso</Link>}
+        {estado !== "verificando" && (
+          sucesso
+            ? (tipoAlteracao
+                ? <a href="/" style={S.link}>Voltar para a Sorrisa</a>
+                : <a href="/cadastro-clinica" style={S.link}>Continuar cadastro da clínica</a>)
+            : <Link to="/" style={S.link}>Voltar para o acesso</Link>
+        )}
       </section>
     </main>
   );

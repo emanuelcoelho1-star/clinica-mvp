@@ -284,18 +284,28 @@ router.post("/verificar-email", authGeneralLimiter, (req, res) => {
   }
   const tokenHash = hashToken(token);
   db.get(
-    "SELECT id FROM usuarios WHERE email_verificacao_token_hash = ? AND datetime(email_verificacao_expira_em) > datetime('now') AND email_verificado = 0",
+    "SELECT id, nome, email, clinica_id FROM usuarios WHERE email_verificacao_token_hash = ? AND datetime(email_verificacao_expira_em) > datetime('now') AND email_verificado = 0",
     [tokenHash],
     (err, user) => {
       if (err) return res.status(500).json({ erro: "Não foi possível confirmar o e-mail." });
       if (!user) return res.status(400).json({ erro: "Este link é inválido, expirou ou já foi utilizado. Solicite um novo e-mail de verificação." });
+      if (!user.clinica_id) return res.status(400).json({ erro: "Não encontramos uma clínica vinculada a esta conta. Entre em contato com o suporte." });
       db.run(
         "UPDATE usuarios SET email_verificado = 1, email_verificacao_token_hash = NULL, email_verificacao_expira_em = NULL WHERE id = ? AND email_verificado = 0",
         [user.id],
         function (updateErr) {
           if (updateErr) return res.status(500).json({ erro: "Não foi possível confirmar o e-mail." });
           if (!this.changes) return res.status(400).json({ erro: "Este link já foi utilizado. Faça login." });
-          return res.json({ mensagem: "E-mail verificado com sucesso! Você já pode entrar na Sorrisa." });
+          const tokenAcesso = jwt.sign(
+            { id: user.id, nome: user.nome, email: user.email },
+            SECRET,
+            { expiresIn: "24h" }
+          );
+          return res.json({
+            mensagem: "E-mail verificado com sucesso! Vamos continuar com o cadastro da sua clínica.",
+            token: tokenAcesso,
+            usuario: { id: user.id, nome: user.nome || "Administrador", email: emailParaExibicao(user.email) },
+          });
         }
       );
     }
@@ -335,6 +345,105 @@ router.post("/reenviar-verificacao", resendVerificationLimiter, async (req, res)
     console.error("Falha ao reenviar verificação de e-mail:", error.message);
     return res.status(500).json({ erro: "Não foi possível reenviar o e-mail agora. Tente novamente mais tarde." });
   }
+});
+
+/* ── Solicitar alteração do e-mail de acesso ─── */
+router.post("/solicitar-alteracao-email", authGeneralLimiter, auth, async (req, res) => {
+  const email = String((req.body && req.body.email) || "").trim().toLowerCase();
+  const senhaAtual = String((req.body && req.body.senha_atual) || "");
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ erro: "Informe um novo e-mail válido." });
+  }
+  if (!senhaAtual) return res.status(400).json({ erro: "Informe sua senha atual para confirmar a alteração." });
+  if (!process.env.RESEND_API_KEY || !process.env.EMAIL_FROM) {
+    return res.status(503).json({ erro: "O envio de e-mails não está configurado no servidor." });
+  }
+
+  try {
+    const user = await new Promise((resolve, reject) => {
+      db.get("SELECT id, nome, email, senha FROM usuarios WHERE id = ? AND clinica_id = ?", [req.user.id, req.user.clinica_id],
+        (err, row) => err ? reject(err) : resolve(row));
+    });
+    if (!user) return res.status(404).json({ erro: "Usuário não encontrado nesta clínica." });
+    if (email === String(user.email).trim().toLowerCase()) {
+      return res.status(400).json({ erro: "O novo e-mail é igual ao endereço atual." });
+    }
+    const senhaValida = await bcrypt.compare(senhaAtual, user.senha);
+    if (!senhaValida) return res.status(401).json({ erro: "Senha atual incorreta." });
+
+    const existente = await new Promise((resolve, reject) => {
+      db.get("SELECT id FROM usuarios WHERE LOWER(TRIM(email)) = ? AND id <> ?", [email, user.id],
+        (err, row) => err ? reject(err) : resolve(row));
+    });
+    if (existente) return res.status(409).json({ erro: "Este e-mail já está sendo utilizado por outra conta." });
+
+    const token = crypto.randomBytes(32).toString("hex");
+    const expira = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+    await new Promise((resolve, reject) => {
+      db.run(
+        "UPDATE usuarios SET email_alteracao_pendente = ?, email_alteracao_token_hash = ?, email_alteracao_expira_em = ? WHERE id = ? AND clinica_id = ?",
+        [email, hashToken(token), expira, user.id, req.user.clinica_id],
+        (err) => err ? reject(err) : resolve()
+      );
+    });
+
+    try {
+      await enviarEmailVerificacao({ email, nome: user.nome, token, tipo: "alteracao" });
+    } catch (emailErr) {
+      await new Promise((resolve) => db.run(
+        "UPDATE usuarios SET email_alteracao_pendente = NULL, email_alteracao_token_hash = NULL, email_alteracao_expira_em = NULL WHERE id = ?",
+        [user.id], () => resolve()
+      ));
+      throw emailErr;
+    }
+    return res.json({ mensagem: "Enviamos um link de confirmação para o novo e-mail. Seu e-mail atual continua valendo para entrar até a confirmação." });
+  } catch (error) {
+    console.error("Falha ao solicitar alteração de e-mail:", error.message);
+    return res.status(500).json({ erro: "Não foi possível enviar a confirmação para o novo e-mail. Tente novamente." });
+  }
+});
+
+/* ── Confirmar alteração do e-mail de acesso ──── */
+router.post("/confirmar-alteracao-email", authGeneralLimiter, (req, res) => {
+  const token = String((req.body && req.body.token) || "");
+  if (!/^[a-f0-9]{64}$/i.test(token)) {
+    return res.status(400).json({ erro: "Link de confirmação inválido ou incompleto." });
+  }
+  db.get(
+    "SELECT id, nome, email_alteracao_pendente, clinica_id FROM usuarios WHERE email_alteracao_token_hash = ? AND datetime(email_alteracao_expira_em) > datetime('now')",
+    [hashToken(token)],
+    (err, user) => {
+      if (err) return res.status(500).json({ erro: "Não foi possível confirmar o novo e-mail." });
+      if (!user || !user.email_alteracao_pendente) {
+        return res.status(400).json({ erro: "Este link é inválido, expirou ou já foi utilizado. Solicite uma nova alteração." });
+      }
+      db.get(
+        "SELECT id FROM usuarios WHERE LOWER(TRIM(email)) = ? AND id <> ?",
+        [String(user.email_alteracao_pendente).trim().toLowerCase(), user.id],
+        (checkErr, existente) => {
+          if (checkErr) return res.status(500).json({ erro: "Não foi possível validar o novo e-mail." });
+          if (existente) return res.status(409).json({ erro: "Este e-mail já está sendo utilizado por outra conta." });
+          db.run(
+            "UPDATE usuarios SET email = email_alteracao_pendente, email_alteracao_pendente = NULL, email_alteracao_token_hash = NULL, email_alteracao_expira_em = NULL, email_verificado = 1 WHERE id = ? AND email_alteracao_token_hash = ?",
+            [user.id, hashToken(token)],
+            function (updateErr) {
+              if (updateErr) {
+                if (updateErr.message && updateErr.message.includes("UNIQUE")) {
+                  return res.status(409).json({ erro: "Este e-mail já está sendo utilizado por outra conta." });
+                }
+                return res.status(500).json({ erro: "Não foi possível atualizar o e-mail da conta." });
+              }
+              if (!this.changes) return res.status(400).json({ erro: "Este link já foi utilizado. Solicite uma nova alteração." });
+              return res.json({
+                mensagem: "Novo e-mail confirmado e atualizado. Ele já pode ser utilizado para entrar na Sorrisa.",
+                usuario: { id: user.id, nome: user.nome || "Usuário", email: emailParaExibicao(user.email_alteracao_pendente) },
+              });
+            }
+          );
+        }
+      );
+    }
+  );
 });
 
 /* ── Login ────────────────────────────────────── */

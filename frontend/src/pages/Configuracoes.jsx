@@ -91,6 +91,13 @@ function Configuracoes({ administrador = false, permissoesAcesso = [] }) {
   const [senhaAtual, setSenhaAtual] = useState("");
   const [novaSenha, setNovaSenha] = useState("");
   const [confirmarSenha, setConfirmarSenha] = useState("");
+  const [novoEmail, setNovoEmail] = useState("");
+  const [confirmarNovoEmail, setConfirmarNovoEmail] = useState("");
+  const [senhaConfirmacaoEmail, setSenhaConfirmacaoEmail] = useState("");
+  const [mensagemEmail, setMensagemEmail] = useState("");
+  const [erroEmail, setErroEmail] = useState("");
+  const [solicitandoEmail, setSolicitandoEmail] = useState(false);
+  const [modalAlterarEmail, setModalAlterarEmail] = useState(false);
   const [mensagem, setMensagem] = useState("");
   const [erro, setErro] = useState("");
   const [mensagemPerfil, setMensagemPerfil] = useState("");
@@ -204,6 +211,49 @@ function Configuracoes({ administrador = false, permissoesAcesso = [] }) {
       setErroPerfil("Não foi possível conectar ao servidor.");
     }
     setSalvando(false);
+  };
+
+  /* ── Solicitar alteração do e-mail ──────────── */
+  const solicitarAlteracaoEmail = async (e) => {
+    e.preventDefault();
+    setErroEmail("");
+    setMensagemEmail("");
+
+    const emailNormalizado = novoEmail.trim().toLowerCase();
+    const confirmacaoNormalizada = confirmarNovoEmail.trim().toLowerCase();
+    if (emailNormalizado !== confirmacaoNormalizada) {
+      setErroEmail("Os novos e-mails não coincidem.");
+      return;
+    }
+    if (emailNormalizado === String(usuario.email || "").trim().toLowerCase()) {
+      setErroEmail("O novo e-mail é igual ao endereço atual.");
+      return;
+    }
+
+    setSolicitandoEmail(true);
+    try {
+      const res = await fetch(`${API}/auth/solicitar-alteracao-email`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ email: emailNormalizado, senha_atual: senhaConfirmacaoEmail }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setErroEmail(data.erro || "Não foi possível solicitar a alteração do e-mail.");
+      } else {
+        setMensagemEmail(data.mensagem || "Enviamos um link de confirmação para o novo e-mail.");
+        setNovoEmail("");
+        setConfirmarNovoEmail("");
+        setSenhaConfirmacaoEmail("");
+      }
+    } catch (error) {
+      setErroEmail("Não foi possível conectar ao servidor.");
+    } finally {
+      setSolicitandoEmail(false);
+    }
   };
 
   /* ── Alterar senha ──────────────────────────── */
@@ -351,6 +401,13 @@ function Configuracoes({ administrador = false, permissoesAcesso = [] }) {
                 <span style={S.cardIcon}>{Icons.user}</span>
                 <h2 style={S.cardTitle}>Editar perfil</h2>
               </div>
+              <button
+                type="button"
+                style={{ ...S.btnPrimary, marginTop: 0, height: "36px", padding: "8px 14px" }}
+                onClick={() => { setErroEmail(""); setMensagemEmail(""); setModalAlterarEmail(true); }}
+              >
+                {Icons.mail} Alterar e-mail
+              </button>
             </div>
 
             <form onSubmit={salvarPerfil} style={S.form}>
@@ -401,6 +458,58 @@ function Configuracoes({ administrador = false, permissoesAcesso = [] }) {
               >
                 {salvando ? "Salvando..." : "Salvar alterações"}
               </button>
+            </form>
+          </div>
+
+
+        </div>
+      )}
+
+      {abaAtiva === "perfil" && modalAlterarEmail && (
+        <div
+          onClick={(e) => { if (e.target === e.currentTarget && !solicitandoEmail) setModalAlterarEmail(false); }}
+          style={{ position: "fixed", inset: 0, background: "rgba(15, 23, 42, 0.48)", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px", zIndex: 1000 }}
+        >
+          <div role="dialog" aria-modal="true" aria-labelledby="titulo-modal-email" style={{ width: "100%", maxWidth: "480px", background: "#fff", borderRadius: "16px", padding: "24px", boxShadow: "0 20px 60px rgba(15,23,42,0.2)", maxHeight: "90vh", overflowY: "auto" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", marginBottom: "8px" }}>
+              <div style={S.cardTitleRow}>
+                <span style={S.cardIcon}>{Icons.mail}</span>
+                <h2 id="titulo-modal-email" style={S.cardTitle}>Alterar e-mail de acesso</h2>
+              </div>
+              <button type="button" aria-label="Fechar" onClick={() => setModalAlterarEmail(false)} disabled={solicitandoEmail} style={{ border: "none", background: "transparent", color: "#64748b", fontSize: "22px", cursor: "pointer" }}>×</button>
+            </div>
+            <p style={{ ...S.inputHint, fontSize: "12px", margin: "0 0 18px" }}>Informe o novo endereço e confirme sua senha. Enviaremos um link para validar a alteração.</p>
+            <form onSubmit={solicitarAlteracaoEmail} style={S.form}>
+              <div style={S.inputGroup}>
+                <label style={S.label}>E-mail atual</label>
+                <input type="email" value={usuario.email || ""} style={{ ...S.input, background: "#f8fafc", color: "#64748b" }} disabled />
+              </div>
+              <div style={S.inputGroup}>
+                <label style={S.label}>Novo e-mail</label>
+                <input type="email" value={novoEmail} onChange={(e) => setNovoEmail(e.target.value)} style={S.input} placeholder="Digite o novo e-mail" autoComplete="email" required />
+              </div>
+              <div style={S.inputGroup}>
+                <label style={S.label}>Confirmar novo e-mail</label>
+                <input type="email" value={confirmarNovoEmail} onChange={(e) => setConfirmarNovoEmail(e.target.value)} style={S.input} placeholder="Digite o novo e-mail novamente" autoComplete="off" required />
+                {confirmarNovoEmail && (
+                  <span style={{ fontSize: "12px", fontWeight: 600, color: confirmarNovoEmail.trim().toLowerCase() === novoEmail.trim().toLowerCase() ? "#16a34a" : "#dc2626" }}>
+                    {confirmarNovoEmail.trim().toLowerCase() === novoEmail.trim().toLowerCase() ? "✓ Os e-mails coincidem" : "Os e-mails não coincidem"}
+                  </span>
+                )}
+              </div>
+              <div style={S.inputGroup}>
+                <label style={S.label}>Senha atual</label>
+                <input type="password" value={senhaConfirmacaoEmail} onChange={(e) => setSenhaConfirmacaoEmail(e.target.value)} style={S.input} placeholder="Confirme sua senha para continuar" autoComplete="current-password" required />
+              </div>
+              {erroEmail && <div style={S.alertaErro}><span style={{ display: "flex" }}>{Icons.x}</span><span>{erroEmail}</span></div>}
+              {mensagemEmail && <div style={S.alertaSucesso}><span style={{ display: "flex" }}>{Icons.check}</span><span>{mensagemEmail}</span></div>}
+              <p style={S.inputHint}>O e-mail atual continuará sendo usado no login até que o novo endereço seja confirmado.</p>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", flexWrap: "wrap" }}>
+                <button type="button" onClick={() => setModalAlterarEmail(false)} disabled={solicitandoEmail} style={{ ...S.btnSecondary }}>Cancelar</button>
+                <button type="submit" style={{ ...S.btnPrimary, opacity: solicitandoEmail ? 0.7 : 1, cursor: solicitandoEmail ? "not-allowed" : "pointer" }} disabled={solicitandoEmail}>
+                  {solicitandoEmail ? "Enviando confirmação..." : "Enviar confirmação"}
+                </button>
+              </div>
             </form>
           </div>
         </div>
@@ -838,6 +947,22 @@ const S = {
   },
 
   /* ── Botão ────────────────────────────────────── */
+  btnSecondary: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    border: "1px solid #e2e8f0",
+    borderRadius: "10px",
+    padding: "10px 18px",
+    background: "#fff",
+    color: "#475569",
+    fontWeight: "600",
+    fontSize: "14px",
+    cursor: "pointer",
+    height: "40px",
+    boxSizing: "border-box",
+    fontFamily: "inherit",
+  },
   btnPrimary: {
     display: "inline-flex",
     alignItems: "center",
