@@ -52,6 +52,15 @@ function criarAutenticacao({ ignorarAssinatura = false } = {}) {
           return res.status(401).json({ erro: "Sessão inválida. Faça login novamente." });
         }
 
+        // O e-mail faz parte do token emitido no login. Se ele mudou no banco,
+        // invalida automaticamente todas as sessões abertas com o e-mail antigo.
+        if (
+          typeof decoded.email !== "string" ||
+          decoded.email.trim().toLowerCase() !== String(user.email || "").trim().toLowerCase()
+        ) {
+          return res.status(401).json({ erro: "Sua sessão foi encerrada porque os dados de acesso da conta foram alterados. Entre novamente." });
+        }
+
         if (Number(user.role_ativo) !== 1) {
           return res.status(403).json({ erro: "Este perfil está desativado. Contate o administrador." });
         }
