@@ -135,7 +135,7 @@ export default function ClinicaForm({ onComplete, modoOnboarding = false }) {
       <div style={S.intro}>
         {modoOnboarding && <div style={S.step}>Etapa 2 de 2</div>}
         <h1 style={S.title}>{modoOnboarding ? "Configure sua clínica" : "Dados da clínica"}</h1>
-        <p style={S.subtitle}>{modoOnboarding ? "Preencha as informações abaixo para personalizar o OdontoPro. Você poderá editar tudo depois em Configurações." : "Organize e mantenha atualizadas as informações que poderão ser usadas nos documentos clínicos."}</p>
+        <p style={S.subtitle}>{modoOnboarding ? "Preencha as informações abaixo para personalizar a Sorrisa. Você poderá editar tudo depois em Configurações." : "Organize e mantenha atualizadas as informações que poderão ser usadas nos documentos clínicos."}</p>
       </div>
       {erro && <div role="alert" style={S.error}>{erro}</div>}
       {sucesso && <div role="status" style={S.success}>{sucesso}</div>}
@@ -198,22 +198,22 @@ export default function ClinicaForm({ onComplete, modoOnboarding = false }) {
 }
 
 const S = {
-  wrapper: { background: "var(--bg-card, #fff)", border: "1px solid var(--border-primary, #e2e8f0)", borderRadius: 16, padding: 24, color: "var(--text-primary, #0f172a)" },
-  intro: { marginBottom: 26 },
+  wrapper: { width: "100%", boxSizing: "border-box", background: "var(--bg-card, #fff)", border: "1px solid var(--border-primary, #e2e8f0)", borderRadius: 18, padding: "clamp(24px, 3vw, 40px)", color: "var(--text-primary, #0f172a)" },
+  intro: { marginBottom: 32 },
   step: { display: "inline-flex", background: "#eff6ff", color: "#1d4ed8", borderRadius: 999, padding: "5px 10px", fontSize: 12, fontWeight: 700, marginBottom: 12 },
-  title: { margin: "0 0 7px", fontSize: 23, fontWeight: 750 },
-  subtitle: { margin: 0, color: "var(--text-secondary, #64748b)", fontSize: 14, lineHeight: 1.6, maxWidth: 720 },
+  title: { margin: "0 0 7px", fontSize: 28, fontWeight: 750 },
+  subtitle: { margin: 0, color: "var(--text-secondary, #64748b)", fontSize: 14, lineHeight: 1.6, maxWidth: 900 },
   sections: { display: "flex", flexDirection: "column", gap: 18 },
-  section: { border: "1px solid var(--border-primary, #e2e8f0)", borderRadius: 13, padding: 20, background: "var(--bg-card, #fff)" },
+  section: { border: "1px solid var(--border-primary, #e2e8f0)", borderRadius: 14, padding: "clamp(20px, 2.2vw, 30px)", background: "var(--bg-card, #fff)" },
   sectionHeading: { display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 20 },
   sectionNumber: { flexShrink: 0, display: "grid", placeItems: "center", width: 34, height: 34, borderRadius: 10, background: "var(--bg-muted, #eff6ff)", color: "#2563eb", fontSize: 12, fontWeight: 800 },
-  sectionTitle: { margin: "1px 0 4px", fontSize: 16, fontWeight: 750, color: "var(--text-primary, #0f172a)" },
+  sectionTitle: { margin: "1px 0 4px", fontSize: 18, fontWeight: 750, color: "var(--text-primary, #0f172a)" },
   sectionDescription: { margin: 0, fontSize: 12, lineHeight: 1.5, color: "var(--text-secondary, #64748b)" },
-  grid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16 },
+  grid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: 20 },
   field: { display: "flex", flexDirection: "column", gap: 7, minWidth: 0 },
   wide: { gridColumn: "1 / -1" },
-  label: { fontSize: 12, fontWeight: 700, color: "var(--text-secondary, #475569)" },
-  input: { width: "100%", minWidth: 0, boxSizing: "border-box", border: "1px solid var(--border-primary, #cbd5e1)", background: "var(--bg-input, #fff)", color: "var(--text-primary, #0f172a)", borderRadius: 9, padding: "11px 12px", fontSize: 14, outlineColor: "#2563eb" },
+  label: { fontSize: 13, fontWeight: 700, color: "var(--text-secondary, #475569)" },
+  input: { width: "100%", minWidth: 0, boxSizing: "border-box", border: "1px solid var(--border-primary, #cbd5e1)", background: "var(--bg-input, #fff)", color: "var(--text-primary, #0f172a)", borderRadius: 9, padding: "13px 14px", fontSize: 15, outlineColor: "#2563eb" },
   logoModes: { display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 },
   modeButton: { border: "1px solid var(--border-primary, #cbd5e1)", borderRadius: 9, padding: "10px 13px", background: "transparent", color: "var(--text-primary, #334155)", fontSize: 13, fontWeight: 650, cursor: "pointer" },
   modeActive: { borderColor: "#2563eb", background: "#eff6ff", color: "#1d4ed8" },
