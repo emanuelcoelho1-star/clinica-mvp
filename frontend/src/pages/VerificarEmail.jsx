@@ -9,13 +9,18 @@ export default function VerificarEmail() {
 
   useEffect(() => {
     const token = params.get("token");
+    const tipoAlteracao = params.get("tipo") === "alteracao";
+
     if (!token) {
       setEstado("erro");
       setMensagem("O link de verificação está incompleto. Solicite um novo e-mail.");
       return;
     }
+
     let ativo = true;
-    fetch(`${API_URL}/auth/verificar-email`, {
+    const endpoint = tipoAlteracao ? "confirmar-alteracao-email" : "verificar-email";
+
+    fetch(`${API_URL}/auth/${endpoint}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token }),
@@ -23,9 +28,23 @@ export default function VerificarEmail() {
       .then(async (res) => {
         const data = await res.json();
         if (!res.ok) throw new Error(data.erro || "Não foi possível verificar o e-mail.");
+
         if (ativo) {
+          if (tipoAlteracao) {
+            if (!data.usuario || !data.usuario.email) {
+              throw new Error("O servidor confirmou a solicitação, mas não retornou o novo e-mail. Atualize a página de perfil.");
+            }
+            try {
+              const usuarioAtual = JSON.parse(localStorage.getItem("usuario") || "{}");
+              localStorage.setItem("usuario", JSON.stringify({ ...usuarioAtual, ...data.usuario }));
+            } catch (storageError) {
+              console.warn("Não foi possível atualizar os dados locais do usuário:", storageError);
+            }
+          }
           setEstado("sucesso");
-          setMensagem(data.mensagem || "E-mail verificado com sucesso. Você já pode entrar na Sorrisa.");
+          setMensagem(data.mensagem || (tipoAlteracao
+            ? "Novo e-mail confirmado e atualizado. Você já pode utilizá-lo para entrar na Sorrisa."
+            : "E-mail verificado com sucesso. Você já pode entrar na Sorrisa."));
         }
       })
       .catch((error) => {
@@ -34,6 +53,7 @@ export default function VerificarEmail() {
           setMensagem(error.message || "Não foi possível verificar o e-mail.");
         }
       });
+
     return () => { ativo = false; };
   }, [params]);
 
@@ -44,7 +64,7 @@ export default function VerificarEmail() {
         <div style={{ ...S.icon, background: sucesso ? "#dcfce7" : estado === "erro" ? "#fee2e2" : "#dbeafe", color: sucesso ? "#15803d" : estado === "erro" ? "#b91c1c" : "#1d4ed8" }}>
           {estado === "verificando" ? "…" : sucesso ? "✓" : "!"}
         </div>
-        <h1 style={S.title}>{estado === "verificando" ? "Verificando e-mail" : sucesso ? "E-mail confirmado" : "Não foi possível confirmar"}</h1>
+        <h1 style={S.title}>{estado === "verificando" ? "Verificando e-mail" : sucesso ? (params.get("tipo") === "alteracao" ? "E-mail atualizado" : "E-mail confirmado") : "Não foi possível confirmar"}</h1>
         <p style={S.message}>{mensagem}</p>
         {estado !== "verificando" && <Link to="/" style={S.link}>Ir para o acesso</Link>}
       </section>
