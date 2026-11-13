@@ -558,16 +558,14 @@ function App() {
   return (
     <ThemeProvider>
       <BrowserRouter>
-        {!autenticado ? (
-          <Routes>
-            <Route path="/verificar-email" element={<VerificarEmail />} />
+        <Routes>
+          <Route path="/verificar-email" element={<VerificarEmail />} />
+          {!autenticado ? (
             <Route path="*" element={<Login />} />
-          </Routes>
-        ) : (
-          <Routes>
+          ) : (
             <Route path="/*" element={<Layout />} />
-          </Routes>
-        )}
+          )}
+        </Routes>
       </BrowserRouter>
     </ThemeProvider>
   );
