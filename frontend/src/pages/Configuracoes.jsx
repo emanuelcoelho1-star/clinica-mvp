@@ -423,7 +423,7 @@ function Configuracoes({ administrador = false, permissoesAcesso = [] }) {
                   style={{ ...S.input, background: "#f8fafc", color: "#94a3b8", cursor: "not-allowed" }}
                   disabled
                 />
-                <span style={S.inputHint}>O e-mail não pode ser alterado.</span>
+                <span style={S.inputHint}>Para trocar o e-mail de acesso, utilize o formulário Alterar e-mail de acesso abaixo.</span>
               </div>
 
               {erroPerfil && (
